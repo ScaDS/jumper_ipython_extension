@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jumper-extension"
+version = "0.1.0"
+description = "IPython extension for monitoring cell performance"
+readme = {content-type = "text/markdown", text = "# Jumper Extension\n\nAn IPython extension for monitoring cell performance."}
+requires-python = ">=3.8"
+dependencies = [
+    "ipython",
+    "matplotlib",
+    "pandas",
+    "psutil",
+]
+urls = {Homepage = "https://github.com/ScaDS/jumper_ipython_extension"}
+
+[project.entry-points."IPython.extensions"]
+jumper_extension = "jumper_extension:load_ipython_extension"
+
+[tool.setuptools]
+packages = ["jumper_extension"]
