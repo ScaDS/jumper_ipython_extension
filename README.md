@@ -85,18 +85,30 @@ pip install .
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to JSON |
 
 ## Monitored Metrics
-### CPU
-- Per-core utilization
-- Average utilization across available cores
 
-### Memory
-- Total memory usage
+The following table describes all metrics collected by the performance monitor:
 
-### GPU (if available)
-- GPU compute utilization
-- GPU memory bandwidth utilization
-- GPU memory usage
+| Metric | Description | Collection Method | Level |
+|------------------|-------------|------------------|--------|
+| `memory_usage_gb` | Total system memory usage in GB | `psutil.virtual_memory()` | System |
+| `cpu_util` | CPU utilization across cores | `psutil.cpu_percent(percpu=True)` | System |
+| `io_read_count` | Total number of read I/O operations | `psutil.Process().io_counters().read_count` | Process |
+| `io_write_count` | Total number of write I/O operations | `psutil.Process().io_counters().write_count` | Process |
+| `io_read_mb` | Total data read in MB | `psutil.Process().io_counters().read_bytes` | Process |
+| `io_write_mb` | Total data written in MB | `psutil.Process().io_counters().write_bytes` | Process |
+| `gpu_util` | GPU compute utilization across GPUs | `pynvml.nvmlDeviceGetUtilizationRates().gpu` | System |
+| `gpu_band` | GPU memory bandwidth utilization across GPUs | `pynvml.nvmlDeviceGetUtilizationRates().memory` | System |
+| `gpu_mem` | GPU memory usage in GB across GPUs | `pynvml.nvmlDeviceGetMemoryInfo()` | System |
 
-### I/O Operations
-- Read/write operation counts
-- Data transfer volume
+### Collection Levels
+
+- **System**: Metrics collected for the entire system across all users and processes
+- **Process**: Metrics collected specifically for the current Python process
+#- **User**: *(Future)* Metrics for all processes owned by the current user
+
+### Notes
+
+- GPU metrics are only available when NVIDIA drivers and `pynvml` library are installed
+- Memory detection is SLURM-aware when running in SLURM environments
+- CPU metrics are limited to cores available to the current process (respects CPU affinity)
+- I/O metrics track only the main Python process, not child processes
