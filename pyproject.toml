@@ -19,5 +19,13 @@ urls = {Homepage = "https://github.com/ScaDS/jumper_ipython_extension"}
 [project.entry-points."IPython.extensions"]
 jumper_extension = "jumper_extension:load_ipython_extension"
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock", 
+    "pytest-cov",
+    "pynvml",
+]
+
 [tool.setuptools]
 packages = ["jumper_extension"]
