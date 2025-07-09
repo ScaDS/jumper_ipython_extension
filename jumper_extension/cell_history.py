@@ -1,8 +1,10 @@
 import json
 import time
-import pandas as pd
 import os
 import warnings
+
+import pandas as pd
+from itables import show
 
 
 class CellHistory:
@@ -46,6 +48,32 @@ class CellHistory:
             print("-" * 40)
             print(cell["raw_cell"])
             print("=" * 40)
+
+    def show_itable(self):
+        if self.data.empty:
+            print("No cell history to display.")
+            return
+
+        data = []
+        for _, row in self.data.iterrows():
+            duration = row["end_time"] - row["start_time"]
+            data.append({
+                "Cell index": row["index"],
+                "Duration (s)": f"{duration:.2f}",
+                "Start Time": time.strftime('%H:%M:%S', time.localtime(row["start_time"])),
+                "End Time": time.strftime('%H:%M:%S', time.localtime(row["end_time"])),
+                "Code": row["raw_cell"].replace("\n", "<br>")
+            })
+
+        df = pd.DataFrame(data)
+        show(
+            df,
+            layout={"topStart": "search", "topEnd": None},
+            columnDefs=[
+                {"targets": [4], "className": "dt-left"}  # 4 - "Code" index
+            ],
+            escape=False,
+        )
 
     def export(self, filename="cell_history.json"):
         if self.data.empty:

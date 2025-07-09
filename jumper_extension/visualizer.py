@@ -1,4 +1,8 @@
+from typing import List
+
 import matplotlib.pyplot as plt
+from ipywidgets import widgets
+from IPython.display import display
 
 from .utilities import filter_perfdata
 
@@ -7,7 +11,7 @@ class PerformanceVisualizer:
     def __init__(self, monitor, cell_history, min_duration=None):
         self.monitor = monitor
         self.cell_history = cell_history
-        self.figsize = (10, 5)
+        self.figsize = (5, 3)
         self.min_duration = min_duration
 
         # Metrics configuration
@@ -157,7 +161,7 @@ class PerformanceVisualizer:
         return compressed_perfdata, cell_boundaries
 
     def _plot_metric(
-        self, df, metric, cell_range=None, show_idle=False
+        self, df, metric, cell_range=None, show_idle=False, ax: plt.Axes = None
     ):
         """Plot a single metric using its configuration"""
         # Find config for this metric
@@ -184,9 +188,10 @@ class PerformanceVisualizer:
             if config["avg_column"] not in df.columns and not series_cols:
                 return
 
-        fig, ax = plt.subplots(figsize=self.figsize)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=self.figsize)
 
-        # Plot based on type
+            # Plot based on type
         if config["type"] == "single_series":
             ax.plot(df["time"], df[config["column"]], color="blue", linewidth=2)
 
@@ -233,7 +238,6 @@ class PerformanceVisualizer:
         if "ylim" in config:
             ax.set_ylim(config["ylim"])
         self._draw_cell_boundaries(ax, cell_range, show_idle)
-        plt.show()
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
@@ -338,7 +342,7 @@ class PerformanceVisualizer:
 
     def plot(
         self,
-        metric_subsets=["cpu", "gpu", "mem", "io"],
+        metric_subsets=("cpu", "gpu", "mem", "io",),
         cell_range=None,
         show_idle=False,
     ):
@@ -380,5 +384,116 @@ class PerformanceVisualizer:
             else:
                 print(f"Unknown metric subset: {subset}")
 
-        for metric in metrics:
-            self._plot_metric(perfdata, metric, cell_range, show_idle)
+        plot_wrapper = InteractivePlotWrapper(
+            plot_callback=self._plot_metric,
+            metrics=metrics,
+            df=perfdata,
+            cell_range=cell_range,
+            show_idle=show_idle,
+            figsize=self.figsize,
+        )
+        plot_wrapper.display_ui()
+
+
+class InteractivePlotWrapper:
+    """
+    Interactive plotter:
+    - Each dropdown allows independent selection from all available metrics.
+    - Matplotlib axes are reused with ax.clear() instead of clearing output.
+    """
+
+    def __init__(
+            self,
+            plot_callback,
+            df,
+            metrics: List[str],
+            cell_range=None,
+            show_idle=False,
+            figsize: tuple = None
+    ):
+        """
+        Parameters:
+            plot_callback: function(df, metric_name, show_cells, cell_history, ax)
+            metrics: list of metric names (str)
+            df: pandas.DataFrame
+            cell_range:
+            show_idle:
+        """
+        self.plot_callback = plot_callback
+        self.df = df
+        self.metrics = metrics
+        self.shown_metrics = set()
+        self.cell_range = cell_range
+        self.show_idle = show_idle
+        self.figsize = figsize
+
+        self.panel_count = 0
+        self.max_panels = len(metrics)
+
+        self.output_container = widgets.VBox()
+        self.add_panel_button = widgets.Button(description="Add Plot Panel")
+        self.add_panel_button.on_click(self._on_add_panel_clicked)
+
+    def display_ui(self):
+        """
+        Displays the Add button and all interactive panels.        """
+        display(widgets.VBox([self.add_panel_button, self.output_container]))
+
+        # Create an initial panel
+        self._on_add_panel_clicked(None)
+
+    def _on_add_panel_clicked(self, _):
+        """
+        Adds a new plot panel with dropdown and a persistent matplotlib axis.        """
+        if self.panel_count >= self.max_panels:
+            self.add_panel_button.disabled = True
+            self.output_container.children += (widgets.HTML("<b>All panels have been added.</b>"),)
+            return
+
+        panel = self._create_double_plot_panel()
+        self.output_container.children += (panel,)
+        self.panel_count += 2
+
+        if self.panel_count >= self.max_panels:
+            self.add_panel_button.disabled = True
+
+    def _create_double_plot_panel(self):
+        return widgets.HBox([
+            self._create_dropdown_plot_panel(),
+            self._create_dropdown_plot_panel(),
+        ])
+
+    def _create_dropdown_plot_panel(self):
+        """
+        Creates one dropdown + matplotlib figure panel with persistent Axes.        """
+        dropdown = widgets.Dropdown(
+            options=self.metrics,
+            value=self._get_next_metric(),
+            description="Metric:",
+        )
+
+        fig, ax = plt.subplots(figsize=self.figsize)
+        output = widgets.Output()
+
+        def on_dropdown_change(change):
+            if change['type'] == 'change' and change['name'] == 'value':
+                with output:
+                    ax.clear()
+                    self.plot_callback(self.df, change['new'], self.cell_range, self.show_idle, ax)
+                    fig.canvas.draw_idle()
+
+        dropdown.observe(on_dropdown_change)
+
+        # Initial plot
+        with output:
+            self.plot_callback(self.df, dropdown.value, self.cell_range, self.show_idle, ax)
+            plt.show()
+
+        return widgets.VBox([dropdown, output])
+
+    def _get_next_metric(self):
+        for metric in self.metrics:
+            if metric not in self.shown_metrics:
+                self.shown_metrics.add(metric)
+                return metric
+        return None

@@ -54,7 +54,7 @@ class perfmonitorMagics(Magics):
     @line_magic
     def cell_history(self, line):
         self._skip_report = True
-        self.cell_history.print()
+        self.cell_history.show_itable()
 
     @line_magic
     def perfmonitor_start(self, line):

@@ -1,5 +1,7 @@
 import os
+from unittest.mock import patch
 
+import pytest
 import pandas as pd
 
 from jumper_extension.cell_history import CellHistory
@@ -42,44 +44,67 @@ def test_performance_data_gpu():
     assert len(data.view(slice_=(0, 0))) == 1
 
 
-def test_cell_history(capsys, temp_dir):
-    """Test CellHistory functionality"""
+# === Test CellHistory functionality ===
+@pytest.fixture
+def simple_history():
     history = CellHistory()
+    history.start_cell("print('hello')")
+    history.end_cell(None)
+    return history
 
-    # Test start/end cell
+
+def test_start_current_end_cell():
+    history = CellHistory()
     history.start_cell("print('hello')")
     assert history.current_cell["index"] == 0
     history.end_cell(None)
     assert len(history.data) == 1
 
-    # Test view functionality
-    df = history.view()
+
+def test_view_method(simple_history, capsys):
+    df = simple_history.view()
     assert len(df) == 1
     assert df.iloc[0]["index"] == 0
     assert df.iloc[0]["raw_cell"] == "print('hello')"
     assert df.iloc[0]["start_time"] < df.iloc[0]["end_time"]
 
     # Test print method
-    history.print()
+    simple_history.print()
     assert "Cell #0" in capsys.readouterr().out
 
-    # Test export
-    json_file = os.path.join(temp_dir, "history.json")
-    history.export(json_file)
-    assert os.path.exists(json_file)
 
-    # Test CSV export functionality
+def test_show_itable(simple_history):
+    with patch("jumper_extension.cell_history.show") as mock_show:
+        simple_history.show_itable()
+        assert mock_show.called, "Expected show() to be called"
+
+        df_arg = mock_show.call_args[0][0]  # Get pd.DataFrame
+        assert isinstance(df_arg, pd.DataFrame)
+        assert "Code" in df_arg.columns
+        assert df_arg.loc[0, "Code"] == "print('hello')"
+
+
+def test_export_method(simple_history, tmp_path):
+    json_file = tmp_path / "history.json"
+    simple_history.export(str(json_file))
+    assert json_file.exists()
+
+
+def test_csv_export_functionality(simple_history, temp_dir):
     csv_file = os.path.join(temp_dir, "history.csv")
-    history.export(csv_file)
+    simple_history.export(csv_file)
     assert os.path.exists(csv_file)
 
-    # Test view operations
-    assert not history.data.empty
-    assert "start_time" in history.data.columns
-    assert "end_time" in history.data.columns
-    assert "duration" in history.data.columns
-    assert "raw_cell" in history.data.columns
-    assert "index" in history.data.columns
 
-    # Test that duration is calculated correctly
+def test_view_operations(simple_history):
+    assert not simple_history.data.empty
+    assert "start_time" in simple_history.data.columns
+    assert "end_time" in simple_history.data.columns
+    assert "duration" in simple_history.data.columns
+    assert "raw_cell" in simple_history.data.columns
+    assert "index" in simple_history.data.columns
+
+
+def test_is_duration_calculated_correctly(simple_history):
+    df = simple_history.view()
     assert df.iloc[0]["duration"] == df.iloc[0]["end_time"] - df.iloc[0]["start_time"]
