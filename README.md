@@ -80,25 +80,9 @@ pip install .
 | `%perfmonitor_stop` | Stop monitoring |
 | `%perfmonitor_perfreport [cell]` | Show performance report for specific cell or latest |
 | `%perfmonitor_plot [cell]` | Plot performance data for specific cell or all data |
-| `%cell_history` | Show execution history of all cells |
+| `%cell_history [--df]` | Show execution history of all cells (or DataFrame) |
+| `%cell_history_stats` | Show detailed cell execution statistics |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
 | `%perfmonitor_export_perfdata [filename]` | Export performance data to CSV |
-| `%perfmonitor_export_cell_history [filename]` | Export cell history to JSON |
-
-## Monitored Metrics
-### CPU
-- Per-core utilization
-- Average utilization across available cores
-
-### Memory
-- Total memory usage
-
-### GPU (if available)
-- GPU compute utilization
-- GPU memory bandwidth utilization
-- GPU memory usage
-
-### I/O Operations
-- Read/write operation counts
-- Data transfer volume
+| `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |

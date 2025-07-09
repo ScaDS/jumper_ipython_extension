@@ -39,7 +39,7 @@ def mock_cpu_only():
     ), patch("psutil.virtual_memory") as mock_mem, patch(
         "psutil.Process"
     ) as mock_proc, patch(
-        "jumper_extension.performance_monitor.PYNVML_AVAILABLE", False
+        "jumper_extension.monitor.PYNVML_AVAILABLE", False
     ):
         mock_mem.return_value.total = 8 * 1024**3
         mock_mem.return_value.available = 4 * 1024**3
@@ -53,7 +53,7 @@ def mock_cpu_only():
 @pytest.fixture
 def mock_cpu_gpu(mock_cpu_only):
     """Mock system with 1 CPU (4 cores) and 1 GPU"""
-    with patch("jumper_extension.performance_monitor.PYNVML_AVAILABLE", True), patch(
+    with patch("jumper_extension.monitor.PYNVML_AVAILABLE", True), patch(
         "pynvml.nvmlInit"
     ), patch("pynvml.nvmlDeviceGetCount", return_value=1), patch(
         "pynvml.nvmlDeviceGetHandleByIndex", return_value=Mock()

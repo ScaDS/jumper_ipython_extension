@@ -2,13 +2,11 @@ import os
 import time
 from unittest.mock import Mock, patch
 
-import pytest
-
-from jumper_extension.performance_monitor import PerformanceMonitor
+from jumper_extension.monitor import PerformanceMonitor
 
 
 def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
-    """Test initialization, GPU support, lifecycle, and data collection"""
+    """Test monitor initialization, GPU support, lifecycle, and data collection"""
     # Test basic initialization with GPU
     monitor = PerformanceMonitor(interval=0.1)
     assert monitor.interval == 0.1
@@ -28,7 +26,7 @@ def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
     assert not monitor.running
 
     # Verify data collection
-    df = monitor.data.to_dataframe()
+    df = monitor.data.view()
     assert len(df) > 0
     assert "cpu_util_avg" in df.columns
     assert "gpu_util_avg" in df.columns
@@ -45,6 +43,8 @@ def test_cpu_only_and_slurm(mock_cpu_only):
         "builtins.open", create=True
     ) as mock_file, patch("os.getuid", return_value=1000), patch.dict(
         os.environ, {"SLURM_JOB_ID": "12345"}
+    ), patch(
+        "jumper_extension.monitor.PYNVML_AVAILABLE", False
     ):
 
         mock_file.return_value.__enter__.return_value.read.return_value = "8589934592"
@@ -56,7 +56,7 @@ def test_cpu_only_and_slurm(mock_cpu_only):
 
 def test_gpu_failures():
     """Test GPU setup failure scenarios"""
-    with patch("jumper_extension.performance_monitor.PYNVML_AVAILABLE", True), patch(
+    with patch("jumper_extension.monitor.PYNVML_AVAILABLE", True), patch(
         "pynvml.nvmlDeviceGetCount", side_effect=Exception("GPU error")
     ), patch("psutil.Process") as mock_proc:
 

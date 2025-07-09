@@ -12,6 +12,7 @@ dependencies = [
     "ipython",
     "matplotlib",
     "pandas",
+    "numpy",
     "psutil",
 ]
 urls = {Homepage = "https://github.com/ScaDS/jumper_ipython_extension"}
