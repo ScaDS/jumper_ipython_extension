@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from jumper_extension.perfmonitor_magics import (
+from jumper_extension.magics import (
     load_ipython_extension,
     perfmonitorMagics,
     unload_ipython_extension,
@@ -30,7 +30,7 @@ def test_initialization_and_basic_operations(ipython, mock_cpu_only):
 
 
 def test_no_monitor_error_cases(ipython, mock_cpu_only):
-    """Test all commands that require active monitor"""
+    """Test commands that require active monitor"""
     magics = perfmonitorMagics(ipython)
     magics.perfmonitor_stop("")
     magics.perfmonitor_resources("")
@@ -63,48 +63,31 @@ def test_cell_operations(ipython, mock_cpu_only):
     # Test auto-reports
     magics.perfmonitor_start("")
     magics.perfmonitor_enable_perfreports("")
-    with patch.object(magics, "_perfreport"):
+    with patch.object(magics.reporter, "print"):
         magics.post_run_cell(result)
     magics.perfmonitor_disable_perfreports("")
     magics.perfmonitor_stop("")
 
 
-def test_parse_cell_number(ipython, mock_cpu_only):
-    """Test all cell number parsing scenarios"""
-    magics = perfmonitorMagics(ipython)
-    assert magics._parse_cell_number("") is None
-    assert magics._parse_cell_number("invalid") is False
-    assert magics._parse_cell_number("999") is False
-
-    # Add valid cell for testing
-    cell_info = type("Info", (), {"raw_cell": "test"})()
-    magics.pre_run_cell(cell_info)
-    result = type("Result", (), {"result": None})()
-    magics.post_run_cell(result)
-    assert magics._parse_cell_number("0") is not None
-
-
 def test_plot_scenarios(ipython, mock_cpu_only):
-    """Test plotting with various data scenarios"""
+    """Test plotting with different data scenarios"""
     magics = perfmonitorMagics(ipython)
     magics.perfmonitor_start("")
 
     # Test invalid cell
-    magics.perfmonitor_plot("invalid")
+    magics.perfmonitor_plot("--cell invalid")
 
     # Test empty data
     with patch.object(
-        magics.monitor.data, "to_dataframe", return_value=pd.DataFrame(columns=["time"])
+        magics.monitor.data, "view", return_value=pd.DataFrame(columns=["time"])
     ):
         magics.perfmonitor_plot("")
 
     # Test with data
     df = pd.DataFrame({"time": [1.0, 2.0], "cpu_util_avg": [50.0, 60.0]})
-    with patch.object(
-        magics.monitor.data, "to_dataframe", return_value=df
-    ), patch.object(magics.visualizer, "plot"), patch.object(
-        magics.monitor, "start_time", 0.0
-    ):
+    with patch.object(magics.monitor.data, "view", return_value=df), patch.object(
+        magics.visualizer, "plot"
+    ), patch.object(magics.monitor, "start_time", 0.0):
         magics.perfmonitor_plot("")
 
     # Test with cell filter
@@ -113,12 +96,10 @@ def test_plot_scenarios(ipython, mock_cpu_only):
         magics.pre_run_cell(cell_info)
         magics.post_run_cell(type("Result", (), {"result": None})())
 
-    with patch.object(
-        magics.monitor.data, "to_dataframe", return_value=df
-    ), patch.object(magics.visualizer, "plot"), patch.object(
-        magics.monitor, "start_time", 0.0
-    ):
-        magics.perfmonitor_plot("0")
+    with patch.object(magics.monitor.data, "view", return_value=df), patch.object(
+        magics.visualizer, "plot"
+    ), patch.object(magics.monitor, "start_time", 0.0):
+        magics.perfmonitor_plot("--cell 0")
 
     magics.perfmonitor_stop("")
 
@@ -128,12 +109,12 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
     magics = perfmonitorMagics(ipython)
 
     # Test no monitor
-    magics._perfreport()
+    magics.perfmonitor_perfreport("")
 
     magics.perfmonitor_start("")
 
     # Test invalid cell for perfreport command
-    magics.perfmonitor_perfreport("invalid")
+    magics.perfmonitor_perfreport("--cell invalid")
 
     # Add cell to history
     with patch("time.time", side_effect=[1.0, 2.0]):
@@ -143,35 +124,35 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
 
     # Test empty data
     with patch.object(
-        magics.monitor.data, "to_dataframe", return_value=pd.DataFrame(columns=["time"])
+        magics.monitor.data, "view", return_value=pd.DataFrame(columns=["time"])
     ):
-        magics._perfreport()
+        magics.reporter.print()
 
     # Test with full data
     df = pd.DataFrame(
         {
             "time": [1.0, 2.0],
             "cpu_util_avg": [50.0, 60.0],
-            "memory_usage_gb": [4.0, 4.5],
+            "memory": [4.0, 4.5],
             "gpu_util_avg": [30.0, 40.0],
             "gpu_mem_avg": [2.0, 2.5],
         }
     )
-    with patch.object(magics.monitor.data, "to_dataframe", return_value=df):
-        magics._perfreport()
-        magics._perfreport((1.0, 2.0))  # Custom cell marks
-        magics.perfmonitor_perfreport("0")  # Via command
+    with patch.object(magics.monitor.data, "view", return_value=df):
+        magics.reporter.print()
+        magics.reporter.print((0, 0))  # Custom cell marks (use integer indices)
+        magics.perfmonitor_perfreport("--cell 0")  # Via command
 
     # Test with missing columns
     df_partial = pd.DataFrame(
         {
             "time": [1.0, 2.0],
             "cpu_util_avg": [50.0, 60.0],
-            "memory_usage_gb": [4.0, 4.5],
+            "memory": [4.0, 4.5],
         }
     )
-    with patch.object(magics.monitor.data, "to_dataframe", return_value=df_partial):
-        magics._perfreport()
+    with patch.object(magics.monitor.data, "view", return_value=df_partial):
+        magics.reporter.print()
 
     magics.perfmonitor_stop("")
 
@@ -195,6 +176,11 @@ def test_export_and_help(ipython, mock_cpu_only):
         magics.perfmonitor_export_cell_history("")
         magics.perfmonitor_export_cell_history("custom.json")
 
+    # Test CSV export
+    with patch.object(magics.cell_history, "export") as mock_export:
+        magics.perfmonitor_export_cell_history("test.csv")
+        mock_export.assert_called_with("test.csv")
+
     # Test help
     magics.perfmonitor_help("")
 
@@ -207,14 +193,14 @@ def test_extension_lifecycle(ipython, mock_cpu_only):
         load_ipython_extension(ipython)
 
     # Test unload with monitor
-    from jumper_extension.perfmonitor_magics import _perfmonitor_magics
+    from jumper_extension.magics import _perfmonitor_magics
 
     _perfmonitor_magics.perfmonitor_start("")
     with patch.object(ipython.events, "unregister"):
         unload_ipython_extension(ipython)
 
     # Test unload without magics
-    from jumper_extension import perfmonitor_magics
+    from jumper_extension import magics
 
-    perfmonitor_magics._perfmonitor_magics = None
+    magics._perfmonitor_magics = None
     unload_ipython_extension(ipython)

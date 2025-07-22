@@ -4,7 +4,7 @@ import time
 
 import psutil
 
-from .performance_data import PerformanceData
+from .data import PerformanceData
 
 # GPU monitoring setup
 PYNVML_AVAILABLE = False
@@ -17,6 +17,9 @@ except ImportError:
     print("Warning: pynvml not available. GPU monitoring disabled.")
 except Exception:
     print("NVIDIA drivers not available. GPU monitoring disabled.")
+
+if PYNVML_AVAILABLE:
+    import pynvml
 
 
 class PerformanceMonitor:
@@ -57,7 +60,7 @@ class PerformanceMonitor:
         self.data = PerformanceData(self.num_cpus, self.num_gpus)
 
     def _detect_memory_limit(self):
-        """Detect memory limit (SLURM-aware)"""
+        """Detect memory limit with SLURM support"""
         slurm_path = (
             f"/sys/fs/cgroup/memory/slurm/uid_{os.getuid()}/"
             f"job_{os.environ.get('SLURM_JOB_ID', 0)}/memory.limit_in_bytes"
@@ -85,7 +88,7 @@ class PerformanceMonitor:
             self.gpu_handles = []
 
     def _collect_metrics(self):
-        """Collect all performance metrics"""
+        """Collect performance metrics"""
         time_mark = time.time()
 
         # CPU and memory
