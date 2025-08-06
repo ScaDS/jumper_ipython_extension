@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ from .utilities import filter_perfdata
 
 class PerformanceVisualizer:
     def __init__(self, monitor, cell_history, min_duration=None):
+
         self.monitor = monitor
         self.cell_history = cell_history
         self.figsize = (5, 3)
@@ -21,8 +23,8 @@ class PerformanceVisualizer:
                     "type": "multi_series",
                     "prefix": "cpu_util_",
                     "avg_column": "cpu_util_avg",
-                    "title": "CPU Utilization (%) - All Cores",
-                    "ylim": (0, 100),
+                    "title": f"CPU Utilization (%) - Across Cores",
+                    "ylim": (-1, 101),
                 }
             },
             "gpu_all": {
@@ -30,53 +32,56 @@ class PerformanceVisualizer:
                     "type": "multi_series",
                     "prefix": "gpu_util_",
                     "avg_column": "gpu_util_avg",
-                    "title": "GPU Utilization (%) - All GPUs",
-                    "ylim": (0, 100),
+                    "title": f"GPU Utilization (%) - Across GPUs",
+                    "ylim": (-1, 101),
                 },
                 "gpu_band": {
                     "type": "multi_series",
                     "prefix": "gpu_band_",
                     "avg_column": "gpu_band_avg",
-                    "title": "GPU Bandwidth Usage (%) - All GPUs",
-                    "ylim": (0, 100),
+                    "title": f"GPU Bandwidth Usage (%) - Across GPUs",
+                    "ylim": (-1, 101),
                 },
                 "gpu_mem": {
                     "type": "multi_series",
                     "prefix": "gpu_mem_",
                     "avg_column": "gpu_mem_avg",
-                    "title": "GPU Memory Usage (GB) - All GPUs",
+                    "title": f"GPU Memory Usage (GB) - Across GPUs",
                     "ylim": (0, self.monitor.gpu_memory),
                 },
             },
             "cpu": {
                 "cpu_summary": {
                     "type": "summary_series",
-                    "columns": ["cpu_util_min", "cpu_util_avg", "cpu_util_max"],
+                    "columns": ["cpu_util_min", "cpu_util_avg",
+                                "cpu_util_max"],
                     "labels": ["Min", "Average", "Max"],
-                    "title": "CPU Utilization (%) - Summary",
-                    "ylim": (0, 100),
+                    "title": f"CPU Utilization (%) - {self.monitor.num_cpus} CPUs",
+                    "ylim": (-1, 101),
                 }
             },
             "gpu": {
                 "gpu_util_summary": {
                     "type": "summary_series",
-                    "columns": ["gpu_util_min", "gpu_util_avg", "gpu_util_max"],
+                    "columns": ["gpu_util_min", "gpu_util_avg",
+                                "gpu_util_max"],
                     "labels": ["Min", "Average", "Max"],
-                    "title": "GPU Utilization (%) - Summary",
-                    "ylim": (0, 100),
+                    "title": f"GPU Utilization (%) - {self.monitor.num_gpus} GPUs",
+                    "ylim": (-1, 101),
                 },
                 "gpu_band_summary": {
                     "type": "summary_series",
-                    "columns": ["gpu_band_min", "gpu_band_avg", "gpu_band_max"],
+                    "columns": ["gpu_band_min", "gpu_band_avg",
+                                "gpu_band_max"],
                     "labels": ["Min", "Average", "Max"],
-                    "title": "GPU Bandwidth Usage (%) - Summary",
-                    "ylim": (0, 100),
+                    "title": f"GPU Bandwidth Usage (%) - {self.monitor.num_gpus} GPUs",
+                    "ylim": (-1, 101),
                 },
                 "gpu_mem_summary": {
                     "type": "summary_series",
                     "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
                     "labels": ["Min", "Average", "Max"],
-                    "title": "GPU Memory Usage (GB) - Summary",
+                    "title": f"GPU Memory Usage (GB) - {self.monitor.num_gpus} GPUs",
                     "ylim": (0, self.monitor.gpu_memory),
                 },
             },
@@ -128,7 +133,7 @@ class PerformanceVisualizer:
         for idx, cell in cell_data.iterrows():
             # Find perfdata points for this cell
             cell_mask = (perfdata["time"] >= cell["start_time"]) & (
-                perfdata["time"] <= cell["end_time"]
+                    perfdata["time"] <= cell["end_time"]
             )
             cell_perfdata = perfdata[cell_mask]
 
@@ -161,22 +166,26 @@ class PerformanceVisualizer:
         return compressed_perfdata, cell_boundaries
 
     def _plot_metric(
-        self, df, metric, cell_range=None, show_idle=False, ax: plt.Axes = None
+            self, df, metric, cell_range=None, show_idle=False,
+            ax: plt.Axes = None
     ):
         """Plot a single metric using its configuration"""
         # Find config for this metric
         config = next(
-            (subset[metric] for subset in self.subsets.values() if metric in subset),
+            (subset[metric] for subset in self.subsets.values() if
+             metric in subset),
             None,
         )
         if config is None:
             return
 
         # Check if required columns exist
-        if config["type"] == "single_series" and config["column"] not in df.columns:
+        if config["type"] == "single_series" and config[
+            "column"] not in df.columns:
             return
         elif config["type"] == "summary_series":
-            available_cols = [col for col in config["columns"] if col in df.columns]
+            available_cols = [col for col in config["columns"] if
+                              col in df.columns]
             if not available_cols:
                 return
         elif config["type"] == "multi_series":
@@ -193,18 +202,20 @@ class PerformanceVisualizer:
 
             # Plot based on type
         if config["type"] == "single_series":
-            ax.plot(df["time"], df[config["column"]], color="blue", linewidth=2)
+            ax.plot(df["time"], df[config["column"]], color="blue",
+                    linewidth=2)
 
         elif config["type"] == "summary_series":
             line_styles = ["dotted", "-", "--"]
             alpha = [0.35, 1.0, 0.35]
-            for i, (col, label) in enumerate(zip(config["columns"], config["labels"])):
+            for i, (col, label) in enumerate(
+                    zip(config["columns"], config["labels"])):
                 if col in df.columns:
                     ax.plot(
-                        df["time"], df[col], 
-                        color="blue", 
+                        df["time"], df[col],
+                        color="blue",
                         linestyle=line_styles[i],
-                        linewidth=2, 
+                        linewidth=2,
                         alpha=alpha[i],
                         label=label
                     )
@@ -250,6 +261,15 @@ class PerformanceVisualizer:
             "#ccccff",
             "#ffccff",
         ]
+        # define the seed for random color picking, i.e. to keep cells in the
+        # same color when plotting in different graphs
+        random.seed(1337)
+
+        colors = [
+            "#"
+            + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
+            for _ in range(len(self.cell_history))
+        ]
         y_min, y_max = ax.get_ylim()
         x_max = ax.get_xlim()[1]
 
@@ -265,7 +285,10 @@ class PerformanceVisualizer:
                 if end_time < 0 or start_time > x_max or duration < min_duration:
                     continue
                 cell_num = int(cell["index"])
-                color = colors[cell_num % len(colors)]
+                color = colors[cell_num]
+                if len(self._compressed_cell_boundaries) == 1:
+                    # avoid coloring if there is only one cell
+                    color = 'none'
                 width = duration
                 height = y_max - y_min
                 # Add rectangle and label
@@ -291,14 +314,15 @@ class PerformanceVisualizer:
                     fontsize=10,
                     fontweight="bold",
                     zorder=1,
-                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                              alpha=0.8),
                 )
         else:
             # Original implementation for normal mode
             filtered_cells = self.cell_history.view()
             if cell_range:
                 start_idx, end_idx = cell_range
-                cells = filtered_cells.iloc[start_idx:end_idx+1]
+                cells = filtered_cells.iloc[start_idx:end_idx + 1]
             else:
                 cells = filtered_cells
 
@@ -311,7 +335,10 @@ class PerformanceVisualizer:
                 if end_time < 0 or start_time > x_max or duration < min_duration:
                     continue
                 cell_num = int(cell["index"])
-                color = colors[cell_num % len(colors)]
+                color = colors[cell_num]
+                if cells.shape[0] == 1:
+                    # avoid coloring if there is only one cell
+                    color = 'none'
                 width = duration
                 height = y_max - y_min
                 # Add rectangle and label
@@ -337,15 +364,17 @@ class PerformanceVisualizer:
                     fontsize=10,
                     fontweight="bold",
                     zorder=1,
-                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                              alpha=0.8),
                 )
 
     def plot(
-        self,
-        metric_subsets=("cpu", "gpu", "mem", "io",),
-        cell_range=None,
-        show_idle=False,
+            self,
+            metric_subsets=("cpu", "cpu_all", "mem", "io"),
+            cell_range=None,
+            show_idle=False,
     ):
+
         # Determine cell indices for slicing
         if cell_range is None:
             valid_cells = self.cell_history.view()
@@ -447,7 +476,8 @@ class InteractivePlotWrapper:
         Adds a new plot panel with dropdown and a persistent matplotlib axis.        """
         if self.panel_count >= self.max_panels:
             self.add_panel_button.disabled = True
-            self.output_container.children += (widgets.HTML("<b>All panels have been added.</b>"),)
+            self.output_container.children += (
+            widgets.HTML("<b>All panels have been added.</b>"),)
             return
 
         panel = self._create_double_plot_panel()
@@ -479,14 +509,16 @@ class InteractivePlotWrapper:
             if change['type'] == 'change' and change['name'] == 'value':
                 with output:
                     ax.clear()
-                    self.plot_callback(self.df, change['new'], self.cell_range, self.show_idle, ax)
+                    self.plot_callback(self.df, change['new'], self.cell_range,
+                                       self.show_idle, ax)
                     fig.canvas.draw_idle()
 
         dropdown.observe(on_dropdown_change)
 
         # Initial plot
         with output:
-            self.plot_callback(self.df, dropdown.value, self.cell_range, self.show_idle, ax)
+            self.plot_callback(self.df, dropdown.value, self.cell_range,
+                               self.show_idle, ax)
             plt.show()
 
         return widgets.VBox([dropdown, output])

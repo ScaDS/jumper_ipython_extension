@@ -10,7 +10,7 @@ class PerformanceReporter:
     def print(self, cell_range=None):
         """Print performance report"""
         if not self.monitor:
-            print("No active performance monitoring session")
+            print("[JUmPER]: No active performance monitoring session")
             return
 
         if cell_range is None:
@@ -26,7 +26,7 @@ class PerformanceReporter:
                     last_valid_cell_idx = int(non_short_cells.iloc[-1]["index"])
                     cell_range = (last_valid_cell_idx, last_valid_cell_idx)
                 else:
-                    print("No non-short cells found")
+                    print("[JUmPER]: No non-short cells found")
                     return
             else:
                 return
@@ -42,23 +42,22 @@ class PerformanceReporter:
 
         # Check if non-empty, otherwise print results
         if perfdata.empty:
-            print("No performance data available")
+            print("[JUmPER]: No performance data available")
             return
 
         # Calculate total duration of selected cells
         total_duration = filtered_cells['duration'].sum()
-
         print("-" * 40)
-        print("Performance Report")
+        print("JUmPER Performance Report")
         print("-" * 40)
-        print(f"Duration: {total_duration:.2f}s ({len(filtered_cells)} cell{'s' if len(filtered_cells) != 1 else ''})")
+        print(f"Duration: {total_duration:.0f}s ({len(filtered_cells)} cell{'s' if len(filtered_cells) != 1 else ''})")
         print("-" * 40)
 
         # Report table
         metrics = [
-            ("CPU Util (Across CPUs)", "cpu_util_avg", "-"),
+            (f"CPU Util (Across {self.monitor.num_cpus} CPUs)", "cpu_util_avg", "-"),
             ("Memory (GB)", "memory", f"{self.monitor.memory:.2f}"),
-            ("GPU Util (Across GPUs)", "gpu_util_avg", "-"),
+            (f"GPU Util (Across {self.monitor.num_gpus} GPUs)", "gpu_util_avg", "-"),
             ("GPU Memory (GB)", "gpu_mem_avg", f"{self.monitor.gpu_memory:.2f}"),
         ]
 
