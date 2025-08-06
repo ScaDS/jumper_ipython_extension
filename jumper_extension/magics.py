@@ -42,8 +42,9 @@ class perfmonitorMagics(Magics):
         """Show available hardware"""
         self._skip_report = True
         if not self.monitor:
-            print("No active performance monitoring session")
+            print("[JUmPER]: No active performance monitoring session")
             return
+        print("[JUmPER]:")
         print(f"  CPUs: {self.monitor.num_cpus}")
         print(f"    CPU affinity: {self.monitor.cpu_handles}")
         print(f"  Memory: {self.monitor.memory} GB")
@@ -60,7 +61,7 @@ class perfmonitorMagics(Magics):
     def perfmonitor_start(self, line):
         self._skip_report = True
         if self.monitor and self.monitor.running:
-            print("Performance monitoring already running")
+            print("[JUmPER]: Performance monitoring already running")
             return
 
         interval = 1.0
@@ -68,7 +69,7 @@ class perfmonitorMagics(Magics):
             try:
                 interval = float(line)
             except ValueError:
-                print(f"Invalid interval value: {line}")
+                print(f"[JUmPER]: Invalid interval value: {line}")
                 return
 
         self.monitor = PerformanceMonitor(interval=interval)
@@ -81,7 +82,7 @@ class perfmonitorMagics(Magics):
     def perfmonitor_stop(self, line):
         self._skip_report = True
         if not self.monitor:
-            print("No active performance monitoring session")
+            print("[JUmPER]: No active performance monitoring session")
             return
         self.monitor.stop()
 
@@ -90,10 +91,15 @@ class perfmonitorMagics(Magics):
         parser.add_argument(
             "--cell", type=str, help="Cell index or range (e.g., 5, 2:8, :5)"
         )
+
+        default_metrics = ["cpu", "cpu_all", "mem", "io"]
+        if self.monitor.num_gpus:
+            default_metrics.extend(["gpu", "gpu_all"])
+
         parser.add_argument(
             "--metrics",
             nargs="+",
-            default=["cpu", "gpu", "mem", "io"],
+            default=default_metrics,
             help="Metric subsets",
         )
         parser.add_argument(
@@ -120,20 +126,20 @@ class perfmonitorMagics(Magics):
                 start_idx = end_idx = int(cell_str)
 
             if not (0 <= start_idx <= end_idx <= max_idx):
-                print(f"Invalid cell range: {cell_str} (valid range: 0-{max_idx})")
+                print(f"[JUmPER]: Invalid cell range: {cell_str} (valid range: 0-{max_idx})")
                 return None
 
             return (start_idx, end_idx)
 
         except (ValueError, IndexError):
-            print(f"Invalid cell range format: {cell_str}")
+            print(f"[JUmPER]: Invalid cell range format: {cell_str}")
             return None
 
     @line_magic
     def perfmonitor_plot(self, line):
         self._skip_report = True
         if not self.monitor:
-            print("No active performance monitoring session")
+            print("[JUmPER]: No active performance monitoring session")
             return
 
         args = self._parse_arguments(line)
@@ -156,20 +162,20 @@ class perfmonitorMagics(Magics):
     def perfmonitor_enable_perfreports(self, line):
         self._skip_report = True
         self.print_perfreports = True
-        print("Performance reports enabled for each cell")
+        print("[JUmPER]: Performance reports enabled for each cell")
 
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
         self._skip_report = True
         self.print_perfreports = False
-        print("Performance reports disabled")
+        print("[JUmPER]: Performance reports disabled")
 
     @line_magic
     def perfmonitor_perfreport(self, line):
         self._skip_report = True
 
         if not self.reporter:
-            print("No active performance monitoring session")
+            print("[JUmPER]: No active performance monitoring session")
             return
 
         args = self._parse_arguments(line)
@@ -189,11 +195,11 @@ class perfmonitorMagics(Magics):
         """Export performance data"""
         self._skip_report = True
         if not self.monitor:
-            print("No active performance monitoring session")
+            print("[JUmPER]: No active performance monitoring session")
             return
         filename = line.strip() or "performance_data.csv"
         self.monitor.data.export(filename)
-        print(f"Performance data exported to {filename}")
+        print(f"[JUmPER]: Performance data exported to {filename}")
 
     @line_magic
     def perfmonitor_export_cell_history(self, line):
@@ -220,7 +226,7 @@ class perfmonitorMagics(Magics):
             "perfmonitor_export_perfdata [filename] -- export data to CSV",
             "perfmonitor_export_cell_history [filename] -- export history to JSON/CSV",
         ]
-        print("Available commands:")
+        print("[JUmPER]: Available commands:")
         for cmd in commands:
             print(f"  %{cmd}")
 
@@ -243,7 +249,7 @@ def load_ipython_extension(ipython):
     ipython.events.register("pre_run_cell", _perfmonitor_magics.pre_run_cell)
     ipython.events.register("post_run_cell", _perfmonitor_magics.post_run_cell)
     ipython.register_magics(_perfmonitor_magics)
-    print("Perfmonitor extension loaded.")
+    print("[JUmPER]: Perfmonitor extension loaded.")
 
 
 def unload_ipython_extension(ipython):

@@ -14,9 +14,9 @@ try:
     pynvml.nvmlInit()
     PYNVML_AVAILABLE = True
 except ImportError:
-    print("Warning: pynvml not available. GPU monitoring disabled.")
+    print("[JUmPER]: Warning: pynvml not available. GPU monitoring disabled.")
 except Exception:
-    print("NVIDIA drivers not available. GPU monitoring disabled.")
+    print("[JUmPER]: NVIDIA drivers not available. GPU monitoring disabled.")
 
 if PYNVML_AVAILABLE:
     import pynvml
@@ -135,7 +135,7 @@ class PerformanceMonitor:
     def start(self):
         """Start monitoring"""
         if self.running:
-            print("Performance monitor already running")
+            print("[JUmPER]: Performance monitor already running")
             return
 
         self.start_time = time.time()
@@ -143,7 +143,7 @@ class PerformanceMonitor:
         self.monitor_thread = threading.Thread(target=self._collect_data, daemon=True)
         self.monitor_thread.start()
         print(
-            f"Performance monitoring started "
+            f"[JUmPER]: Performance monitoring started "
             f"(PID: {os.getpid()}, Interval: {self.interval}s)"
         )
 
@@ -153,6 +153,6 @@ class PerformanceMonitor:
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2.0)
         print(
-            f"Performance monitoring stopped "
+            f"[JUmPER]: Performance monitoring stopped "
             f"(ran for {time.time() - self.start_time:.2f} seconds)"
         )
