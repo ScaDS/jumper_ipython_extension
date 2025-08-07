@@ -31,7 +31,8 @@ pip install .
 
 3. **View performance report**:
    ```python
-   %perfmonitor_perfreport [cell]
+   %perfmonitor_perfreport
+   %perfmonitor_perfreport --cell 2:5 --level user
    ```
 
    Will print aggregate performance report for entire notebook execution so far:
@@ -49,40 +50,75 @@ pip install .
    GPU Memory (GB)           0.25     0.23     0.32     4.00    
    ```
 
-   Pass cell number to see only this cell performance report. Refer to `%cell_history` to identify it from notebook execution history.
+   Options:
+   - `--cell RANGE`: Specify cell range (e.g., `5`, `2:8`, `:5`)
+   - `--level LEVEL`: Choose monitoring level (`process`, `user`, `system`, `slurm`)
 
 4. **Plot performance data**:
    ```python
-   %perfmonitor_plot [cell]
+   %perfmonitor_plot
    ```
 
-   Plot a more detailed overview of performance metrics over time.
+   Opens an interactive plot with widgets to explore performance metrics over time, filter by cell ranges, and select different monitoring levels.
 
-5. **Stop monitoring**:
+5. **View cell execution history**:
+   ```python
+   %cell_history
+   ```
+
+   Shows an interactive table of all executed cells with timestamps and durations.
+
+6. **Stop monitoring**:
    ```python
    %perfmonitor_stop
    ```
 
-6. ### Export data for external analysis
+7. **Export data for external analysis**:
    ```python
-   %perfmonitor_export_perfdata my_performance.csv
+   %perfmonitor_export_perfdata my_performance.csv --level system
    %perfmonitor_export_cell_history my_cells.json
    ```
    Export performance measurements for entire notebook and cell execution history with timestamps, allowing you to project measurements onto specific cells.
+
+## Metrics Collection
+
+### Performance Monitoring Levels
+
+The extension supports four different levels of metric collection, each providing different scopes of system monitoring:
+
+- **Process**: Metrics for the current Python process only
+- **User**: Metrics for all processes belonging to the current user
+- **System**: System-wide metrics across all processes and users
+- **Slurm**: Metrics for processes within the current SLURM job
+
+### Collected Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `cpu_util` | CPU utilization percentage |
+| `memory` | Memory usage in GB |
+| `io_read_count` | Total number of read I/O operations |
+| `io_write_count` | Total number of write I/O operations |
+| `io_read_mb` | Total data read in MB |
+| `gpu_util` | GPU compute utilization percentage across GPUs |
+| `gpu_band` | GPU memory bandwidth utilization percentage |
+| `gpu_mem` | GPU memory usage in GB across GPUs |
+| `io_write_mb` | Total data written in MB |
+
+*Note: GPU metrics require NVIDIA GPUs with pynvml library. Memory limits are automatically detected from SLURM cgroups when available.*
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
-| `%perfmonitor_help` | Show all available commands |
+| `%perfmonitor_help` | Show all available commands with examples |
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
 | `%perfmonitor_stop` | Stop monitoring |
-| `%perfmonitor_perfreport [cell]` | Show performance report for specific cell or latest |
-| `%perfmonitor_plot [cell]` | Plot performance data for specific cell or all data |
-| `%cell_history [--df]` | Show execution history of all cells (or DataFrame) |
-| `%cell_history_stats` | Show detailed cell execution statistics |
+| `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
+| `%perfmonitor_plot` | Interactive plot with widgets for exploring performance data |
+| `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
-| `%perfmonitor_export_perfdata [filename]` | Export performance data to CSV |
+| `%perfmonitor_export_perfdata [filename] [--level LEVEL]` | Export performance data to CSV |
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |

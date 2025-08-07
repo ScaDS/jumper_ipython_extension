@@ -1,6 +1,6 @@
 import json
-import time
 import os
+import time
 import warnings
 
 import pandas as pd
@@ -57,21 +57,25 @@ class CellHistory:
         data = []
         for _, row in self.data.iterrows():
             duration = row["end_time"] - row["start_time"]
-            data.append({
-                "Cell index": row["index"],
-                "Duration (s)": f"{duration:.2f}",
-                "Start Time": time.strftime('%H:%M:%S', time.localtime(row["start_time"])),
-                "End Time": time.strftime('%H:%M:%S', time.localtime(row["end_time"])),
-                "Code": row["raw_cell"].replace("\n", "<br>")
-            })
+            data.append(
+                {
+                    "Cell index": row["index"],
+                    "Duration (s)": f"{duration:.2f}",
+                    "Start Time": time.strftime(
+                        "%H:%M:%S", time.localtime(row["start_time"])
+                    ),
+                    "End Time": time.strftime(
+                        "%H:%M:%S", time.localtime(row["end_time"])
+                    ),
+                    "Code": row["raw_cell"].replace("\n", "<br>"),
+                }
+            )
 
         df = pd.DataFrame(data)
         show(
             df,
             layout={"topStart": "search", "topEnd": None},
-            columnDefs=[
-                {"targets": [4], "className": "dt-left"}  # 4 - "Code" index
-            ],
+            columnDefs=[{"targets": [4], "className": "dt-left"}],  # 4 - "Code" index
             escape=False,
         )
 

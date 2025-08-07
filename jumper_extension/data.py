@@ -5,7 +5,12 @@ class PerformanceData:
     def __init__(self, num_cpus, num_gpus):
         self.num_cpus = num_cpus
         self.num_gpus = num_gpus
-        self.data = self._initialize_dataframe()
+        self.levels = ["user", "process", "system", "slurm"]
+        self.data = {level: self._initialize_dataframe() for level in self.levels}
+
+    def _validate_level(self, level):
+        if level not in self.levels:
+            raise ValueError(f"Invalid level: {level}. Must be one of {self.levels}")
 
     def _initialize_dataframe(self):
         columns = [
@@ -18,40 +23,39 @@ class PerformanceData:
             "cpu_util_avg",
             "cpu_util_min",
             "cpu_util_max",
-        ]
-
-        # Add individual CPU columns
-        for i in range(self.num_cpus):
-            columns.append(f"cpu_util_{i}")
+        ] + [f"cpu_util_{i}" for i in range(self.num_cpus)]
 
         if self.num_gpus > 0:
+            gpu_metrics = ["util", "band", "mem"]
             columns.extend(
                 [
-                    "gpu_util_avg",
-                    "gpu_util_min",
-                    "gpu_util_max",
-                    "gpu_band_avg",
-                    "gpu_band_min",
-                    "gpu_band_max",
-                    "gpu_mem_avg",
-                    "gpu_mem_min",
-                    "gpu_mem_max",
+                    f"gpu_{metric}_{stat}"
+                    for metric in gpu_metrics
+                    for stat in ["avg", "min", "max"]
+                ]
+            )
+            columns.extend(
+                [
+                    f"gpu_{metric}_{i}"
+                    for i in range(self.num_gpus)
+                    for metric in gpu_metrics
                 ]
             )
 
-            # Add individual GPU columns
-            for i in range(self.num_gpus):
-                columns.extend([f"gpu_util_{i}", f"gpu_band_{i}", f"gpu_mem_{i}"])
-
         return pd.DataFrame(columns=columns)
 
-    def view(self, slice_=None):
-        if slice_ is None:
-            return self.data
-        return self.data.iloc[slice_[0] : slice_[1] + 1]
+    def view(self, level="process", slice_=None):
+        """View data for a specific level with optional slicing."""
+        self._validate_level(level)
+        return (
+            self.data[level]
+            if slice_ is None
+            else self.data[level].iloc[slice_[0] : slice_[1] + 1]
+        )
 
     def add_sample(
         self,
+        level,
         time_mark,
         cpu_util_per_core,
         memory,
@@ -60,6 +64,8 @@ class PerformanceData:
         gpu_mem,
         io_counters,
     ):
+        self._validate_level(level)
+
         row_data = {
             "time": time_mark,
             "memory": memory,
@@ -70,34 +76,26 @@ class PerformanceData:
             "cpu_util_avg": sum(cpu_util_per_core) / self.num_cpus,
             "cpu_util_min": min(cpu_util_per_core),
             "cpu_util_max": max(cpu_util_per_core),
+            **{f"cpu_util_{i}": cpu_util_per_core[i] for i in range(self.num_cpus)},
         }
 
-        # Add individual CPU utilization
-        for i in range(self.num_cpus):
-            row_data[f"cpu_util_{i}"] = cpu_util_per_core[i]
-
         if self.num_gpus > 0:
-            row_data.update(
-                {
-                    "gpu_util_avg": sum(gpu_util) / self.num_gpus,
-                    "gpu_util_min": min(gpu_util),
-                    "gpu_util_max": max(gpu_util),
-                    "gpu_band_avg": sum(gpu_band) / self.num_gpus,
-                    "gpu_band_min": min(gpu_band),
-                    "gpu_band_max": max(gpu_band),
-                    "gpu_mem_avg": sum(gpu_mem) / self.num_gpus,
-                    "gpu_mem_min": min(gpu_mem),
-                    "gpu_mem_max": max(gpu_mem),
-                }
-            )
+            gpu_data = {"util": gpu_util, "band": gpu_band, "mem": gpu_mem}
+            for metric, values in gpu_data.items():
+                row_data.update(
+                    {
+                        f"gpu_{metric}_avg": sum(values) / self.num_gpus,
+                        f"gpu_{metric}_min": min(values),
+                        f"gpu_{metric}_max": max(values),
+                        **{
+                            f"gpu_{metric}_{i}": values[i] for i in range(self.num_gpus)
+                        },
+                    }
+                )
 
-            # Add individual GPU metrics
-            for i in range(self.num_gpus):
-                row_data[f"gpu_util_{i}"] = gpu_util[i]
-                row_data[f"gpu_band_{i}"] = gpu_band[i]
-                row_data[f"gpu_mem_{i}"] = gpu_mem[i]
+        self.data[level].loc[len(self.data[level])] = row_data
 
-        self.data.loc[len(self.data)] = row_data
-
-    def export(self, filename="performance_data.csv"):
-        self.data.to_csv(filename, index=False)
+    def export(self, filename="performance_data.csv", level="process"):
+        """Export performance data to CSV."""
+        self._validate_level(level)
+        self.data[level].to_csv(filename, index=False)
