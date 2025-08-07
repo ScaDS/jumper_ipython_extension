@@ -252,15 +252,6 @@ class PerformanceVisualizer:
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
-        colors = [
-            "#ffcccc",
-            "#ffd9cc",
-            "#ffffcc",
-            "#ccffcc",
-            "#ccffff",
-            "#ccccff",
-            "#ffccff",
-        ]
         # define the seed for random color picking, i.e. to keep cells in the
         # same color when plotting in different graphs
         random.seed(1337)
@@ -276,25 +267,26 @@ class PerformanceVisualizer:
         min_duration = self.min_duration if self.min_duration is not None else 0
 
         if not show_idle and hasattr(self, "_compressed_cell_boundaries"):
+            cells_list = [x for x in self._compressed_cell_boundaries if x["start_time"] < x_max
+                          and x["end_time"] > 0 and x["duration"] > min_duration]
             # Use compressed boundaries for no_idle mode
-            for cell in self._compressed_cell_boundaries:
-                start_time = cell["start_time"]
-                end_time = cell["end_time"]
+            for cell in cells_list:
                 duration = cell["duration"]
-                # Skip cells outside visible range or too short
-                if end_time < 0 or start_time > x_max or duration < min_duration:
-                    continue
+                start_time = cell["start_time"]
                 cell_num = int(cell["index"])
-                color = colors[cell_num]
-                if len(self._compressed_cell_boundaries) == 1:
+
+                if len(cells_list) == 1:
                     # avoid coloring if there is only one cell
                     color = 'none'
+                else:
+                    color = colors[cell_num]
+
                 width = duration
                 height = y_max - y_min
                 # Add rectangle and label
                 ax.add_patch(
                     plt.Rectangle(
-                        (start_time, y_min),
+                        (cell["start_time"], y_min),
                         width,
                         height,
                         facecolor=color,
@@ -336,7 +328,7 @@ class PerformanceVisualizer:
                     continue
                 cell_num = int(cell["index"])
                 color = colors[cell_num]
-                if cells.shape[0] == 1:
+                if cells.shape[1] == 1:
                     # avoid coloring if there is only one cell
                     color = 'none'
                 width = duration
