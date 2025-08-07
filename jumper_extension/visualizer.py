@@ -340,7 +340,7 @@ class PerformanceVisualizer:
                   f'alt="JUmPER Logo" style="height: auto; width: 100px;">')
 
         box_layout = Layout(display='flex',
-                            flex_flow='row',
+                            flex_flow='row wrap',
                             align_items='center',
                             justify_content='space-between',
                             width='100%')
@@ -429,8 +429,12 @@ class InteractivePlotWrapper:
         self.plot_callback, self.df, self.metrics = plot_callback, df, metrics
         self.cell_range, self.show_idle, self.figsize = cell_range, show_idle, figsize
         self.shown_metrics, self.panel_count, self.max_panels = set(), 0, len(
-            metrics)
-        self.output_container = widgets.VBox()
+            metrics)*4
+        self.output_container = widgets.HBox(layout=Layout(display='flex',
+                            flex_flow='row wrap',
+                            align_items='center',
+                            justify_content='space-between',
+                            width='100%'))
         self.add_panel_button = widgets.Button(description="Add Plot Panel",
                                                layout=Layout(margin='auto'))
         self.add_panel_button.on_click(self._on_add_panel_clicked)
@@ -452,8 +456,9 @@ class InteractivePlotWrapper:
         self.output_container.children += (
             widgets.HBox(
                 [self._create_dropdown_plot_panel(),
-                 self._create_dropdown_plot_panel()]
+                 self._create_dropdown_plot_panel()],
             ),
+
         )
         self.panel_count += 2
 
