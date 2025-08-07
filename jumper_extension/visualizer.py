@@ -3,9 +3,10 @@ from typing import List
 
 import matplotlib.pyplot as plt
 from IPython.display import display
-from ipywidgets import widgets
+from ipywidgets import widgets, Layout
 
 from .utilities import filter_perfdata
+from .logo import logo_image
 
 
 class PerformanceVisualizer:
@@ -15,7 +16,6 @@ class PerformanceVisualizer:
     """
 
     def __init__(self, monitor, cell_history, min_duration=None):
-
         self.monitor = monitor
         self.cell_history = cell_history
         self.figsize = (5, 3)
@@ -98,7 +98,7 @@ class PerformanceVisualizer:
             "io": {
                 "io_read": ("single_series", "io_read", "I/O Read (MB)", None),
                 "io_write": (
-                "single_series", "io_write", "I/O Write (MB)", None),
+                    "single_series", "io_write", "I/O Write (MB)", None),
                 "io_read_count": (
                     "single_series",
                     "io_read_count",
@@ -317,7 +317,7 @@ class PerformanceVisualizer:
         # Create interactive widgets
         style = {"description_width": "initial"}
         show_idle_checkbox = widgets.Checkbox(
-            value=show_idle, description="Show idle periods", style=style
+            value=show_idle, description="Show idle periods"
         )
         cell_range_slider = widgets.IntRangeSlider(
             value=cell_range,
@@ -325,7 +325,7 @@ class PerformanceVisualizer:
             max=max_cell_idx,
             step=1,
             description="Cell range:",
-            style=style,
+            style=style
         )
         level_dropdown = widgets.Dropdown(
             options=["user", "process", "system", "slurm"],
@@ -334,13 +334,27 @@ class PerformanceVisualizer:
             style=style,
         )
 
-        config_widgets = widgets.VBox(
+        logo_widget = widgets.HTML(
+            value=f'<img src='
+                  f'"{logo_image}"'
+                  f'alt="JUmPER Logo" style="height: auto; width: 100px;">')
+
+        box_layout = Layout(display='flex',
+                            flex_flow='row',
+                            align_items='center',
+                            justify_content='space-between',
+                            width='100%')
+
+        config_widgets = widgets.HBox(
             [
                 widgets.HTML("<b>Plot Configuration:</b>"),
                 show_idle_checkbox,
                 cell_range_slider,
                 level_dropdown,
-            ]
+                logo_widget,
+
+            ],
+            layout=box_layout
         )
         plot_output = widgets.Output()
 
@@ -417,7 +431,8 @@ class InteractivePlotWrapper:
         self.shown_metrics, self.panel_count, self.max_panels = set(), 0, len(
             metrics)
         self.output_container = widgets.VBox()
-        self.add_panel_button = widgets.Button(description="Add Plot Panel")
+        self.add_panel_button = widgets.Button(description="Add Plot Panel",
+                                               layout=Layout(margin='auto'))
         self.add_panel_button.on_click(self._on_add_panel_clicked)
 
     def display_ui(self):
