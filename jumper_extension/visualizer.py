@@ -224,15 +224,6 @@ class PerformanceVisualizer:
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
-        colors = [
-            "#ffcccc",
-            "#ffd9cc",
-            "#ffffcc",
-            "#ccffcc",
-            "#ccffff",
-            "#ccccff",
-            "#ffccff",
-        ]
         # define the seed for random color picking, i.e. to keep cells in the
         # same color when plotting in different graphs
         random.seed(1337)
