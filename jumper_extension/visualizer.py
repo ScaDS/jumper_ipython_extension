@@ -218,6 +218,8 @@ class PerformanceVisualizer:
                     series = series.rolling(
                         window=self._io_window, min_periods=1
                     ).mean()
+
+
             ax.plot(df["time"], series, color="blue", linewidth=2)
         elif plot_type == "summary_series":
             line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
@@ -335,6 +337,16 @@ class PerformanceVisualizer:
         )
         if cell_range is None:
             cell_range = (min_cell_idx, max_cell_idx)
+            '''
+            cell_start_index = 0
+            for cell_idx in range(len(valid_cells)-1,-1,-1):
+                if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
+                    cell_start_index = cell_idx
+                    break
+            cell_range = (int(valid_cells.iloc[cell_start_index]["index"]), int(
+            valid_cells.iloc[-1]["index"]
+        ))
+            '''
 
         # Create interactive widgets
         style = {"description_width": "initial"}

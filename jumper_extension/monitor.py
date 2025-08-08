@@ -280,10 +280,17 @@ class PerformanceMonitor:
 
     def _collect_data(self):
         while self.running:
+            time_start_measurement = time.time()
             metrics = self._collect_metrics()
             for level, data_tuple in zip(self.levels, metrics):
                 self.data.add_sample(level, *data_tuple)
-            time.sleep(self.interval)
+            time_measurement = time.time() - time_start_measurement
+            if time_measurement > self.interval:
+                print("[JUmPER]: Please decrease the interval time for "
+                      "collecting the data. The last measurement took longer "
+                      "than the desired interval time.", end='\r')
+            else:
+                time.sleep(self.interval-time_measurement)
 
     def start(self):
         if self.running:
