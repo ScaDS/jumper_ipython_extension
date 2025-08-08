@@ -29,6 +29,7 @@ class PerformanceMonitor:
         self.process = psutil.Process()
         self.cpu_handles = self.process.cpu_affinity()
         self.num_cpus = len(self.cpu_handles)
+        self.num_system_cpus = len(psutil.cpu_percent(percpu=True))
         self.pid = os.getpid()
         self.uid = os.getuid()
         self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
@@ -60,7 +61,8 @@ class PerformanceMonitor:
         if self.num_gpus:
             self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem"])
 
-        self.data = PerformanceData(self.num_cpus, self.num_gpus)
+        self.data = PerformanceData(self.num_cpus, self.num_system_cpus,
+                                    self.num_gpus)
 
     def _setup_gpu(self):
         try:
@@ -140,9 +142,12 @@ class PerformanceMonitor:
     def _collect_cpu(self, level="process"):
         self._validate_level(level)
         if level == "system":
+            # just return the whole system here
             cpu_util_per_core = psutil.cpu_percent(percpu=True)
-            return [cpu_util_per_core[i] for i in self.cpu_handles]
+            return cpu_util_per_core
+            #return [cpu_util_per_core[i] for i in self.cpu_handles]
         elif level == "process":
+            # get process pids
             pids = self._get_process_pids()
             cpu_total = sum(
                 self._safe_proc_call(psutil.Process(pid),
