@@ -279,16 +279,23 @@ class PerformanceMonitor:
         )
 
     def _collect_data(self):
+        intervals_not_met = 0
+        datapoints = 0
         while self.running:
+            datapoints += 1
             time_start_measurement = time.time()
             metrics = self._collect_metrics()
             for level, data_tuple in zip(self.levels, metrics):
                 self.data.add_sample(level, *data_tuple)
             time_measurement = time.time() - time_start_measurement
             if time_measurement > self.interval:
-                print("[JUmPER]: Please decrease the interval time for "
-                      "collecting the data. The last measurement took longer "
-                      "than the desired interval time.", end='\r')
+                intervals_not_met += 1
+                if intervals_not_met/datapoints > 0.2:
+                    print(f"[JUmPER]: Please decrease the interval time for "
+                          f"collecting the data. "
+                          f"{intervals_not_met/datapoints:.2f} % of your "
+                          f"measurements took longer than the desired "
+                          f"interval time.", end='\r')
             else:
                 time.sleep(self.interval-time_measurement)
 
