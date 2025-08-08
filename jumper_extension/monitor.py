@@ -145,7 +145,8 @@ class PerformanceMonitor:
         elif level == "process":
             pids = self._get_process_pids()
             cpu_total = sum(
-                self._safe_proc_call(psutil.Process(pid), lambda p: p.cpu_percent())
+                self._safe_proc_call(psutil.Process(pid),
+                                     lambda p: p.cpu_percent(interval=0.1))
                 for pid in pids
             )
             return [cpu_total / self.num_cpus] * self.num_cpus
