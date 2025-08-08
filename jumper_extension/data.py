@@ -18,6 +18,10 @@ class PerformanceData:
                 f"Invalid level: {level}. Must be one of {self.levels}")
 
     def _initialize_dataframe(self, level):
+
+        effective_num_cpus = self.num_system_cpus if level == "system" \
+            else self.num_cpus
+
         columns = [
             "time",
             "memory",
@@ -28,12 +32,7 @@ class PerformanceData:
             "cpu_util_avg",
             "cpu_util_min",
             "cpu_util_max",
-        ]
-
-        if level == "system":
-            columns += [f"cpu_util_{i}" for i in range(self.num_system_cpus)]
-        else:
-            columns += [f"cpu_util_{i}" for i in range(self.num_cpus)]
+        ] + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
 
         if self.num_gpus > 0:
             gpu_metrics = ["util", "band", "mem"]
@@ -75,6 +74,8 @@ class PerformanceData:
             io_counters,
     ):
         self._validate_level(level)
+        effective_num_cpus = self.num_system_cpus if level == "system" \
+            else self.num_cpus
 
         row_data = {
             "time": time_mark,
@@ -83,11 +84,11 @@ class PerformanceData:
             "io_write_count": io_counters[1],
             "io_read": io_counters[2],
             "io_write": io_counters[3],
-            "cpu_util_avg": sum(cpu_util_per_core) / self.num_cpus,
+            "cpu_util_avg": sum(cpu_util_per_core) / effective_num_cpus,
             "cpu_util_min": min(cpu_util_per_core),
             "cpu_util_max": max(cpu_util_per_core),
             **{f"cpu_util_{i}": cpu_util_per_core[i] for i in
-               range(self.num_cpus)},
+               range(effective_num_cpus)},
         }
 
         if self.num_gpus > 0:

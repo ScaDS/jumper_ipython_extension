@@ -1,4 +1,5 @@
 import random
+import re
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -193,6 +194,8 @@ class PerformanceVisualizer:
             len(config) == 5 and config[0] == "summary_series"
         ):  # summary_series: (type, columns, labels, title, ylim)
             plot_type, columns, labels, title, ylim = config
+            if level == "system":
+                title = re.sub(r'\d+', str(self.monitor.num_system_cpus), title)
             available_cols = [col for col in columns if col in df.columns]
             if not available_cols:
                 return
@@ -313,7 +316,6 @@ class PerformanceVisualizer:
         metric_subsets=("cpu", "cpu_all", "mem", "io"),
         cell_range=None,
         show_idle=False,
-        level="process",
     ):
         if self.monitor.num_gpus:
             metric_subsets += (
