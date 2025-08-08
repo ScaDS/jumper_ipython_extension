@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
-from .utilities import filter_perfdata
+from .utilities import filter_perfdata, get_available_levels
 from .logo import logo_image
 
 
 class PerformanceVisualizer:
     """Visualizes performance metrics collected by PerformanceMonitor.
 
-    Supports four levels: 'user', 'process' (default), 'system', 'slurm'
+    Supports multiple levels: 'user', 'process' (default), 'system', and 'slurm' (if available)
     """
 
     def __init__(self, monitor, cell_history, min_duration=None):
@@ -20,6 +20,11 @@ class PerformanceVisualizer:
         self.cell_history = cell_history
         self.figsize = (5, 3)
         self.min_duration = min_duration
+        # Smooth IO with ~1s rolling window based on sampling interval
+        try:
+            self._io_window = max(1, int(round(1.0 / (self.monitor.interval or 1.0))))
+        except Exception:
+            self._io_window = 1
 
         # Compressed metrics configuration
         self.subsets = {
@@ -92,23 +97,22 @@ class PerformanceVisualizer:
                     "single_series",
                     "memory",
                     "Memory Usage (GB)",
-                    (0, monitor.memory),
+                    None,  # Will be set dynamically based on level
                 )
             },
             "io": {
-                "io_read": ("single_series", "io_read", "I/O Read (MB)", None),
-                "io_write": (
-                    "single_series", "io_write", "I/O Write (MB)", None),
+                "io_read": ("single_series", "io_read", "I/O Read (MB/s)", None),
+                "io_write": ("single_series", "io_write", "I/O Write (MB/s)", None),
                 "io_read_count": (
                     "single_series",
                     "io_read_count",
-                    "I/O Read Operations Count",
+                    "I/O Read Operations (ops/s)",
                     None,
                 ),
                 "io_write_count": (
                     "single_series",
                     "io_write_count",
-                    "I/O Write Operations Count",
+                    "I/O Write Operations (ops/s)",
                     None,
                 ),
             },
@@ -125,7 +129,7 @@ class PerformanceVisualizer:
 
         for idx, cell in cell_data.iterrows():
             cell_mask = (perfdata["time"] >= cell["start_time"]) & (
-                    perfdata["time"] <= cell["end_time"]
+                perfdata["time"] <= cell["end_time"]
             )
             cell_perfdata = perfdata[cell_mask]
 
@@ -135,7 +139,7 @@ class PerformanceVisualizer:
                     cell["end_time"] - cell["start_time"],
                 )
                 compressed_perfdata.loc[cell_mask, "time"] = current_time + (
-                        cell_perfdata["time"].values - original_start
+                    cell_perfdata["time"].values - original_start
                 )
                 cell_boundaries.append(
                     {
@@ -150,13 +154,17 @@ class PerformanceVisualizer:
         return compressed_perfdata, cell_boundaries
 
     def _plot_metric(
-            self, df, metric, cell_range=None, show_idle=False,
-            ax: plt.Axes = None
+        self,
+        df,
+        metric,
+        cell_range=None,
+        show_idle=False,
+        ax: plt.Axes = None,
+        level="process",
     ):
         """Plot a single metric using its configuration"""
         config = next(
-            (subset[metric] for subset in self.subsets.values() if
-             metric in subset),
+            (subset[metric] for subset in self.subsets.values() if metric in subset),
             None,
         )
         if not config:
@@ -165,10 +173,13 @@ class PerformanceVisualizer:
         # Parse compressed config format
         if len(config) == 4:  # single_series: (type, column, title, ylim)
             plot_type, column, title, ylim = config
+            # Set dynamic memory limit for memory metric
+            if metric == "memory" and ylim is None:
+                ylim = (0, self.monitor.memory_limits[level])
             if column not in df.columns:
                 return
         elif (
-                len(config) == 5 and config[0] == "multi_series"
+            len(config) == 5 and config[0] == "multi_series"
         ):  # multi_series: (type, prefix, avg_column, title, ylim)
             plot_type, prefix, avg_column, title, ylim = config
             series_cols = [
@@ -179,7 +190,7 @@ class PerformanceVisualizer:
             if avg_column not in df.columns and not series_cols:
                 return
         elif (
-                len(config) == 5 and config[0] == "summary_series"
+            len(config) == 5 and config[0] == "summary_series"
         ):  # summary_series: (type, columns, labels, title, ylim)
             plot_type, columns, labels, title, ylim = config
             available_cols = [col for col in columns if col in df.columns]
@@ -193,7 +204,18 @@ class PerformanceVisualizer:
 
         # Plot based on type
         if plot_type == "single_series":
-            ax.plot(df["time"], df[column], color="blue", linewidth=2)
+            series = df[column]
+            # For IO metrics, compute simple diffs from cumulative counters
+            if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
+                diffs = df[column].astype(float).diff().clip(lower=0)
+                if metric in ("io_read", "io_write"):
+                    diffs = diffs / (1024**2)  # bytes -> MB
+                series = diffs.fillna(0.0)
+                if self._io_window > 1:
+                    series = series.rolling(
+                        window=self._io_window, min_periods=1
+                    ).mean()
+            ax.plot(df["time"], series, color="blue", linewidth=2)
         elif plot_type == "summary_series":
             line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
             for i, (col, label) in enumerate(zip(columns, labels)):
@@ -212,8 +234,7 @@ class PerformanceVisualizer:
             for col in series_cols:
                 ax.plot(df["time"], df[col], "-", alpha=0.5, label=col)
             if avg_column in df.columns:
-                ax.plot(df["time"], df[avg_column], "b-", linewidth=2,
-                        label="Mean")
+                ax.plot(df["time"], df[avg_column], "b-", linewidth=2, label="Mean")
             ax.legend()
 
         # Apply settings
@@ -231,8 +252,7 @@ class PerformanceVisualizer:
         random.seed(1337)
 
         colors = [
-            "#"
-            + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
+            "#" + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
             for _ in range(len(self.cell_history))
         ]
         y_min, y_max = ax.get_ylim()
@@ -241,9 +261,9 @@ class PerformanceVisualizer:
 
         def draw_cell_rect(start_time, duration, cell_num, alpha):
             if (
-                    duration < min_duration
-                    or start_time > x_max
-                    or start_time + duration < 0
+                duration < min_duration
+                or start_time > x_max
+                or start_time + duration < 0
             ):
                 return
             color = colors[cell_num % len(colors)]
@@ -269,37 +289,37 @@ class PerformanceVisualizer:
                 fontsize=10,
                 fontweight="bold",
                 zorder=1,
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                          alpha=0.8),
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
             )
 
         if not show_idle and hasattr(self, "_compressed_cell_boundaries"):
             for cell in self._compressed_cell_boundaries:
                 draw_cell_rect(
-                    cell["start_time"], cell["duration"], int(cell["index"]),
-                    0.4
+                    cell["start_time"], cell["duration"], int(cell["index"]), 0.4
                 )
         else:
             filtered_cells = self.cell_history.view()
             cells = (
-                filtered_cells.iloc[cell_range[0]: cell_range[1] + 1]
+                filtered_cells.iloc[cell_range[0]:cell_range[1] + 1]
                 if cell_range
                 else filtered_cells
             )
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
-                draw_cell_rect(start_time, cell["duration"],
-                               int(cell["index"]), 0.5)
+                draw_cell_rect(start_time, cell["duration"], int(cell["index"]), 0.5)
 
     def plot(
-            self,
-            metric_subsets=("cpu", "cpu_all", "mem", "io"),
-            cell_range=None,
-            show_idle=False,
-            level="process",
+        self,
+        metric_subsets=("cpu", "cpu_all", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+        level="process",
     ):
         if self.monitor.num_gpus:
-            metric_subsets += ("gpu", "gpu_all",)
+            metric_subsets += (
+                "gpu",
+                "gpu_all",
+            )
 
         """Plot performance metrics with interactive widgets for configuration."""
         valid_cells = self.cell_history.view()
@@ -325,67 +345,71 @@ class PerformanceVisualizer:
             max=max_cell_idx,
             step=1,
             description="Cell range:",
-            style=style
-        )
-        level_dropdown = widgets.Dropdown(
-            options=["user", "process", "system", "slurm"],
-            value=level,
-            description="Performance level:",
             style=style,
         )
 
         logo_widget = widgets.HTML(
-            value=f'<img src='
-                  f'"{logo_image}"'
-                  f'alt="JUmPER Logo" style="height: auto; width: 100px;">')
+            value=f"<img src="
+            f'"{logo_image}"'
+            f'alt="JUmPER Logo" style="height: auto; width: 100px;">'
+        )
 
-        box_layout = Layout(display='flex',
-                            flex_flow='row wrap',
-                            align_items='center',
-                            justify_content='space-between',
-                            width='100%')
+        box_layout = Layout(
+            display="flex",
+            flex_flow="row wrap",
+            align_items="center",
+            justify_content="space-between",
+            width="100%",
+        )
 
         config_widgets = widgets.HBox(
             [
                 widgets.HTML("<b>Plot Configuration:</b>"),
                 show_idle_checkbox,
                 cell_range_slider,
-                level_dropdown,
                 logo_widget,
-
             ],
-            layout=box_layout
+            layout=box_layout,
         )
         plot_output = widgets.Output()
 
         def update_plots():
-            current_cell_range, current_show_idle, current_level = (
+            current_cell_range, current_show_idle = (
                 cell_range_slider.value,
                 show_idle_checkbox.value,
-                level_dropdown.value,
             )
             start_idx, end_idx = current_cell_range
             filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
-            perfdata = filter_perfdata(
-                filtered_cells,
-                self.monitor.data.view(level=current_level),
-                not current_show_idle,
-            )
+            # Store all level data for subplot access
+            perfdata_by_level = {}
+            for available_level in get_available_levels():
+                perfdata_by_level[available_level] = filter_perfdata(
+                    filtered_cells,
+                    self.monitor.data.view(level=available_level),
+                    not current_show_idle,
+                )
 
-            if perfdata.empty:
+            if all(df.empty for df in perfdata_by_level.values()):
                 with plot_output:
                     plot_output.clear_output()
                     print("No performance data available for selected range")
                 return
 
-            # Handle time compression or show idle
-            if not current_show_idle:
-                perfdata, self._compressed_cell_boundaries = self._compress_time_axis(
-                    perfdata, current_cell_range
-                )
-            else:
-                perfdata = perfdata.copy()
-                perfdata["time"] -= self.monitor.start_time
+            # Handle time compression or show idle for all levels
+            processed_perfdata = {}
+            for level_key, perfdata in perfdata_by_level.items():
+                if not perfdata.empty:
+                    if not current_show_idle:
+                        processed_data, self._compressed_cell_boundaries = (
+                            self._compress_time_axis(perfdata, current_cell_range)
+                        )
+                        processed_perfdata[level_key] = processed_data
+                    else:
+                        processed_data = perfdata.copy()
+                        processed_data["time"] -= self.monitor.start_time
+                        processed_perfdata[level_key] = processed_data
+                else:
+                    processed_perfdata[level_key] = perfdata
 
             # Get metrics for subsets
             metrics = []
@@ -400,14 +424,14 @@ class PerformanceVisualizer:
                 InteractivePlotWrapper(
                     self._plot_metric,
                     metrics,
-                    perfdata,
+                    processed_perfdata,
                     current_cell_range,
                     current_show_idle,
                     self.figsize,
                 ).display_ui()
 
         # Set up observers and display
-        for widget in [show_idle_checkbox, cell_range_slider, level_dropdown]:
+        for widget in [show_idle_checkbox, cell_range_slider]:
             widget.observe(lambda change: update_plots(), names="value")
 
         display(widgets.VBox([config_widgets, plot_output]))
@@ -418,25 +442,37 @@ class InteractivePlotWrapper:
     """Interactive plotter with dropdown selection and reusable matplotlib axes."""
 
     def __init__(
-            self,
-            plot_callback,
-            metrics: List[str],
-            df,
-            cell_range=None,
-            show_idle=False,
-            figsize=None,
+        self,
+        plot_callback,
+        metrics: List[str],
+        perfdata_by_level,
+        cell_range=None,
+        show_idle=False,
+        figsize=None,
     ):
-        self.plot_callback, self.df, self.metrics = plot_callback, df, metrics
+        self.plot_callback, self.perfdata_by_level, self.metrics = (
+            plot_callback,
+            perfdata_by_level,
+            metrics,
+        )
         self.cell_range, self.show_idle, self.figsize = cell_range, show_idle, figsize
-        self.shown_metrics, self.panel_count, self.max_panels = set(), 0, len(
-            metrics)*4
-        self.output_container = widgets.HBox(layout=Layout(display='flex',
-                            flex_flow='row wrap',
-                            align_items='center',
-                            justify_content='space-between',
-                            width='100%'))
-        self.add_panel_button = widgets.Button(description="Add Plot Panel",
-                                               layout=Layout(margin='auto'))
+        self.shown_metrics, self.panel_count, self.max_panels = (
+            set(),
+            0,
+            len(metrics) * 4,
+        )
+        self.output_container = widgets.HBox(
+            layout=Layout(
+                display="flex",
+                flex_flow="row wrap",
+                align_items="center",
+                justify_content="space-between",
+                width="100%",
+            )
+        )
+        self.add_panel_button = widgets.Button(
+            description="Add Plot Panel", layout=Layout(margin="auto")
+        )
         self.add_panel_button.on_click(self._on_add_panel_clicked)
 
     def display_ui(self):
@@ -455,10 +491,11 @@ class InteractivePlotWrapper:
 
         self.output_container.children += (
             widgets.HBox(
-                [self._create_dropdown_plot_panel(),
-                 self._create_dropdown_plot_panel()],
+                [
+                    self._create_dropdown_plot_panel(),
+                    self._create_dropdown_plot_panel(),
+                ],
             ),
-
         )
         self.panel_count += 2
 
@@ -466,34 +503,41 @@ class InteractivePlotWrapper:
             self.add_panel_button.disabled = True
 
     def _create_dropdown_plot_panel(self):
-        """Create one dropdown + matplotlib figure panel with persistent Axes."""
-        dropdown = widgets.Dropdown(
-            options=self.metrics, value=self._get_next_metric(),
-            description="Metric:"
+        """Create metric and level dropdown + matplotlib figure panel with persistent Axes."""
+        metric_dropdown = widgets.Dropdown(
+            options=self.metrics, value=self._get_next_metric(), description="Metric:"
+        )
+        level_dropdown = widgets.Dropdown(
+            options=get_available_levels(), value="process", description="Level:"
         )
         fig, ax = plt.subplots(figsize=self.figsize)
         output = widgets.Output()
 
-        def on_dropdown_change(change):
-            if change["type"] == "change" and change["name"] == "value":
+        def update_plot():
+            metric = metric_dropdown.value
+            level = level_dropdown.value
+            df = self.perfdata_by_level.get(level)
+            if df is not None and not df.empty:
                 with output:
                     ax.clear()
                     self.plot_callback(
-                        self.df, change["new"], self.cell_range,
-                        self.show_idle, ax
+                        df, metric, self.cell_range, self.show_idle, ax, level
                     )
                     fig.canvas.draw_idle()
 
-        dropdown.observe(on_dropdown_change)
+        def on_dropdown_change(change):
+            if change["type"] == "change" and change["name"] == "value":
+                update_plot()
+
+        metric_dropdown.observe(on_dropdown_change)
+        level_dropdown.observe(on_dropdown_change)
 
         # Initial plot
+        update_plot()
         with output:
-            self.plot_callback(
-                self.df, dropdown.value, self.cell_range, self.show_idle, ax
-            )
             plt.show()
 
-        return widgets.VBox([dropdown, output])
+        return widgets.VBox([widgets.HBox([metric_dropdown, level_dropdown]), output])
 
     def _get_next_metric(self):
         for metric in self.metrics:

@@ -50,14 +50,15 @@ class PerformanceReporter:
         print("JUmPER Performance Report")
         print("-" * 40)
         print(
-            f"Duration: {total_duration:.2f}s ({len(filtered_cells)} cell{'s' if len(filtered_cells) != 1 else ''})"
+            f"Duration: {total_duration:.2f}s "
+            f"({len(filtered_cells)} cell{'s' if len(filtered_cells) != 1 else ''})"
         )
         print("-" * 40)
 
         # Report table
         metrics = [
             (f"CPU Util (Across {self.monitor.num_cpus} CPUs)", "cpu_util_avg", "-"),
-            ("Memory (GB)", "memory", f"{self.monitor.memory:.2f}"),
+            ("Memory (GB)", "memory", f"{self.monitor.memory_limits[level]:.2f}"),
             (f"GPU Util (Across {self.monitor.num_gpus} GPUs)", "gpu_util_avg", "-"),
             ("GPU Memory (GB)", "gpu_mem_avg", f"{self.monitor.gpu_memory:.2f}"),
         ]

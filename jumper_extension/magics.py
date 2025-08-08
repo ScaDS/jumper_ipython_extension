@@ -6,6 +6,7 @@ from IPython.core.magic import Magics, line_magic, magics_class
 from .cell_history import CellHistory
 from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
+from .utilities import get_available_levels
 from .visualizer import PerformanceVisualizer
 
 _perfmonitor_magics = None
@@ -18,6 +19,7 @@ class perfmonitorMagics(Magics):
         self.monitor = self.visualizer = self.reporter = None
         self.cell_history = CellHistory()
         self.print_perfreports = self._skip_report = False
+        self.perfreports_level = "process"
         self.min_duration = None
 
     def pre_run_cell(self, info):
@@ -32,7 +34,7 @@ class perfmonitorMagics(Magics):
             and self.print_perfreports
             and not self._skip_report
         ):
-            self.reporter.print(cell_range=None, level="process")
+            self.reporter.print(cell_range=None, level=self.perfreports_level)
         self._skip_report = False
 
     @line_magic
@@ -42,10 +44,16 @@ class perfmonitorMagics(Magics):
         if not self.monitor:
             return print("[JUmPER]: No active performance monitoring session")
         print("[JUmPER]:")
-        print(
-            f"  CPUs: {self.monitor.num_cpus}\n    CPU affinity: {self.monitor.cpu_handles}"
+        cpu_info = (
+            f"  CPUs: {self.monitor.num_cpus}\n    "
+            f"CPU affinity: {self.monitor.cpu_handles}"
         )
-        print(f"  Memory: {self.monitor.memory} GB\n  GPUs: {self.monitor.num_gpus}")
+        print(cpu_info)
+        mem_gpu_info = (
+            f"  Memory: {self.monitor.memory_limits['system']} GB\n  "
+            f"GPUs: {self.monitor.num_gpus}"
+        )
+        print(mem_gpu_info)
         if self.monitor.num_gpus:
             print(f"    {self.monitor.gpu_name}, {self.monitor.gpu_memory} GB")
 
@@ -68,7 +76,7 @@ class perfmonitorMagics(Magics):
                 interval = float(line)
             except ValueError:
                 return print(f"[JUmPER]: Invalid interval value: {line}")
-                
+
         self.monitor = PerformanceMonitor(interval=interval)
         self.monitor.start()
         self.visualizer = PerformanceVisualizer(
@@ -93,29 +101,15 @@ class perfmonitorMagics(Magics):
         parser.add_argument(
             "--cell", type=str, help="Cell index or range (e.g., 5, 2:8, :5)"
         )
-
-        default_metrics = ["cpu", "cpu_all", "mem", "io"]
-        if self.monitor.num_gpus:
-            default_metrics.extend(["gpu", "gpu_all"])
-
-        parser.add_argument(
-            "--metrics",
-            nargs="+",
-            default=default_metrics,
-            help="Metric subsets",
-        )
         parser.add_argument(
             "--level",
             default="process",
-            choices=["user", "process", "system", "slurm"],
+            choices=get_available_levels(),
             help="Performance level",
-        )
-        parser.add_argument(
-            "--show-idle", action="store_true", help="Show idle periods"
         )
         try:
             return parser.parse_args(shlex.split(line))
-        except:
+        except Exception:
             return None
 
     def _parse_cell_range(self, cell_str, cell_history):
@@ -131,14 +125,18 @@ class perfmonitorMagics(Magics):
                 start_idx = end_idx = int(cell_str)
             if 0 <= start_idx <= end_idx <= max_idx:
                 return (start_idx, end_idx)
-            print(f"[JUmPER]: Invalid cell range: {cell_str} (valid range: 0-{max_idx})")
+            error_msg = (
+                f"[JUmPER]: Invalid cell range: {cell_str} "
+                f"(valid range: 0-{max_idx})"
+            )
+            print(error_msg)
         except (ValueError, IndexError):
             print(f"[JUmPER]: Invalid cell range format: {cell_str}")
         return None
 
     @line_magic
     def perfmonitor_plot(self, line):
-        """Open interactive plot with widgets for exploring performance data over time"""
+        """Open interactive plot with widgets for exploring performance data"""
         self._skip_report = True
         if not self.monitor:
             return print("[JUmPER]: No active performance monitoring session")
@@ -148,8 +146,16 @@ class perfmonitorMagics(Magics):
     def perfmonitor_enable_perfreports(self, line):
         """Enable automatic performance reports after each cell execution"""
         self._skip_report = True
+        args = self._parse_arguments(line)
+        if args is None:
+            return
+        self.perfreports_level = args.level
         self.print_perfreports = True
-        print("[JUmPER]: Performance reports enabled for each cell")
+        msg = (
+            f"[JUmPER]: Performance reports enabled for each cell "
+            f"(level: {self.perfreports_level})"
+        )
+        print(msg)
 
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
@@ -160,7 +166,7 @@ class perfmonitorMagics(Magics):
 
     @line_magic
     def perfmonitor_perfreport(self, line):
-        """Show performance report with optional cell range and monitoring level filters"""
+        """Show performance report with optional cell range and level filters"""
         self._skip_report = True
         if not self.reporter:
             return print("[JUmPER]: No active performance monitoring session")
@@ -187,9 +193,14 @@ class perfmonitorMagics(Magics):
             line = " ".join(parts[1:])
         args = self._parse_arguments(line)
         if not args:
-            return print("[JUmPER]: Usage: %perfmonitor_export_perfdata [filename] --level LEVEL")
+            usage_msg = (
+                "[JUmPER]: Usage: %perfmonitor_export_perfdata [filename] --level LEVEL"
+            )
+            return print(usage_msg)
         self.monitor.data.export(filename, level=args.level)
-        print(f"[JUmPER]: Performance data ({args.level} level) exported to {filename}")
+        print(
+            f"[JUmPER]: Performance data ({args.level} level) exported to {filename}"
+        )
 
     @line_magic
     def perfmonitor_export_cell_history(self, line):
@@ -207,39 +218,34 @@ class perfmonitorMagics(Magics):
             "cell_history -- show interactive table of cell execution history",
             "perfmonitor_start [interval] -- start monitoring (default: 1 second)",
             "perfmonitor_stop -- stop monitoring",
-            "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show performance report",
+            "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
-            "perfmonitor_enable_perfreports -- enable auto-reports after each cell",
+            "perfmonitor_enable_perfreports [--level LEVEL] -- enable auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
-            "perfmonitor_export_perfdata [filename] [--level LEVEL] -- export data to CSV",
+            "perfmonitor_export_perfdata [filename] [--level LEVEL] -- export CSV",
             "perfmonitor_export_cell_history [filename] -- export history to JSON/CSV",
         ]
         print("[JUmPER]: Available commands:")
         for cmd in commands:
             print(f"  {cmd}")
-        
-        print(f"\nMonitoring Levels:")
+
+        print("\nMonitoring Levels:")
         print("  process -- current Python process only (default, most focused)")
-        print("  user    -- all processes belonging to current user")  
+        print("  user    -- all processes belonging to current user")
         print("  system  -- system-wide metrics across all processes")
-        print("  slurm   -- processes within current SLURM job (HPC environments)")
-        
-        print(f"\nCell Range Formats:")
+        available_levels = get_available_levels()
+        if "slurm" in available_levels:
+            print("  slurm   -- processes within current SLURM job (HPC environments)")
+
+        print("\nCell Range Formats:")
         print("  5       -- single cell (cell #5)")
         print("  2:8     -- range of cells (cells #2 through #8)")
         print("  :5      -- from start to cell #5")
         print("  3:      -- from cell #3 to end")
-        
-        print(f"\nMetric Categories:")
+
+        print("\nMetric Categories:")
         print("  cpu, gpu, mem, io (default: all available)")
         print("  cpu_all, gpu_all for detailed per-core/per-GPU metrics")
-        
-        print(f"\nCommon Usage Examples:")
-        print("  %perfmonitor_start 0.5                    # start with 0.5s interval")
-        print("  %perfmonitor_perfreport --level system    # system-wide report")
-        print("  %perfmonitor_perfreport --cell 2:5        # cells 2-5 only")
-        print("  %perfmonitor_plot                         # interactive visualization")
-        print("  %perfmonitor_export_perfdata data.csv --level user  # export user-level data")
 
 
 def load_ipython_extension(ipython):

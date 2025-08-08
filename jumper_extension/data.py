@@ -1,11 +1,13 @@
 import pandas as pd
 
+from .utilities import get_available_levels
+
 
 class PerformanceData:
     def __init__(self, num_cpus, num_gpus):
         self.num_cpus = num_cpus
         self.num_gpus = num_gpus
-        self.levels = ["user", "process", "system", "slurm"]
+        self.levels = get_available_levels()
         self.data = {level: self._initialize_dataframe() for level in self.levels}
 
     def _validate_level(self, level):
@@ -50,7 +52,7 @@ class PerformanceData:
         return (
             self.data[level]
             if slice_ is None
-            else self.data[level].iloc[slice_[0] : slice_[1] + 1]
+            else self.data[level].iloc[slice_[0]:slice_[1] + 1]
         )
 
     def add_sample(
