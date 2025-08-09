@@ -81,14 +81,14 @@ class PerformanceData:
         if len(self.data[level]):
             last_timestamp = self.data[level].loc[len(self.data[level])-1]["time"]
 
-
+        cumulative_metrics_ratio = time_mark-last_timestamp
         row_data = {
             "time": time_mark,
             "memory": memory,
-            "io_read_count": io_counters[0]/(time_mark-last_timestamp),
-            "io_write_count": io_counters[1]/(time_mark-last_timestamp),
-            "io_read": io_counters[2]/(time_mark-last_timestamp),
-            "io_write": io_counters[3]/(time_mark-last_timestamp),
+            "io_read_count": io_counters[0]/cumulative_metrics_ratio,
+            "io_write_count": io_counters[1]/cumulative_metrics_ratio,
+            "io_read": io_counters[2]/cumulative_metrics_ratio,
+            "io_write": io_counters[3]/cumulative_metrics_ratio,
             "cpu_util_avg": sum(cpu_util_per_core) / effective_num_cpus,
             "cpu_util_min": min(cpu_util_per_core),
             "cpu_util_max": max(cpu_util_per_core),

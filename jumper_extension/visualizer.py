@@ -9,6 +9,8 @@ from ipywidgets import widgets, Layout
 from .utilities import filter_perfdata, get_available_levels
 from .logo import logo_image
 
+import colorsys
+
 
 class PerformanceVisualizer:
     """Visualizes performance metrics collected by PerformanceMonitor.
@@ -23,7 +25,8 @@ class PerformanceVisualizer:
         self.min_duration = min_duration
         # Smooth IO with ~1s rolling window based on sampling interval
         try:
-            self._io_window = max(1, int(round(1.0 / (self.monitor.interval or 1.0))))
+            self._io_window = max(1, int(round(
+                1.0 / (self.monitor.interval or 1.0))))
         except Exception:
             self._io_window = 1
 
@@ -102,8 +105,10 @@ class PerformanceVisualizer:
                 )
             },
             "io": {
-                "io_read": ("single_series", "io_read", "I/O Read (MB/s)", None),
-                "io_write": ("single_series", "io_write", "I/O Write (MB/s)", None),
+                "io_read": (
+                    "single_series", "io_read", "I/O Read (MB/s)", None),
+                "io_write": (
+                    "single_series", "io_write", "I/O Write (MB/s)", None),
                 "io_read_count": (
                     "single_series",
                     "io_read_count",
@@ -130,7 +135,7 @@ class PerformanceVisualizer:
 
         for idx, cell in cell_data.iterrows():
             cell_mask = (perfdata["time"] >= cell["start_time"]) & (
-                perfdata["time"] <= cell["end_time"]
+                    perfdata["time"] <= cell["end_time"]
             )
             cell_perfdata = perfdata[cell_mask]
 
@@ -140,7 +145,7 @@ class PerformanceVisualizer:
                     cell["end_time"] - cell["start_time"],
                 )
                 compressed_perfdata.loc[cell_mask, "time"] = current_time + (
-                    cell_perfdata["time"].values - original_start
+                        cell_perfdata["time"].values - original_start
                 )
                 cell_boundaries.append(
                     {
@@ -155,17 +160,18 @@ class PerformanceVisualizer:
         return compressed_perfdata, cell_boundaries
 
     def _plot_metric(
-        self,
-        df,
-        metric,
-        cell_range=None,
-        show_idle=False,
-        ax: plt.Axes = None,
-        level="process",
+            self,
+            df,
+            metric,
+            cell_range=None,
+            show_idle=False,
+            ax: plt.Axes = None,
+            level="process",
     ):
         """Plot a single metric using its configuration"""
         config = next(
-            (subset[metric] for subset in self.subsets.values() if metric in subset),
+            (subset[metric] for subset in self.subsets.values() if
+             metric in subset),
             None,
         )
         if not config:
@@ -180,7 +186,7 @@ class PerformanceVisualizer:
             if column not in df.columns:
                 return
         elif (
-            len(config) == 5 and config[0] == "multi_series"
+                len(config) == 5 and config[0] == "multi_series"
         ):  # multi_series: (type, prefix, avg_column, title, ylim)
             plot_type, prefix, avg_column, title, ylim = config
             series_cols = [
@@ -191,11 +197,12 @@ class PerformanceVisualizer:
             if avg_column not in df.columns and not series_cols:
                 return
         elif (
-            len(config) == 5 and config[0] == "summary_series"
+                len(config) == 5 and config[0] == "summary_series"
         ):  # summary_series: (type, columns, labels, title, ylim)
             plot_type, columns, labels, title, ylim = config
             if level == "system":
-                title = re.sub(r'\d+', str(self.monitor.num_system_cpus), title)
+                title = re.sub(r'\d+', str(self.monitor.num_system_cpus),
+                               title)
             available_cols = [col for col in columns if col in df.columns]
             if not available_cols:
                 return
@@ -209,16 +216,16 @@ class PerformanceVisualizer:
         if plot_type == "single_series":
             series = df[column]
             # For IO metrics, compute simple diffs from cumulative counters
-            if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
+            if metric in (
+                    "io_read", "io_write", "io_read_count", "io_write_count"):
                 diffs = df[column].astype(float).diff().clip(lower=0)
                 if metric in ("io_read", "io_write"):
-                    diffs = diffs / (1024**2)  # bytes -> MB
+                    diffs = diffs / (1024 ** 2)  # bytes -> MB
                 series = diffs.fillna(0.0)
                 if self._io_window > 1:
                     series = series.rolling(
                         window=self._io_window, min_periods=1
                     ).mean()
-
 
             ax.plot(df["time"], series, color="blue", linewidth=2)
         elif plot_type == "summary_series":
@@ -239,7 +246,8 @@ class PerformanceVisualizer:
             for col in series_cols:
                 ax.plot(df["time"], df[col], "-", alpha=0.5, label=col)
             if avg_column in df.columns:
-                ax.plot(df["time"], df[avg_column], "b-", linewidth=2, label="Mean")
+                ax.plot(df["time"], df[avg_column], "b-", linewidth=2,
+                        label="Mean")
             ax.legend()
 
         # Apply settings
@@ -256,19 +264,28 @@ class PerformanceVisualizer:
         # same color when plotting in different graphs
         random.seed(1337)
 
-        colors = [
-            "#" + "".join([random.choice("0123456789ABCDEF") for _ in range(6)])
-            for _ in range(len(self.cell_history))
-        ]
+        def generate_distinct_colors(n):
+            colors = []
+            for i in range(n):
+                hue = i / n
+                lightness = 0.7
+                saturation = 0.3
+                r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
+                colors.append(
+                    "#{0:02X}{1:02X}{2:02X}".format(int(r * 255), int(g * 255),
+                                                    int(b * 255)))
+            return colors
+
+        colors = generate_distinct_colors(len(self.cell_history))
         y_min, y_max = ax.get_ylim()
         x_max, height = ax.get_xlim()[1], y_max - y_min
         min_duration = self.min_duration or 0
 
         def draw_cell_rect(start_time, duration, cell_num, alpha):
             if (
-                duration < min_duration
-                or start_time > x_max
-                or start_time + duration < 0
+                    duration < min_duration
+                    or start_time > x_max
+                    or start_time + duration < 0
             ):
                 return
             color = colors[cell_num % len(colors)]
@@ -294,13 +311,15 @@ class PerformanceVisualizer:
                 fontsize=10,
                 fontweight="bold",
                 zorder=1,
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                          alpha=0.8),
             )
 
         if not show_idle and hasattr(self, "_compressed_cell_boundaries"):
             for cell in self._compressed_cell_boundaries:
                 draw_cell_rect(
-                    cell["start_time"], cell["duration"], int(cell["index"]), 0.4
+                    cell["start_time"], cell["duration"], int(cell["index"]),
+                    0.4
                 )
         else:
             filtered_cells = self.cell_history.view()
@@ -311,13 +330,14 @@ class PerformanceVisualizer:
             )
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
-                draw_cell_rect(start_time, cell["duration"], int(cell["index"]), 0.5)
+                draw_cell_rect(start_time, cell["duration"],
+                               int(cell["index"]), 0.5)
 
     def plot(
-        self,
-        metric_subsets=("cpu", "cpu_all", "mem", "io"),
-        cell_range=None,
-        show_idle=False,
+            self,
+            metric_subsets=("cpu", "mem", "io"),
+            cell_range=None,
+            show_idle=False,
     ):
         if self.monitor.num_gpus:
             metric_subsets += (
@@ -336,17 +356,15 @@ class PerformanceVisualizer:
             valid_cells.iloc[-1]["index"]
         )
         if cell_range is None:
-            cell_range = (min_cell_idx, max_cell_idx)
-            '''
             cell_start_index = 0
-            for cell_idx in range(len(valid_cells)-1,-1,-1):
+            for cell_idx in range(len(valid_cells) - 1, -1, -1):
                 if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
                     cell_start_index = cell_idx
                     break
-            cell_range = (int(valid_cells.iloc[cell_start_index]["index"]), int(
-            valid_cells.iloc[-1]["index"]
-        ))
-            '''
+            cell_range = (
+                int(valid_cells.iloc[cell_start_index]["index"]), int(
+                    valid_cells.iloc[-1]["index"]
+                ))
 
         # Create interactive widgets
         style = {"description_width": "initial"}
@@ -364,8 +382,8 @@ class PerformanceVisualizer:
 
         logo_widget = widgets.HTML(
             value=f"<img src="
-            f'"{logo_image}"'
-            f'alt="JUmPER Logo" style="height: auto; width: 100px;">'
+                  f'"{logo_image}"'
+                  f'alt="JUmPER Logo" style="height: auto; width: 100px;">'
         )
 
         box_layout = Layout(
@@ -415,7 +433,8 @@ class PerformanceVisualizer:
                 if not perfdata.empty:
                     if not current_show_idle:
                         processed_data, self._compressed_cell_boundaries = (
-                            self._compress_time_axis(perfdata, current_cell_range)
+                            self._compress_time_axis(perfdata,
+                                                     current_cell_range)
                         )
                         processed_perfdata[level_key] = processed_data
                     else:
@@ -456,13 +475,13 @@ class InteractivePlotWrapper:
     """Interactive plotter with dropdown selection and reusable matplotlib axes."""
 
     def __init__(
-        self,
-        plot_callback,
-        metrics: List[str],
-        perfdata_by_level,
-        cell_range=None,
-        show_idle=False,
-        figsize=None,
+            self,
+            plot_callback,
+            metrics: List[str],
+            perfdata_by_level,
+            cell_range=None,
+            show_idle=False,
+            figsize=None,
     ):
         self.plot_callback, self.perfdata_by_level, self.metrics = (
             plot_callback,
@@ -485,7 +504,8 @@ class InteractivePlotWrapper:
             )
         )
         self.add_panel_button = widgets.Button(
-            description="Add Plot Panel", layout=Layout(margin="auto")
+            description="Add Plot Panel", layout=Layout(
+                margin="0 auto 20px auto")
         )
         self.add_panel_button.on_click(self._on_add_panel_clicked)
 
@@ -519,12 +539,14 @@ class InteractivePlotWrapper:
     def _create_dropdown_plot_panel(self):
         """Create metric and level dropdown + matplotlib figure panel with persistent Axes."""
         metric_dropdown = widgets.Dropdown(
-            options=self.metrics, value=self._get_next_metric(), description="Metric:"
+            options=self.metrics, value=self._get_next_metric(),
+            description="Metric:"
         )
         level_dropdown = widgets.Dropdown(
-            options=get_available_levels(), value="process", description="Level:"
+            options=get_available_levels(), value="process",
+            description="Level:"
         )
-        fig, ax = plt.subplots(figsize=self.figsize)
+        fig, ax = plt.subplots(figsize=self.figsize, constrained_layout=True)
         output = widgets.Output()
 
         def update_plot():
@@ -551,7 +573,8 @@ class InteractivePlotWrapper:
         with output:
             plt.show()
 
-        return widgets.VBox([widgets.HBox([metric_dropdown, level_dropdown]), output])
+        return widgets.VBox(
+            [widgets.HBox([metric_dropdown, level_dropdown]), output])
 
     def _get_next_metric(self):
         for metric in self.metrics:
