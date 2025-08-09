@@ -36,7 +36,6 @@ class PerformanceMonitor:
         self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
         self.levels = get_available_levels()
         self.process_pids = []
-        self.filtered_cpu_processes = []
 
         self.memory_limits = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
@@ -120,7 +119,7 @@ class PerformanceMonitor:
         if mode == "cpu":
             return [
                 proc
-                for proc in self.filtered_cpu_processes
+                for proc in psutil.process_iter(["pid", "uids"])
                 if self._safe_proc_call(
                     proc, lambda p: self._filter_process(p, level), False
                 )
@@ -190,7 +189,8 @@ class PerformanceMonitor:
             return memory_total / (1024 ** 3)
         else:  # user or slurm
             memory_total = sum(
-                self._safe_proc_call(proc, lambda p: p.memory_full_info().uss)
+                self._safe_proc_call(proc, lambda p: p.memory_full_info().uss,
+                                     0)
                 for proc in self._get_filtered_processes(level, "cpu")
             )
             return memory_total / (1024 ** 3)
@@ -293,7 +293,6 @@ class PerformanceMonitor:
         while self.running:
             time_start_measurement = time.time()
             self.process_pids = self._get_process_pids()
-            self.filtered_cpu_processes = psutil.process_iter(["pid", "uids"])
             metrics = self._collect_metrics()
             for level, data_tuple in zip(self.levels, metrics):
                 self.data.add_sample(level, *data_tuple)

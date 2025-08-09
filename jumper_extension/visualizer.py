@@ -1,4 +1,3 @@
-import random
 import re
 from typing import List
 
@@ -7,9 +6,7 @@ from IPython.display import display
 from ipywidgets import widgets, Layout
 
 from .utilities import filter_perfdata, get_available_levels
-from .logo import logo_image
-
-import colorsys
+from .logo import logo_image, jumper_colors
 
 
 class PerformanceVisualizer:
@@ -260,23 +257,7 @@ class PerformanceVisualizer:
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
-        # define the seed for random color picking, i.e. to keep cells in the
-        # same color when plotting in different graphs
-        random.seed(1337)
-
-        def generate_distinct_colors(n):
-            colors = []
-            for i in range(n):
-                hue = i / n
-                lightness = 0.7
-                saturation = 0.3
-                r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
-                colors.append(
-                    "#{0:02X}{1:02X}{2:02X}".format(int(r * 255), int(g * 255),
-                                                    int(b * 255)))
-            return colors
-
-        colors = generate_distinct_colors(len(self.cell_history))
+        colors = jumper_colors
         y_min, y_max = ax.get_ylim()
         x_max, height = ax.get_xlim()[1], y_max - y_min
         min_duration = self.min_duration or 0
