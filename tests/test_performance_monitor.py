@@ -26,14 +26,14 @@ def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
     assert not monitor.running
 
     # Verify data collection
-    df = monitor.data.view()
+    df = monitor.data.view("system")
     assert len(df) > 0
     assert "cpu_util_avg" in df.columns
     assert "gpu_util_avg" in df.columns
 
     # Test data export
     filename = f"{temp_dir}/test.csv"
-    monitor.data.export(filename)
+    monitor.data.export(filename, level="system")
     assert os.path.exists(filename)
 
 

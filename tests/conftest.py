@@ -39,13 +39,20 @@ def mock_cpu_only():
     ), patch("psutil.virtual_memory") as mock_mem, patch(
         "psutil.Process"
     ) as mock_proc, patch(
+        "psutil.disk_io_counters"
+    ) as mock_disk, patch(
         "jumper_extension.monitor.PYNVML_AVAILABLE", False
     ):
         mock_mem.return_value.total = 8 * 1024**3
         mock_mem.return_value.available = 4 * 1024**3
         mock_proc.return_value.cpu_affinity.return_value = [0, 1, 2, 3]
+        mock_proc.return_value.cpu_percent.return_value = 25.0
+        mock_proc.return_value.memory_full_info.return_value.uss = 2 * 1024**3
         mock_proc.return_value.io_counters.return_value = Mock(
             read_count=100, write_count=50, read_bytes=1024, write_bytes=512
+        )
+        mock_disk.return_value = Mock(
+            read_count=1000, write_count=500, read_bytes=10240, write_bytes=5120
         )
         yield
 
@@ -65,6 +72,8 @@ def mock_cpu_gpu(mock_cpu_only):
         "pynvml.nvmlDeviceGetUtilizationRates"
     ) as mock_util, patch(
         "pynvml.nvmlDeviceGetTemperature", return_value=65
+    ), patch(
+        "pynvml.nvmlDeviceGetComputeRunningProcesses", return_value=[]
     ):
         mock_mem.return_value = Mock(
             total=10 * 1024**3, used=2 * 1024**3, free=8 * 1024**3
