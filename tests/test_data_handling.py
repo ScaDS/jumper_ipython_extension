@@ -11,12 +11,12 @@ from jumper_extension.data import PerformanceData
 def test_performance_data(temp_dir):
     """Test PerformanceData functionality"""
     # Test initialization and empty dataframe
-    data = PerformanceData(num_cpus=2, num_gpus=0)
+    data = PerformanceData(num_cpus=2, num_gpus=0, num_system_cpus=4)
     assert data.num_cpus == 2 and data.num_gpus == 0 and len(data.data["system"]) == 0
     assert len(data.view()) == 0
 
     # Test add_sample and view
-    data.add_sample("system", 1234567890, [25.0, 30.0], 4.0, [], [], [], [100, 50, 1024, 512])
+    data.add_sample("system", 1234567890, [25.0, 30.0, 25.0, 30.0], 4.0, [], [], [], [100, 50, 1024, 512])
     assert len(data.data["system"]) == 1
     df = data.view("system")
     assert len(df) == 1 and df["cpu_util_avg"].iloc[0] == 27.5
@@ -29,12 +29,12 @@ def test_performance_data(temp_dir):
 
 def test_performance_data_gpu():
     """Test GPU functionality and slicing"""
-    data = PerformanceData(num_cpus=2, num_gpus=1)
+    data = PerformanceData(num_cpus=2, num_gpus=1, num_system_cpus=4)
     data.add_sample(
-        "system", 1234567890, [25.0, 30.0], 4.0, [75.0], [20.0], [60.0], [100, 50, 1024, 512]
+        "system", 1234567890, [25.0, 30.0, 25.0, 30.0], 4.0, [75.0], [20.0], [60.0], [100, 50, 1024, 512]
     )
     data.add_sample(
-        "system", 1234567891, [35.0, 40.0], 5.0, [80.0], [25.0], [65.0], [200, 60, 2048, 1024]
+        "system", 1234567891, [35.0, 40.0, 25.0, 40.0], 5.0, [80.0], [25.0], [65.0], [200, 60, 2048, 1024]
     )
 
     df = data.view("system")
@@ -46,12 +46,12 @@ def test_performance_data_gpu():
 
 def test_performance_data_multi_level():
     """Test multi-level functionality"""
-    data = PerformanceData(num_cpus=2, num_gpus=0)
+    data = PerformanceData(num_cpus=2, num_gpus=0, num_system_cpus=4)
     
     # Add data to different levels
     data.add_sample("user", 1234567890, [10.0, 15.0], 1.0, [], [], [], [50, 25, 512, 256])
     data.add_sample("process", 1234567890, [20.0, 25.0], 2.0, [], [], [], [75, 35, 768, 384])
-    data.add_sample("system", 1234567890, [30.0, 35.0], 3.0, [], [], [], [100, 50, 1024, 512])
+    data.add_sample("system", 1234567890, [30.0, 35.0, 35.0, 30.0], 3.0, [], [], [], [100, 50, 1024, 512])
     
     # Test individual level views
     user_df = data.view("user")
