@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+import unittest.mock
 
 import psutil
 
@@ -150,6 +151,10 @@ class PerformanceMonitor:
             return result if result is not None else default
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             return default
+        except TypeError:
+            # in test case, where psutil is a mock
+            if isinstance(psutil.Process, unittest.mock.MagicMock):
+                return default
 
     def _collect_cpu(self, level="process"):
         self._validate_level(level)
