@@ -203,6 +203,30 @@ class perfmonitorMagics(Magics):
         )
 
     @line_magic
+    def perfmonitor_perfdata_to_dataframe(self, line):
+        """Export performance data to dataframe with specified monitoring level"""
+        self._skip_report = True
+        if not self.monitor:
+            return print("[JUmPER]: No active performance monitoring session")
+        parts = line.strip().split()
+
+        dataframe_name = None
+        if parts and not parts[0].startswith("--"):
+            dataframe_name = parts[0]
+            line = " ".join(parts[1:])
+        args = self._parse_arguments(line)
+        if not args:
+            usage_msg = (
+                "[JUmPER]: Usage: %perfmonitor_perfdata_to_dataframe [df_name] --level LEVEL"
+            )
+            return print(usage_msg)
+        dataframe_value = self.monitor.data.view(level=args.level)
+        self.shell.push({dataframe_name: dataframe_value})
+        print(
+            f"[JUmPER]: Performance data ({args.level} level) exported to {dataframe_name}"
+        )
+
+    @line_magic
     def perfmonitor_export_cell_history(self, line):
         """Export cell history to JSON or CSV format"""
         self._skip_report = True
@@ -224,6 +248,7 @@ class perfmonitorMagics(Magics):
             "perfmonitor_disable_perfreports -- disable auto-reports",
             "perfmonitor_export_perfdata [filename] [--level LEVEL] -- export CSV",
             "perfmonitor_export_cell_history [filename] -- export history to JSON/CSV",
+            "perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL] -- perfdata to dataframe",
         ]
         print("[JUmPER]: Available commands:")
         for cmd in commands:
