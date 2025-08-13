@@ -1,8 +1,34 @@
-# JUmPER Extension
+[![Unit Tests](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml)
+[![Formatting](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml)
+[![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
 
-![Coverage](./coverage.svg)
+<p align="center">
+<img width="450" src="doc/JUmPER01.png"/>
+</p>
 
-This is JUmPER IPython extension for real-time performance monitoring in IPython environments and Jupyter notebooks. It allows you to gather performance data on CPU usage, memory consumption, GPU utilization, and I/O operations for individual cells and present it in the notebook/IPython session either as text report or as a plot. The extension can be naturally integrated with [JUmPER Jupyter kernel](https://github.com/score-p/scorep_jupyter_kernel_python/) for most comprehensive analysis of notebook.
+# JUmPER: Jupyter meets Performance
+
+JUmPER brings performance engineering to Jupyter. It consists of the two repositories:
+
+- JUmPER Ipython extension (this repository)
+
+This extension is for real-time performance monitoring in IPython environments and Jupyter notebooks. It allows you to gather performance data on CPU usage, memory consumption, GPU utilization, and I/O operations for individual cells and present it in the notebook/IPython session either as text report or as a plot.
+
+- Score-P Jupyter kernel Python (https://github.com/score-p/scorep_jupyter_kernel_python)
+
+The Score-P kernel allows you to instrument, and trace or profile your Python code in Jupyter using [Score-P](https://score-p.org/) for in-detail performance analysis tasks. The Score-P kernel and the IPython extension can be seamlessly integrated.
+
+
+# Table of Content
+
+* [Installation](#installation)
+* [Quick Start](#quick-start)
+	+ [Load the Extension](#load-the-extension)
+	+ [Basic Usage](#basic-usage)
+* [Metrics Collection](#metrics-collection)
+	+ [Performance Monitoring Levels](#performance-monitoring-levels)
+	+ [Collected Metrics](#collected-metrics)
+* [Available Commands](#available-commands)
 
 ## Installation
 
@@ -61,6 +87,10 @@ pip install .
 
    Opens an interactive plot with widgets to explore performance metrics over time, filter by cell ranges, and select different monitoring levels.
 
+![](doc/plot_out.png)
+
+
+
 5. **View cell execution history**:
    ```python
    %cell_history
@@ -88,7 +118,7 @@ The extension supports four different levels of metric collection, each providin
 
 - **Process**: Metrics for the current Python process only
 - **User**: Metrics for all processes belonging to the current user
-- **System**: System-wide metrics across all processes and users
+- **System**: System-wide metrics across all processes and users (if visible)
 - **Slurm**: Metrics for processes within the current SLURM job
 
 ### Collected Metrics
@@ -120,5 +150,6 @@ The extension supports four different levels of metric collection, each providin
 | `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
-| `%perfmonitor_export_perfdata [filename] [--level LEVEL]` | Export performance data to CSV |
+| `%perfmonitor_export_perfdata [filename] [--level LEVEL]` |Export performance data to CSV |
+| `%perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL]` |Export performance data to Pandas dataframe |
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |
