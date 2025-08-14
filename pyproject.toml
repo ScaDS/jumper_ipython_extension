@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper-extension"
-version = "0.1.0"
+version = "0.2.0"
 description = "IPython extension for monitoring cell performance"
 readme = {content-type = "text/markdown", text = "# Jumper Extension\n\nAn IPython extension for monitoring cell performance."}
 requires-python = ">=3.8"
