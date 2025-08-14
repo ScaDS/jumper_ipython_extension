@@ -1,6 +1,34 @@
-# JUmPER Extension
+[![Unit Tests](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml)
+[![Formatting](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml)
+[![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
 
-This is JUmPER IPython extension for real-time performance monitoring in IPython environments and Jupyter notebooks. It allows you to gather performance data on CPU usage, memory consumption, GPU utilization, and I/O operations for individual cells and present it in the notebook/IPython session either as text report or as a plot. The extension can be naturally integrated with [JUmPER Jupyter kernel](https://github.com/score-p/scorep_jupyter_kernel_python/) for most comprehensive analysis of notebook.
+<p align="center">
+<img width="450" src="doc/JUmPER01.png"/>
+</p>
+
+# JUmPER: Jupyter meets Performance
+
+JUmPER brings performance engineering to Jupyter. It consists of the two repositories:
+
+- JUmPER Ipython extension (this repository)
+
+This extension is for real-time performance monitoring in IPython environments and Jupyter notebooks. It allows you to gather performance data on CPU usage, memory consumption, GPU utilization, and I/O operations for individual cells and present it in the notebook/IPython session either as text report or as a plot.
+
+- Score-P Jupyter kernel Python (https://github.com/score-p/scorep_jupyter_kernel_python)
+
+The Score-P kernel allows you to instrument, and trace or profile your Python code in Jupyter using [Score-P](https://score-p.org/) for in-detail performance analysis tasks. The Score-P kernel and the IPython extension can be seamlessly integrated.
+
+
+# Table of Content
+
+* [Installation](#installation)
+* [Quick Start](#quick-start)
+	+ [Load the Extension](#load-the-extension)
+	+ [Basic Usage](#basic-usage)
+* [Metrics Collection](#metrics-collection)
+	+ [Performance Monitoring Levels](#performance-monitoring-levels)
+	+ [Collected Metrics](#collected-metrics)
+* [Available Commands](#available-commands)
 
 ## Installation
 
@@ -29,7 +57,8 @@ pip install .
 
 3. **View performance report**:
    ```python
-   %perfmonitor_perfreport [cell]
+   %perfmonitor_perfreport
+   %perfmonitor_perfreport --cell 2:5 --level user
    ```
 
    Will print aggregate performance report for entire notebook execution so far:
@@ -47,68 +76,80 @@ pip install .
    GPU Memory (GB)           0.25     0.23     0.32     4.00    
    ```
 
-   Pass cell number to see only this cell performance report. Refer to `%cell_history` to identify it from notebook execution history.
+   Options:
+   - `--cell RANGE`: Specify cell range (e.g., `5`, `2:8`, `:5`)
+   - `--level LEVEL`: Choose monitoring level (`process`, `user`, `system`, `slurm`)
 
 4. **Plot performance data**:
    ```python
-   %perfmonitor_plot [cell]
+   %perfmonitor_plot
    ```
 
-   Plot a more detailed overview of performance metrics over time.
+   Opens an interactive plot with widgets to explore performance metrics over time, filter by cell ranges, and select different monitoring levels.
 
-5. **Stop monitoring**:
+![](doc/plot_out.png)
+
+
+
+5. **View cell execution history**:
+   ```python
+   %cell_history
+   ```
+
+   Shows an interactive table of all executed cells with timestamps and durations.
+
+6. **Stop monitoring**:
    ```python
    %perfmonitor_stop
    ```
 
-6. ### Export data for external analysis
+7. **Export data for external analysis**:
    ```python
-   %perfmonitor_export_perfdata my_performance.csv
+   %perfmonitor_export_perfdata my_performance.csv --level system
    %perfmonitor_export_cell_history my_cells.json
    ```
    Export performance measurements for entire notebook and cell execution history with timestamps, allowing you to project measurements onto specific cells.
+
+## Metrics Collection
+
+### Performance Monitoring Levels
+
+The extension supports four different levels of metric collection, each providing different scopes of system monitoring:
+
+- **Process**: Metrics for the current Python process only
+- **User**: Metrics for all processes belonging to the current user
+- **System**: System-wide metrics across all processes and users (if visible)
+- **Slurm**: Metrics for processes within the current SLURM job
+
+### Collected Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `cpu_util` | CPU utilization percentage |
+| `memory` | Memory usage in GB |
+| `io_read_count` | Total number of read I/O operations |
+| `io_write_count` | Total number of write I/O operations |
+| `io_read_mb` | Total data read in MB |
+| `gpu_util` | GPU compute utilization percentage across GPUs |
+| `gpu_band` | GPU memory bandwidth utilization percentage |
+| `gpu_mem` | GPU memory usage in GB across GPUs |
+| `io_write_mb` | Total data written in MB |
+
+*Note: GPU metrics require NVIDIA GPUs with pynvml library. Memory limits are automatically detected from SLURM cgroups when available.*
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
-| `%perfmonitor_help` | Show all available commands |
+| `%perfmonitor_help` | Show all available commands with examples |
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
 | `%perfmonitor_stop` | Stop monitoring |
-| `%perfmonitor_perfreport [cell]` | Show performance report for specific cell or latest |
-| `%perfmonitor_plot [cell]` | Plot performance data for specific cell or all data |
-| `%cell_history` | Show execution history of all cells |
+| `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
+| `%perfmonitor_plot` | Interactive plot with widgets for exploring performance data |
+| `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
-| `%perfmonitor_export_perfdata [filename]` | Export performance data to CSV |
-| `%perfmonitor_export_cell_history [filename]` | Export cell history to JSON |
-
-## Monitored Metrics
-
-The following table describes all metrics collected by the performance monitor:
-
-| Metric | Description | Collection Method | Level |
-|------------------|-------------|------------------|--------|
-| `memory_usage_gb` | Total system memory usage in GB | `psutil.virtual_memory()` | System |
-| `cpu_util` | CPU utilization across cores | `psutil.cpu_percent(percpu=True)` | System |
-| `io_read_count` | Total number of read I/O operations | `psutil.Process().io_counters().read_count` | Process |
-| `io_write_count` | Total number of write I/O operations | `psutil.Process().io_counters().write_count` | Process |
-| `io_read_mb` | Total data read in MB | `psutil.Process().io_counters().read_bytes` | Process |
-| `io_write_mb` | Total data written in MB | `psutil.Process().io_counters().write_bytes` | Process |
-| `gpu_util` | GPU compute utilization across GPUs | `pynvml.nvmlDeviceGetUtilizationRates().gpu` | System |
-| `gpu_band` | GPU memory bandwidth utilization across GPUs | `pynvml.nvmlDeviceGetUtilizationRates().memory` | System |
-| `gpu_mem` | GPU memory usage in GB across GPUs | `pynvml.nvmlDeviceGetMemoryInfo()` | System |
-
-### Collection Levels
-
-- **System**: Metrics collected for the entire system across all users and processes
-- **Process**: Metrics collected specifically for the current Python process
-#- **User**: *(Future)* Metrics for all processes owned by the current user
-
-### Notes
-
-- GPU metrics are only available when NVIDIA drivers and `pynvml` library are installed
-- Memory detection is SLURM-aware when running in SLURM environments
-- CPU metrics are limited to cores available to the current process (respects CPU affinity)
-- I/O metrics track only the main Python process, not child processes
+| `%perfmonitor_export_perfdata [filename] [--level LEVEL]` |Export performance data to CSV |
+| `%perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL]` |Export performance data to Pandas dataframe |
+| `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |
