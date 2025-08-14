@@ -18,14 +18,14 @@ class CellHistory:
         self.current_cell = {
             "index": len(self.data),
             "raw_cell": raw_cell,
-            "start_time": time.time(),
+            "start_time": time.perf_counter(),
             "end_time": None,
             "duration": None,
         }
 
     def end_cell(self, result):
         if self.current_cell:
-            self.current_cell["end_time"] = time.time()
+            self.current_cell["end_time"] = time.perf_counter()
             self.current_cell["duration"] = (
                 self.current_cell["end_time"] - self.current_cell["start_time"]
             )

@@ -386,7 +386,11 @@ class PerformanceVisualizer:
         )
         plot_output = widgets.Output()
 
+        # Store the plot wrapper instance for persistent updates
+        plot_wrapper = None
+
         def update_plots():
+            nonlocal plot_wrapper
             current_cell_range, current_show_idle = (
                 cell_range_slider.value,
                 show_idle_checkbox.value,
@@ -406,6 +410,8 @@ class PerformanceVisualizer:
                 with plot_output:
                     plot_output.clear_output()
                     print("No performance data available for selected range")
+                    # Clear plot wrapper when no data
+                    plot_wrapper = None
                 return
 
             # Handle time compression or show idle for all levels
@@ -434,15 +440,25 @@ class PerformanceVisualizer:
                     print(f"Unknown metric subset: {subset}")
 
             with plot_output:
-                plot_output.clear_output()
-                InteractivePlotWrapper(
-                    self._plot_metric,
-                    metrics,
-                    processed_perfdata,
-                    current_cell_range,
-                    current_show_idle,
-                    self.figsize,
-                ).display_ui()
+                if plot_wrapper is None:
+                    # Create new plot wrapper only if it doesn't exist
+                    plot_output.clear_output()
+                    plot_wrapper = InteractivePlotWrapper(
+                        self._plot_metric,
+                        metrics,
+                        processed_perfdata,
+                        current_cell_range,
+                        current_show_idle,
+                        self.figsize,
+                    )
+                    plot_wrapper.display_ui()
+                else:
+                    # Update existing plot wrapper with new data
+                    plot_wrapper.update_data(
+                        processed_perfdata,
+                        current_cell_range,
+                        current_show_idle
+                    )
 
         # Set up observers and display
         for widget in [show_idle_checkbox, cell_range_slider]:
@@ -475,6 +491,9 @@ class InteractivePlotWrapper:
             0,
             len(metrics) * 4,
         )
+        # Store plot panels for updates
+        self.plot_panels = []
+        
         self.output_container = widgets.HBox(
             layout=Layout(
                 display="flex",
@@ -492,6 +511,9 @@ class InteractivePlotWrapper:
 
     def display_ui(self):
         """Display the Add button and all interactive panels."""
+        # Close all existing matplotlib plots to prevent memory leaks
+        #plt.close('all')
+        
         display(widgets.VBox([self.add_panel_button, self.output_container]))
         self._on_add_panel_clicked(None)
 
@@ -549,6 +571,17 @@ class InteractivePlotWrapper:
         metric_dropdown.observe(on_dropdown_change)
         level_dropdown.observe(on_dropdown_change)
 
+        # Store panel data for updates
+        panel_data = {
+            'metric_dropdown': metric_dropdown,
+            'level_dropdown': level_dropdown,
+            'figure': fig,
+            'axes': ax,
+            'output': output,
+            'update_plot': update_plot
+        }
+        self.plot_panels.append(panel_data)
+
         # Initial plot
         update_plot()
         with output:
@@ -563,3 +596,11 @@ class InteractivePlotWrapper:
                 self.shown_metrics.add(metric)
                 return metric
         return None
+
+    def update_data(self, perfdata_by_level, cell_range, show_idle):
+        self.perfdata_by_level = perfdata_by_level
+        self.cell_range = cell_range
+        self.show_idle = show_idle
+        for panel in self.plot_panels:
+            panel['output'].clear_output(wait=True)
+            panel['update_plot']()

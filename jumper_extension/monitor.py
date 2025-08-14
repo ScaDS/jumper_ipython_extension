@@ -282,7 +282,7 @@ class PerformanceMonitor:
         return gpu_util, gpu_band, gpu_mem
 
     def _collect_metrics(self):
-        time_mark = time.time()
+        time_mark = time.perf_counter()
         return tuple(
             (
                 time_mark,
@@ -296,12 +296,12 @@ class PerformanceMonitor:
 
     def _collect_data(self):
         while self.running:
-            time_start_measurement = time.time()
+            time_start_measurement = time.perf_counter()
             self.process_pids = self._get_process_pids()
             metrics = self._collect_metrics()
             for level, data_tuple in zip(self.levels, metrics):
                 self.data.add_sample(level, *data_tuple)
-            time_measurement = time.time() - time_start_measurement
+            time_measurement = time.perf_counter() - time_start_measurement
             if time_measurement > self.interval:
                 print(f"[JUmPER]: Measurements might not meet the desired "
                       f"interval time. Some measurements took longer.",
@@ -313,7 +313,7 @@ class PerformanceMonitor:
         if self.running:
             print("[JUmPER]: Performance monitor already running")
             return
-        self.start_time = time.time()
+        self.start_time = time.perf_counter()
         self.running = True
         self.monitor_thread = threading.Thread(target=self._collect_data,
                                                daemon=True)
@@ -329,5 +329,5 @@ class PerformanceMonitor:
             self.monitor_thread.join(timeout=2.0)
         print(
             f"[JUmPER]: Performance monitoring stopped "
-            f"(ran for {time.time() - self.start_time:.2f} seconds)"
+            f"(ran for {time.perf_counter() - self.start_time:.2f} seconds)"
         )
