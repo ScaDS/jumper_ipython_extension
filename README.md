@@ -29,8 +29,15 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 	+ [Performance Monitoring Levels](#performance-monitoring-levels)
 	+ [Collected Metrics](#collected-metrics)
 * [Available Commands](#available-commands)
+* [Contribution and Citing](#contribution-and-citing)
 
 ## Installation
+
+```bash
+pip install jumper_extension
+```
+
+or install it from source:
 
 ```bash
 pip install .
@@ -153,3 +160,15 @@ The extension supports four different levels of metric collection, each providin
 | `%perfmonitor_export_perfdata [filename] [--level LEVEL]` |Export performance data to CSV |
 | `%perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL]` |Export performance data to Pandas dataframe |
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |
+
+## Contribution and Citing:
+PRs are welcome. Feel free to use the pre-commit hooks provided in .githooks
+
+If you publish some work using the kernel, we would appreciate if you cite one of the following papers:
+
+```
+Werner, E., Rygin, A., Gocht-Zech, A., Döbel, S., & Lieber, M. (2024, November).
+JUmPER: Performance Data Monitoring, Instrumentation and Visualization for Jupyter Notebooks.
+In SC24-W: Workshops of the International Conference for High Performance Computing, Networking, Storage and Analysis (pp. 2003-2011). IEEE.
+https://www.doi.org/10.1109/SCW63240.2024.00250
+```
