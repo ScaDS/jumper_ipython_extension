@@ -24,7 +24,8 @@ def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
         else:
             return perfdata.iloc[0:0]
     else:
-        # Get start time from first cell and end time from last cell in the range
+        """Get start time from first cell and end time from last cell in the
+        range"""
         start_time = cell_history_data.iloc[0]["start_time"]
         end_time = cell_history_data.iloc[-1]["end_time"]
         return perfdata[
@@ -33,7 +34,8 @@ def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
 
 
 def is_slurm_available():
-    """Check if SLURM is available by checking for SLURM_JOB_ID environment variable"""
+    """Check if SLURM is available by checking for SLURM_JOB_ID environment
+    variable"""
     return os.environ.get("SLURM_JOB_ID") is not None
 
 
@@ -47,7 +49,9 @@ def get_available_levels():
 
 def detect_cgroup_version():
     """Detect if system is using cgroup v1 or v2"""
-    return "v2" if os.path.exists("/sys/fs/cgroup/cgroup.controllers") else "v1"
+    return (
+        "v2" if os.path.exists("/sys/fs/cgroup/cgroup.controllers") else "v1"
+    )
 
 
 def detect_memory_limit(level, uid, slurm_job):
@@ -62,8 +66,8 @@ def detect_memory_limit(level, uid, slurm_job):
             ]
             if detect_cgroup_version() == "v1"
             else [
-                f"/sys/fs/cgroup/system.slice/slurmstepd.scope/job_{slurm_job}/"
-                "memory.max",
+                f"/sys/fs/cgroup/system.slice/slurmstepd.scope/"
+                f"job_{slurm_job}/memory.max",
                 f"/sys/fs/cgroup/system.slice/slurm.service/job_{slurm_job}/"
                 "memory.max",
                 f"/sys/fs/cgroup/slurm/uid_{uid}/job_{slurm_job}/memory.max",
