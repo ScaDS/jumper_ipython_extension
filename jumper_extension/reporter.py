@@ -18,12 +18,18 @@ class PerformanceReporter:
 
             if len(valid_cells) > 0:
                 # Filter for non-short cells
-                min_duration = self.min_duration if self.min_duration is not None else 0
-                non_short_cells = valid_cells[valid_cells["duration"] >= min_duration]
+                min_duration = (
+                    self.min_duration if self.min_duration is not None else 0
+                )
+                non_short_cells = valid_cells[
+                    valid_cells["duration"] >= min_duration
+                ]
 
                 if len(non_short_cells) > 0:
                     # Get the last non-short cell index
-                    last_valid_cell_idx = int(non_short_cells.iloc[-1]["index"])
+                    last_valid_cell_idx = int(
+                        non_short_cells.iloc[-1]["index"]
+                    )
                     cell_range = (last_valid_cell_idx, last_valid_cell_idx)
                 else:
                     print("[JUmPER]: No non-short cells found")
@@ -36,7 +42,9 @@ class PerformanceReporter:
         filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
 
         perfdata = self.monitor.data.view(level=level)
-        perfdata = filter_perfdata(filtered_cells, perfdata, compress_idle=False)
+        perfdata = filter_perfdata(
+            filtered_cells, perfdata, compress_idle=False
+        )
 
         # Check if non-empty, otherwise print results
         if perfdata.empty:
@@ -49,18 +57,35 @@ class PerformanceReporter:
         print("-" * 40)
         print("JUmPER Performance Report")
         print("-" * 40)
+        n_cells = len(filtered_cells)
         print(
             f"Duration: {total_duration:.2f}s "
-            f"({len(filtered_cells)} cell{'s' if len(filtered_cells) != 1 else ''})"
+            f"({n_cells} cell{'s' if n_cells != 1 else ''})"
         )
         print("-" * 40)
 
         # Report table
         metrics = [
-            (f"CPU Util (Across {self.monitor.num_cpus} CPUs)", "cpu_util_avg", "-"),
-            ("Memory (GB)", "memory", f"{self.monitor.memory_limits[level]:.2f}"),
-            (f"GPU Util (Across {self.monitor.num_gpus} GPUs)", "gpu_util_avg", "-"),
-            ("GPU Memory (GB)", "gpu_mem_avg", f"{self.monitor.gpu_memory:.2f}"),
+            (
+                f"CPU Util (Across {self.monitor.num_cpus} CPUs)",
+                "cpu_util_avg",
+                "-",
+            ),
+            (
+                "Memory (GB)",
+                "memory",
+                f"{self.monitor.memory_limits[level]:.2f}",
+            ),
+            (
+                f"GPU Util (Across {self.monitor.num_gpus} GPUs)",
+                "gpu_util_avg",
+                "-",
+            ),
+            (
+                "GPU Memory (GB)",
+                "gpu_mem_avg",
+                f"{self.monitor.gpu_memory:.2f}",
+            ),
         ]
 
         print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")

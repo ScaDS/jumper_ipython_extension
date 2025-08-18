@@ -44,7 +44,10 @@ class CellHistory:
 
     def print(self):
         for i, (_, cell) in enumerate(self.data.iterrows()):
-            print(f"Cell #{int(cell['index'])} - Duration: {cell['duration']:.2f}s")
+            print(
+                f"Cell #{int(cell['index'])} - "
+                f"Duration: {cell['duration']:.2f}s"
+            )
             print("-" * 40)
             print(cell["raw_cell"])
             print("=" * 40)
@@ -75,7 +78,9 @@ class CellHistory:
         show(
             df,
             layout={"topStart": "search", "topEnd": None},
-            columnDefs=[{"targets": [4], "className": "dt-left"}],  # 4 - "Code" index
+            columnDefs=[
+                {"targets": [4], "className": "dt-left"}
+            ],  # 4 - "Code" index
             escape=False,
         )
 

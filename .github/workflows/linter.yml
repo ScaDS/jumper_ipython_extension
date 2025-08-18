@@ -17,6 +17,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: flake8 Lint
-        uses: py-actions/flake8@v2
-        with:
-          path: "jumper_extension"
+        run: flake8 --extend-ignore=E203 jumper_extension

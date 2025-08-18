@@ -59,13 +59,15 @@ class perfmonitorMagics(Magics):
 
     @line_magic
     def cell_history(self, line):
-        """Show interactive table of all executed cells with timestamps and durations"""
+        """Show interactive table of all executed cells with timestamps and
+        durations"""
         self._skip_report = True
         self.cell_history.show_itable()
 
     @line_magic
     def perfmonitor_start(self, line):
-        """Start performance monitoring with specified interval (default: 1 second)"""
+        """Start performance monitoring with specified interval
+        (default: 1 second)"""
         self._skip_report = True
         if self.monitor and self.monitor.running:
             return print("[JUmPER]: Performance monitoring already running")
@@ -166,7 +168,8 @@ class perfmonitorMagics(Magics):
 
     @line_magic
     def perfmonitor_perfreport(self, line):
-        """Show performance report with optional cell range and level filters"""
+        """Show performance report with optional cell range and level
+        filters"""
         self._skip_report = True
         if not self.reporter:
             return print("[JUmPER]: No active performance monitoring session")
@@ -194,17 +197,20 @@ class perfmonitorMagics(Magics):
         args = self._parse_arguments(line)
         if not args:
             usage_msg = (
-                "[JUmPER]: Usage: %perfmonitor_export_perfdata [filename] --level LEVEL"
+                "[JUmPER]: Usage: %perfmonitor_export_perfdata "
+                "[filename] --level LEVEL"
             )
             return print(usage_msg)
         self.monitor.data.export(filename, level=args.level)
         print(
-            f"[JUmPER]: Performance data ({args.level} level) exported to {filename}"
+            f"[JUmPER]: Performance data ({args.level} level) exported to "
+            f"{filename}"
         )
 
     @line_magic
     def perfmonitor_perfdata_to_dataframe(self, line):
-        """Export performance data to dataframe with specified monitoring level"""
+        """Export performance data to dataframe with specified monitoring
+        level"""
         self._skip_report = True
         if not self.monitor:
             return print("[JUmPER]: No active performance monitoring session")
@@ -217,13 +223,15 @@ class perfmonitorMagics(Magics):
         args = self._parse_arguments(line)
         if not args:
             usage_msg = (
-                "[JUmPER]: Usage: %perfmonitor_perfdata_to_dataframe [df_name] --level LEVEL"
+                "[JUmPER]: Usage: %perfmonitor_perfdata_to_dataframe "
+                "[df_name] --level LEVEL"
             )
             return print(usage_msg)
         dataframe_value = self.monitor.data.view(level=args.level)
         self.shell.push({dataframe_name: dataframe_value})
         print(
-            f"[JUmPER]: Performance data ({args.level} level) exported to {dataframe_name}"
+            f"[JUmPER]: Performance data ({args.level} level) exported to "
+            f"{dataframe_name}"
         )
 
     @line_magic
@@ -240,27 +248,39 @@ class perfmonitorMagics(Magics):
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
             "cell_history -- show interactive table of cell execution history",
-            "perfmonitor_start [interval] -- start monitoring (default: 1 second)",
+            "perfmonitor_start [interval] -- start monitoring "
+            "(default: 1 second)",
             "perfmonitor_stop -- stop monitoring",
-            "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
-            "perfmonitor_plot -- interactive plot with widgets for data exploration",
-            "perfmonitor_enable_perfreports [--level LEVEL] -- enable auto-reports",
+            "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- "
+            "show report",
+            "perfmonitor_plot -- interactive plot with widgets for data "
+            "exploration",
+            "perfmonitor_enable_perfreports [--level LEVEL] -- enable "
+            "auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
-            "perfmonitor_export_perfdata [filename] [--level LEVEL] -- export CSV",
-            "perfmonitor_export_cell_history [filename] -- export history to JSON/CSV",
-            "perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL] -- perfdata to dataframe",
+            "perfmonitor_export_perfdata [filename] [--level LEVEL] -- "
+            "export CSV",
+            "perfmonitor_export_cell_history [filename] -- export history to "
+            "JSON/CSV",
+            "perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL] -- "
+            "perfdata to dataframe",
         ]
         print("[JUmPER]: Available commands:")
         for cmd in commands:
             print(f"  {cmd}")
 
         print("\nMonitoring Levels:")
-        print("  process -- current Python process only (default, most focused)")
+        print(
+            "  process -- current Python process only (default, most focused)"
+        )
         print("  user    -- all processes belonging to current user")
         print("  system  -- system-wide metrics across all processes")
         available_levels = get_available_levels()
         if "slurm" in available_levels:
-            print("  slurm   -- processes within current SLURM job (HPC environments)")
+            print(
+                "  slurm   -- processes within current SLURM job "
+                "(HPC environments)"
+            )
 
         print("\nCell Range Formats:")
         print("  5       -- single cell (cell #5)")
@@ -285,8 +305,12 @@ def load_ipython_extension(ipython):
 def unload_ipython_extension(ipython):
     global _perfmonitor_magics
     if _perfmonitor_magics:
-        ipython.events.unregister("pre_run_cell", _perfmonitor_magics.pre_run_cell)
-        ipython.events.unregister("post_run_cell", _perfmonitor_magics.post_run_cell)
+        ipython.events.unregister(
+            "pre_run_cell", _perfmonitor_magics.pre_run_cell
+        )
+        ipython.events.unregister(
+            "post_run_cell", _perfmonitor_magics.post_run_cell
+        )
         if _perfmonitor_magics.monitor:
             _perfmonitor_magics.monitor.stop()
         _perfmonitor_magics = None

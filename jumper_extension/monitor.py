@@ -6,8 +6,11 @@ import unittest.mock
 import psutil
 
 from .data import PerformanceData
-from .utilities import get_available_levels, is_slurm_available, \
-    detect_memory_limit
+from .utilities import (
+    get_available_levels,
+    is_slurm_available,
+    detect_memory_limit,
+)
 
 # GPU monitoring setup
 PYNVML_AVAILABLE = False
@@ -43,8 +46,9 @@ class PerformanceMonitor:
             for level in self.levels
         }
         # Backward-compatible attribute expected by tests/UI
-        self.memory = self.memory_limits.get("slurm",
-                                             self.memory_limits.get("system"))
+        self.memory = self.memory_limits.get(
+            "slurm", self.memory_limits.get("system")
+        )
 
         self.gpu_handles = []
         self.gpu_memory = 0
@@ -65,8 +69,9 @@ class PerformanceMonitor:
         if self.num_gpus:
             self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem"])
 
-        self.data = PerformanceData(self.num_cpus, self.num_system_cpus,
-                                    self.num_gpus)
+        self.data = PerformanceData(
+            self.num_cpus, self.num_system_cpus, self.num_gpus
+        )
 
     def _setup_gpu(self):
         try:
@@ -77,12 +82,12 @@ class PerformanceMonitor:
             if self.gpu_handles:
                 handle = self.gpu_handles[0]
                 self.gpu_memory = round(
-                    pynvml.nvmlDeviceGetMemoryInfo(handle).total / (1024 ** 3),
-                    2
+                    pynvml.nvmlDeviceGetMemoryInfo(handle).total / (1024**3), 2
                 )
                 name = pynvml.nvmlDeviceGetName(handle)
-                self.gpu_name = name.decode() if isinstance(name,
-                                                            bytes) else name
+                self.gpu_name = (
+                    name.decode() if isinstance(name, bytes) else name
+                )
         except Exception:
             self.gpu_handles = []
 
@@ -91,7 +96,8 @@ class PerformanceMonitor:
         pids = {self.pid}
         try:
             pids.update(
-                child.pid for child in self.process.children(recursive=True))
+                child.pid for child in self.process.children(recursive=True)
+            )
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return pids
@@ -99,7 +105,8 @@ class PerformanceMonitor:
     def _validate_level(self, level):
         if level not in self.levels:
             raise ValueError(
-                f"Unknown level: {level}. Available levels: {self.levels}")
+                f"Unknown level: {level}. Available levels: {self.levels}"
+            )
 
     def _filter_process(self, proc, mode):
         """Check if process matches the filtering mode"""
@@ -110,7 +117,8 @@ class PerformanceMonitor:
                 if not is_slurm_available():
                     return False
                 return proc.environ().get("SLURM_JOB_ID") == str(
-                    self.slurm_job)
+                    self.slurm_job
+                )
         except (psutil.AccessDenied, psutil.NoSuchProcess):
             pass
         return False
@@ -130,11 +138,11 @@ class PerformanceMonitor:
             filtered = [
                 p
                 for p in all_procs
-                if self._safe_proc_call(p.pid,
-                                        lambda proc: self._filter_process(proc,
-                                                                          level),
-                                        False,
-                                        )
+                if self._safe_proc_call(
+                    p.pid,
+                    lambda proc: self._filter_process(proc, level),
+                    False,
+                )
             ]
             return filtered, all_procs
         else:
@@ -162,13 +170,14 @@ class PerformanceMonitor:
             # just return the whole system here
             cpu_util_per_core = psutil.cpu_percent(percpu=True)
             return cpu_util_per_core
-            #return [cpu_util_per_core[i] for i in self.cpu_handles]
+            # return [cpu_util_per_core[i] for i in self.cpu_handles]
         elif level == "process":
             # get process pids
             pids = self.process_pids
             cpu_total = sum(
-                self._safe_proc_call(pid,
-                                     lambda p: p.cpu_percent(interval=0.1))
+                self._safe_proc_call(
+                    pid, lambda p: p.cpu_percent(interval=0.1)
+                )
                 for pid in pids
             )
             return [cpu_total / self.num_cpus] * self.num_cpus
@@ -183,22 +192,24 @@ class PerformanceMonitor:
         self._validate_level(level)
         if level == "system":
             return (
-                    psutil.virtual_memory().total - psutil.virtual_memory().available
-            ) / (1024 ** 3)
+                psutil.virtual_memory().total
+                - psutil.virtual_memory().available
+            ) / (1024**3)
         elif level == "process":
             pids = self.process_pids
             memory_total = sum(
                 self._safe_proc_call(pid, lambda p: p.memory_full_info().uss)
                 for pid in pids
             )
-            return memory_total / (1024 ** 3)
+            return memory_total / (1024**3)
         else:  # user or slurm
             memory_total = sum(
-                self._safe_proc_call(proc, lambda p: p.memory_full_info().uss,
-                                     0)
+                self._safe_proc_call(
+                    proc, lambda p: p.memory_full_info().uss, 0
+                )
                 for proc in self._get_filtered_processes(level, "cpu")
             )
-            return memory_total / (1024 ** 3)
+            return memory_total / (1024**3)
 
     def _collect_io(self, level="process"):
         self._validate_level(level)
@@ -246,31 +257,31 @@ class PerformanceMonitor:
                 memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
                 gpu_util.append(util_rates.gpu)
                 gpu_band.append(util_rates.memory)
-                gpu_mem.append(memory_info.used / (1024 ** 3))
+                gpu_mem.append(memory_info.used / (1024**3))
             elif level == "process":
                 pids = self.process_pids
                 process_mem = sum(
                     p.usedGpuMemory
-                    for p in
-                    pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+                    for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
+                        handle
+                    )
                     if p.pid in pids
-                ) / (1024 ** 3)
+                ) / (1024**3)
                 gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
                 gpu_band.append(0.0)
                 gpu_mem.append(process_mem)
             else:  # user or slurm
-                filtered_gpu_processes, all_processes = self._get_filtered_processes(
-                    level, "gpu", handle
+                filtered_gpu_processes, all_processes = (
+                    self._get_filtered_processes(level, "gpu", handle)
                 )
                 filtered_mem = sum(
-                    p.usedGpuMemory for p in filtered_gpu_processes) / (
-                                       1024 ** 3
-                               )
+                    p.usedGpuMemory for p in filtered_gpu_processes
+                ) / (1024**3)
                 filtered_util = (
                     (
-                            util_rates.gpu
-                            * len(filtered_gpu_processes)
-                            / max(len(all_processes), 1)
+                        util_rates.gpu
+                        * len(filtered_gpu_processes)
+                        / max(len(all_processes), 1)
                     )
                     if filtered_gpu_processes
                     else 0.0
@@ -303,9 +314,11 @@ class PerformanceMonitor:
                 self.data.add_sample(level, *data_tuple)
             time_measurement = time.perf_counter() - time_start_measurement
             if time_measurement > self.interval:
-                print(f"[JUmPER]: Measurements might not meet the desired "
-                      f"interval time. Some measurements took longer.",
-                      end='\r')
+                print(
+                    "[JUmPER]: Measurements might not meet the desired "
+                    "interval time. Some measurements took longer.",
+                    end="\r",
+                )
             else:
                 time.sleep(self.interval - time_measurement)
 
@@ -315,8 +328,9 @@ class PerformanceMonitor:
             return
         self.start_time = time.perf_counter()
         self.running = True
-        self.monitor_thread = threading.Thread(target=self._collect_data,
-                                               daemon=True)
+        self.monitor_thread = threading.Thread(
+            target=self._collect_data, daemon=True
+        )
         self.monitor_thread.start()
         print(
             f"[JUmPER]: Performance monitoring started "
