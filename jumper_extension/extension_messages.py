@@ -2,6 +2,8 @@ from enum import Enum, auto
 
 from .logging_config import LOGGING
 
+MESSAGE_PREFIX = "[JUmPER]"
+
 
 class ExtensionErrorCode(Enum):
     PYNVML_NOT_AVAILABLE = auto()
@@ -28,7 +30,7 @@ class ExtensionInfoCode(Enum):
     EXPORT_SUCCESS = auto()
 
 
-EXTENSION_ERROR_MESSAGES = {
+_BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.PYNVML_NOT_AVAILABLE: (
         "Pynvml not available. GPU monitoring disabled."
     ),
@@ -68,7 +70,7 @@ EXTENSION_ERROR_MESSAGES = {
 }
 
 
-EXTENSION_INFO_MESSAGES = {
+_BASE_EXTENSION_INFO_MESSAGES = {
     ExtensionInfoCode.IMPRECISE_INTERVAL: (
         "Measurements might not meet the desired interval ({interval}s) "
         "due to performance constraints"
@@ -88,6 +90,14 @@ EXTENSION_INFO_MESSAGES = {
     ),
     ExtensionInfoCode.EXPORT_SUCCESS: ("Exported to {filename}"),
 }
+
+
+def _apply_prefix(messages):
+    return {code: f"{MESSAGE_PREFIX}: {text}" for code, text in messages.items()}
+
+
+EXTENSION_ERROR_MESSAGES = _apply_prefix(_BASE_EXTENSION_ERROR_MESSAGES)
+EXTENSION_INFO_MESSAGES = _apply_prefix(_BASE_EXTENSION_INFO_MESSAGES)
 
 
 def get_jumper_process_error_hint():

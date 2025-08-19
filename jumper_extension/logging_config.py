@@ -66,9 +66,9 @@ LOGGING = {
         "level": "WARNING",
     },
     "loggers": {
-        "kernel": {
+        "extension": {
             "handlers": ["console", "debug_file", "info_file", "error_file"],
-            "level": "WARNING",
+            "level": "INFO",
             "propagate": True,
         },
     },
