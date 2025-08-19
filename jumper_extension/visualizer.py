@@ -73,8 +73,15 @@ class PerformanceVisualizer:
             "cpu": {
                 "cpu_summary": {
                     "type": "summary_series",
-                    "columns": ["cpu_util_min", "cpu_util_avg", "cpu_util_max"],
-                    "title": f"CPU Utilization (%) - {self.monitor.num_cpus} CPUs",
+                    "columns": [
+                        "cpu_util_min",
+                        "cpu_util_avg",
+                        "cpu_util_max",
+                    ],
+                    "title": (
+                        "CPU Utilization (%) - "
+                        f"{self.monitor.num_cpus} CPUs"
+                    ),
                     "ylim": (0, 100),
                     "label": "CPU Utilization Summary",
                 }
@@ -82,22 +89,39 @@ class PerformanceVisualizer:
             "gpu": {
                 "gpu_util_summary": {
                     "type": "summary_series",
-                    "columns": ["gpu_util_min", "gpu_util_avg", "gpu_util_max"],
-                    "title": f"GPU Utilization (%) - {self.monitor.num_gpus} GPUs",
+                    "columns": [
+                        "gpu_util_min",
+                        "gpu_util_avg",
+                        "gpu_util_max",
+                    ],
+                    "title": (
+                        "GPU Utilization (%) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
                     "ylim": (0, 100),
                     "label": "GPU Utilization Summary",
                 },
                 "gpu_band_summary": {
                     "type": "summary_series",
-                    "columns": ["gpu_band_min", "gpu_band_avg", "gpu_band_max"],
-                    "title": f"GPU Bandwidth Usage (%) - {self.monitor.num_gpus} GPUs",
+                    "columns": [
+                        "gpu_band_min",
+                        "gpu_band_avg",
+                        "gpu_band_max",
+                    ],
+                    "title": (
+                        "GPU Bandwidth Usage (%) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
                     "ylim": (0, 100),
                     "label": "GPU Bandwidth Summary",
                 },
                 "gpu_mem_summary": {
                     "type": "summary_series",
                     "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
-                    "title": f"GPU Memory Usage (GB) - {self.monitor.num_gpus} GPUs",
+                    "title": (
+                        "GPU Memory Usage (GB) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
                     "ylim": (0, monitor.gpu_memory),
                     "label": "GPU Memory Summary",
                 },
@@ -224,18 +248,24 @@ class PerformanceVisualizer:
             series_cols = [
                 col
                 for col in df.columns
-                if prefix and col.startswith(prefix) and not col.endswith("avg")
+                if prefix
+                and col.startswith(prefix)
+                and not col.endswith("avg")
             ]
             # Derive average column name from prefix
             avg_column = f"{prefix}avg" if prefix else None
-            if (avg_column is None or avg_column not in df.columns) and not series_cols:
+            if (
+                avg_column is None or avg_column not in df.columns
+            ) and not series_cols:
                 return
         elif plot_type == "summary_series":
             columns = config.get("columns", [])
             title = config.get("title", "")
             ylim = config.get("ylim")
             if level == "system":
-                title = re.sub(r"\d+", str(self.monitor.num_system_cpus), title)
+                title = re.sub(
+                    r"\d+", str(self.monitor.num_system_cpus), title
+                )
             available_cols = [col for col in columns if col in df.columns]
             if not available_cols:
                 return
@@ -267,7 +297,9 @@ class PerformanceVisualizer:
             ax.plot(df["time"], series, color="blue", linewidth=2)
         elif plot_type == "summary_series":
             line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
-            for i, (col, label) in enumerate(zip(columns, ["Min", "Average", "Max"])):
+            for i, (col, label) in enumerate(
+                zip(columns, ["Min", "Average", "Max"])
+            ):
                 if col in df.columns:
                     ax.plot(
                         df["time"],
@@ -492,9 +524,13 @@ class PerformanceVisualizer:
                     for metric_key, cfg in self.subsets[subset].items():
                         metrics.append(metric_key)
                         label = (
-                            cfg.get("label") if isinstance(cfg, dict) else metric_key
+                            cfg.get("label")
+                            if isinstance(cfg, dict)
+                            else metric_key
                         )
-                        labeled_options.append((label or metric_key, metric_key))
+                        labeled_options.append(
+                            (label or metric_key, metric_key)
+                        )
                 else:
                     logger.warning(
                         EXTENSION_ERROR_MESSAGES[
@@ -585,9 +621,6 @@ class InteractivePlotWrapper:
 
     def display_ui(self):
         """Display the Add button and all interactive panels."""
-        # Close all existing matplotlib plots to prevent memory leaks
-        # plt.close('all')
-
         display(widgets.VBox([self.add_panel_button, self.output_container]))
         self._on_add_panel_clicked(None)
 
@@ -628,19 +661,22 @@ class InteractivePlotWrapper:
             description="Level:",
         )
         fig, ax = plt.subplots(figsize=self.figsize, constrained_layout=True)
+        plt.close(fig)
         output = widgets.Output()
 
         def update_plot():
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
-            if df is not None and not df.empty:
-                with output:
-                    ax.clear()
+            output.clear_output(wait=True)
+            with output:
+                ax.clear()
+                if df is not None and not df.empty:
                     self.plot_callback(
                         df, metric, self.cell_range, self.show_idle, ax, level
                     )
-                    fig.canvas.draw_idle()
+                fig.canvas.draw_idle()
+                display(fig)
 
         def on_dropdown_change(change):
             if change["type"] == "change" and change["name"] == "value":
@@ -662,8 +698,6 @@ class InteractivePlotWrapper:
 
         # Initial plot
         update_plot()
-        with output:
-            plt.show()
 
         return widgets.VBox(
             [widgets.HBox([metric_dropdown, level_dropdown]), output]

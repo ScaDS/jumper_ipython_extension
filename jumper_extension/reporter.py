@@ -106,9 +106,7 @@ class PerformanceReporter:
             ),
         ]
 
-        print(
-            f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}"
-        )
+        print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")
         print("-" * 65)
         for name, col, total in metrics:
             if col in perfdata.columns:
