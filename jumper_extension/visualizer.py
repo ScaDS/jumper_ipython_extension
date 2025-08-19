@@ -554,6 +554,7 @@ class PerformanceVisualizer:
         plot_wrapper = None
 
         def update_plots():
+            nonlocal plot_wrapper
             current_cell_range, current_show_idle, current_show_bali = (
                 cell_range_slider.value,
                 show_idle_checkbox.value,
@@ -623,20 +624,31 @@ class PerformanceVisualizer:
                     print(f"Unknown metric subset: {subset}")
 
             with plot_output:
-                plot_output.clear_output()
-                # Create wrapper and pass monitor reference for BALI PID access
-                wrapper = InteractivePlotWrapper(
-                    self._plot_metric,
-                    metrics,
-                    processed_perfdata,
-                    current_cell_range,
-                    current_show_idle,
-                    current_show_bali,
-                    self.figsize,
-                )
-                # Store monitor reference for BALI colorbar
-                wrapper.monitor = self.monitor
-                wrapper.display_ui()
+                # Reuse existing wrapper when possible for smoother updates.
+                # Recreate only if it doesn't exist or if BALI toggle state changed.
+                if (
+                    plot_wrapper is None
+                    or getattr(plot_wrapper, "show_bali", None) != current_show_bali
+                ):
+                    plot_output.clear_output()
+                    plot_wrapper = InteractivePlotWrapper(
+                        self._plot_metric,
+                        metrics,
+                        processed_perfdata,
+                        current_cell_range,
+                        current_show_idle,
+                        current_show_bali,
+                        self.figsize,
+                    )
+                    # Provide monitor reference for BALI PID access and colorbar range
+                    plot_wrapper.monitor = self.monitor
+                    plot_wrapper.display_ui()
+                else:
+                    plot_wrapper.update_data(
+                        processed_perfdata,
+                        current_cell_range,
+                        current_show_idle,
+                    )
 
         # Set up observers and display
         for widget in [show_idle_checkbox, show_bali_checkbox, cell_range_slider]:
