@@ -1,5 +1,7 @@
 import argparse
 import shlex
+import pandas as pd
+from itables import show
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
@@ -8,6 +10,7 @@ from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
 from .utilities import get_available_levels
 from .visualizer import PerformanceVisualizer
+from .bali_hook import BaliResultsParser
 
 _perfmonitor_magics = None
 
@@ -145,6 +148,37 @@ class perfmonitorMagics(Magics):
         self.visualizer.plot()
 
     @line_magic
+    def bali_segments(self, line):
+        """Show interactive table of all BALI segments with start/end times"""
+        self._skip_report = True
+        # Use monitor PID if available to target the new schema; fall back to old schema otherwise
+        pid = getattr(self.monitor, "pid", 0) if self.monitor else 0
+        parser = BaliResultsParser()
+        segments = parser.collect_all_bali_segments(pid)
+        if not segments:
+            return print("No BALI segments to display.")
+
+        # Build DataFrame similar to cell_history.show_itable
+        data = []
+        for seg in segments:
+            data.append(
+                {
+                    "Framework": seg.get("framework", ""),
+                    "Iteration": seg.get("iteration", ""),
+                    "Start (s)": f"{seg.get('start_time', 0.0):.2f}",
+                    "End (s)": f"{seg.get('end_time', 0.0):.2f}",
+                    "Duration (s)": f"{seg.get('duration', 0.0):.2f}",
+                    "Tokens/sec": seg.get("tokens_per_sec", ""),
+                }
+            )
+
+        df = pd.DataFrame(data)
+        show(
+            df,
+            layout={"topStart": "search", "topEnd": None},
+        )
+
+    @line_magic
     def perfmonitor_enable_perfreports(self, line):
         """Enable automatic performance reports after each cell execution"""
         self._skip_report = True
@@ -248,8 +282,8 @@ class perfmonitorMagics(Magics):
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
             "cell_history -- show interactive table of cell execution history",
-            "perfmonitor_start [interval] -- start monitoring "
-            "(default: 1 second)",
+            "bali_segments -- show interactive table of BALI segments",
+            "perfmonitor_start [interval] -- start monitoring (default: 1 second)",
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- "
             "show report",
