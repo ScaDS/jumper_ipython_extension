@@ -66,7 +66,7 @@ def test_cell_operations(ipython, mock_cpu_only):
     with patch.object(magics.reporter, "print"):
         magics.post_run_cell(result)
     magics.perfmonitor_disable_perfreports("")
-    
+
     # Test auto-reports with level option
     magics.perfmonitor_enable_perfreports("--level user")
     assert magics.perfreports_level == "user"
@@ -90,15 +90,19 @@ def test_plot_scenarios(ipython, mock_cpu_only):
 
     # Test empty data
     with patch.object(
-        magics.monitor.data, "view", return_value=pd.DataFrame(columns=["time"])
+        magics.monitor.data,
+        "view",
+        return_value=pd.DataFrame(columns=["time"]),
     ):
         magics.perfmonitor_plot("")
 
     # Test with data
     df = pd.DataFrame({"time": [1.0, 2.0], "cpu_util_avg": [50.0, 60.0]})
-    with patch.object(magics.monitor.data, "view", return_value=df), patch.object(
-        magics.visualizer, "plot"
-    ), patch.object(magics.monitor, "start_time", 0.0):
+    with patch.object(
+        magics.monitor.data, "view", return_value=df
+    ), patch.object(magics.visualizer, "plot"), patch.object(
+        magics.monitor, "start_time", 0.0
+    ):
         magics.perfmonitor_plot("")
 
     # Test with cell filter
@@ -107,9 +111,11 @@ def test_plot_scenarios(ipython, mock_cpu_only):
         magics.pre_run_cell(cell_info)
         magics.post_run_cell(type("Result", (), {"result": None})())
 
-    with patch.object(magics.monitor.data, "view", return_value=df), patch.object(
-        magics.visualizer, "plot"
-    ), patch.object(magics.monitor, "start_time", 0.0):
+    with patch.object(
+        magics.monitor.data, "view", return_value=df
+    ), patch.object(magics.visualizer, "plot"), patch.object(
+        magics.monitor, "start_time", 0.0
+    ):
         magics.perfmonitor_plot("--cell 0")
 
     magics.perfmonitor_stop("")
@@ -135,7 +141,9 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
 
     # Test empty data
     with patch.object(
-        magics.monitor.data, "view", return_value=pd.DataFrame(columns=["time"])
+        magics.monitor.data,
+        "view",
+        return_value=pd.DataFrame(columns=["time"]),
     ):
         magics.reporter.print()
 
@@ -151,7 +159,9 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
     )
     with patch.object(magics.monitor.data, "view", return_value=df):
         magics.reporter.print()
-        magics.reporter.print((0, 0))  # Custom cell marks (use integer indices)
+        magics.reporter.print(
+            (0, 0)
+        )  # Custom cell marks (use integer indices)
         magics.perfmonitor_perfreport("--cell 0")  # Via command
 
     # Test with missing columns

@@ -31,7 +31,7 @@ class PerformanceVisualizer:
             )
         except Exception:
             self._io_window = 1
-            
+
         # Initialize BALI hook
         self.bali_parser = BaliResultsParser()
 
@@ -175,84 +175,59 @@ class PerformanceVisualizer:
                 current_time += cell_duration
 
         return compressed_perfdata, cell_boundaries
-    
+
     def _compress_bali_segments(self, bali_segments, cell_range, perfdata):
-        """Compress BALI segments to match compressed time axis exactly.
-        
-        This method must use the EXACT same logic as _compress_time_axis to ensure
-        BALI segments align perfectly with compressed cell boundaries.
-        """
+        """Compress BALI segments to match compressed time axis exactly
+        (mirrors _compress_time_axis)."""
         if not bali_segments:
             return []
-        
         start_idx, end_idx = cell_range
         cell_data = self.cell_history.view(start_idx, end_idx + 1)
-        compressed_bali_segments = []
-        current_time = 0
-        processed_segments = set()  # Track processed segments to avoid duplicates
-        
-        for idx, cell in cell_data.iterrows():
-            # CRITICAL: Only process cells that have performance data, exactly like _compress_time_axis
+        compressed, current_time, processed = [], 0, set()
+        for _, cell in cell_data.iterrows():
             cell_mask = (perfdata["time"] >= cell["start_time"]) & (
-                    perfdata["time"] <= cell["end_time"]
+                perfdata["time"] <= cell["end_time"]
             )
-            cell_perfdata = perfdata[cell_mask]
-            
-            # Skip cells with no performance data - this matches _compress_time_axis behavior
-            if cell_perfdata.empty:
+            if perfdata[cell_mask].empty:
                 continue
-                
-            cell_start = cell["start_time"]
-            cell_end = cell["end_time"]
+            cell_start, cell_end = cell["start_time"], cell["end_time"]
             cell_duration = cell_end - cell_start
-            
-            # Find BALI segments that overlap with this cell
-            for i, segment in enumerate(bali_segments):
-                seg_start = segment['start_time']
-                seg_end = segment['end_time']
-                
-                # Create unique identifier for this segment-cell combination
-                segment_id = (i, cell["index"])
-                if segment_id in processed_segments:
-                    continue  # Skip already processed segment-cell combinations
-                
-                # Check if segment overlaps with current cell
-                if seg_start < cell_end and seg_end > cell_start:
-                    # Calculate overlap
-                    overlap_start = max(seg_start, cell_start)
-                    overlap_end = min(seg_end, cell_end)
-                    
-                    if overlap_start < overlap_end:
-                        # Calculate compressed position using EXACT same logic as time axis compression
-                        offset_in_cell = overlap_start - cell_start
-                        compressed_start = current_time + offset_in_cell
-                        compressed_duration = overlap_end - overlap_start
-                        
-                        compressed_bali_segments.append({
-                            'start_time': compressed_start,
-                            'end_time': compressed_start + compressed_duration,
-                            'duration': compressed_duration,
-                            'tokens_per_sec': segment['tokens_per_sec'],
-                            'framework': segment['framework'],
-                            'iteration': segment['iteration']
-                        })
-                        
-                        processed_segments.add(segment_id)
-            
-            # Advance current_time by cell_duration - EXACT same logic as _compress_time_axis
+            for i, seg in enumerate(bali_segments):
+                seg_start, seg_end = seg["start_time"], seg["end_time"]
+                seg_id = (i, cell["index"])
+                if seg_id in processed or not (
+                    seg_start < cell_end and seg_end > cell_start
+                ):
+                    continue
+                overlap_start, overlap_end = max(seg_start, cell_start), min(
+                    seg_end, cell_end
+                )
+                if overlap_start < overlap_end:
+                    start = current_time + (overlap_start - cell_start)
+                    dur = overlap_end - overlap_start
+                    compressed.append(
+                        {
+                            "start_time": start,
+                            "end_time": start + dur,
+                            "duration": dur,
+                            "tokens_per_sec": seg["tokens_per_sec"],
+                            "framework": seg["framework"],
+                            "iteration": seg["iteration"],
+                        }
+                    )
+                    processed.add(seg_id)
             current_time += cell_duration
-        
-        return compressed_bali_segments
+        return compressed
 
     def _plot_metric(
-            self,
-            df,
-            metric,
-            cell_range=None,
-            show_idle=False,
-            ax: plt.Axes = None,
-            level="process",
-            show_bali=False,
+        self,
+        df,
+        metric,
+        cell_range=None,
+        show_idle=False,
+        ax: plt.Axes = None,
+        level="process",
+        show_bali=False,
     ):
         """Plot a single metric using its configuration"""
         config = next(
@@ -414,64 +389,84 @@ class PerformanceVisualizer:
             )
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
-                draw_cell_rect(start_time, cell["duration"],
-                               int(cell["index"]), 0.5)
-    
-    def _draw_bali_segments(self, ax, show_bali=False, show_idle=True, cell_range=None):
-        """Draw BALI benchmark segments as colored rectangles with tokens/sec colormap."""
+                draw_cell_rect(
+                    start_time, cell["duration"], int(cell["index"]), 0.5
+                )
+
+    def _draw_bali_segments(
+        self, ax, show_bali=False, show_idle=True, cell_range=None
+    ):
+        """Draw BALI benchmark segments as colored rectangles with
+        tokens/sec colormap."""
         if not show_bali:
             return
-            
         try:
-            # Get original BALI segments
-            bali_segments = self.bali_parser.collect_all_bali_segments(self.monitor.pid)
-            if not bali_segments:
+            segments = self.bali_parser.collect_all_bali_segments(
+                self.monitor.pid
+            )
+            if not segments:
                 return
-                
             y_min, y_max = ax.get_ylim()
             x_max, height = ax.get_xlim()[1], y_max - y_min
-            
-            # Determine which segments to use based on compression state
             if not show_idle and hasattr(self, "_compressed_bali_segments"):
-                # Use compressed segments
-                segments_to_draw = self._compressed_bali_segments
-                # Use the compressed segments for colormap range
-                vmin, vmax = self.bali_parser.get_tokens_per_sec_range(segments_to_draw)
+                draw_segments = self._compressed_bali_segments
+                vmin, vmax = self.bali_parser.get_tokens_per_sec_range(
+                    draw_segments
+                )
             else:
-                # Use original segments, but adjust for monitor start time
-                segments_to_draw = []
-                for segment in bali_segments:
-                    adjusted_segment = segment.copy()
-                    adjusted_segment['start_time'] = segment['start_time'] - self.monitor.start_time
-                    segments_to_draw.append(adjusted_segment)
-                vmin, vmax = self.bali_parser.get_tokens_per_sec_range(bali_segments)
-            
-            for segment in segments_to_draw:
-                start_time, duration = segment['start_time'], segment['duration']
-                tokens_per_sec = segment['tokens_per_sec']
-                
-                # Skip segments outside visible range
-                if start_time > x_max or start_time + duration < 0:
+                draw_segments = [
+                    {
+                        **s,
+                        "start_time": s["start_time"]
+                        - self.monitor.start_time,
+                    }
+                    for s in segments
+                ]
+                vmin, vmax = self.bali_parser.get_tokens_per_sec_range(
+                    segments
+                )
+            for s in draw_segments:
+                start, dur, tps = (
+                    s["start_time"],
+                    s["duration"],
+                    s["tokens_per_sec"],
+                )
+                if start > x_max or start + dur < 0:
                     continue
-                
-                color = self.bali_parser.get_color_for_tokens_per_sec(tokens_per_sec, vmin, vmax)
-                
-                # Draw rectangle
-                ax.add_patch(plt.Rectangle(
-                    (start_time, y_min), duration, height,
-                    facecolor=color, alpha=0.75, edgecolor="red",
-                    linestyle="-", linewidth=0.5, zorder=0.5
-                ))
-                
-                # Add tokens/sec label
+                color = self.bali_parser.get_color_for_tokens_per_sec(
+                    tps, vmin, vmax
+                )
+                ax.add_patch(
+                    plt.Rectangle(
+                        (start, y_min),
+                        dur,
+                        height,
+                        facecolor=color,
+                        alpha=0.75,
+                        edgecolor="red",
+                        linestyle="-",
+                        linewidth=0.5,
+                        zorder=0.5,
+                    )
+                )
                 ax.text(
-                    start_time + duration / 2, y_min + height * 0.5,
-                    f"{tokens_per_sec:.1f}",
-                    ha="center", va="center", fontsize=8, fontweight="bold", zorder=1,
-                    bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8, edgecolor="red")
+                    start + dur / 2,
+                    y_min + height * 0.5,
+                    f"{tps:.1f}",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    fontweight="bold",
+                    zorder=1,
+                    bbox=dict(
+                        boxstyle="round,pad=0.2",
+                        facecolor="white",
+                        alpha=0.8,
+                        edgecolor="red",
+                    ),
                 )
         except Exception:
-            pass  # Silently ignore BALI drawing errors
+            pass
 
     def plot(
         self,
@@ -596,23 +591,28 @@ class PerformanceVisualizer:
                         processed_perfdata[level_key] = processed_data
                 else:
                     processed_perfdata[level_key] = perfdata
-            
+
             # Handle BALI segments compression
             if current_show_bali:
-                bali_segments = self.bali_parser.collect_all_bali_segments(self.monitor.pid)
+                bali_segments = self.bali_parser.collect_all_bali_segments(
+                    self.monitor.pid
+                )
                 if not current_show_idle:
-                    # Use the same perfdata that was used for time axis compression
-                    # to ensure BALI segments are compressed with identical logic
-                    primary_level = get_available_levels()[0]  # Use first available level as reference
+                    primary_level = get_available_levels()[0]
                     reference_perfdata = perfdata_by_level.get(primary_level)
-                    if reference_perfdata is not None and not reference_perfdata.empty:
-                        self._compressed_bali_segments = self._compress_bali_segments(
-                            bali_segments, current_cell_range, reference_perfdata
+                    self._compressed_bali_segments = (
+                        self._compress_bali_segments(
+                            bali_segments,
+                            current_cell_range,
+                            reference_perfdata,
                         )
-                    else:
-                        self._compressed_bali_segments = []
+                        if (
+                            reference_perfdata is not None
+                            and not reference_perfdata.empty
+                        )
+                        else []
+                    )
                 else:
-                    # Clear compressed segments when showing idle
                     self._compressed_bali_segments = None
 
             # Get metrics for subsets
@@ -625,10 +625,12 @@ class PerformanceVisualizer:
 
             with plot_output:
                 # Reuse existing wrapper when possible for smoother updates.
-                # Recreate only if it doesn't exist or if BALI toggle state changed.
+                # Recreate only if it doesn't exist or if BALI toggle state
+                # changed.
                 if (
                     plot_wrapper is None
-                    or getattr(plot_wrapper, "show_bali", None) != current_show_bali
+                    or getattr(plot_wrapper, "show_bali", None)
+                    != current_show_bali
                 ):
                     plot_output.clear_output()
                     plot_wrapper = InteractivePlotWrapper(
@@ -640,7 +642,8 @@ class PerformanceVisualizer:
                         current_show_bali,
                         self.figsize,
                     )
-                    # Provide monitor reference for BALI PID access and colorbar range
+                    # Provide monitor reference for BALI PID access and
+                    # colorbar range
                     plot_wrapper.monitor = self.monitor
                     plot_wrapper.display_ui()
                 else:
@@ -651,7 +654,11 @@ class PerformanceVisualizer:
                     )
 
         # Set up observers and display
-        for widget in [show_idle_checkbox, show_bali_checkbox, cell_range_slider]:
+        for widget in [
+            show_idle_checkbox,
+            show_bali_checkbox,
+            cell_range_slider,
+        ]:
             widget.observe(lambda change: update_plots(), names="value")
 
         display(widgets.VBox([config_widgets, plot_output]))
@@ -663,21 +670,26 @@ class InteractivePlotWrapper:
     axes."""
 
     def __init__(
-            self,
-            plot_callback,
-            metrics: List[str],
-            perfdata_by_level,
-            cell_range=None,
-            show_idle=False,
-            show_bali=False,
-            figsize=None,
+        self,
+        plot_callback,
+        metrics: List[str],
+        perfdata_by_level,
+        cell_range=None,
+        show_idle=False,
+        show_bali=False,
+        figsize=None,
     ):
         self.plot_callback, self.perfdata_by_level, self.metrics = (
             plot_callback,
             perfdata_by_level,
             metrics,
         )
-        self.cell_range, self.show_idle, self.show_bali, self.figsize = cell_range, show_idle, show_bali, figsize
+        self.cell_range, self.show_idle, self.show_bali, self.figsize = (
+            cell_range,
+            show_idle,
+            show_bali,
+            figsize,
+        )
         self.shown_metrics, self.panel_count, self.max_panels = (
             set(),
             0,
@@ -700,14 +712,16 @@ class InteractivePlotWrapper:
             layout=Layout(margin="0 auto 20px auto"),
         )
         self.add_panel_button.on_click(self._on_add_panel_clicked)
-        
+
         # BALI colorbar components
         self.bali_colorbar_output = widgets.Output() if show_bali else None
         # Center the colorbar horizontally within the UI
         self.bali_colorbar_container = (
             widgets.HBox(
                 [self.bali_colorbar_output],
-                layout=Layout(display="flex", justify_content="center", width="100%"),
+                layout=Layout(
+                    display="flex", justify_content="center", width="100%"
+                ),
             )
             if show_bali
             else None
@@ -715,61 +729,48 @@ class InteractivePlotWrapper:
         self.bali_parser = BaliResultsParser()
 
     def _create_bali_colorbar(self):
-        """Create and display the global BALI colorbar showing tokens/sec range."""
+        """Create and display the global BALI colorbar showing tokens/sec
+        range."""
         if not self.show_bali or not self.bali_colorbar_output:
             return
-            
         try:
-            # Get PID from monitor reference
-            pid = 0
-            if hasattr(self, 'monitor') and hasattr(self.monitor, 'pid'):
-                pid = self.monitor.pid
-            
-            # Get BALI segments to determine colormap range
-            bali_segments = self.bali_parser.collect_all_bali_segments(pid)
-            if not bali_segments:
+            pid = getattr(getattr(self, "monitor", None), "pid", 0)
+            segments = self.bali_parser.collect_all_bali_segments(pid)
+            if not segments:
                 return
-                
-            vmin, vmax = self.bali_parser.get_tokens_per_sec_range(bali_segments)
-            
+            vmin, vmax = self.bali_parser.get_tokens_per_sec_range(segments)
             with self.bali_colorbar_output:
                 self.bali_colorbar_output.clear_output(wait=True)
-                
-                # Create a figure with proper GridSpec layout to avoid warnings
                 fig = plt.figure(figsize=(8, 0.8))
                 gs = fig.add_gridspec(1, 1, figure=fig, hspace=0, wspace=0)
-                
-                # Create a dummy axis for the colorbar
                 ax = fig.add_subplot(gs[0, 0])
-                ax.set_visible(False)  # Hide the axis but keep it for colorbar positioning
-                
-                # Create colorbar with proper positioning
-                norm = Normalize(vmin=vmin, vmax=vmax)
-                sm = ScalarMappable(norm=norm, cmap=self.bali_parser.colormap)
+                ax.set_visible(False)
+                sm = ScalarMappable(
+                    norm=Normalize(vmin=vmin, vmax=vmax),
+                    cmap=self.bali_parser.colormap,
+                )
                 sm.set_array([])
-                
-                # Position colorbar manually to avoid GridSpec warnings
-                cbar_ax = fig.add_axes([0.1, 0.3, 0.8, 0.4])  # [left, bottom, width, height]
-                cbar = fig.colorbar(sm, cax=cbar_ax, orientation='horizontal')
-                cbar.set_label('Tokens/Second', fontsize=12, fontweight='bold')
+                cbar = fig.colorbar(
+                    sm,
+                    cax=fig.add_axes([0.1, 0.3, 0.8, 0.4]),
+                    orientation="horizontal",
+                )
+                cbar.set_label("Tokens/Second", fontsize=12, fontweight="bold")
                 cbar.ax.tick_params(labelsize=10)
-                
-                # No need for tight_layout() since we're positioning manually
-                plt.close(fig)  # Prevent automatic display
+                plt.close(fig)
                 display(fig)
-                
-        except Exception as e:
-            # Silently handle errors in colorbar creation
+        except Exception:
             pass
 
     def display_ui(self):
-        """Display the Add button, BALI colorbar (if enabled), and all interactive panels."""
+        """Display the Add button, BALI colorbar (if enabled), and all
+        interactive panels."""
         ui_components = [self.add_panel_button]
-        
+
         if self.show_bali and self.bali_colorbar_output:
             self._create_bali_colorbar()
             ui_components.append(self.bali_colorbar_container)
-            
+
         ui_components.append(self.output_container)
         display(widgets.VBox(ui_components))
         self._on_add_panel_clicked(None)
@@ -819,7 +820,8 @@ class InteractivePlotWrapper:
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
-            # Always clear the output and redraw the figure to ensure in-place updates
+            # Always clear the output and redraw the figure to ensure
+            # in-place updates
             output.clear_output(wait=True)
             with output:
                 ax.clear()

@@ -151,7 +151,8 @@ class perfmonitorMagics(Magics):
     def bali_segments(self, line):
         """Show interactive table of all BALI segments with start/end times"""
         self._skip_report = True
-        # Use monitor PID if available to target the new schema; fall back to old schema otherwise
+        # Use monitor PID if available to target the new schema;
+        # fall back to old schema otherwise
         pid = getattr(self.monitor, "pid", 0) if self.monitor else 0
         parser = BaliResultsParser()
         segments = parser.collect_all_bali_segments(pid)
@@ -283,7 +284,8 @@ class perfmonitorMagics(Magics):
             "perfmonitor_resources -- show available hardware resources",
             "cell_history -- show interactive table of cell execution history",
             "bali_segments -- show interactive table of BALI segments",
-            "perfmonitor_start [interval] -- start monitoring (default: 1 second)",
+            "perfmonitor_start [interval] -- start monitoring "
+            "(default: 1 second)",
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- "
             "show report",
