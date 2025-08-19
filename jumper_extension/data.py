@@ -1,6 +1,17 @@
 import pandas as pd
+import logging
+import logging.config
 
 from .utilities import get_available_levels
+
+from .extension_messages import (
+    ExtensionErrorCode,
+    ExtensionInfoCode,
+    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_INFO_MESSAGES,
+)
+
+logger = logging.getLogger("extension")
 
 
 class PerformanceData:
@@ -16,7 +27,9 @@ class PerformanceData:
     def _validate_level(self, level):
         if level not in self.levels:
             raise ValueError(
-                f"Invalid level: {level}. Must be one of {self.levels}"
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.INVALID_LEVEL
+                ].format(level=level, levels=self.levels)
             )
 
     def _initialize_dataframe(self, level):
@@ -124,4 +137,18 @@ class PerformanceData:
     def export(self, filename="performance_data.csv", level="process"):
         """Export performance data to CSV."""
         self._validate_level(level)
+        if len(self.data[level]) == 0:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.NO_PERFORMANCE_DATA
+                ]
+            )
+            return
+
         self.data[level].to_csv(filename, index=False)
+
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
+                filename=filename
+            )
+        )

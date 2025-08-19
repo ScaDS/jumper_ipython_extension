@@ -1,10 +1,21 @@
 import json
+import logging
+import logging.config
 import os
 import time
 import warnings
 
 import pandas as pd
 from itables import show
+
+from .extension_messages import (
+    ExtensionErrorCode,
+    ExtensionInfoCode,
+    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_INFO_MESSAGES,
+)
+
+logger = logging.getLogger("extension")
 
 
 class CellHistory:
@@ -43,10 +54,10 @@ class CellHistory:
         return self.data.iloc[start:end]
 
     def print(self):
-        for i, (_, cell) in enumerate(self.data.iterrows()):
+        for _, cell in self.data.iterrows():
             print(
-                f"Cell #{int(cell['index'])} - "
-                f"Duration: {cell['duration']:.2f}s"
+                f"Cell #{int(cell['index'])} - Duration: "
+                f"{cell['duration']:.2f}s"
             )
             print("-" * 40)
             print(cell["raw_cell"])
@@ -54,7 +65,9 @@ class CellHistory:
 
     def show_itable(self):
         if self.data.empty:
-            print("No cell history to display.")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_CELL_HISTORY]
+            )
             return
 
         data = []
@@ -86,7 +99,9 @@ class CellHistory:
 
     def export(self, filename="cell_history.json"):
         if self.data.empty:
-            print(f"No cell history to export to {filename}")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_CELL_HISTORY]
+            )
             return
 
         # Determine format from filename extension
@@ -99,10 +114,21 @@ class CellHistory:
         elif format == "csv":
             self.data.to_csv(filename, index=False)
         else:
-            print(f"Unsupported format: {format}. Use 'json' or 'csv'")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT
+                ].format(
+                    format=format,
+                    supported_formats=", ".join(["json", "csv"]),
+                )
+            )
             return
 
-        print(f"Cell history exported to {filename}")
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
+                filename=filename
+            )
+        )
 
     def __len__(self):
         return len(self.data)

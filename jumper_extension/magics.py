@@ -1,13 +1,22 @@
 import argparse
+import logging
 import shlex
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
 from .cell_history import CellHistory
+from .extension_messages import (
+    ExtensionErrorCode,
+    ExtensionInfoCode,
+    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_INFO_MESSAGES,
+)
 from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
 from .utilities import get_available_levels
 from .visualizer import PerformanceVisualizer
+
+logger = logging.getLogger("extension")
 
 _perfmonitor_magics = None
 
@@ -42,7 +51,10 @@ class perfmonitorMagics(Magics):
         """Display available hardware resources (CPUs, memory, GPUs)"""
         self._skip_report = True
         if not self.monitor:
-            return print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
+            return
         print("[JUmPER]:")
         cpu_info = (
             f"  CPUs: {self.monitor.num_cpus}\n    "
@@ -70,14 +82,24 @@ class perfmonitorMagics(Magics):
         (default: 1 second)"""
         self._skip_report = True
         if self.monitor and self.monitor.running:
-            return print("[JUmPER]: Performance monitoring already running")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.MONITOR_ALREADY_RUNNING
+                ]
+            )
+            return
 
         interval = 1.0
         if line:
             try:
                 interval = float(line)
             except ValueError:
-                return print(f"[JUmPER]: Invalid interval value: {line}")
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_INTERVAL_VALUE
+                    ].format(interval=line)
+                )
+                return
 
         self.monitor = PerformanceMonitor(interval=interval)
         self.monitor.start()
@@ -94,7 +116,9 @@ class perfmonitorMagics(Magics):
         """Stop the active performance monitoring session"""
         self._skip_report = True
         if not self.monitor:
-            print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
             return
         self.monitor.stop()
 
@@ -127,13 +151,12 @@ class perfmonitorMagics(Magics):
                 start_idx = end_idx = int(cell_str)
             if 0 <= start_idx <= end_idx <= max_idx:
                 return (start_idx, end_idx)
-            error_msg = (
-                f"[JUmPER]: Invalid cell range: {cell_str} "
-                f"(valid range: 0-{max_idx})"
-            )
-            print(error_msg)
         except (ValueError, IndexError):
-            print(f"[JUmPER]: Invalid cell range format: {cell_str}")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.INVALID_CELL_RANGE
+                ].format(cell_range=cell_str)
+            )
         return None
 
     @line_magic
@@ -141,7 +164,10 @@ class perfmonitorMagics(Magics):
         """Open interactive plot with widgets for exploring performance data"""
         self._skip_report = True
         if not self.monitor:
-            return print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
+            return
         self.visualizer.plot()
 
     @line_magic
@@ -153,18 +179,22 @@ class perfmonitorMagics(Magics):
             return
         self.perfreports_level = args.level
         self.print_perfreports = True
-        msg = (
-            f"[JUmPER]: Performance reports enabled for each cell "
-            f"(level: {self.perfreports_level})"
+        logger.info(
+            EXTENSION_INFO_MESSAGES[
+                ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED
+            ].format(level=self.perfreports_level)
         )
-        print(msg)
 
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
         """Disable automatic performance reports after cell execution"""
         self._skip_report = True
         self.print_perfreports = False
-        print("[JUmPER]: Performance reports disabled")
+        logger.info(
+            EXTENSION_INFO_MESSAGES[
+                ExtensionInfoCode.PERFORMANCE_REPORTS_DISABLED
+            ]
+        )
 
     @line_magic
     def perfmonitor_perfreport(self, line):
@@ -172,7 +202,10 @@ class perfmonitorMagics(Magics):
         filters"""
         self._skip_report = True
         if not self.reporter:
-            return print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
+            return
         args = self._parse_arguments(line)
         if not args:
             return
@@ -188,7 +221,10 @@ class perfmonitorMagics(Magics):
         """Export performance data to CSV with specified monitoring level"""
         self._skip_report = True
         if not self.monitor:
-            return print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
+            return
         parts = line.strip().split()
         filename = "performance_data.csv"
         if parts and not parts[0].startswith("--"):
@@ -196,15 +232,17 @@ class perfmonitorMagics(Magics):
             line = " ".join(parts[1:])
         args = self._parse_arguments(line)
         if not args:
-            usage_msg = (
-                "[JUmPER]: Usage: %perfmonitor_export_perfdata "
-                "[filename] --level LEVEL"
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.DEFINE_LEVEL
+                ].format(levels=", ".join(get_available_levels()))
             )
-            return print(usage_msg)
+            return
         self.monitor.data.export(filename, level=args.level)
-        print(
-            f"[JUmPER]: Performance data ({args.level} level) exported to "
-            f"{filename}"
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
+                filename=filename
+            )
         )
 
     @line_magic
@@ -213,7 +251,10 @@ class perfmonitorMagics(Magics):
         level"""
         self._skip_report = True
         if not self.monitor:
-            return print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
+            return
         parts = line.strip().split()
 
         dataframe_name = None
@@ -222,16 +263,18 @@ class perfmonitorMagics(Magics):
             line = " ".join(parts[1:])
         args = self._parse_arguments(line)
         if not args:
-            usage_msg = (
-                "[JUmPER]: Usage: %perfmonitor_perfdata_to_dataframe "
-                "[df_name] --level LEVEL"
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.DEFINE_LEVEL
+                ].format(levels=", ".join(get_available_levels()))
             )
-            return print(usage_msg)
+            return
         dataframe_value = self.monitor.data.view(level=args.level)
         self.shell.push({dataframe_name: dataframe_value})
-        print(
-            f"[JUmPER]: Performance data ({args.level} level) exported to "
-            f"{dataframe_name}"
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
+                filename=dataframe_name
+            )
         )
 
     @line_magic
@@ -265,7 +308,7 @@ class perfmonitorMagics(Magics):
             "perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL] -- "
             "perfdata to dataframe",
         ]
-        print("[JUmPER]: Available commands:")
+        print("Available commands:")
         for cmd in commands:
             print(f"  {cmd}")
 
@@ -299,7 +342,7 @@ def load_ipython_extension(ipython):
     ipython.events.register("pre_run_cell", _perfmonitor_magics.pre_run_cell)
     ipython.events.register("post_run_cell", _perfmonitor_magics.post_run_cell)
     ipython.register_magics(_perfmonitor_magics)
-    print("[JUmPER]: Perfmonitor extension loaded.")
+    logger.info(EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXTENSION_LOADED])
 
 
 def unload_ipython_extension(ipython):

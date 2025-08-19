@@ -1,4 +1,5 @@
 import os
+import logging
 from unittest.mock import patch
 
 import pytest
@@ -12,11 +13,24 @@ def test_performance_data(temp_dir):
     """Test PerformanceData functionality"""
     # Test initialization and empty dataframe
     data = PerformanceData(num_cpus=2, num_gpus=0, num_system_cpus=4)
-    assert data.num_cpus == 2 and data.num_gpus == 0 and len(data.data["system"]) == 0
+    assert (
+        data.num_cpus == 2
+        and data.num_gpus == 0
+        and len(data.data["system"]) == 0
+    )
     assert len(data.view()) == 0
 
     # Test add_sample and view
-    data.add_sample("system", 1234567890, [25.0, 30.0, 25.0, 30.0], 4.0, [], [], [], [100, 50, 1024, 512])
+    data.add_sample(
+        "system",
+        1234567890,
+        [25.0, 30.0, 25.0, 30.0],
+        4.0,
+        [],
+        [],
+        [],
+        [100, 50, 1024, 512],
+    )
     assert len(data.data["system"]) == 1
     df = data.view("system")
     assert len(df) == 1 and df["cpu_util_avg"].iloc[0] == 27.5
@@ -31,15 +45,30 @@ def test_performance_data_gpu():
     """Test GPU functionality and slicing"""
     data = PerformanceData(num_cpus=2, num_gpus=1, num_system_cpus=4)
     data.add_sample(
-        "system", 1234567890, [25.0, 30.0, 25.0, 30.0], 4.0, [75.0], [20.0], [60.0], [100, 50, 1024, 512]
+        "system",
+        1234567890,
+        [25.0, 30.0, 25.0, 30.0],
+        4.0,
+        [75.0],
+        [20.0],
+        [60.0],
+        [100, 50, 1024, 512],
     )
     data.add_sample(
-        "system", 1234567891, [35.0, 40.0, 25.0, 40.0], 5.0, [80.0], [25.0], [65.0], [200, 60, 2048, 1024]
+        "system",
+        1234567891,
+        [35.0, 40.0, 25.0, 40.0],
+        5.0,
+        [80.0],
+        [25.0],
+        [65.0],
+        [200, 60, 2048, 1024],
     )
 
     df = data.view("system")
     assert len(df) == 2 and all(
-        col in df.columns for col in ["gpu_util_avg", "gpu_band_avg", "gpu_mem_avg"]
+        col in df.columns
+        for col in ["gpu_util_avg", "gpu_band_avg", "gpu_mem_avg"]
     )
     assert len(data.view("system", slice_=(0, 0))) == 1
 
@@ -47,38 +76,62 @@ def test_performance_data_gpu():
 def test_performance_data_multi_level():
     """Test multi-level functionality"""
     data = PerformanceData(num_cpus=2, num_gpus=0, num_system_cpus=4)
-    
+
     # Add data to different levels
-    data.add_sample("user", 1234567890, [10.0, 15.0], 1.0, [], [], [], [50, 25, 512, 256])
-    data.add_sample("process", 1234567890, [20.0, 25.0], 2.0, [], [], [], [75, 35, 768, 384])
-    data.add_sample("system", 1234567890, [30.0, 35.0, 35.0, 30.0], 3.0, [], [], [], [100, 50, 1024, 512])
-    
+    data.add_sample(
+        "user", 1234567890, [10.0, 15.0], 1.0, [], [], [], [50, 25, 512, 256]
+    )
+    data.add_sample(
+        "process",
+        1234567890,
+        [20.0, 25.0],
+        2.0,
+        [],
+        [],
+        [],
+        [75, 35, 768, 384],
+    )
+    data.add_sample(
+        "system",
+        1234567890,
+        [30.0, 35.0, 35.0, 30.0],
+        3.0,
+        [],
+        [],
+        [],
+        [100, 50, 1024, 512],
+    )
+
     # Test individual level views
     user_df = data.view("user")
     process_df = data.view("process")
     system_df = data.view("system")
-    
+
     assert len(user_df) == 1 and user_df["cpu_util_avg"].iloc[0] == 12.5
     assert len(process_df) == 1 and process_df["cpu_util_avg"].iloc[0] == 22.5
     assert len(system_df) == 1 and system_df["cpu_util_avg"].iloc[0] == 32.5
-    
+
     # Test export for specific levels
     import tempfile
+
     with tempfile.TemporaryDirectory() as temp_dir:
         user_file = os.path.join(temp_dir, "user_test.csv")
         system_file = os.path.join(temp_dir, "system_test.csv")
-        
+
         data.export(user_file, level="user")
         data.export(system_file, level="system")
-        
+
         # Check that files were created
         assert os.path.exists(user_file)
         assert os.path.exists(system_file)
-        
+
         # Verify content
         import pandas as pd
+
         user_data = pd.read_csv(user_file)
-        assert len(user_data) == 1 and user_data["cpu_util_avg"].iloc[0] == 12.5
+        assert (
+            len(user_data) == 1 and user_data["cpu_util_avg"].iloc[0] == 12.5
+        )
 
 
 # === Test CellHistory functionality ===
@@ -98,7 +151,7 @@ def test_start_current_end_cell():
     assert len(history.data) == 1
 
 
-def test_view_method(simple_history, capsys):
+def test_view_method(simple_history, capsys, caplog):
     df = simple_history.view()
     assert len(df) == 1
     assert df.iloc[0]["index"] == 0
@@ -106,8 +159,10 @@ def test_view_method(simple_history, capsys):
     assert df.iloc[0]["start_time"] < df.iloc[0]["end_time"]
 
     # Test print method
+    caplog.set_level(logging.INFO, logger="extension")
     simple_history.print()
-    assert "Cell #0" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert ("Cell #0" in out) or ("Cell #0" in caplog.text)
 
 
 def test_show_itable(simple_history):
@@ -144,4 +199,7 @@ def test_view_operations(simple_history):
 
 def test_is_duration_calculated_correctly(simple_history):
     df = simple_history.view()
-    assert df.iloc[0]["duration"] == df.iloc[0]["end_time"] - df.iloc[0]["start_time"]
+    assert (
+        df.iloc[0]["duration"]
+        == df.iloc[0]["end_time"] - df.iloc[0]["start_time"]
+    )

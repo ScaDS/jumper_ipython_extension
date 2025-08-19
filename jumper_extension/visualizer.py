@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import List
 
@@ -5,8 +6,14 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
+from .extension_messages import (
+    ExtensionErrorCode,
+    EXTENSION_ERROR_MESSAGES,
+)
 from .utilities import filter_perfdata, get_available_levels
 from .logo import logo_image, jumper_colors
+
+logger = logging.getLogger("extension")
 
 
 class PerformanceVisualizer:
@@ -29,105 +36,134 @@ class PerformanceVisualizer:
         except Exception:
             self._io_window = 1
 
-        # Compressed metrics configuration
+        # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
             "cpu_all": {
-                "cpu": (
-                    "multi_series",
-                    "cpu_util_",
-                    "cpu_util_avg",
-                    "CPU Utilization (%) - Across Cores",
-                    (0, 100),
-                )
+                "cpu": {
+                    "type": "multi_series",
+                    "prefix": "cpu_util_",
+                    "title": "CPU Utilization (%) - Across Cores",
+                    "ylim": (0, 100),
+                    "label": "CPU Utilization (All Cores)",
+                }
             },
             "gpu_all": {
-                "gpu_util": (
-                    "multi_series",
-                    "gpu_util_",
-                    "gpu_util_avg",
-                    "GPU Utilization (%) - Across GPUs",
-                    (0, 100),
-                ),
-                "gpu_band": (
-                    "multi_series",
-                    "gpu_band_",
-                    "gpu_band_avg",
-                    "GPU Bandwidth Usage (%) - Across GPUs",
-                    (0, 100),
-                ),
-                "gpu_mem": (
-                    "multi_series",
-                    "gpu_mem_",
-                    "gpu_mem_avg",
-                    "GPU Memory Usage (GB) - Across GPUs",
-                    (0, monitor.gpu_memory),
-                ),
+                "gpu_util": {
+                    "type": "multi_series",
+                    "prefix": "gpu_util_",
+                    "title": "GPU Utilization (%) - Across GPUs",
+                    "ylim": (0, 100),
+                    "label": "GPU Utilization (All GPUs)",
+                },
+                "gpu_band": {
+                    "type": "multi_series",
+                    "prefix": "gpu_band_",
+                    "title": "GPU Bandwidth Usage (%) - Across GPUs",
+                    "ylim": (0, 100),
+                    "label": "GPU Bandwidth (All GPUs)",
+                },
+                "gpu_mem": {
+                    "type": "multi_series",
+                    "prefix": "gpu_mem_",
+                    "title": "GPU Memory Usage (GB) - Across GPUs",
+                    "ylim": (0, monitor.gpu_memory),
+                    "label": "GPU Memory (All GPUs)",
+                },
             },
             "cpu": {
-                "cpu_summary": (
-                    "summary_series",
-                    ["cpu_util_min", "cpu_util_avg", "cpu_util_max"],
-                    ["Min", "Average", "Max"],
-                    f"CPU Utilization (%) - {self.monitor.num_cpus} CPUs",
-                    (0, 100),
-                )
+                "cpu_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "cpu_util_min",
+                        "cpu_util_avg",
+                        "cpu_util_max",
+                    ],
+                    "title": (
+                        "CPU Utilization (%) - "
+                        f"{self.monitor.num_cpus} CPUs"
+                    ),
+                    "ylim": (0, 100),
+                    "label": "CPU Utilization Summary",
+                }
             },
             "gpu": {
-                "gpu_util_summary": (
-                    "summary_series",
-                    ["gpu_util_min", "gpu_util_avg", "gpu_util_max"],
-                    ["Min", "Average", "Max"],
-                    f"GPU Utilization (%) - {self.monitor.num_gpus} GPUs",
-                    (0, 100),
-                ),
-                "gpu_band_summary": (
-                    "summary_series",
-                    ["gpu_band_min", "gpu_band_avg", "gpu_band_max"],
-                    ["Min", "Average", "Max"],
-                    f"GPU Bandwidth Usage (%) - {self.monitor.num_gpus} GPUs",
-                    (0, 100),
-                ),
-                "gpu_mem_summary": (
-                    "summary_series",
-                    ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
-                    ["Min", "Average", "Max"],
-                    f"GPU Memory Usage (GB) - {self.monitor.num_gpus} GPUs",
-                    (0, monitor.gpu_memory),
-                ),
+                "gpu_util_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "gpu_util_min",
+                        "gpu_util_avg",
+                        "gpu_util_max",
+                    ],
+                    "title": (
+                        "GPU Utilization (%) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
+                    "ylim": (0, 100),
+                    "label": "GPU Utilization Summary",
+                },
+                "gpu_band_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "gpu_band_min",
+                        "gpu_band_avg",
+                        "gpu_band_max",
+                    ],
+                    "title": (
+                        "GPU Bandwidth Usage (%) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
+                    "ylim": (0, 100),
+                    "label": "GPU Bandwidth Summary",
+                },
+                "gpu_mem_summary": {
+                    "type": "summary_series",
+                    "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
+                    "title": (
+                        "GPU Memory Usage (GB) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
+                    "ylim": (0, monitor.gpu_memory),
+                    "label": "GPU Memory Summary",
+                },
             },
             "mem": {
-                "memory": (
-                    "single_series",
-                    "memory",
-                    "Memory Usage (GB)",
-                    None,  # Will be set dynamically based on level
-                )
+                "memory": {
+                    "type": "single_series",
+                    "column": "memory",
+                    "title": "Memory Usage (GB)",
+                    "ylim": None,  # Will be set dynamically based on level
+                    "label": "Memory Usage",
+                }
             },
             "io": {
-                "io_read": (
-                    "single_series",
-                    "io_read",
-                    "I/O Read (MB/s)",
-                    None,
-                ),
-                "io_write": (
-                    "single_series",
-                    "io_write",
-                    "I/O Write (MB/s)",
-                    None,
-                ),
-                "io_read_count": (
-                    "single_series",
-                    "io_read_count",
-                    "I/O Read Operations (ops/s)",
-                    None,
-                ),
-                "io_write_count": (
-                    "single_series",
-                    "io_write_count",
-                    "I/O Write Operations (ops/s)",
-                    None,
-                ),
+                "io_read": {
+                    "type": "single_series",
+                    "column": "io_read",
+                    "title": "I/O Read (MB/s)",
+                    "ylim": None,
+                    "label": "IO Read MB/s",
+                },
+                "io_write": {
+                    "type": "single_series",
+                    "column": "io_write",
+                    "title": "I/O Write (MB/s)",
+                    "ylim": None,
+                    "label": "IO Write MB/s",
+                },
+                "io_read_count": {
+                    "type": "single_series",
+                    "column": "io_read_count",
+                    "title": "I/O Read Operations (ops/s)",
+                    "ylim": None,
+                    "label": "IO Read Ops",
+                },
+                "io_write_count": {
+                    "type": "single_series",
+                    "column": "io_write_count",
+                    "title": "I/O Write Operations (ops/s)",
+                    "ylim": None,
+                    "label": "IO Write Ops",
+                },
             },
         }
 
@@ -191,29 +227,41 @@ class PerformanceVisualizer:
         if not config:
             return
 
-        # Parse compressed config format
-        if len(config) == 4:  # single_series: (type, column, title, ylim)
-            plot_type, column, title, ylim = config
+        # Parse dict-based config format
+        if not isinstance(config, dict):
+            return
+
+        plot_type = config.get("type")
+        if plot_type == "single_series":
+            column = config.get("column")
+            title = config.get("title", "")
+            ylim = config.get("ylim")
             # Set dynamic memory limit for memory metric
             if metric == "memory" and ylim is None:
                 ylim = (0, self.monitor.memory_limits[level])
-            if column not in df.columns:
+            if not column or column not in df.columns:
                 return
-        elif (
-            len(config) == 5 and config[0] == "multi_series"
-        ):  # multi_series: (type, prefix, avg_column, title, ylim)
-            plot_type, prefix, avg_column, title, ylim = config
+        elif plot_type == "multi_series":
+            prefix = config.get("prefix", "")
+            title = config.get("title", "")
+            ylim = config.get("ylim")
             series_cols = [
                 col
                 for col in df.columns
-                if col.startswith(prefix) and not col.endswith("avg")
+                if prefix
+                and col.startswith(prefix)
+                and not col.endswith("avg")
             ]
-            if avg_column not in df.columns and not series_cols:
+            # Derive average column name from prefix
+            avg_column = f"{prefix}avg" if prefix else None
+            if (
+                avg_column is None or avg_column not in df.columns
+            ) and not series_cols:
                 return
-        elif (
-            len(config) == 5 and config[0] == "summary_series"
-        ):  # summary_series: (type, columns, labels, title, ylim)
-            plot_type, columns, labels, title, ylim = config
+        elif plot_type == "summary_series":
+            columns = config.get("columns", [])
+            title = config.get("title", "")
+            ylim = config.get("ylim")
             if level == "system":
                 title = re.sub(
                     r"\d+", str(self.monitor.num_system_cpus), title
@@ -249,15 +297,17 @@ class PerformanceVisualizer:
             ax.plot(df["time"], series, color="blue", linewidth=2)
         elif plot_type == "summary_series":
             line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
-            for i, (col, label) in enumerate(zip(columns, labels)):
+            for i, (col, label) in enumerate(
+                zip(columns, ["Min", "Average", "Max"])
+            ):
                 if col in df.columns:
                     ax.plot(
                         df["time"],
                         df[col],
                         color="blue",
-                        linestyle=line_styles[i],
+                        linestyle=line_styles[i % len(line_styles)],
                         linewidth=2,
-                        alpha=alpha_vals[i],
+                        alpha=alpha_vals[i % len(alpha_vals)],
                         label=label,
                     )
             ax.legend()
@@ -357,7 +407,9 @@ class PerformanceVisualizer:
         configuration."""
         valid_cells = self.cell_history.view()
         if len(valid_cells) == 0:
-            print("No cell history available")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_CELL_HISTORY]
+            )
             return
 
         # Default to all cells if no range specified
@@ -437,7 +489,11 @@ class PerformanceVisualizer:
             if all(df.empty for df in perfdata_by_level.values()):
                 with plot_output:
                     plot_output.clear_output()
-                    print("No performance data available for selected range")
+                    logger.warning(
+                        EXTENSION_ERROR_MESSAGES[
+                            ExtensionErrorCode.NO_PERFORMANCE_DATA
+                        ]
+                    )
                     # Clear plot wrapper when no data
                     plot_wrapper = None
                 return
@@ -460,13 +516,30 @@ class PerformanceVisualizer:
                 else:
                     processed_perfdata[level_key] = perfdata
 
-            # Get metrics for subsets
+            # Get metrics for subsets and build labeled dropdown options
             metrics = []
+            labeled_options = []
             for subset in metric_subsets:
                 if subset in self.subsets:
-                    metrics.extend(self.subsets[subset].keys())
+                    for metric_key, cfg in self.subsets[subset].items():
+                        metrics.append(metric_key)
+                        label = (
+                            cfg.get("label")
+                            if isinstance(cfg, dict)
+                            else metric_key
+                        )
+                        labeled_options.append(
+                            (label or metric_key, metric_key)
+                        )
                 else:
-                    print(f"Unknown metric subset: {subset}")
+                    logger.warning(
+                        EXTENSION_ERROR_MESSAGES[
+                            ExtensionErrorCode.INVALID_METRIC_SUBSET
+                        ].format(
+                            subset=subset,
+                            supported_subsets=", ".join(self.subsets.keys()),
+                        )
+                    )
 
             with plot_output:
                 if plot_wrapper is None:
@@ -475,6 +548,7 @@ class PerformanceVisualizer:
                     plot_wrapper = InteractivePlotWrapper(
                         self._plot_metric,
                         metrics,
+                        labeled_options,
                         processed_perfdata,
                         current_cell_range,
                         current_show_idle,
@@ -505,6 +579,7 @@ class InteractivePlotWrapper:
         self,
         plot_callback,
         metrics: List[str],
+        labeled_options,
         perfdata_by_level,
         cell_range=None,
         show_idle=False,
@@ -515,6 +590,7 @@ class InteractivePlotWrapper:
             perfdata_by_level,
             metrics,
         )
+        self.labeled_options = labeled_options
         self.cell_range, self.show_idle, self.figsize = (
             cell_range,
             show_idle,
@@ -545,9 +621,6 @@ class InteractivePlotWrapper:
 
     def display_ui(self):
         """Display the Add button and all interactive panels."""
-        # Close all existing matplotlib plots to prevent memory leaks
-        # plt.close('all')
-
         display(widgets.VBox([self.add_panel_button, self.output_container]))
         self._on_add_panel_clicked(None)
 
@@ -578,7 +651,7 @@ class InteractivePlotWrapper:
         """Create metric and level dropdown + matplotlib figure panel with
         persistent Axes."""
         metric_dropdown = widgets.Dropdown(
-            options=self.metrics,
+            options=self.labeled_options,
             value=self._get_next_metric(),
             description="Metric:",
         )
@@ -588,19 +661,22 @@ class InteractivePlotWrapper:
             description="Level:",
         )
         fig, ax = plt.subplots(figsize=self.figsize, constrained_layout=True)
+        plt.close(fig)
         output = widgets.Output()
 
         def update_plot():
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
-            if df is not None and not df.empty:
-                with output:
-                    ax.clear()
+            output.clear_output(wait=True)
+            with output:
+                ax.clear()
+                if df is not None and not df.empty:
                     self.plot_callback(
                         df, metric, self.cell_range, self.show_idle, ax, level
                     )
-                    fig.canvas.draw_idle()
+                fig.canvas.draw_idle()
+                display(fig)
 
         def on_dropdown_change(change):
             if change["type"] == "change" and change["name"] == "value":
@@ -622,8 +698,6 @@ class InteractivePlotWrapper:
 
         # Initial plot
         update_plot()
-        with output:
-            plt.show()
 
         return widgets.VBox(
             [widgets.HBox([metric_dropdown, level_dropdown]), output]
