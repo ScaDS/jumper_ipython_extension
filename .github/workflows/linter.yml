@@ -4,6 +4,8 @@ on:
   workflow_run:
     workflows: [Formatter]
     types: [completed]
+    branches:
+      - '*'
 
 jobs:
   linter:
