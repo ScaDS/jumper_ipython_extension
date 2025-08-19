@@ -54,16 +54,90 @@ class BaliResultsParser:
                 t = iteration_data.get("token_per_sec")
                 if s is None or e is None or t is None:
                     continue
-                segments.append(
-                    {
-                        "start_time": s,
-                        "end_time": e,
-                        "duration": e - s,
-                        "tokens_per_sec": t,
-                        "framework": framework,
-                        "iteration": iteration_key,
-                    }
-                )
+
+                # Try to extract optional metadata if present in various common schemas
+                def _first_present(d: Dict, keys):
+                    for k in keys:
+                        if isinstance(d, dict) and k in d:
+                            return d.get(k)
+                    return None
+
+                # Candidates where metadata might live
+                meta_candidates = [
+                    iteration_data,
+                    iteration_data.get("config", {}),
+                    iteration_data.get("params", {}),
+                    framework_data,
+                ]
+
+                meta: Dict = {"model": None, "batch_size": None, "input_len": None, "output_len": None}
+                for cand in meta_candidates:
+                    if meta["model"] is None:
+                        meta["model"] = _first_present(
+                            cand,
+                            [
+                                "model",
+                                "model_name",
+                                "model_id",
+                                "llm",
+                                "hf_model",
+                            ],
+                        )
+                    if meta["batch_size"] is None:
+                        meta["batch_size"] = _first_present(
+                            cand, ["batch_size", "batch", "bs", "micro_batch_size"]
+                        )
+                    if meta["input_len"] is None:
+                        meta["input_len"] = _first_present(
+                            cand,
+                            [
+                                "input_len",
+                                "input_length",
+                                "prompt_tokens",
+                                "input_tokens",
+                                "num_input_tokens",
+                            ],
+                        )
+                    if meta["output_len"] is None:
+                        meta["output_len"] = _first_present(
+                            cand,
+                            [
+                                "output_len",
+                                "output_length",
+                                "generated_tokens",
+                                "output_tokens",
+                                "new_tokens",
+                                "num_output_tokens",
+                            ],
+                        )
+
+                def _coerce_int(value):
+                    try:
+                        return int(value)
+                    except Exception:
+                        return value
+
+                if meta["batch_size"] is not None:
+                    meta["batch_size"] = _coerce_int(meta["batch_size"])
+                if meta["input_len"] is not None:
+                    meta["input_len"] = _coerce_int(meta["input_len"])
+                if meta["output_len"] is not None:
+                    meta["output_len"] = _coerce_int(meta["output_len"])
+
+                seg = {
+                    "start_time": s,
+                    "end_time": e,
+                    "duration": e - s,
+                    "tokens_per_sec": t,
+                    "framework": framework,
+                    "iteration": iteration_key,
+                    # Optional metadata for hover tooltips
+                    "model": meta["model"],
+                    "batch_size": meta["batch_size"],
+                    "input_len": meta["input_len"],
+                    "output_len": meta["output_len"],
+                }
+                segments.append(seg)
         return segments
 
     def collect_all_bali_segments(self, pid: int) -> List[Dict]:

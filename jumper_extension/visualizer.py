@@ -210,9 +210,14 @@ class PerformanceVisualizer:
                             "start_time": start,
                             "end_time": start + dur,
                             "duration": dur,
-                            "tokens_per_sec": seg["tokens_per_sec"],
-                            "framework": seg["framework"],
-                            "iteration": seg["iteration"],
+                            "tokens_per_sec": seg.get("tokens_per_sec"),
+                            "framework": seg.get("framework"),
+                            "iteration": seg.get("iteration"),
+                            # pass-through optional metadata for hover
+                            "model": seg.get("model"),
+                            "batch_size": seg.get("batch_size"),
+                            "input_len": seg.get("input_len"),
+                            "output_len": seg.get("output_len"),
                         }
                     )
                     processed.add(seg_id)
@@ -397,7 +402,7 @@ class PerformanceVisualizer:
         self, ax, show_bali=False, show_idle=True, cell_range=None
     ):
         """Draw BALI benchmark segments as colored rectangles with
-        tokens/sec colormap."""
+        tokens/sec colormap and enable hover tooltips for details."""
         if not show_bali:
             return
         try:
@@ -425,6 +430,24 @@ class PerformanceVisualizer:
                 vmin, vmax = self.bali_parser.get_tokens_per_sec_range(
                     segments
                 )
+            # Reset hover handler if present from previous draw
+            if hasattr(ax, "_bali_hover") and isinstance(ax._bali_hover, dict):
+                try:
+                    ax.figure.canvas.mpl_disconnect(ax._bali_hover.get("cid"))
+                except Exception:
+                    pass
+                ax._bali_hover = None
+            ax._bali_patches = []
+            # Prepare hover annotation
+            annot = ax.annotate(
+                "",
+                xy=(0, 0),
+                xytext=(10, 10),
+                textcoords="offset points",
+                bbox=dict(boxstyle="round", facecolor="white", edgecolor="red", alpha=0.9),
+                fontsize=8,
+            )
+            annot.set_visible(False)
             for s in draw_segments:
                 start, dur, tps = (
                     s["start_time"],
@@ -436,35 +459,61 @@ class PerformanceVisualizer:
                 color = self.bali_parser.get_color_for_tokens_per_sec(
                     tps, vmin, vmax
                 )
-                ax.add_patch(
-                    plt.Rectangle(
-                        (start, y_min),
-                        dur,
-                        height,
-                        facecolor=color,
-                        alpha=0.75,
-                        edgecolor="red",
-                        linestyle="-",
-                        linewidth=0.5,
-                        zorder=0.5,
-                    )
+                rect = plt.Rectangle(
+                    (start, y_min),
+                    dur,
+                    height,
+                    facecolor=color,
+                    alpha=0.75,
+                    edgecolor="red",
+                    linestyle="-",
+                    linewidth=0.5,
+                    zorder=0.5,
                 )
-                ax.text(
-                    start + dur / 2,
-                    y_min + height * 0.5,
-                    f"{tps:.1f}",
-                    ha="center",
-                    va="center",
-                    fontsize=8,
-                    fontweight="bold",
-                    zorder=1,
-                    bbox=dict(
-                        boxstyle="round,pad=0.2",
-                        facecolor="white",
-                        alpha=0.8,
-                        edgecolor="red",
-                    ),
-                )
+                # store metadata for hover
+                rect._bali_info = {
+                    "model": s.get("model"),
+                    "framework": s.get("framework"),
+                    "batch_size": s.get("batch_size"),
+                    "input_len": s.get("input_len"),
+                    "output_len": s.get("output_len"),
+                }
+                ax.add_patch(rect)
+                ax._bali_patches.append(rect)
+
+            # Hover callback
+            def _format_value(v):
+                return "n/a" if v is None or v == "" else str(v)
+
+            def on_move(event):
+                if event.inaxes != ax:
+                    if annot.get_visible():
+                        annot.set_visible(False)
+                        ax.figure.canvas.draw_idle()
+                    return
+                # Find first patch under cursor
+                for patch in ax._bali_patches:
+                    contains, _ = patch.contains(event)
+                    if contains:
+                        info = getattr(patch, "_bali_info", {})
+                        text = (
+                            f"Model: {_format_value(info.get('model'))}\n"
+                            f"Framework: {_format_value(info.get('framework'))}\n"
+                            f"Batch size: {_format_value(info.get('batch_size'))}\n"
+                            f"Input len: {_format_value(info.get('input_len'))}\n"
+                            f"Output len: {_format_value(info.get('output_len'))}"
+                        )
+                        annot.xy = (event.xdata, event.ydata)
+                        annot.set_text(text)
+                        annot.set_visible(True)
+                        ax.figure.canvas.draw_idle()
+                        return
+                if annot.get_visible():
+                    annot.set_visible(False)
+                    ax.figure.canvas.draw_idle()
+
+            cid = ax.figure.canvas.mpl_connect("motion_notify_event", on_move)
+            ax._bali_hover = {"annot": annot, "cid": cid}
         except Exception:
             pass
 
