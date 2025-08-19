@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import List
 
@@ -5,8 +6,14 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
+from .extension_messages import (
+    ExtensionErrorCode,
+    EXTENSION_ERROR_MESSAGES,
+)
 from .utilities import filter_perfdata, get_available_levels
 from .logo import logo_image, jumper_colors
+
+logger = logging.getLogger("extension")
 
 
 class PerformanceVisualizer:
@@ -357,7 +364,9 @@ class PerformanceVisualizer:
         configuration."""
         valid_cells = self.cell_history.view()
         if len(valid_cells) == 0:
-            print("No cell history available")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_CELL_HISTORY]
+            )
             return
 
         # Default to all cells if no range specified
@@ -437,7 +446,11 @@ class PerformanceVisualizer:
             if all(df.empty for df in perfdata_by_level.values()):
                 with plot_output:
                     plot_output.clear_output()
-                    print("No performance data available for selected range")
+                    logger.warning(
+                        EXTENSION_ERROR_MESSAGES[
+                            ExtensionErrorCode.NO_PERFORMANCE_DATA
+                        ]
+                    )
                     # Clear plot wrapper when no data
                     plot_wrapper = None
                 return
@@ -466,7 +479,14 @@ class PerformanceVisualizer:
                 if subset in self.subsets:
                     metrics.extend(self.subsets[subset].keys())
                 else:
-                    print(f"Unknown metric subset: {subset}")
+                    logger.warning(
+                        EXTENSION_ERROR_MESSAGES[
+                            ExtensionErrorCode.INVALID_METRIC_SUBSET
+                        ].format(
+                            subset=subset,
+                            supported_subsets=", ".join(self.subsets.keys()),
+                        )
+                    )
 
             with plot_output:
                 if plot_wrapper is None:

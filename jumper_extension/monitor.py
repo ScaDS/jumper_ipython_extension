@@ -1,3 +1,4 @@
+import logging
 import os
 import threading
 import time
@@ -6,11 +7,19 @@ import unittest.mock
 import psutil
 
 from .data import PerformanceData
+from .extension_messages import (
+    ExtensionErrorCode,
+    ExtensionInfoCode,
+    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_INFO_MESSAGES,
+)
 from .utilities import (
     get_available_levels,
     is_slurm_available,
     detect_memory_limit,
 )
+
+logger = logging.getLogger("extension")
 
 # GPU monitoring setup
 PYNVML_AVAILABLE = False
@@ -20,9 +29,15 @@ try:
     pynvml.nvmlInit()
     PYNVML_AVAILABLE = True
 except ImportError:
-    print("[JUmPER]: Warning: pynvml not available. GPU monitoring disabled.")
+    logger.warning(
+        EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.PYNVML_NOT_AVAILABLE]
+    )
 except Exception:
-    print("NVIDIA drivers not available. GPU monitoring disabled.")
+    logger.warning(
+        EXTENSION_ERROR_MESSAGES[
+            ExtensionErrorCode.NVIDIA_DRIVERS_NOT_AVAILABLE
+        ]
+    )
 
 
 class PerformanceMonitor:
@@ -105,7 +120,9 @@ class PerformanceMonitor:
     def _validate_level(self, level):
         if level not in self.levels:
             raise ValueError(
-                f"Unknown level: {level}. Available levels: {self.levels}"
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.INVALID_LEVEL
+                ].format(level=level, levels=self.levels)
             )
 
     def _filter_process(self, proc, mode):
@@ -314,17 +331,21 @@ class PerformanceMonitor:
                 self.data.add_sample(level, *data_tuple)
             time_measurement = time.perf_counter() - time_start_measurement
             if time_measurement > self.interval:
-                print(
-                    "[JUmPER]: Measurements might not meet the desired "
-                    "interval time. Some measurements took longer.",
-                    end="\r",
+                logger.info(
+                    EXTENSION_INFO_MESSAGES[
+                        ExtensionInfoCode.IMPRECISE_INTERVAL
+                    ].format(interval=self.interval)
                 )
             else:
                 time.sleep(self.interval - time_measurement)
 
     def start(self):
         if self.running:
-            print("[JUmPER]: Performance monitor already running")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.MONITOR_ALREADY_RUNNING
+                ]
+            )
             return
         self.start_time = time.perf_counter()
         self.running = True
@@ -332,16 +353,19 @@ class PerformanceMonitor:
             target=self._collect_data, daemon=True
         )
         self.monitor_thread.start()
-        print(
-            f"[JUmPER]: Performance monitoring started "
-            f"(PID: {self.pid}, Interval: {self.interval}s)"
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STARTED].format(
+                pid=self.pid,
+                interval=self.interval,
+            )
         )
 
     def stop(self):
         self.running = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2.0)
-        print(
-            f"[JUmPER]: Performance monitoring stopped "
-            f"(ran for {time.perf_counter() - self.start_time:.2f} seconds)"
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STOPPED].format(
+                seconds=time.perf_counter() - self.start_time
+            )
         )

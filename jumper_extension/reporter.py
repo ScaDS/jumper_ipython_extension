@@ -1,4 +1,12 @@
+import logging
+
+from .extension_messages import (
+    ExtensionErrorCode,
+    EXTENSION_ERROR_MESSAGES,
+)
 from .utilities import filter_perfdata
+
+logger = logging.getLogger("extension")
 
 
 class PerformanceReporter:
@@ -10,7 +18,9 @@ class PerformanceReporter:
     def print(self, cell_range=None, level="process"):
         """Print performance report"""
         if not self.monitor:
-            print("[JUmPER]: No active performance monitoring session")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
             return
 
         if cell_range is None:
@@ -32,7 +42,11 @@ class PerformanceReporter:
                     )
                     cell_range = (last_valid_cell_idx, last_valid_cell_idx)
                 else:
-                    print("[JUmPER]: No non-short cells found")
+                    logger.warning(
+                        EXTENSION_ERROR_MESSAGES[
+                            ExtensionErrorCode.NO_PERFORMANCE_DATA
+                        ]
+                    )
                     return
             else:
                 return
@@ -48,7 +62,11 @@ class PerformanceReporter:
 
         # Check if non-empty, otherwise print results
         if perfdata.empty:
-            print("[JUmPER]: No performance data available")
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.NO_PERFORMANCE_DATA
+                ]
+            )
             return
 
         # Calculate total duration of selected cells
@@ -88,7 +106,9 @@ class PerformanceReporter:
             ),
         ]
 
-        print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")
+        print(
+            f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}"
+        )
         print("-" * 65)
         for name, col, total in metrics:
             if col in perfdata.columns:
