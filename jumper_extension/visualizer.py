@@ -15,6 +15,13 @@ from .logo import logo_image, jumper_colors
 
 logger = logging.getLogger("extension")
 
+def is_ipympl_backend():
+    try:
+        backend = plt.get_backend().lower()
+    except Exception:
+        return False
+    return ("ipympl" in backend) or ("widget" in backend)
+
 
 class PerformanceVisualizer:
     """Visualizes performance metrics collected by PerformanceMonitor.
@@ -661,14 +668,16 @@ class InteractivePlotWrapper:
             description="Level:",
         )
         fig, ax = plt.subplots(figsize=self.figsize, constrained_layout=True)
-        plt.close(fig)
+        if not is_ipympl_backend():
+            plt.close(fig)
         output = widgets.Output()
 
         def update_plot():
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
-            output.clear_output(wait=True)
+            if not is_ipympl_backend():
+                output.clear_output(wait=True)
             with output:
                 ax.clear()
                 if df is not None and not df.empty:
@@ -676,7 +685,8 @@ class InteractivePlotWrapper:
                         df, metric, self.cell_range, self.show_idle, ax, level
                     )
                 fig.canvas.draw_idle()
-                display(fig)
+                if not is_ipympl_backend():
+                    display(fig)
 
         def on_dropdown_change(change):
             if change["type"] == "change" and change["name"] == "value":
@@ -698,6 +708,9 @@ class InteractivePlotWrapper:
 
         # Initial plot
         update_plot()
+        if is_ipympl_backend():
+            with output:
+                plt.show()
 
         return widgets.VBox(
             [widgets.HBox([metric_dropdown, level_dropdown]), output]
