@@ -27,15 +27,17 @@ class PerformanceProfile:
 class PerformanceAnalyzer:
     """Performance analyzer to determine workload type"""
 
-    def __init__(self,
-                 cpu_threshold_high=70.0,
-                 cpu_threshold_low=20.0,
-                 memory_threshold_high=80.0,
-                 memory_threshold_low=30.0,
-                 gpu_threshold_high=70.0,
-                 gpu_threshold_low=20.0,
-                 io_threshold_high=50.0,
-                 idle_threshold=5.0):
+    def __init__(
+        self,
+        cpu_threshold_high=70.0,
+        cpu_threshold_low=20.0,
+        memory_threshold_high=80.0,
+        memory_threshold_low=30.0,
+        gpu_threshold_high=70.0,
+        gpu_threshold_low=20.0,
+        io_threshold_high=50.0,
+        idle_threshold=5.0
+    ):
         """
         Initialize analyzer with threshold values
 
@@ -52,16 +54,62 @@ class PerformanceAnalyzer:
         self.thresholds = {
             'cpu_high': cpu_threshold_high,
             'cpu_low': cpu_threshold_low,
+            'idle': idle_threshold,
+
+            # Just placeholders for now, never used
             'memory_high': memory_threshold_high,
             'memory_low': memory_threshold_low,
             'gpu_high': gpu_threshold_high,
             'gpu_low': gpu_threshold_low,
             'io_high': io_threshold_high,
-            'idle': idle_threshold
         }
 
-    def analyze_cell_performance(self, perfdata, memory_limit: float,
-                                 gpu_memory_limit: float = None) -> PerformanceProfile:
+    def _compute_metrics(
+        self,
+        perfdata,
+        memory_limit: float,
+        gpu_memory_limit: Optional[float]
+    ) -> Dict[str, float]:
+        """Compute key performance metrics"""
+        metrics = {}
+
+        # CPU metrics
+        if 'cpu_util_avg' in perfdata.columns:
+            metrics['cpu_avg'] = perfdata['cpu_util_avg'].mean()
+            metrics['cpu_max'] = perfdata['cpu_util_avg'].max()
+            metrics['cpu_variance'] = perfdata['cpu_util_avg'].var()
+
+        # Memory metrics
+        if 'memory' in perfdata.columns:
+            memory_usage_pct = (perfdata['memory'] / memory_limit * 100)
+            metrics['memory_avg_pct'] = memory_usage_pct.mean()
+            metrics['memory_max_pct'] = memory_usage_pct.max()
+            metrics['memory_growth_rate'] = self._calculate_growth_rate(perfdata['memory'])
+
+        # GPU metrics (if available)
+        if 'gpu_util_avg' in perfdata.columns:
+            metrics['gpu_util_avg'] = perfdata['gpu_util_avg'].mean()
+            metrics['gpu_util_max'] = perfdata['gpu_util_avg'].max()
+
+        if 'gpu_mem_avg' in perfdata.columns and gpu_memory_limit:
+            gpu_mem_pct = (perfdata['gpu_mem_avg'] / gpu_memory_limit * 100)
+            metrics['gpu_memory_avg_pct'] = gpu_mem_pct.mean()
+            metrics['gpu_memory_max_pct'] = gpu_mem_pct.max()
+
+        # I/O metrics
+        if 'io_read' in perfdata.columns and 'io_write' in perfdata.columns:
+            metrics['io_read_avg'] = perfdata['io_read'].mean()
+            metrics['io_write_avg'] = perfdata['io_write'].mean()
+            metrics['io_total_avg'] = metrics['io_read_avg'] + metrics['io_write_avg']
+
+        return metrics
+
+    def analyze_cell_performance(
+        self,
+        perfdata,
+        memory_limit: float,
+        gpu_memory_limit: float = None
+    ) -> PerformanceProfile:
         """
         Analyze cell performance and determine tags
 
@@ -101,42 +149,6 @@ class PerformanceAnalyzer:
             bottleneck_score=bottleneck_scores
         )
 
-    def _compute_metrics(self, perfdata, memory_limit: float,
-                         gpu_memory_limit: Optional[float]) -> Dict[str, float]:
-        """Compute key performance metrics"""
-        metrics = {}
-
-        # CPU metrics
-        if 'cpu_util_avg' in perfdata.columns:
-            metrics['cpu_avg'] = perfdata['cpu_util_avg'].mean()
-            metrics['cpu_max'] = perfdata['cpu_util_avg'].max()
-            metrics['cpu_variance'] = perfdata['cpu_util_avg'].var()
-
-        # Memory metrics
-        if 'memory' in perfdata.columns:
-            memory_usage_pct = (perfdata['memory'] / memory_limit * 100)
-            metrics['memory_avg_pct'] = memory_usage_pct.mean()
-            metrics['memory_max_pct'] = memory_usage_pct.max()
-            metrics['memory_growth_rate'] = self._calculate_growth_rate(perfdata['memory'])
-
-        # GPU metrics (if available)
-        if 'gpu_util_avg' in perfdata.columns:
-            metrics['gpu_util_avg'] = perfdata['gpu_util_avg'].mean()
-            metrics['gpu_util_max'] = perfdata['gpu_util_avg'].max()
-
-        if 'gpu_mem_avg' in perfdata.columns and gpu_memory_limit:
-            gpu_mem_pct = (perfdata['gpu_mem_avg'] / gpu_memory_limit * 100)
-            metrics['gpu_memory_avg_pct'] = gpu_mem_pct.mean()
-            metrics['gpu_memory_max_pct'] = gpu_mem_pct.max()
-
-        # I/O metrics
-        if 'io_read' in perfdata.columns and 'io_write' in perfdata.columns:
-            metrics['io_read_avg'] = perfdata['io_read'].mean()
-            metrics['io_write_avg'] = perfdata['io_write'].mean()
-            metrics['io_total_avg'] = metrics['io_read_avg'] + metrics['io_write_avg']
-
-        return metrics
-
     @staticmethod
     def _calculate_growth_rate(series) -> float:
         """Calculate growth rate for a time series"""
@@ -155,20 +167,21 @@ class PerformanceAnalyzer:
         # CPU score
         cpu_avg = metrics.get('cpu_avg', 0)
         if cpu_avg >= self.thresholds['cpu_high']:
-            scores['cpu'] = min(100.0, cpu_avg * 1.2)
+            scores['cpu'] = min(100.0, cpu_avg * 1.)
         elif cpu_avg <= self.thresholds['cpu_low']:
-            scores['cpu'] = max(0.0, cpu_avg * 0.8)
+            scores['cpu'] = max(0.0, cpu_avg * 1.)
         else:
             scores['cpu'] = cpu_avg
 
+        # TODO mb just take by percent of total memory?
         # Memory score
         memory_pct = metrics.get('memory_avg_pct', 0)
         memory_growth = metrics.get('memory_growth_rate', 0)
         memory_score = memory_pct
 
-        # Consider memory usage growth
-        if memory_growth > 0:
-            memory_score += min(30.0, memory_growth * 10)
+        # # Consider memory usage growth
+        # if memory_growth > 0:
+        #     memory_score += min(30.0, memory_growth * 10)
 
         scores['memory'] = min(100.0, memory_score)
 
@@ -179,6 +192,7 @@ class PerformanceAnalyzer:
 
         # I/O score
         io_total = metrics.get('io_total_avg', 0)
+        print(f'{io_total=}')
         # Normalize I/O (assuming 100MB/s = high load)
         scores['io'] = min(100.0, (io_total / (100 * 1024 * 1024)) * 100)
 
