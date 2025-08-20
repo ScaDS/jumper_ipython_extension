@@ -93,7 +93,7 @@ _BASE_EXTENSION_INFO_MESSAGES = {
 
 
 def _apply_prefix(messages):
-    return {code: f"{MESSAGE_PREFIX}: {text}" 
+    return {code: f"{MESSAGE_PREFIX}: {text}"
             for code, text in messages.items()}
 
 

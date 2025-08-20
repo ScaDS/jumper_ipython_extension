@@ -15,6 +15,7 @@ from .logo import logo_image, jumper_colors
 
 logger = logging.getLogger("extension")
 
+
 def is_ipympl_backend():
     try:
         backend = plt.get_backend().lower()
