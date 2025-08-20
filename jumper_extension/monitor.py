@@ -331,10 +331,10 @@ class PerformanceMonitor:
                 self.data.add_sample(level, *data_tuple)
             time_measurement = time.perf_counter() - time_start_measurement
             if time_measurement > self.interval:
-                logger.info(
+                print(
                     EXTENSION_INFO_MESSAGES[
                         ExtensionInfoCode.IMPRECISE_INTERVAL
-                    ].format(interval=self.interval)
+                    ].format(interval=self.interval), end="\r"
                 )
             else:
                 time.sleep(self.interval - time_measurement)
