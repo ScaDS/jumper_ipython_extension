@@ -1,12 +1,13 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper-extension"
-version = "0.2.0"
+version = "0.2.1"
 description = "IPython extension for monitoring cell performance"
-readme = {content-type = "text/markdown", text = "# Jumper Extension\n\nAn IPython extension for monitoring cell performance."}
+readme={ file='README.md', content-type="text/markdown"}
+license-files=["LICENSE"]
 requires-python = ">=3.8"
 dependencies = [
     "ipython",
@@ -25,7 +26,7 @@ jumper_extension = "jumper_extension:load_ipython_extension"
 [project.optional-dependencies]
 test = [
     "pytest",
-    "pytest-mock", 
+    "pytest-mock",
     "pytest-cov",
     "pynvml",
 ]
