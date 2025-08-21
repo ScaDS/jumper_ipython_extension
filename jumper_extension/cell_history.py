@@ -77,12 +77,8 @@ class CellHistory:
                 {
                     "Cell index": row["index"],
                     "Duration (s)": f"{duration:.2f}",
-                    "Start Time": time.strftime(
-                        "%H:%M:%S", time.localtime(row["start_time"])
-                    ),
-                    "End Time": time.strftime(
-                        "%H:%M:%S", time.localtime(row["end_time"])
-                    ),
+                    "Start Time": row["start_time"],
+                    "End Time": row["end_time"],
                     "Code": row["raw_cell"].replace("\n", "<br>"),
                 }
             )

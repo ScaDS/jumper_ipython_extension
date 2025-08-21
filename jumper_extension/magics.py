@@ -1,6 +1,8 @@
 import argparse
 import logging
 import shlex
+import pandas as pd
+from itables import show
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
@@ -15,6 +17,7 @@ from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
 from .utilities import get_available_levels
 from .visualizer import PerformanceVisualizer
+from .bali_adapter import BaliMagicsMixin
 
 logger = logging.getLogger("extension")
 
@@ -22,9 +25,10 @@ _perfmonitor_magics = None
 
 
 @magics_class
-class perfmonitorMagics(Magics):
+class perfmonitorMagics(Magics, BaliMagicsMixin):
     def __init__(self, shell):
-        super().__init__(shell)
+        Magics.__init__(self, shell)
+        BaliMagicsMixin.__init__(self)
         self.monitor = self.visualizer = self.reporter = None
         self.cell_history = CellHistory()
         self.print_perfreports = self._skip_report = False
@@ -171,6 +175,20 @@ class perfmonitorMagics(Magics):
         self.visualizer.plot()
 
     @line_magic
+    def bali_segments(self, line):
+        """Show interactive table of all BALI segments with start/end times"""
+        self._skip_report = True
+        self._handle_bali_segments_command(line)
+
+    # _bali_refresh_from_disk method is now provided by BaliMagicsMixin
+
+    @line_magic
+    def bali_run(self, line):
+        """Refresh persistent BALI segments from latest results on disk."""
+        self._skip_report = True
+        self._handle_bali_run_command(line)
+
+    @line_magic
     def perfmonitor_enable_perfreports(self, line):
         """Enable automatic performance reports after each cell execution"""
         self._skip_report = True
@@ -291,6 +309,8 @@ class perfmonitorMagics(Magics):
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
             "cell_history -- show interactive table of cell execution history",
+            "bali_segments -- show interactive table of BALI segments",
+            "bali_run -- refresh BALI segments from disk",
             "perfmonitor_start [interval] -- start monitoring "
             "(default: 1 second)",
             "perfmonitor_stop -- stop monitoring",

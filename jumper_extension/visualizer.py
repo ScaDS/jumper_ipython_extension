@@ -3,6 +3,8 @@ import re
 from typing import List
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
@@ -12,6 +14,7 @@ from .extension_messages import (
 )
 from .utilities import filter_perfdata, get_available_levels
 from .logo import logo_image, jumper_colors
+from .bali_adapter import BaliVisualizationMixin
 
 logger = logging.getLogger("extension")
 
@@ -24,7 +27,7 @@ def is_ipympl_backend():
     return ("ipympl" in backend) or ("widget" in backend)
 
 
-class PerformanceVisualizer:
+class PerformanceVisualizer(BaliVisualizationMixin):
     """Visualizes performance metrics collected by PerformanceMonitor.
 
     Supports multiple levels: 'user', 'process' (default), 'system', and
@@ -43,6 +46,9 @@ class PerformanceVisualizer:
             )
         except Exception:
             self._io_window = 1
+
+        # Initialize BALI functionality via mixin
+        super().__init__()
 
         # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
@@ -222,6 +228,7 @@ class PerformanceVisualizer:
         show_idle=False,
         ax: plt.Axes = None,
         level="process",
+        show_bali=False,
     ):
         """Plot a single metric using its configuration"""
         config = next(
@@ -334,7 +341,9 @@ class PerformanceVisualizer:
         ax.grid(True)
         if ylim:
             ax.set_ylim(ylim)
-        self._draw_cell_boundaries(ax, cell_range, show_idle)
+        if not show_bali:
+            self._draw_cell_boundaries(ax, cell_range, show_idle)
+        self._draw_bali_segments(ax, show_bali, show_idle, cell_range)
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
@@ -399,6 +408,95 @@ class PerformanceVisualizer:
                     start_time, cell["duration"], int(cell["index"]), 0.5
                 )
 
+    def _draw_bali_segments(self, ax, show_bali=False, show_idle=True, cell_range=None):
+        """Draw BALI segments as colored rectangles with click selection."""
+        if not show_bali or not self.bali_adapter:
+            return
+            
+        segments = self._load_bali_segments()
+        if not segments:
+            return
+            
+        y_min, y_max = ax.get_ylim()
+        x_max, height = ax.get_xlim()[1], y_max - y_min
+        
+        # Use compressed or adjusted segments
+        if not show_idle and hasattr(self, "_compressed_bali_segments"):
+            draw_segments = self._compressed_bali_segments
+        else:
+            draw_segments = [{
+                **s, "start_time": s["start_time"] - self.monitor.start_time
+            } for s in segments]
+            
+        vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
+        
+        # Clean up previous event handlers
+        if hasattr(ax, "_bali_click"):
+            ax.figure.canvas.mpl_disconnect(ax._bali_click)
+            
+        ax._bali_patches = []
+        ax._bali_selected_patch = None
+        
+        # Draw segments
+        for s in draw_segments:
+            start, dur, tps = s["start_time"], s["duration"], s["tokens_per_sec"]
+            if start > x_max or start + dur < 0:
+                continue
+                
+            color = self.bali_adapter.get_color_for_tokens_per_sec(tps, vmin, vmax)
+            rect = plt.Rectangle(
+                (start, y_min), dur, height,
+                facecolor=color, alpha=0.75, edgecolor="red",
+                linestyle="-", linewidth=0.5, zorder=0.5
+            )
+            rect._bali_info = {
+                "model": s.get("model", "n/a"),
+                "framework": s.get("framework", "n/a"),
+                "batch_size": s.get("batch_size", "n/a"),
+                "input_len": s.get("input_len", "n/a"),
+                "output_len": s.get("output_len", "n/a"),
+                "tokens_per_sec": f"{tps:.2f}" if tps else "n/a",
+                "duration": f"{s.get('duration', 0):.2f}",
+            }
+            ax.add_patch(rect)
+            ax._bali_patches.append(rect)
+            
+        def on_click(event):
+            if event.inaxes != ax:
+                return
+            for patch in ax._bali_patches:
+                if patch.contains(event)[0]:
+                    # Reset previous selection
+                    if ax._bali_selected_patch:
+                        ax._bali_selected_patch.set_hatch(None)
+                        ax._bali_selected_patch.set_linewidth(0.5)
+                        ax._bali_selected_patch.set_edgecolor("red")
+                    
+                    # Highlight new selection
+                    patch.set_hatch("///")
+                    patch.set_linewidth(1.5)
+                    patch.set_edgecolor("black")
+                    ax._bali_selected_patch = patch
+                    
+                    # Print details
+                    if hasattr(ax, "_bali_selection_output"):
+                        with ax._bali_selection_output:
+                            ax._bali_selection_output.clear_output(wait=True)
+                            info = patch._bali_info
+                            print(f"""BALI segment selected:
+- Model: {info['model']}
+- Framework: {info['framework']}
+- Batch size: {info['batch_size']}
+- Input len: {info['input_len']}
+- Output len: {info['output_len']}
+- Tokens/sec: {info['tokens_per_sec']}
+- Duration (s): {info['duration']}""")
+                    
+                    ax.figure.canvas.draw_idle()
+                    return
+                    
+        ax._bali_click = ax.figure.canvas.mpl_connect("button_press_event", on_click)
+
     def plot(
         self,
         metric_subsets=("cpu", "mem", "io"),
@@ -440,6 +538,9 @@ class PerformanceVisualizer:
         show_idle_checkbox = widgets.Checkbox(
             value=show_idle, description="Show idle periods"
         )
+        show_bali_checkbox = widgets.Checkbox(
+            value=False, description="Show BALI segments"
+        )
         cell_range_slider = widgets.IntRangeSlider(
             value=cell_range,
             min=min_cell_idx,
@@ -467,6 +568,7 @@ class PerformanceVisualizer:
             [
                 widgets.HTML("<b>Plot Configuration:</b>"),
                 show_idle_checkbox,
+                show_bali_checkbox,
                 cell_range_slider,
                 logo_widget,
             ],
@@ -479,9 +581,10 @@ class PerformanceVisualizer:
 
         def update_plots():
             nonlocal plot_wrapper
-            current_cell_range, current_show_idle = (
+            current_cell_range, current_show_idle, current_show_bali = (
                 cell_range_slider.value,
                 show_idle_checkbox.value,
+                show_bali_checkbox.value,
             )
             start_idx, end_idx = current_cell_range
             filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
@@ -524,6 +627,17 @@ class PerformanceVisualizer:
                 else:
                     processed_perfdata[level_key] = perfdata
 
+            # Handle BALI segments compression
+            if current_show_bali and not current_show_idle:
+                bali_segments = self._load_bali_segments()
+                primary_level = get_available_levels()[0]
+                reference_perfdata = perfdata_by_level.get(primary_level)
+                self._compressed_bali_segments = (
+                    self._compress_bali_segments(bali_segments, current_cell_range, reference_perfdata)
+                    if reference_perfdata is not None and not reference_perfdata.empty
+                    else []
+                )
+
             # Get metrics for subsets and build labeled dropdown options
             metrics = []
             labeled_options = []
@@ -550,29 +664,25 @@ class PerformanceVisualizer:
                     )
 
             with plot_output:
-                if plot_wrapper is None:
-                    # Create new plot wrapper only if it doesn't exist
+                # Recreate wrapper if needed or BALI state changed
+                if (plot_wrapper is None or 
+                    getattr(plot_wrapper, "show_bali", None) != current_show_bali):
                     plot_output.clear_output()
                     plot_wrapper = InteractivePlotWrapper(
-                        self._plot_metric,
-                        metrics,
-                        labeled_options,
-                        processed_perfdata,
-                        current_cell_range,
-                        current_show_idle,
-                        self.figsize,
+                        self._plot_metric, metrics, labeled_options, processed_perfdata,
+                        current_cell_range, current_show_idle, current_show_bali, self.figsize
                     )
+                    plot_wrapper.monitor = self.monitor
                     plot_wrapper.display_ui()
                 else:
-                    # Update existing plot wrapper with new data
-                    plot_wrapper.update_data(
-                        processed_perfdata,
-                        current_cell_range,
-                        current_show_idle,
-                    )
+                    plot_wrapper.update_data(processed_perfdata, current_cell_range, current_show_idle)
 
         # Set up observers and display
-        for widget in [show_idle_checkbox, cell_range_slider]:
+        for widget in [
+            show_idle_checkbox,
+            show_bali_checkbox,
+            cell_range_slider,
+        ]:
             widget.observe(lambda change: update_plots(), names="value")
 
         display(widgets.VBox([config_widgets, plot_output]))
@@ -591,6 +701,7 @@ class InteractivePlotWrapper:
         perfdata_by_level,
         cell_range=None,
         show_idle=False,
+        show_bali=False,
         figsize=None,
     ):
         self.plot_callback, self.perfdata_by_level, self.metrics = (
@@ -599,9 +710,10 @@ class InteractivePlotWrapper:
             metrics,
         )
         self.labeled_options = labeled_options
-        self.cell_range, self.show_idle, self.figsize = (
+        self.cell_range, self.show_idle, self.show_bali, self.figsize = (
             cell_range,
             show_idle,
+            show_bali,
             figsize,
         )
         self.shown_metrics, self.panel_count, self.max_panels = (
@@ -627,9 +739,58 @@ class InteractivePlotWrapper:
         )
         self.add_panel_button.on_click(self._on_add_panel_clicked)
 
+        # BALI colorbar components
+        if show_bali:
+            self.bali_colorbar_output = widgets.Output()
+            self.bali_colorbar_container = widgets.HBox(
+                [self.bali_colorbar_output],
+                layout=Layout(display="flex", justify_content="center", width="100%")
+            )
+            # Use the same BALI adapter from the parent visualizer
+            self.bali_adapter = getattr(self.plot_callback.__self__, 'bali_adapter', None)
+        else:
+            self.bali_colorbar_output = None
+            self.bali_colorbar_container = None
+            self.bali_adapter = None
+
+    def _create_bali_colorbar(self):
+        """Create and display the BALI colorbar."""
+        if not self.show_bali or not self.bali_colorbar_output or not self.bali_adapter:
+            return
+            
+        segments = self.bali_adapter.get_segments_for_visualization(self.monitor.pid)
+        if not segments:
+            return
+            
+        vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
+        with self.bali_colorbar_output:
+            self.bali_colorbar_output.clear_output(wait=True)
+            fig = plt.figure(figsize=(8, 0.8))
+            ax = fig.add_subplot(111)
+            ax.set_visible(False)
+            
+            sm = ScalarMappable(
+                norm=Normalize(vmin=vmin, vmax=vmax),
+                cmap=self.bali_adapter.get_colormap()
+            )
+            sm.set_array([])
+            cbar = fig.colorbar(sm, cax=fig.add_axes([0.1, 0.3, 0.8, 0.4]), 
+                              orientation="horizontal")
+            cbar.set_label("Tokens/Second", fontsize=12, fontweight="bold")
+            cbar.ax.tick_params(labelsize=10)
+            plt.close(fig)
+            display(fig)
+
     def display_ui(self):
-        """Display the Add button and all interactive panels."""
-        display(widgets.VBox([self.add_panel_button, self.output_container]))
+        """Display the UI components."""
+        ui_components = [self.add_panel_button]
+        
+        if self.show_bali:
+            self._create_bali_colorbar()
+            ui_components.append(self.bali_colorbar_container)
+            
+        ui_components.append(self.output_container)
+        display(widgets.VBox(ui_components))
         self._on_add_panel_clicked(None)
 
     def _on_add_panel_clicked(self, _):
@@ -670,24 +831,38 @@ class InteractivePlotWrapper:
         )
         fig, ax = plt.subplots(figsize=self.figsize, constrained_layout=True)
         if not is_ipympl_backend():
+            # Prevent automatic display of the figure outside the Output widget
             plt.close(fig)
         output = widgets.Output()
+        selection_output = widgets.Output()
 
         def update_plot():
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
-            if not is_ipympl_backend():
-                output.clear_output(wait=True)
+            # Always clear the output and redraw the figure to ensure
+            # in-place updates
+            output.clear_output(wait=True)
+            selection_output.clear_output(wait=True)
             with output:
                 ax.clear()
+                # Provide a sink for BALI selection details
+                ax._bali_selection_output = selection_output
                 if df is not None and not df.empty:
                     self.plot_callback(
-                        df, metric, self.cell_range, self.show_idle, ax, level
+                        df,
+                        metric,
+                        self.cell_range,
+                        self.show_idle,
+                        ax,
+                        level,
+                        self.show_bali,
                     )
-                fig.canvas.draw_idle()
-                if not is_ipympl_backend():
-                    display(fig)
+                    fig.canvas.draw_idle()
+                    if not is_ipympl_backend():
+                        display(fig)
+                else:
+                    print("No data available for the selected level/metric")
 
         def on_dropdown_change(change):
             if change["type"] == "change" and change["name"] == "value":
@@ -714,7 +889,11 @@ class InteractivePlotWrapper:
                 plt.show()
 
         return widgets.VBox(
-            [widgets.HBox([metric_dropdown, level_dropdown]), output]
+            [
+                widgets.HBox([metric_dropdown, level_dropdown]),
+                output,
+                selection_output,
+            ]
         )
 
     def _get_next_metric(self):
