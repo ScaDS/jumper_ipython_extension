@@ -1,8 +1,6 @@
 import argparse
 import logging
 import shlex
-import pandas as pd
-from itables import show
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
@@ -108,7 +106,7 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
         self.monitor = PerformanceMonitor(interval=interval)
         self.monitor.start()
         self.visualizer = PerformanceVisualizer(
-            self.monitor, self.cell_history, min_duration=interval
+            self.monitor, self.cell_history, min_duration=interval, bali_adapter=self.bali_adapter
         )
         self.reporter = PerformanceReporter(
             self.monitor, self.cell_history, min_duration=interval
@@ -178,7 +176,7 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
     def bali_segments(self, line):
         """Show interactive table of all BALI segments with start/end times"""
         self._skip_report = True
-        self._handle_bali_segments_command(line)
+        self._bali_segments(line)
 
     # _bali_refresh_from_disk method is now provided by BaliMagicsMixin
 
@@ -186,7 +184,7 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
     def bali_run(self, line):
         """Refresh persistent BALI segments from latest results on disk."""
         self._skip_report = True
-        self._handle_bali_run_command(line)
+        self._bali_run(line)
 
     @line_magic
     def perfmonitor_enable_perfreports(self, line):

@@ -34,7 +34,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
     'slurm' (if available)
     """
 
-    def __init__(self, monitor, cell_history, min_duration=None):
+    def __init__(self, monitor, cell_history, min_duration=None, bali_adapter=None):
         self.monitor = monitor
         self.cell_history = cell_history
         self.figsize = (5, 3)
@@ -48,7 +48,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             self._io_window = 1
 
         # Initialize BALI functionality via mixin
-        super().__init__()
+        super().__init__(bali_adapter=bali_adapter)
 
         # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
@@ -408,46 +408,61 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                     start_time, cell["duration"], int(cell["index"]), 0.5
                 )
 
-    def _draw_bali_segments(self, ax, show_bali=False, show_idle=True, cell_range=None):
+    def _draw_bali_segments(
+        self, ax, show_bali=False, show_idle=True, cell_range=None
+    ):
         """Draw BALI segments as colored rectangles with click selection."""
-        if not show_bali or not self.bali_adapter:
+        if not show_bali:
             return
-            
+
         segments = self._load_bali_segments()
         if not segments:
             return
-            
+
         y_min, y_max = ax.get_ylim()
         x_max, height = ax.get_xlim()[1], y_max - y_min
-        
+
         # Use compressed or adjusted segments
         if not show_idle and hasattr(self, "_compressed_bali_segments"):
             draw_segments = self._compressed_bali_segments
         else:
-            draw_segments = [{
-                **s, "start_time": s["start_time"] - self.monitor.start_time
-            } for s in segments]
-            
+            draw_segments = [
+                {**s, "start_time": s["start_time"] - self.monitor.start_time}
+                for s in segments
+            ]
+
         vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
-        
+
         # Clean up previous event handlers
         if hasattr(ax, "_bali_click"):
             ax.figure.canvas.mpl_disconnect(ax._bali_click)
-            
+
         ax._bali_patches = []
         ax._bali_selected_patch = None
-        
+
         # Draw segments
         for s in draw_segments:
-            start, dur, tps = s["start_time"], s["duration"], s["tokens_per_sec"]
+            start, dur, tps = (
+                s["start_time"],
+                s["duration"],
+                s["tokens_per_sec"],
+            )
             if start > x_max or start + dur < 0:
                 continue
-                
-            color = self.bali_adapter.get_color_for_tokens_per_sec(tps, vmin, vmax)
+
+            color = self.bali_adapter.get_color_for_tokens_per_sec(
+                tps, vmin, vmax
+            )
             rect = plt.Rectangle(
-                (start, y_min), dur, height,
-                facecolor=color, alpha=0.75, edgecolor="red",
-                linestyle="-", linewidth=0.5, zorder=0.5
+                (start, y_min),
+                dur,
+                height,
+                facecolor=color,
+                alpha=0.75,
+                edgecolor="red",
+                linestyle="-",
+                linewidth=0.5,
+                zorder=0.5,
             )
             rect._bali_info = {
                 "model": s.get("model", "n/a"),
@@ -460,7 +475,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             }
             ax.add_patch(rect)
             ax._bali_patches.append(rect)
-            
+
         def on_click(event):
             if event.inaxes != ax:
                 return
@@ -471,31 +486,35 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                         ax._bali_selected_patch.set_hatch(None)
                         ax._bali_selected_patch.set_linewidth(0.5)
                         ax._bali_selected_patch.set_edgecolor("red")
-                    
+
                     # Highlight new selection
                     patch.set_hatch("///")
                     patch.set_linewidth(1.5)
                     patch.set_edgecolor("black")
                     ax._bali_selected_patch = patch
-                    
+
                     # Print details
                     if hasattr(ax, "_bali_selection_output"):
                         with ax._bali_selection_output:
                             ax._bali_selection_output.clear_output(wait=True)
                             info = patch._bali_info
-                            print(f"""BALI segment selected:
+                            print(
+                                f"""BALI segment selected:
 - Model: {info['model']}
 - Framework: {info['framework']}
 - Batch size: {info['batch_size']}
 - Input len: {info['input_len']}
 - Output len: {info['output_len']}
 - Tokens/sec: {info['tokens_per_sec']}
-- Duration (s): {info['duration']}""")
-                    
+- Duration (s): {info['duration']}"""
+                            )
+
                     ax.figure.canvas.draw_idle()
                     return
-                    
-        ax._bali_click = ax.figure.canvas.mpl_connect("button_press_event", on_click)
+
+        ax._bali_click = ax.figure.canvas.mpl_connect(
+            "button_press_event", on_click
+        )
 
     def plot(
         self,
@@ -633,8 +652,12 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 primary_level = get_available_levels()[0]
                 reference_perfdata = perfdata_by_level.get(primary_level)
                 self._compressed_bali_segments = (
-                    self._compress_bali_segments(bali_segments, current_cell_range, reference_perfdata)
-                    if reference_perfdata is not None and not reference_perfdata.empty
+                    self.bali_adapter.compress_segments(
+                        bali_segments, current_cell_range, reference_perfdata, 
+                        self.cell_history
+                    )
+                    if reference_perfdata is not None
+                    and not reference_perfdata.empty
                     else []
                 )
 
@@ -665,17 +688,30 @@ class PerformanceVisualizer(BaliVisualizationMixin):
 
             with plot_output:
                 # Recreate wrapper if needed or BALI state changed
-                if (plot_wrapper is None or 
-                    getattr(plot_wrapper, "show_bali", None) != current_show_bali):
+                if (
+                    plot_wrapper is None
+                    or getattr(plot_wrapper, "show_bali", None)
+                    != current_show_bali
+                ):
                     plot_output.clear_output()
                     plot_wrapper = InteractivePlotWrapper(
-                        self._plot_metric, metrics, labeled_options, processed_perfdata,
-                        current_cell_range, current_show_idle, current_show_bali, self.figsize
+                        self._plot_metric,
+                        metrics,
+                        labeled_options,
+                        processed_perfdata,
+                        current_cell_range,
+                        current_show_idle,
+                        current_show_bali,
+                        self.figsize,
                     )
                     plot_wrapper.monitor = self.monitor
                     plot_wrapper.display_ui()
                 else:
-                    plot_wrapper.update_data(processed_perfdata, current_cell_range, current_show_idle)
+                    plot_wrapper.update_data(
+                        processed_perfdata,
+                        current_cell_range,
+                        current_show_idle,
+                    )
 
         # Set up observers and display
         for widget in [
@@ -744,10 +780,14 @@ class InteractivePlotWrapper:
             self.bali_colorbar_output = widgets.Output()
             self.bali_colorbar_container = widgets.HBox(
                 [self.bali_colorbar_output],
-                layout=Layout(display="flex", justify_content="center", width="100%")
+                layout=Layout(
+                    display="flex", justify_content="center", width="100%"
+                ),
             )
             # Use the same BALI adapter from the parent visualizer
-            self.bali_adapter = getattr(self.plot_callback.__self__, 'bali_adapter', None)
+            self.bali_adapter = getattr(
+                self.plot_callback.__self__, "bali_adapter", None
+            )
         else:
             self.bali_colorbar_output = None
             self.bali_colorbar_container = None
@@ -755,27 +795,36 @@ class InteractivePlotWrapper:
 
     def _create_bali_colorbar(self):
         """Create and display the BALI colorbar."""
-        if not self.show_bali or not self.bali_colorbar_output or not self.bali_adapter:
+        if (
+            not self.show_bali
+            or not self.bali_colorbar_output
+            or not self.bali_adapter
+        ):
             return
-            
-        segments = self.bali_adapter.get_segments_for_visualization(self.monitor.pid)
+
+        segments = self.bali_adapter.get_segments_for_visualization(
+            self.monitor.pid
+        )
         if not segments:
             return
-            
+
         vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
         with self.bali_colorbar_output:
             self.bali_colorbar_output.clear_output(wait=True)
             fig = plt.figure(figsize=(8, 0.8))
             ax = fig.add_subplot(111)
             ax.set_visible(False)
-            
+
             sm = ScalarMappable(
                 norm=Normalize(vmin=vmin, vmax=vmax),
-                cmap=self.bali_adapter.get_colormap()
+                cmap=self.bali_adapter.get_colormap(),
             )
             sm.set_array([])
-            cbar = fig.colorbar(sm, cax=fig.add_axes([0.1, 0.3, 0.8, 0.4]), 
-                              orientation="horizontal")
+            cbar = fig.colorbar(
+                sm,
+                cax=fig.add_axes([0.1, 0.3, 0.8, 0.4]),
+                orientation="horizontal",
+            )
             cbar.set_label("Tokens/Second", fontsize=12, fontweight="bold")
             cbar.ax.tick_params(labelsize=10)
             plt.close(fig)
@@ -784,11 +833,11 @@ class InteractivePlotWrapper:
     def display_ui(self):
         """Display the UI components."""
         ui_components = [self.add_panel_button]
-        
+
         if self.show_bali:
             self._create_bali_colorbar()
             ui_components.append(self.bali_colorbar_container)
-            
+
         ui_components.append(self.output_container)
         display(widgets.VBox(ui_components))
         self._on_add_panel_clicked(None)

@@ -334,7 +334,8 @@ class PerformanceMonitor:
                 print(
                     EXTENSION_INFO_MESSAGES[
                         ExtensionInfoCode.IMPRECISE_INTERVAL
-                    ].format(interval=self.interval), end="\r"
+                    ].format(interval=self.interval),
+                    end="\r",
                 )
             else:
                 time.sleep(self.interval - time_measurement)
