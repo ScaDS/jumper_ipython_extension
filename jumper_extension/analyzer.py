@@ -1,100 +1,141 @@
-import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 
 
 class PerformanceTag(Enum):
     """Performance tags for classifying cells"""
+    NORMAL = "normal"
     CPU_BOUND = "cpu-bound"
     MEMORY_BOUND = "memory-bound"
-    GPU_BOUND = "gpu-bound"
+    GPU_UTIL_BOUND = "gpu-util-bound"
+    GPU_MEMORY_BOUND = "gpu-memory-bound"
     IO_BOUND = "io-bound"
-    BALANCED = "balanced"
     IDLE = "idle"
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass
-class PerformanceProfile:
-    """Performance profile for a cell"""
-    primary_tag: PerformanceTag
-    secondary_tags: List[PerformanceTag]
-    confidence: float
-    metrics_summary: Dict[str, float]
-    bottleneck_score: Dict[str, float]
+class TagScore:
+    """Tag with its score for ranking"""
+    tag: PerformanceTag
+    score: float
 
 
 class PerformanceAnalyzer:
-    """Performance analyzer to determine workload type"""
+    """Performance analyzer to determine workload type using relative thresholds"""
+
+    mib_to_bytes = 1024 * 1024
+
+    # Default thresholds (relative to system limits)
+    DEFAULT_THRESHOLDS = {
+        'memory_ratio': 0.80,  # memory limit
+        'cpu_ratio': 0.70,  # CPU capacity
+        'io_ratio': 0.60,  # I/O bandwidth
+        'gpu_util_ratio': 0.70,  # GPU utilization
+        'gpu_memory_ratio': 0.80,  # GPU memory
+        'idle_threshold': 0.05,  # idle detection
+        'min_significant': 0.3,  # Minimum ratio for tag to be considered significant
+    }
+
+    # I/O bandwidth references (bytes/second) - adaptive based on system type
+    _io_baseline = None
+    IO_BANDWIDTH_REFERENCE = {
+        'ssd_threshold': 500 * mib_to_bytes,    # 500 MB/s - SSD
+        'hdd_threshold': 150 * mib_to_bytes,    # 150 MB/s - HDD
+        'high_io_threshold': 100 * mib_to_bytes, # 100 MB/s - default threshold
+    }
 
     def __init__(
         self,
-        cpu_threshold_high=70.0,
-        cpu_threshold_low=20.0,
-        memory_threshold_high=80.0,
-        memory_threshold_low=30.0,
-        gpu_threshold_high=70.0,
-        gpu_threshold_low=20.0,
-        io_threshold_high=50.0,
-        idle_threshold=5.0
+        thresholds: Optional[Dict[str, float]] = None,
     ):
         """
-        Initialize analyzer with threshold values
+        Initialize analyzer with relative thresholds
 
         Args:
-            cpu_threshold_high: High CPU utilization threshold (%)
-            cpu_threshold_low: Low CPU utilization threshold (%)
-            memory_threshold_high: High memory usage threshold (%)
-            memory_threshold_low: Low memory usage threshold (%)
-            gpu_threshold_high: High GPU utilization threshold (%)
-            gpu_threshold_low: Low GPU utilization threshold (%)
-            io_threshold_high: High threshold for I/O operations
-            idle_threshold: Threshold to determine system idle
+            thresholds: Custom threshold values (uses defaults if None)
         """
-        self.thresholds = {
-            'cpu_high': cpu_threshold_high,
-            'cpu_low': cpu_threshold_low,
-            'idle': idle_threshold,
+        self.thresholds = {**self.DEFAULT_THRESHOLDS, **(thresholds or {})}
 
-            # Just placeholders for now, never used
-            'memory_high': memory_threshold_high,
-            'memory_low': memory_threshold_low,
-            'gpu_high': gpu_threshold_high,
-            'gpu_low': gpu_threshold_low,
-            'io_high': io_threshold_high,
-        }
+    def _detect_io_baseline(self, perfdata) -> float:
+        """Dynamically determine the baseline I/O system throughput"""
+        if self._io_baseline is not None:
+            return self._io_baseline
 
+        # Get I/O data from perfdata
+        io_read = perfdata.get('io_read_avg', 0)
+        io_write = perfdata.get('io_write_avg', 0)
+        total_io = io_read + io_write
+
+        # If no I/O data available, use a conservative value
+        if total_io == 0:
+            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['high_io_threshold']
+            return self._io_baseline
+
+        # Heuristic: if measured speed > 200 MB/s, likely SSD
+        # if 50-200 MB/s, likely fast HDD
+        # otherwise use baseline threshold
+        if total_io > 200 * self.mib_to_bytes:
+            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['ssd_threshold']
+        elif total_io > 50 * self.mib_to_bytes:
+            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['hdd_threshold']
+        else:
+            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['high_io_threshold']
+
+        return self._io_baseline
+
+    def analyze_cell_performance(self, perfdata, memory_limit: float,
+                                 gpu_memory_limit: Optional[float] = None) -> List[TagScore]:
+        """
+        Analyze cell performance and determine tags
+
+        Args:
+            perfdata: DataFrame with performance data
+            memory_limit: System memory limit in GB
+            gpu_memory_limit: GPU memory limit in GB (if available)
+
+        Returns:
+            List[TagScore]: Ranked performance tags for the cell
+        """
+        if perfdata.empty:
+            return [TagScore(PerformanceTag.IDLE, 100.0)]
+
+        # Compute normalized metrics
+        metrics = self._compute_metrics(perfdata, gpu_memory_limit)
+
+        # Calculate resource utilization ratios
+        ratios = self._calculate_utilization_ratios(metrics, memory_limit, gpu_memory_limit)
+
+        # Create the ranked tags list
+        ranked_tags = self._create_ranked_tags(ratios)
+
+        return ranked_tags
+
+    @staticmethod
     def _compute_metrics(
-        self,
-        perfdata,
-        memory_limit: float,
-        gpu_memory_limit: Optional[float]
+            perfdata,
+            gpu_memory_limit: Optional[float]
     ) -> Dict[str, float]:
-        """Compute key performance metrics"""
+        """Compute raw performance metrics"""
         metrics = {}
 
         # CPU metrics
         if 'cpu_util_avg' in perfdata.columns:
             metrics['cpu_avg'] = perfdata['cpu_util_avg'].mean()
-            metrics['cpu_max'] = perfdata['cpu_util_avg'].max()
-            metrics['cpu_variance'] = perfdata['cpu_util_avg'].var()
 
         # Memory metrics
         if 'memory' in perfdata.columns:
-            memory_usage_pct = (perfdata['memory'] / memory_limit * 100)
-            metrics['memory_avg_pct'] = memory_usage_pct.mean()
-            metrics['memory_max_pct'] = memory_usage_pct.max()
-            metrics['memory_growth_rate'] = self._calculate_growth_rate(perfdata['memory'])
+            metrics['memory_avg_gb'] = perfdata['memory'].mean()
 
-        # GPU metrics (if available)
+        # GPU metrics
         if 'gpu_util_avg' in perfdata.columns:
             metrics['gpu_util_avg'] = perfdata['gpu_util_avg'].mean()
-            metrics['gpu_util_max'] = perfdata['gpu_util_avg'].max()
 
         if 'gpu_mem_avg' in perfdata.columns and gpu_memory_limit:
-            gpu_mem_pct = (perfdata['gpu_mem_avg'] / gpu_memory_limit * 100)
-            metrics['gpu_memory_avg_pct'] = gpu_mem_pct.mean()
-            metrics['gpu_memory_max_pct'] = gpu_mem_pct.max()
+            metrics['gpu_memory_avg_gb'] = perfdata['gpu_mem_avg'].mean()
 
         # I/O metrics
         if 'io_read' in perfdata.columns and 'io_write' in perfdata.columns:
@@ -104,155 +145,101 @@ class PerformanceAnalyzer:
 
         return metrics
 
-    def analyze_cell_performance(
-        self,
-        perfdata,
-        memory_limit: float,
-        gpu_memory_limit: float = None
-    ) -> PerformanceProfile:
-        """
-        Analyze cell performance and determine tags
+    def _calculate_utilization_ratios(self, metrics: Dict[str, float],
+                                      memory_limit: float,
+                                      gpu_memory_limit: Optional[float]) -> Dict[str, float]:
+        """Calculate utilization ratios relative to system limits"""
+        ratios = {}
 
-        Args:
-            perfdata: DataFrame with performance data
-            memory_limit: Memory limit in GB
-            gpu_memory_limit: GPU memory limit in GB (if available)
+        # Memory ratio (current usage / limit)
+        memory_avg = metrics.get('memory_avg_gb', 0)
+        ratios['memory'] = self._safe_ratio(memory_avg, memory_limit)
 
-        Returns:
-            PerformanceProfile: Performance profile of the cell
-        """
-        if perfdata.empty:
-            return PerformanceProfile(
-                primary_tag=PerformanceTag.IDLE,
-                secondary_tags=[],
-                confidence=1.0,
-                metrics_summary={},
-                bottleneck_score={}
+        # CPU ratio (utilization / 100%)
+        cpu_avg = metrics.get('cpu_avg', 0)
+        ratios['cpu'] = self._safe_ratio(cpu_avg, 100.0)
+
+        # GPU utilization ratio
+        gpu_util = metrics.get('gpu_util_avg', 0)
+        ratios['gpu_util'] = self._safe_ratio(gpu_util, 100.0)
+
+        # GPU memory ratio
+        if gpu_memory_limit and gpu_memory_limit > 0:
+            gpu_memory = metrics.get('gpu_memory_avg_gb', 0)
+            ratios['gpu_memory'] = self._safe_ratio(gpu_memory, gpu_memory_limit)
+        else:
+            ratios['gpu_memory'] = 0.0
+
+        # I/O ratio (normalize against reference bandwidth)
+        io_total = metrics.get('io_total_avg', 0)
+        io_baseline = self._detect_io_baseline(metrics)
+        io_ratio = self._safe_ratio(io_total, io_baseline)
+        print(
+            " | ".join(
+                (f'{io_ratio=}',
+                 f'{io_total=}',
+                 f'{io_baseline=}',)
             )
-
-        # Compute metrics
-        metrics = self._compute_metrics(perfdata, memory_limit, gpu_memory_limit)
-
-        # Determine bottleneck scores
-        bottleneck_scores = self._calculate_bottleneck_scores(metrics)
-
-        # Classify performance
-        primary_tag, secondary_tags, confidence = self._classify_performance(
-            metrics, bottleneck_scores
         )
+        ratios['io'] = io_ratio
 
-        return PerformanceProfile(
-            primary_tag=primary_tag,
-            secondary_tags=secondary_tags,
-            confidence=confidence,
-            metrics_summary=metrics,
-            bottleneck_score=bottleneck_scores
-        )
+        return ratios
 
     @staticmethod
-    def _calculate_growth_rate(series) -> float:
-        """Calculate growth rate for a time series"""
-        if len(series) < 2:
+    def _safe_ratio(measured: float, maximum: float) -> float:
+        """Safely calculate ratio with error handling"""
+        try:
+            if maximum is None or maximum <= 0 or measured is None:
+                return 0.0
+            return min(1.0, max(0.0, measured / maximum))
+        except (TypeError, ZeroDivisionError):
             return 0.0
 
-        # Linear regression to determine trend
-        x = np.arange(len(series))
-        coefficients = np.polyfit(x, series, 1)
-        return coefficients[0]  # Slope coefficient
+    def _create_ranked_tags(self, ratios: Dict[str, float]) -> List[TagScore]:
+        """Create the ranked list of tags based on ratios (0.0-1.0 scale)"""
 
-    def _calculate_bottleneck_scores(self, metrics: Dict[str, float]) -> Dict[str, float]:
-        """Calculate bottleneck scores"""
-        scores = {}
+        # Check for idle (all ratios below the threshold)
+        idle_threshold = self.thresholds['idle_threshold']
+        if all(ratio < idle_threshold for ratio in ratios.values()):
+            return [TagScore(PerformanceTag.IDLE, idle_threshold)]
 
-        # CPU score
-        cpu_avg = metrics.get('cpu_avg', 0)
-        if cpu_avg >= self.thresholds['cpu_high']:
-            scores['cpu'] = min(100.0, cpu_avg * 1.)
-        elif cpu_avg <= self.thresholds['cpu_low']:
-            scores['cpu'] = max(0.0, cpu_avg * 1.)
-        else:
-            scores['cpu'] = cpu_avg
+        # Sort by descending ratios
+        sorted_ratios = sorted(ratios.items(), key=lambda x: x[1], reverse=True)
 
-        # TODO mb just take by percent of total memory?
-        # Memory score
-        memory_pct = metrics.get('memory_avg_pct', 0)
-        memory_growth = metrics.get('memory_growth_rate', 0)
-        memory_score = memory_pct
+        # Check if any resource exceeds its threshold (bound detection)
+        threshold_exceeded = False
+        for resource, ratio in sorted_ratios:
+            threshold_key = f'{resource}_ratio'
+            if threshold_key in self.thresholds:
+                threshold = self.thresholds[threshold_key]
+                if ratio >= threshold:
+                    threshold_exceeded = True
+                    break
 
-        # # Consider memory usage growth
-        # if memory_growth > 0:
-        #     memory_score += min(30.0, memory_growth * 10)
+        # If no threshold is exceeded, classify as NORMAL
+        if not threshold_exceeded:
+            return [TagScore(PerformanceTag.NORMAL, sorted_ratios[0][1] if sorted_ratios else 0.0)]
 
-        scores['memory'] = min(100.0, memory_score)
-
-        # GPU score
-        gpu_util = metrics.get('gpu_util_avg', 0)
-        gpu_memory = metrics.get('gpu_memory_avg_pct', 0)
-        scores['gpu'] = max(gpu_util, gpu_memory)
-
-        # I/O score
-        io_total = metrics.get('io_total_avg', 0)
-        print(f'{io_total=}')
-        # Normalize I/O (assuming 100MB/s = high load)
-        scores['io'] = min(100.0, (io_total / (100 * 1024 * 1024)) * 100)
-
-        return scores
-
-    def _classify_performance(self, metrics: Dict[str, float],
-                              scores: Dict[str, float]) -> Tuple[PerformanceTag, List[PerformanceTag], float]:
-        """Classify performance type"""
-
-        # Check for idle
-        if all(score < self.thresholds['idle'] for score in scores.values()):
-            return PerformanceTag.IDLE, [], 1.0
-
-        # Sort by descending scores
-        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        primary_bottleneck = sorted_scores[0]
-
-        # Determine primary tag
+        # Create ranked tags for resources that exceed minimum threshold
         tag_mapping = {
             'cpu': PerformanceTag.CPU_BOUND,
             'memory': PerformanceTag.MEMORY_BOUND,
-            'gpu': PerformanceTag.GPU_BOUND,
+            'gpu_util': PerformanceTag.GPU_UTIL_BOUND,
+            'gpu_memory': PerformanceTag.GPU_MEMORY_BOUND,
             'io': PerformanceTag.IO_BOUND
         }
 
-        primary_tag = tag_mapping.get(primary_bottleneck[0], PerformanceTag.BALANCED)
+        ranked_tags = []
 
-        # Determine secondary tags
-        secondary_tags = []
-        high_threshold = max(50.0, primary_bottleneck[1] * 0.7)
 
-        # TODO more efficient sort?
-        for resource, score in sorted_scores[1:]:
-            if score > high_threshold:
-                secondary_tags.append(tag_mapping[resource])
+        for resource, ratio in sorted_ratios:
+            if ratio >= self.thresholds['min_significant']:
+                tag = tag_mapping.get(resource)
+                if tag:
+                    ranked_tags.append(TagScore(tag, ratio))
 
-        # Compute confidence
-        confidence = self._calculate_confidence(sorted_scores)
+        # If no tags above the threshold, fallback to NORMAL
+        if not ranked_tags:
+            ranked_tags = [TagScore(PerformanceTag.NORMAL, sorted_ratios[0][1] if sorted_ratios else 0.0)]
 
-        # Check for a balanced load
-        if len(secondary_tags) >= 2 and confidence < 0.6:
-            primary_tag = PerformanceTag.BALANCED
-            secondary_tags = [tag_mapping[s[0]] for s in sorted_scores[:3] if s[1] > 30]
-
-        return primary_tag, secondary_tags, confidence
-
-    @staticmethod
-    def _calculate_confidence(sorted_scores: List[Tuple[str, float]]) -> float:
-        """Calculate confidence in classification"""
-        if len(sorted_scores) < 2:
-            return 1.0
-
-        primary_score = sorted_scores[0][1]
-        secondary_score = sorted_scores[1][1]
-
-        if primary_score == 0:
-            return 0.5
-
-        # The larger the gap, the higher the confidence
-        confidence = min(1.0, (primary_score - secondary_score) / primary_score)
-
-        # Minimum confidence is 0.3
-        return max(0.3, confidence)
+        return ranked_tags

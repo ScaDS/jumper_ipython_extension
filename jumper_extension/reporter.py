@@ -1,6 +1,7 @@
-from .utilities import filter_perfdata
-from .analyzer import PerformanceAnalyzer, PerformanceTag
+from typing import List
 
+from .utilities import filter_perfdata
+from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
 
 
 class PerformanceReporter:
@@ -11,28 +12,39 @@ class PerformanceReporter:
         self.analyzer = PerformanceAnalyzer()
 
     @staticmethod
-    def _format_performance_tags(profile):
-        """Format performance tags for display"""
+    def _format_performance_tags(ranked_tags: List[TagScore]):
+        """Format ranked performance tags for display"""
+        if not ranked_tags:
+            return "❓ UNKNOWN"
+
         tag_colors = {
-            PerformanceTag.CPU_BOUND: "",
-            PerformanceTag.MEMORY_BOUND: "",
-            PerformanceTag.GPU_BOUND: "",
-            PerformanceTag.IO_BOUND: "",
-            PerformanceTag.BALANCED: "",
-            PerformanceTag.IDLE: "⚪"
+            PerformanceTag.CPU_BOUND: "🔥",
+            PerformanceTag.MEMORY_BOUND: "🧠",
+            PerformanceTag.GPU_UTIL_BOUND: "🎮",
+            PerformanceTag.GPU_MEMORY_BOUND: "💾",
+            PerformanceTag.IO_BOUND: "💿",
+            PerformanceTag.IDLE: "⚪",
+            PerformanceTag.NORMAL: "✅"
         }
 
-        primary_color = tag_colors.get(profile.primary_tag, "❓")
-        primary_text = f"{primary_color} {profile.primary_tag.value.upper()}"
+        # Handle special cases
+        if len(ranked_tags) == 1:
+            tag_score = ranked_tags[0]
+            if tag_score.tag == PerformanceTag.IDLE:
+                return f"⚪ IDLE"
+            elif tag_score.tag == PerformanceTag.NORMAL:
+                return f"✅ NORMAL"
 
-        if profile.secondary_tags:
-            secondary_text = " + " + " + ".join([
-                f"{tag_colors.get(tag, '❓')}{tag.value}"
-                for tag in profile.secondary_tags
-            ])
-            return f"{primary_text}{secondary_text}"
+        # Format all tags with their scores/ratios
+        tag_displays = []
+        for tag_score in ranked_tags:
+            symbol = tag_colors.get(tag_score.tag, "❓")
+            # Convert ratio to percentage for display
+            percentage = tag_score.score * 100.0
+            tag_name = str(tag_score.tag).upper()
+            tag_displays.append(f"{symbol} {tag_name} ({percentage:.1f}%)")
 
-        return primary_text
+        return "\n".join(tag_displays)
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""
@@ -82,9 +94,7 @@ class PerformanceReporter:
         memory_limit = self.monitor.memory_limits[level]
         gpu_memory_limit = self.monitor.gpu_memory if self.monitor.num_gpus > 0 else None
 
-        print(f'{perfdata=}')
-        input()
-        performance_profile = self.analyzer.analyze_cell_performance(
+        ranked_tags = self.analyzer.analyze_cell_performance(
             perfdata,
             memory_limit,
             gpu_memory_limit
@@ -103,23 +113,9 @@ class PerformanceReporter:
         )
         print("-" * 40)
 
-        # Output performance profile
-        tags_display = self._format_performance_tags(performance_profile)
-        print(f"Performance Profile: {tags_display} "
-              f"(confidence: {performance_profile.confidence:.2f})")
-
-        # Bottleneck details
-        if performance_profile.bottleneck_score:
-            print("Bottleneck Analysis:")
-            for resource, score in sorted(
-                    performance_profile.bottleneck_score.items(),
-                    key=lambda x: x[1],
-                    reverse=True
-            ):
-                if score > 10:  # Show only bottlenecks above threshold
-                    print(f"  {resource.upper()}: {score:.1f}%")
-
-        print("-" * 40)
+        # Output performance tags
+        tags_display = self._format_performance_tags(ranked_tags)
+        print(f"Performance Tags:\n{tags_display}")
 
         # Report table
         metrics = [
