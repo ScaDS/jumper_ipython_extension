@@ -1,4 +1,5 @@
 import logging
+import pickle
 import re
 from typing import List
 
@@ -214,6 +215,119 @@ class PerformanceVisualizer:
 
         return compressed_perfdata, cell_boundaries
 
+    def _plot_direct(self, metric_subsets, cell_range, show_idle, level, save_jpeg=None, pickle_file=None):
+        """Plot metrics directly with matplotlib without widgets"""
+        start_idx, end_idx = cell_range
+        filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+        
+        # Get performance data for the specified level
+        perfdata = filter_perfdata(
+            filtered_cells,
+            self.monitor.data.view(level=level),
+            not show_idle,
+        )
+        
+        if perfdata.empty:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.NO_PERFORMANCE_DATA
+                ]
+            )
+            return
+        
+        # Process time data
+        if not show_idle:
+            processed_data, self._compressed_cell_boundaries = (
+                self._compress_time_axis(perfdata, cell_range)
+            )
+        else:
+            processed_data = perfdata.copy()
+            processed_data["time"] -= self.monitor.start_time
+        
+        # Get metrics for subsets
+        metrics = []
+        for subset in metric_subsets:
+            if subset in self.subsets:
+                for metric_key in self.subsets[subset].keys():
+                    metrics.append(metric_key)
+            else:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_METRIC_SUBSET
+                    ].format(
+                        subset=subset,
+                        supported_subsets=", ".join(self.subsets.keys()),
+                    )
+                )
+        
+        if not metrics:
+            logger.warning("No valid metrics found to plot")
+            return
+        
+        # Create subplots
+        n_metrics = len(metrics)
+        fig, axes = plt.subplots(n_metrics, 1, figsize=(10, 3 * n_metrics), 
+                                constrained_layout=True)
+        if n_metrics == 1:
+            axes = [axes]
+        
+        # Plot each metric
+        for i, metric in enumerate(metrics):
+            self._plot_metric(
+                processed_data, metric, cell_range, show_idle, axes[i], level
+            )
+        
+        # Handle JPEG saving
+        if save_jpeg:
+            if not save_jpeg.endswith('.jpg') and not save_jpeg.endswith('.jpeg'):
+                save_jpeg += '.jpg'
+            fig.savefig(save_jpeg, format='jpeg', dpi=300, bbox_inches='tight')
+            print(f"Plot saved as JPEG: {save_jpeg}")
+        
+        # Handle pickle serialization
+        if pickle_file:
+            if not pickle_file.endswith('.pkl'):
+                pickle_file += '.pkl'
+            
+            # Create plot data dictionary
+            plot_data = {
+                'figure': fig,
+                'axes': axes,
+                'metrics': metrics,
+                'processed_data': processed_data,
+                'cell_range': cell_range,
+                'level': level,
+                'show_idle': show_idle,
+                'metric_subsets': metric_subsets
+            }
+            
+            # Save to pickle file
+            with open(pickle_file, 'wb') as f:
+                pickle.dump(plot_data, f)
+            
+            # Print reload code
+            print(f"Plot objects serialized to: {pickle_file}")
+            print("\n# Python code to reload and display the plot:")
+            print(f"import pickle")
+            print(f"import matplotlib.pyplot as plt")
+            print(f"")
+            print(f"# Load the pickled plot data")
+            print(f"with open('{pickle_file}', 'rb') as f:")
+            print(f"    plot_data = pickle.load(f)")
+            print(f"")
+            print(f"# Extract the figure and display")
+            print(f"fig = plot_data['figure']")
+            print(f"plt.show()")
+            print(f"")
+            print(f"# Access other data:")
+            print(f"# axes = plot_data['axes']")
+            print(f"# metrics = plot_data['metrics']")
+            print(f"# processed_data = plot_data['processed_data']")
+            print(f"# cell_range = plot_data['cell_range']")
+            print(f"# level = plot_data['level']")
+        
+        plt.show()
+
     def _plot_metric(
         self,
         df,
@@ -404,6 +518,9 @@ class PerformanceVisualizer:
         metric_subsets=("cpu", "mem", "io"),
         cell_range=None,
         show_idle=False,
+        level=None,
+        save_jpeg=None,
+        pickle_file=None,
     ):
         if self.monitor.num_gpus:
             metric_subsets += (
@@ -434,6 +551,11 @@ class PerformanceVisualizer:
                 int(valid_cells.iloc[cell_start_index]["index"]),
                 int(valid_cells.iloc[-1]["index"]),
             )
+
+        # If level is specified, plot directly without widgets
+        if level is not None:
+            return self._plot_direct(metric_subsets, cell_range, show_idle,
+                                     level, save_jpeg, pickle_file)
 
         # Create interactive widgets
         style = {"description_width": "initial"}

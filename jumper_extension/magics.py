@@ -133,6 +133,22 @@ class perfmonitorMagics(Magics):
             choices=get_available_levels(),
             help="Performance level",
         )
+        parser.add_argument(
+            "--metrics",
+            type=str,
+            default="cpu_summary,memory",
+            help="Comma-separated metric keys (e.g., cpu_summary,memory,io_read). See second-level keys of subsets in visualizer.",
+        )
+        parser.add_argument(
+            "--save-jpeg",
+            type=str,
+            help="Save plots as JPEG file with specified filename (only works with direct plotting mode)",
+        )
+        parser.add_argument(
+            "--pickle",
+            type=str,
+            help="Serialize plot objects to pickle file with specified filename and print reload code (only works with direct plotting mode)",
+        )
         try:
             return parser.parse_args(shlex.split(line))
         except Exception:
@@ -143,13 +159,30 @@ class perfmonitorMagics(Magics):
             return None
         try:
             max_idx = len(cell_history) - 1
+            if max_idx < 0:
+                return None
+
+            def resolve_index(idx_str, default):
+                if idx_str == "":
+                    return default
+                idx = int(idx_str)
+                if idx < 0:
+                    idx = max_idx + 1 + idx  # Convert negative to positive
+                return idx
+
             if ":" in cell_str:
                 start_str, end_str = cell_str.split(":", 1)
-                start_idx = 0 if not start_str else int(start_str)
-                end_idx = max_idx if not end_str else int(end_str)
+                start_idx = resolve_index(start_str.strip(), 0)
+                end_idx = resolve_index(end_str.strip(), max_idx)
             else:
-                start_idx = end_idx = int(cell_str)
-            if 0 <= start_idx <= end_idx <= max_idx:
+                idx = resolve_index(cell_str.strip(), max_idx)
+                start_idx = end_idx = idx
+            
+            # Clamp to valid bounds
+            start_idx = max(0, min(start_idx, max_idx))
+            end_idx = max(0, min(end_idx, max_idx))
+            
+            if start_idx <= end_idx:
                 return (start_idx, end_idx)
         except (ValueError, IndexError):
             logger.warning(
@@ -168,7 +201,66 @@ class perfmonitorMagics(Magics):
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
-        self.visualizer.plot()
+        
+        # Check if any parameters were provided
+        if not line.strip():
+            # No parameters - use interactive widgets
+            self.visualizer.plot()
+            return
+        
+        # Check if core plotting parameters are present
+        # Only use direct plotting if --level, --cell, or --metrics are specified
+        if not any(param in line for param in ['--level', '--cell', '--metrics']):
+            # Only save/pickle parameters provided - use interactive widgets
+            self.visualizer.plot()
+            return
+        
+        # Parse arguments with defaults
+        args = self._parse_arguments(line)
+        if args is None:
+            return
+        
+        # Parse cell range with default -2:-1 (last two cells)
+        cell_arg = args.cell if args.cell is not None else "-1:"
+        cell_range = self._parse_cell_range(cell_arg, self.cell_history)
+        
+        # Parse metrics and map to subsets
+        requested_metrics = [m.strip() for m in args.metrics.split(",") if m.strip()]
+        subsets = set()
+        missing_metrics = []
+        
+        for metric in requested_metrics:
+            found = False
+            for subset_name, subset_dict in self.visualizer.subsets.items():
+                if metric in subset_dict:
+                    subsets.add(subset_name)
+                    found = True
+                    break
+            if not found:
+                missing_metrics.append(metric)
+        
+        # Default to cpu and mem subsets if no valid metrics found
+        if not subsets:
+            subsets = {"cpu", "mem"}
+        
+        # Warn about missing metrics
+        if missing_metrics:
+            available_metrics = []
+            for subset_dict in self.visualizer.subsets.values():
+                available_metrics.extend(subset_dict.keys())
+            logger.warning(
+                f"Unknown metrics: {', '.join(missing_metrics)}. "
+                f"Available metrics: {', '.join(sorted(set(available_metrics)))}"
+            )
+        
+        # Call visualizer with parsed parameters (direct plotting mode)
+        self.visualizer.plot(
+            metric_subsets=tuple(subsets), 
+            cell_range=cell_range, 
+            level=args.level,
+            save_jpeg=getattr(args, 'save_jpeg', None),
+            pickle_file=getattr(args, 'pickle', None)
+        )
 
     @line_magic
     def perfmonitor_enable_perfreports(self, line):
