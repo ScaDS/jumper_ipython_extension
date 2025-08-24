@@ -60,10 +60,6 @@ class PerformanceMonitor:
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
-        # Backward-compatible attribute expected by tests/UI
-        self.memory = self.memory_limits.get(
-            "slurm", self.memory_limits.get("system")
-        )
 
         self.gpu_handles = []
         self.gpu_memory = 0
@@ -334,7 +330,8 @@ class PerformanceMonitor:
                 print(
                     EXTENSION_INFO_MESSAGES[
                         ExtensionInfoCode.IMPRECISE_INTERVAL
-                    ].format(interval=self.interval), end="\r"
+                    ].format(interval=self.interval),
+                    end="\r",
                 )
             else:
                 time.sleep(self.interval - time_measurement)

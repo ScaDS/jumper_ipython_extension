@@ -64,7 +64,7 @@ def test_cpu_only_and_slurm(mock_cpu_only):
         )
         monitor = PerformanceMonitor()
         assert monitor.num_gpus == 0
-        assert monitor.memory == 8.0
+        assert monitor.memory_limits["slurm"] == 8.0
         assert "gpu_util" not in monitor.metrics
 
 

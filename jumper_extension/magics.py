@@ -218,70 +218,81 @@ class perfmonitorMagics(Magics):
 
     @line_magic
     def perfmonitor_export_perfdata(self, line):
-        """Export performance data to CSV with specified monitoring level"""
+        """Export performance data or push as DataFrame
+
+        Usage:
+          %perfmonitor_export_perfdata --file <path> [--level LEVEL]
+            # export to file
+          %perfmonitor_export_perfdata [--level LEVEL]
+            # push DataFrame
+        """
         self._skip_report = True
         if not self.monitor:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
-        parts = line.strip().split()
-        filename = "performance_data.csv"
-        if parts and not parts[0].startswith("--"):
-            filename = parts[0]
-            line = " ".join(parts[1:])
-        args = self._parse_arguments(line)
-        if not args:
-            logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.DEFINE_LEVEL
-                ].format(levels=", ".join(get_available_levels()))
-            )
-            return
-        self.monitor.data.export(filename, level=args.level)
-        logger.info(
-            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
-                filename=filename
-            )
-        )
 
-    @line_magic
-    def perfmonitor_perfdata_to_dataframe(self, line):
-        """Export performance data to dataframe with specified monitoring
-        level"""
-        self._skip_report = True
-        if not self.monitor:
-            logger.warning(
-                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
-            )
-            return
-        parts = line.strip().split()
-
-        dataframe_name = None
-        if parts and not parts[0].startswith("--"):
-            dataframe_name = parts[0]
-            line = " ".join(parts[1:])
-        args = self._parse_arguments(line)
-        if not args:
-            logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.DEFINE_LEVEL
-                ].format(levels=", ".join(get_available_levels()))
-            )
-            return
-        dataframe_value = self.monitor.data.view(level=args.level)
-        self.shell.push({dataframe_name: dataframe_value})
-        logger.info(
-            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
-                filename=dataframe_name
-            )
+        # Parse optional --file and --level arguments
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument("--file", type=str, help="Output filename")
+        parser.add_argument(
+            "--level",
+            default="process",
+            choices=get_available_levels(),
+            help="Performance level",
         )
+        try:
+            args = (
+                parser.parse_args(shlex.split(line))
+                if line
+                else parser.parse_args([])
+            )
+        except Exception:
+            args = None
+
+        if args and args.file:
+            self.monitor.data.export(
+                args.file, level=args.level, cell_history=self.cell_history
+            )
+        else:
+            df = self.monitor.data.view(
+                level=args.level, cell_history=self.cell_history
+            )
+            var_name = "perfdata_df"
+            self.shell.push({var_name: df})
+            print(
+                "[JUmPER]: Performance data DataFrame available as "
+                f"'{var_name}'"
+            )
 
     @line_magic
     def perfmonitor_export_cell_history(self, line):
-        """Export cell history to JSON or CSV format"""
+        """Export cell history or push as DataFrame
+
+        Usage:
+          %perfmonitor_export_cell_history --file <path>  # export to file
+          %perfmonitor_export_cell_history                # push DataFrame
+        """
         self._skip_report = True
-        self.cell_history.export(line.strip() or "cell_history.json")
+
+        # Parse optional --file argument
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument("--file", type=str, help="Output filename")
+        try:
+            args = parser.parse_args(shlex.split(line)) if line else None
+        except Exception:
+            args = None
+
+        if args and args.file:
+            self.cell_history.export(args.file)
+        else:
+            df = self.cell_history.view()
+            var_name = "cell_history_df"
+            self.shell.push({var_name: df})
+            print(
+                f"[JUmPER]: Cell history DataFrame available as '{var_name}'"
+            )
 
     @line_magic
     def perfmonitor_help(self, line):
@@ -301,12 +312,12 @@ class perfmonitorMagics(Magics):
             "perfmonitor_enable_perfreports [--level LEVEL] -- enable "
             "auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
-            "perfmonitor_export_perfdata [filename] [--level LEVEL] -- "
-            "export CSV",
-            "perfmonitor_export_cell_history [filename] -- export history to "
-            "JSON/CSV",
-            "perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL] -- "
-            "perfdata to dataframe",
+            "perfmonitor_export_perfdata [--file FILE] [--level LEVEL] -- "
+            "export CSV; without --file pushes DataFrame "
+            "'perfdata_df'",
+            "perfmonitor_export_cell_history [--file FILE] -- export "
+            "history to JSON/CSV; without --file pushes DataFrame "
+            "'cell_history_df'",
         ]
         print("Available commands:")
         for cmd in commands:
