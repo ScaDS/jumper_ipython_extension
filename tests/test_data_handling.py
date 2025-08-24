@@ -146,7 +146,7 @@ def simple_history():
 def test_start_current_end_cell():
     history = CellHistory()
     history.start_cell("print('hello')")
-    assert history.current_cell["index"] == 0
+    assert history.current_cell["cell_index"] == 0
     history.end_cell(None)
     assert len(history.data) == 1
 
@@ -154,7 +154,7 @@ def test_start_current_end_cell():
 def test_view_method(simple_history, capsys, caplog):
     df = simple_history.view()
     assert len(df) == 1
-    assert df.iloc[0]["index"] == 0
+    assert df.iloc[0]["cell_index"] == 0
     assert df.iloc[0]["raw_cell"] == "print('hello')"
     assert df.iloc[0]["start_time"] < df.iloc[0]["end_time"]
 
@@ -194,7 +194,7 @@ def test_view_operations(simple_history):
     assert "end_time" in simple_history.data.columns
     assert "duration" in simple_history.data.columns
     assert "raw_cell" in simple_history.data.columns
-    assert "index" in simple_history.data.columns
+    assert "cell_index" in simple_history.data.columns
 
 
 def test_is_duration_calculated_correctly(simple_history):

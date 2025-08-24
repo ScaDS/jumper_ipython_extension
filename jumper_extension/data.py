@@ -1,3 +1,5 @@
+import json
+import os
 import pandas as pd
 import logging
 import logging.config
@@ -69,13 +71,27 @@ class PerformanceData:
 
         return pd.DataFrame(columns=columns)
 
-    def view(self, level="process", slice_=None):
+    def _attach_cell_index(self, df, cell_history):
+        result = df.copy()
+        result["cell_index"] = pd.NA
+        times = result["time"].to_numpy()
+        for row in cell_history.data.itertuples(index=False):
+            mask = (times >= row.start_time) & (times <= row.end_time)
+            result.loc[mask, "cell_index"] = row.cell_index
+        return result
+
+    def view(self, level="process", slice_=None, cell_history=None):
         """View data for a specific level with optional slicing."""
         self._validate_level(level)
-        return (
+        base = (
             self.data[level]
             if slice_ is None
             else self.data[level].iloc[slice_[0] : slice_[1] + 1]
+        )
+        return (
+            self._attach_cell_index(base, cell_history)
+            if cell_history is not None
+            else base
         )
 
     def add_sample(
@@ -134,8 +150,13 @@ class PerformanceData:
 
         self.data[level].loc[len(self.data[level])] = row_data
 
-    def export(self, filename="performance_data.csv", level="process"):
-        """Export performance data to CSV."""
+    def export(
+        self,
+        filename="performance_data.csv",
+        level="process",
+        cell_history=None,
+    ):
+        """Export performance data to JSON or CSV."""
         self._validate_level(level)
         if len(self.data[level]) == 0:
             logger.warning(
@@ -145,7 +166,36 @@ class PerformanceData:
             )
             return
 
-        self.data[level].to_csv(filename, index=False)
+        # Determine format from filename extension
+        _, ext = os.path.splitext(filename)
+        format = ext.lower().lstrip(".")
+        
+        # Default to csv if no extension provided
+        if not format:
+            format = "csv"
+            filename += ".csv"
+
+        df_to_write = (
+            self._attach_cell_index(self.data[level], cell_history)
+            if cell_history is not None
+            else self.data[level]
+        )
+
+        if format == "json":
+            with open(filename, "w") as f:
+                json.dump(df_to_write.to_dict("records"), f, indent=2)
+        elif format == "csv":
+            df_to_write.to_csv(filename, index=False)
+        else:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT
+                ].format(
+                    format=format,
+                    supported_formats=", ".join(["json", "csv"]),
+                )
+            )
+            return
 
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
