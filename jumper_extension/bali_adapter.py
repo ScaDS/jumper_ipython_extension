@@ -24,6 +24,8 @@ class BaliAdapter:
                 "end_time",
                 "duration",
                 "tokens_per_sec",
+                "is_error",
+                "error_message",
             ]
         )
 

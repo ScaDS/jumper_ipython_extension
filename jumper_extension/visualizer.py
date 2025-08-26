@@ -442,26 +442,38 @@ class PerformanceVisualizer(BaliVisualizationMixin):
 
         # Draw segments
         for s in draw_segments:
-            start, dur, tps = (
+            start, dur, tps, is_error = (
                 s["start_time"],
                 s["duration"],
                 s["tokens_per_sec"],
+                s.get("is_error", False),
             )
             if start > x_max or start + dur < 0:
                 continue
 
-            color = self.bali_adapter.get_color_for_tokens_per_sec(
-                tps, vmin, vmax
-            )
+            if is_error:
+                # Error segments: gray color with small x pattern
+                color = (0.7, 0.7, 0.7, 0.75)  # Gray with alpha
+                hatch = "xxx"
+                edgecolor = "darkred"
+            else:
+                # Normal segments: colored based on tokens/sec
+                color = self.bali_adapter.get_color_for_tokens_per_sec(
+                    tps, vmin, vmax
+                )
+                hatch = None
+                edgecolor = "red"
+            
             rect = plt.Rectangle(
                 (start, y_min),
                 dur,
                 height,
                 facecolor=color,
                 alpha=0.75,
-                edgecolor="red",
+                edgecolor=edgecolor,
                 linestyle="-",
                 linewidth=0.5,
+                hatch=hatch,
                 zorder=0.5,
             )
             rect._bali_info = {
@@ -470,8 +482,10 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 "batch_size": s.get("batch_size", "n/a"),
                 "input_len": s.get("input_len", "n/a"),
                 "output_len": s.get("output_len", "n/a"),
-                "tokens_per_sec": f"{tps:.2f}" if tps else "n/a",
+                "tokens_per_sec": f"{tps:.2f}" if tps else "NaN",
                 "duration": f"{s.get('duration', 0):.2f}",
+                "is_error": is_error,
+                "error_message": s.get("error_message", ""),
             }
             ax.add_patch(rect)
             ax._bali_patches.append(rect)
@@ -498,6 +512,9 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                         with ax._bali_selection_output:
                             ax._bali_selection_output.clear_output(wait=True)
                             info = patch._bali_info
+                            
+                            if info.get("is_error", False):
+                                print("Failed segment")
                             print(
                                 f"""BALI segment selected:
 - Model: {info['model']}

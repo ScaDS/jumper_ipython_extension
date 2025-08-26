@@ -68,6 +68,7 @@ class BaliResultsParser:
                         "batch_size": config_data.get("batch_size"),
                         "input_len": config_data.get("input_len"),
                         "output_len": config_data.get("output_len"),
+                        "is_error": False,
                     }
                 )
         else:
@@ -85,8 +86,33 @@ class BaliResultsParser:
                     "batch_size": config_data.get("batch_size"),
                     "input_len": config_data.get("input_len"),
                     "output_len": config_data.get("output_len"),
+                    "is_error": False,
                 }
             )
+        return segments
+
+    def extract_error_segments(self, error_data: Dict, config_data: Dict) -> List[Dict]:
+        """Extract error segments from errors.json file."""
+        segments = []
+        if error_data:
+            for framework, error_info in error_data.items():
+                start_time = error_info.get("start_time")
+                end_time = error_info.get("end_time")
+                
+                segments.append({
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "duration": error_info.get("duration"),
+                    "tokens_per_sec": None,  # No tokens for failed segments
+                    "framework": framework,
+                    "iteration": "error",
+                    "model": config_data.get("model_name"),
+                    "batch_size": config_data.get("batch_size"),
+                    "input_len": config_data.get("input_len"),
+                    "output_len": config_data.get("output_len"),
+                    "is_error": True,
+                    "error_message": error_info.get("error", "Unknown error"),
+                })
         return segments
 
     def collect_all_bali_segments(self, pid: int) -> List[Dict]:
@@ -108,6 +134,16 @@ class BaliResultsParser:
                 segments.extend(
                     self.extract_segment(benchmark_data, config_data)
                 )
+                
+                # Also check for error segments
+                error_path = os.path.join(
+                    os.path.dirname(config_path), "errors.json"
+                )
+                error_data = self._load_json(error_path)
+                if error_data:
+                    segments.extend(
+                        self.extract_error_segments(error_data, config_data)
+                    )
 
         return sorted(
             [s for s in segments if s["start_time"]],
