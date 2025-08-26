@@ -93,8 +93,9 @@ _BASE_EXTENSION_INFO_MESSAGES = {
 
 
 def _apply_prefix(messages):
-    return {code: f"{MESSAGE_PREFIX}: {text}"
-            for code, text in messages.items()}
+    return {
+        code: f"{MESSAGE_PREFIX}: {text}" for code, text in messages.items()
+    }
 
 
 EXTENSION_ERROR_MESSAGES = _apply_prefix(_BASE_EXTENSION_ERROR_MESSAGES)

@@ -38,7 +38,7 @@ class PerformanceReporter:
                 if len(non_short_cells) > 0:
                     # Get the last non-short cell index
                     last_valid_cell_idx = int(
-                        non_short_cells.iloc[-1]["index"]
+                        non_short_cells.iloc[-1]["cell_index"]
                     )
                     cell_range = (last_valid_cell_idx, last_valid_cell_idx)
                 else:
