@@ -97,7 +97,7 @@ class BaliResultsParser:
         segments = []
         for directory in result_dirs:
             for config_path in glob.glob(
-                os.path.join(directory, "*/*/*/*/config.json")
+                os.path.join(directory, "*/*/*/*/*/config.json")
             ):
                 config_data = self._load_json(config_path)
                 benchmark_path = os.path.join(
