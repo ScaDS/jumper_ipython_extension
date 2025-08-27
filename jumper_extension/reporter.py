@@ -31,7 +31,6 @@ class PerformanceReporter:
             PerformanceTag.MEMORY_BOUND: "🧠",
             PerformanceTag.GPU_UTIL_BOUND: "🎮",
             PerformanceTag.GPU_MEMORY_BOUND: "💾",
-            PerformanceTag.IO_BOUND: "💿",
             PerformanceTag.IDLE: "⚪",
             PerformanceTag.NORMAL: "✅"
         }

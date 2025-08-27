@@ -10,7 +10,6 @@ class PerformanceTag(Enum):
     MEMORY_BOUND = "memory-bound"
     GPU_UTIL_BOUND = "gpu-util-bound"
     GPU_MEMORY_BOUND = "gpu-memory-bound"
-    IO_BOUND = "io-bound"
     IDLE = "idle"
 
     def __str__(self):
@@ -27,25 +26,16 @@ class TagScore:
 class PerformanceAnalyzer:
     """Performance analyzer to determine workload type using relative thresholds"""
 
-    mib_to_bytes = 1024 * 1024
+    MIB_TO_BYTES = 1024 * 1024
 
     # Default thresholds (relative to system limits)
     DEFAULT_THRESHOLDS = {
         'memory_ratio': 0.80,  # memory limit
         'cpu_ratio': 0.70,  # CPU capacity
-        'io_ratio': 0.60,  # I/O bandwidth
         'gpu_util_ratio': 0.70,  # GPU utilization
         'gpu_memory_ratio': 0.80,  # GPU memory
         'idle_threshold': 0.05,  # idle detection
         'min_significant': 0.3,  # Minimum ratio for tag to be considered significant
-    }
-
-    # I/O bandwidth references (bytes/second) - adaptive based on system type
-    _io_baseline = None
-    IO_BANDWIDTH_REFERENCE = {
-        'ssd_threshold': 500 * mib_to_bytes,    # 500 MB/s - SSD
-        'hdd_threshold': 150 * mib_to_bytes,    # 150 MB/s - HDD
-        'high_io_threshold': 100 * mib_to_bytes, # 100 MB/s - default threshold
     }
 
     def __init__(
@@ -59,33 +49,6 @@ class PerformanceAnalyzer:
             thresholds: Custom threshold values (uses defaults if None)
         """
         self.thresholds = {**self.DEFAULT_THRESHOLDS, **(thresholds or {})}
-
-    def _detect_io_baseline(self, perfdata) -> float:
-        """Dynamically determine the baseline I/O system throughput"""
-        if self._io_baseline is not None:
-            return self._io_baseline
-
-        # Get I/O data from perfdata
-        io_read = perfdata.get('io_read_avg', 0)
-        io_write = perfdata.get('io_write_avg', 0)
-        total_io = io_read + io_write
-
-        # If no I/O data available, use a conservative value
-        if total_io == 0:
-            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['high_io_threshold']
-            return self._io_baseline
-
-        # Heuristic: if measured speed > 200 MB/s, likely SSD
-        # if 50-200 MB/s, likely fast HDD
-        # otherwise use baseline threshold
-        if total_io > 200 * self.mib_to_bytes:
-            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['ssd_threshold']
-        elif total_io > 50 * self.mib_to_bytes:
-            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['hdd_threshold']
-        else:
-            self._io_baseline = self.IO_BANDWIDTH_REFERENCE['high_io_threshold']
-
-        return self._io_baseline
 
     def analyze_cell_performance(self, perfdata, memory_limit: float,
                                  gpu_memory_limit: Optional[float] = None) -> List[TagScore]:
@@ -137,12 +100,6 @@ class PerformanceAnalyzer:
         if 'gpu_mem_avg' in perfdata.columns and gpu_memory_limit:
             metrics['gpu_memory_avg_gb'] = perfdata['gpu_mem_avg'].mean()
 
-        # I/O metrics
-        if 'io_read' in perfdata.columns and 'io_write' in perfdata.columns:
-            metrics['io_read_avg'] = perfdata['io_read'].mean()
-            metrics['io_write_avg'] = perfdata['io_write'].mean()
-            metrics['io_total_avg'] = metrics['io_read_avg'] + metrics['io_write_avg']
-
         return metrics
 
     def _calculate_utilization_ratios(self, metrics: Dict[str, float],
@@ -169,19 +126,6 @@ class PerformanceAnalyzer:
             ratios['gpu_memory'] = self._safe_ratio(gpu_memory, gpu_memory_limit)
         else:
             ratios['gpu_memory'] = 0.0
-
-        # I/O ratio (normalize against reference bandwidth)
-        io_total = metrics.get('io_total_avg', 0)
-        io_baseline = self._detect_io_baseline(metrics)
-        io_ratio = self._safe_ratio(io_total, io_baseline)
-        print(
-            " | ".join(
-                (f'{io_ratio=}',
-                 f'{io_total=}',
-                 f'{io_baseline=}',)
-            )
-        )
-        ratios['io'] = io_ratio
 
         return ratios
 
@@ -226,7 +170,6 @@ class PerformanceAnalyzer:
             'memory': PerformanceTag.MEMORY_BOUND,
             'gpu_util': PerformanceTag.GPU_UTIL_BOUND,
             'gpu_memory': PerformanceTag.GPU_MEMORY_BOUND,
-            'io': PerformanceTag.IO_BOUND
         }
 
         ranked_tags = []
