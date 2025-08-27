@@ -10,7 +10,6 @@ class PerformanceTag(Enum):
     MEMORY_BOUND = "memory-bound"
     GPU_UTIL_BOUND = "gpu-util-bound"
     GPU_MEMORY_BOUND = "gpu-memory-bound"
-    IDLE = "idle"
 
     def __str__(self):
         return self.value
@@ -30,12 +29,10 @@ class PerformanceAnalyzer:
 
     # Default thresholds (relative to system limits)
     DEFAULT_THRESHOLDS = {
-        'memory_ratio': 0.80,  # memory limit
-        'cpu_ratio': 0.70,  # CPU capacity
+        'memory_ratio': 0.30,  # memory limit 0.80
+        'cpu_ratio': 0.60,  # CPU capacity 0.70
         'gpu_util_ratio': 0.70,  # GPU utilization
         'gpu_memory_ratio': 0.80,  # GPU memory
-        'idle_threshold': 0.05,  # idle detection
-        'min_significant': 0.3,  # Minimum ratio for tag to be considered significant
     }
 
     def __init__(
@@ -63,8 +60,6 @@ class PerformanceAnalyzer:
         Returns:
             List[TagScore]: Ranked performance tags for the cell
         """
-        if perfdata.empty:
-            return [TagScore(PerformanceTag.IDLE, 100.0)]
 
         # Compute normalized metrics
         metrics = self._compute_metrics(perfdata, gpu_memory_limit)
@@ -142,29 +137,10 @@ class PerformanceAnalyzer:
     def _create_ranked_tags(self, ratios: Dict[str, float]) -> List[TagScore]:
         """Create the ranked list of tags based on ratios (0.0-1.0 scale)"""
 
-        # Check for idle (all ratios below the threshold)
-        idle_threshold = self.thresholds['idle_threshold']
-        if all(ratio < idle_threshold for ratio in ratios.values()):
-            return [TagScore(PerformanceTag.IDLE, idle_threshold)]
-
         # Sort by descending ratios
         sorted_ratios = sorted(ratios.items(), key=lambda x: x[1], reverse=True)
 
-        # Check if any resource exceeds its threshold (bound detection)
-        threshold_exceeded = False
-        for resource, ratio in sorted_ratios:
-            threshold_key = f'{resource}_ratio'
-            if threshold_key in self.thresholds:
-                threshold = self.thresholds[threshold_key]
-                if ratio >= threshold:
-                    threshold_exceeded = True
-                    break
-
-        # If no threshold is exceeded, classify as NORMAL
-        if not threshold_exceeded:
-            return [TagScore(PerformanceTag.NORMAL, sorted_ratios[0][1] if sorted_ratios else 0.0)]
-
-        # Create ranked tags for resources that exceed minimum threshold
+        # Create ranked tags for resources that exceed the minimum threshold
         tag_mapping = {
             'cpu': PerformanceTag.CPU_BOUND,
             'memory': PerformanceTag.MEMORY_BOUND,
@@ -174,15 +150,12 @@ class PerformanceAnalyzer:
 
         ranked_tags = []
 
-
         for resource, ratio in sorted_ratios:
-            if ratio >= self.thresholds['min_significant']:
+            threshold_key = f'{resource}_ratio'
+            threshold = self.thresholds.get(threshold_key, 0.0)
+            if ratio >= threshold:
                 tag = tag_mapping.get(resource)
                 if tag:
                     ranked_tags.append(TagScore(tag, ratio))
 
-        # If no tags above the threshold, fallback to NORMAL
-        if not ranked_tags:
-            ranked_tags = [TagScore(PerformanceTag.NORMAL, sorted_ratios[0][1] if sorted_ratios else 0.0)]
-
-        return ranked_tags
+        return ranked_tags if ranked_tags else [TagScore(PerformanceTag.NORMAL, 0.0)]

@@ -31,16 +31,13 @@ class PerformanceReporter:
             PerformanceTag.MEMORY_BOUND: "🧠",
             PerformanceTag.GPU_UTIL_BOUND: "🎮",
             PerformanceTag.GPU_MEMORY_BOUND: "💾",
-            PerformanceTag.IDLE: "⚪",
             PerformanceTag.NORMAL: "✅"
         }
 
         # Handle special cases
         if len(ranked_tags) == 1:
             tag_score = ranked_tags[0]
-            if tag_score.tag == PerformanceTag.IDLE:
-                return f"⚪ IDLE"
-            elif tag_score.tag == PerformanceTag.NORMAL:
+            if tag_score.tag == PerformanceTag.NORMAL:
                 return f"✅ NORMAL"
 
         # Format all tags with their scores/ratios
