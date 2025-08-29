@@ -159,6 +159,9 @@ class BaliResultsParser:
     def get_color_for_tokens_per_sec(
         self, tokens_per_sec: float, vmin: float, vmax: float
     ) -> Tuple[float, float, float, float]:
+        # Handle None tokens_per_sec (for error segments or missing data)
+        if tokens_per_sec is None:
+            return self.colormap(0.5)  # Use middle color for unknown values
         if vmax == vmin:
             return self.colormap(0.5)
         normalized = max(

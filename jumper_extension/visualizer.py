@@ -464,6 +464,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 edgecolor = "darkred"
             else:
                 # Normal segments: colored based on tokens/sec
+                # Handle case where tps might be None even for non-error segments
                 color = self.bali_adapter.get_color_for_tokens_per_sec(
                     tps, vmin, vmax
                 )
@@ -521,8 +522,19 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                             
                             if info.get("is_error", False):
                                 print("Failed segment")
-                            print(
-                                f"""BALI segment selected:
+                                print(
+                                    f"""BALI segment selected:
+- Model: {info['model']}
+- Framework: {info['framework']}
+- Batch size: {info['batch_size']}
+- Input len: {info['input_len']}
+- Output len: {info['output_len']}
+- Error: {info['error_message']}
+- Duration (s): {info['duration']}"""
+                                )
+                            else:
+                                print(
+                                    f"""BALI segment selected:
 - Model: {info['model']}
 - Framework: {info['framework']}
 - Batch size: {info['batch_size']}
@@ -530,7 +542,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
 - Output len: {info['output_len']}
 - Tokens/sec: {info['tokens_per_sec']}
 - Duration (s): {info['duration']}"""
-                            )
+                                )
 
                     ax.figure.canvas.draw_idle()
                     return
