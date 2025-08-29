@@ -16,7 +16,8 @@ from .extension_messages import (
 from .utilities import (
     filter_perfdata, 
     get_available_levels,
-    load_perfdata_from_disk
+    load_perfdata_from_disk,
+    load_monitor_metadata_from_disk
 )
 from .logo import logo_image, jumper_colors
 from .bali_adapter import BaliVisualizationMixin
@@ -993,18 +994,28 @@ class DiskPerformanceVisualizer(PerformanceVisualizer):
         self.min_duration = 1.0
         self._io_window = 1
         
-        # Create a mock monitor object with essential attributes
-        class MockMonitor:
-            def __init__(self, pid):
-                self.pid = pid
-                self.num_cpus = 8  # Default values
-                self.num_gpus = 1
-                self.gpu_memory = 30.0
-                self.num_system_cpus = 8
-                self.start_time = 0
-                self.memory_limits = {level: 100.0 for level in get_available_levels()}
+        # Load monitor metadata from disk
+        metadata = load_monitor_metadata_from_disk(pid)
+        if metadata is None:
+            logger.warning(f"No monitor metadata found for PID {pid}, using defaults")
+            metadata = {
+                "num_cpus": 8, "num_system_cpus": 8, "num_gpus": 1,
+                "gpu_memory": 30.0, "start_time": 0,
+                "memory_limits": {level: 100.0 for level in get_available_levels()}
+            }
         
-        self.monitor = MockMonitor(pid)
+        # Create monitor object with loaded metadata
+        class MockMonitor:
+            def __init__(self, pid, metadata):
+                self.pid = pid
+                self.num_cpus = metadata["num_cpus"]
+                self.num_system_cpus = metadata["num_system_cpus"]
+                self.num_gpus = metadata["num_gpus"]
+                self.gpu_memory = metadata["gpu_memory"]
+                self.start_time = metadata["start_time"]
+                self.memory_limits = metadata["memory_limits"]
+        
+        self.monitor = MockMonitor(pid, metadata)
         
         # Initialize BALI functionality
         BaliVisualizationMixin.__init__(self, bali_adapter=bali_adapter)

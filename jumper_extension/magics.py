@@ -18,8 +18,10 @@ from .utilities import (
     get_available_levels,
     save_perfdata_to_disk,
     save_cell_history_to_disk,
+    save_monitor_metadata_to_disk,
     load_perfdata_from_disk,
     load_cell_history_from_disk,
+    load_monitor_metadata_from_disk,
 )
 from .visualizer import PerformanceVisualizer
 from .bali_adapter import BaliMagicsMixin
@@ -133,6 +135,7 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
         # Save data to disk before stopping
         save_perfdata_to_disk(self.monitor.pid, self.monitor.data)
         save_cell_history_to_disk(self.monitor.pid, self.cell_history)
+        save_monitor_metadata_to_disk(self.monitor.pid, self.monitor)
         
         self.monitor.stop()
 

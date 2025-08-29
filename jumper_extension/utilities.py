@@ -138,3 +138,31 @@ def load_cell_history_from_disk(pid):
             data = json.load(f)
         return pd.DataFrame(data)
     return pd.DataFrame()
+
+
+def save_monitor_metadata_to_disk(pid, monitor):
+    """Save monitor metadata to disk"""
+    perfdata_dir = f"perfdata_results/{pid}"
+    os.makedirs(perfdata_dir, exist_ok=True)
+    
+    metadata = {
+        "num_cpus": monitor.num_cpus,
+        "num_system_cpus": monitor.num_system_cpus,
+        "num_gpus": monitor.num_gpus,
+        "gpu_memory": monitor.gpu_memory,
+        "start_time": monitor.start_time,
+        "memory_limits": monitor.memory_limits,
+    }
+    
+    filepath = os.path.join(perfdata_dir, "monitor_metadata.json")
+    with open(filepath, "w") as f:
+        json.dump(metadata, f, indent=2)
+
+
+def load_monitor_metadata_from_disk(pid):
+    """Load monitor metadata from disk"""
+    filepath = f"perfdata_results/{pid}/monitor_metadata.json"
+    if os.path.exists(filepath):
+        with open(filepath, "r") as f:
+            return json.load(f)
+    return None
