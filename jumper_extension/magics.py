@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import shlex
 
 from IPython.core.magic import Magics, line_magic, magics_class
@@ -13,7 +14,13 @@ from .extension_messages import (
 )
 from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
-from .utilities import get_available_levels
+from .utilities import (
+    get_available_levels,
+    save_perfdata_to_disk,
+    save_cell_history_to_disk,
+    load_perfdata_from_disk,
+    load_cell_history_from_disk,
+)
 from .visualizer import PerformanceVisualizer
 from .bali_adapter import BaliMagicsMixin
 
@@ -122,6 +129,11 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
+        
+        # Save data to disk before stopping
+        save_perfdata_to_disk(self.monitor.pid, self.monitor.data)
+        save_cell_history_to_disk(self.monitor.pid, self.cell_history)
+        
         self.monitor.stop()
 
     def _parse_arguments(self, line):
@@ -134,6 +146,11 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
             default="process",
             choices=get_available_levels(),
             help="Performance level",
+        )
+        parser.add_argument(
+            "--from-disk", 
+            action="store_true", 
+            help="Load data from disk instead of memory"
         )
         try:
             return parser.parse_args(shlex.split(line))
@@ -165,12 +182,36 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
     def perfmonitor_plot(self, line):
         """Open interactive plot with widgets for exploring performance data"""
         self._skip_report = True
-        if not self.monitor:
-            logger.warning(
-                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
-            )
-            return
-        self.visualizer.plot()
+        
+        # Parse arguments for --from-disk option
+        args = self._parse_arguments(line)
+        from_disk = args and getattr(args, 'from_disk', False)
+        
+        if from_disk:
+            # Load data from disk
+            pid = self.monitor.pid if self.monitor else os.getpid()
+            cell_history_data = load_cell_history_from_disk(pid)
+            if cell_history_data.empty:
+                logger.warning(f"No cell history found on disk for PID {pid}")
+                return
+            
+            # Create a temporary cell history object
+            from .cell_history import CellHistory
+            temp_cell_history = CellHistory()
+            temp_cell_history.data = cell_history_data
+            
+            # Create a mock visualizer with disk data
+            from .visualizer import DiskPerformanceVisualizer
+            visualizer = DiskPerformanceVisualizer(pid, temp_cell_history)
+            visualizer.plot()
+        else:
+            # Use memory data (original behavior)
+            if not self.monitor:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+                )
+                return
+            self.visualizer.plot()
 
     @line_magic
     def bali_segments(self, line):
@@ -314,7 +355,7 @@ class perfmonitorMagics(Magics, BaliMagicsMixin):
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- "
             "show report",
-            "perfmonitor_plot -- interactive plot with widgets for data "
+            "perfmonitor_plot [--from-disk] -- interactive plot with widgets for data "
             "exploration",
             "perfmonitor_enable_perfreports [--level LEVEL] -- enable "
             "auto-reports",

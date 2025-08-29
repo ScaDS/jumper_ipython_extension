@@ -2,6 +2,7 @@ import logging
 import re
 from typing import List
 
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
@@ -12,7 +13,11 @@ from .extension_messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
-from .utilities import filter_perfdata, get_available_levels
+from .utilities import (
+    filter_perfdata, 
+    get_available_levels,
+    load_perfdata_from_disk
+)
 from .logo import logo_image, jumper_colors
 from .bali_adapter import BaliVisualizationMixin
 
@@ -976,3 +981,177 @@ class InteractivePlotWrapper:
         for panel in self.plot_panels:
             panel["output"].clear_output(wait=True)
             panel["update_plot"]()
+
+
+class DiskPerformanceVisualizer(PerformanceVisualizer):
+    """Performance visualizer that loads data from disk instead of memory"""
+    
+    def __init__(self, pid, cell_history, bali_adapter=None):
+        self.pid = pid
+        self.cell_history = cell_history
+        self.figsize = (5, 3)
+        self.min_duration = 1.0
+        self._io_window = 1
+        
+        # Create a mock monitor object with essential attributes
+        class MockMonitor:
+            def __init__(self, pid):
+                self.pid = pid
+                self.num_cpus = 8  # Default values
+                self.num_gpus = 1
+                self.gpu_memory = 30.0
+                self.num_system_cpus = 8
+                self.start_time = 0
+                self.memory_limits = {level: 100.0 for level in get_available_levels()}
+        
+        self.monitor = MockMonitor(pid)
+        
+        # Initialize BALI functionality
+        BaliVisualizationMixin.__init__(self, bali_adapter=bali_adapter)
+        
+        # Load perfdata from disk
+        self.perfdata_by_level = load_perfdata_from_disk(pid, get_available_levels())
+        
+        # Initialize subsets (copy from parent class)
+        self.subsets = {
+            "cpu_all": {
+                "cpu": {
+                    "type": "multi_series",
+                    "prefix": "cpu_util_",
+                    "title": "CPU Utilization (%) - Across Cores",
+                    "ylim": (0, 100),
+                    "label": "CPU Utilization (All Cores)",
+                }
+            },
+            "gpu_all": {
+                "gpu_util": {
+                    "type": "multi_series",
+                    "prefix": "gpu_util_",
+                    "title": "GPU Utilization (%) - Across GPUs",
+                    "ylim": (0, 100),
+                    "label": "GPU Utilization (All GPUs)",
+                },
+                "gpu_band": {
+                    "type": "multi_series",
+                    "prefix": "gpu_band_",
+                    "title": "GPU Bandwidth Usage (%) - Across GPUs",
+                    "ylim": (0, 100),
+                    "label": "GPU Bandwidth (All GPUs)",
+                },
+                "gpu_mem": {
+                    "type": "multi_series",
+                    "prefix": "gpu_mem_",
+                    "title": "GPU Memory Usage (GB) - Across GPUs",
+                    "ylim": (0, self.monitor.gpu_memory),
+                    "label": "GPU Memory (All GPUs)",
+                },
+            },
+            "cpu": {
+                "cpu_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "cpu_util_min",
+                        "cpu_util_avg",
+                        "cpu_util_max",
+                    ],
+                    "title": f"CPU Utilization (%) - {self.monitor.num_cpus} CPUs",
+                    "ylim": (0, 100),
+                    "label": "CPU Utilization Summary",
+                }
+            },
+            "gpu": {
+                "gpu_util_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "gpu_util_min",
+                        "gpu_util_avg",
+                        "gpu_util_max",
+                    ],
+                    "title": f"GPU Utilization (%) - {self.monitor.num_gpus} GPUs",
+                    "ylim": (0, 100),
+                    "label": "GPU Utilization Summary",
+                },
+                "gpu_band_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "gpu_band_min",
+                        "gpu_band_avg",
+                        "gpu_band_max",
+                    ],
+                    "title": f"GPU Bandwidth Usage (%) - {self.monitor.num_gpus} GPUs",
+                    "ylim": (0, 100),
+                    "label": "GPU Bandwidth Summary",
+                },
+                "gpu_mem_summary": {
+                    "type": "summary_series",
+                    "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
+                    "title": f"GPU Memory Usage (GB) - {self.monitor.num_gpus} GPUs",
+                    "ylim": (0, self.monitor.gpu_memory),
+                    "label": "GPU Memory Summary",
+                },
+            },
+            "mem": {
+                "memory": {
+                    "type": "single_series",
+                    "column": "memory",
+                    "title": "Memory Usage (GB)",
+                    "ylim": None,
+                    "label": "Memory Usage",
+                }
+            },
+            "io": {
+                "io_read": {
+                    "type": "single_series",
+                    "column": "io_read",
+                    "title": "I/O Read (MB/s)",
+                    "ylim": None,
+                    "label": "IO Read MB/s",
+                },
+                "io_write": {
+                    "type": "single_series",
+                    "column": "io_write",
+                    "title": "I/O Write (MB/s)",
+                    "ylim": None,
+                    "label": "IO Write MB/s",
+                },
+                "io_read_count": {
+                    "type": "single_series",
+                    "column": "io_read_count",
+                    "title": "I/O Read Operations (ops/s)",
+                    "ylim": None,
+                    "label": "IO Read Ops",
+                },
+                "io_write_count": {
+                    "type": "single_series",
+                    "column": "io_write_count",
+                    "title": "I/O Write Operations (ops/s)",
+                    "ylim": None,
+                    "label": "IO Write Ops",
+                },
+            },
+        }
+
+    def plot(self, metric_subsets=("cpu", "mem", "io"), cell_range=None, show_idle=False):
+        """Plot performance metrics using disk data"""
+        if any(not df.empty for df in self.perfdata_by_level.values()):
+            # Override the plot method to use disk data
+            self._plot_with_disk_data(metric_subsets, cell_range, show_idle)
+        else:
+            logger.warning("No performance data found on disk")
+
+    def _plot_with_disk_data(self, metric_subsets, cell_range, show_idle):
+        """Modified plot method that uses pre-loaded disk data"""
+        # Use the parent class plot method but override data access
+        original_data_view = getattr(self.monitor, 'data', None)
+        
+        # Create a mock data object
+        class MockData:
+            def view(self, level):
+                return self.perfdata_by_level.get(level, pd.DataFrame())
+        
+        mock_data = MockData()
+        mock_data.perfdata_by_level = self.perfdata_by_level
+        self.monitor.data = mock_data
+        
+        # Call parent plot method
+        super().plot(metric_subsets, cell_range, show_idle)

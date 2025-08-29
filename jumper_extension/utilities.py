@@ -1,4 +1,5 @@
 import os
+import json
 import pandas as pd
 import psutil
 
@@ -91,3 +92,49 @@ def detect_memory_limit(level, uid, slurm_job):
             pass
 
     return system_mem
+
+def save_perfdata_to_disk(pid, data):
+    """Save performance data to disk by PID and level"""
+    perfdata_dir = f"perfdata_results/{pid}"
+    os.makedirs(perfdata_dir, exist_ok=True)
+    
+    for level in data.levels:
+        df = data.view(level=level)
+        if not df.empty:
+            filepath = os.path.join(perfdata_dir, f"perfdata_{level}.csv")
+            df.to_csv(filepath, index=False)
+
+
+def save_cell_history_to_disk(pid, cell_history):
+    """Save cell history to disk by PID"""
+    perfdata_dir = f"perfdata_results/{pid}"
+    os.makedirs(perfdata_dir, exist_ok=True)
+    
+    filepath = os.path.join(perfdata_dir, "cell_history.json")
+    with open(filepath, "w") as f:
+        json.dump(cell_history.data.to_dict("records"), f, indent=2)
+
+
+def load_perfdata_from_disk(pid, levels):
+    """Load performance data from disk by PID"""
+    perfdata_dir = f"perfdata_results/{pid}"
+    perfdata_by_level = {}
+    
+    for level in levels:
+        filepath = os.path.join(perfdata_dir, f"perfdata_{level}.csv")
+        if os.path.exists(filepath):
+            perfdata_by_level[level] = pd.read_csv(filepath)
+        else:
+            perfdata_by_level[level] = pd.DataFrame()
+    
+    return perfdata_by_level
+
+
+def load_cell_history_from_disk(pid):
+    """Load cell history from disk by PID"""
+    filepath = f"perfdata_results/{pid}/cell_history.json"
+    if os.path.exists(filepath):
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        return pd.DataFrame(data)
+    return pd.DataFrame()
