@@ -373,7 +373,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                     height,
                     facecolor=color,
                     alpha=alpha,
-                    edgecolor="black",
+                    edgecolor="gray",
                     linestyle="--",
                     linewidth=1,
                     zorder=0,
@@ -457,32 +457,37 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             if start > x_max or start + dur < 0:
                 continue
 
-            if is_error:
-                # Error segments: gray color with small x pattern
-                color = (0.7, 0.7, 0.7, 0.75)  # Gray with alpha
-                hatch = "xxx"
-                edgecolor = "darkred"
+            if is_error or tps is None:
+                color = "none"
+                hatch = None
+                edgecolor = "gray"
+                alpha = 1.0
+                is_error_segment = True
             else:
                 # Normal segments: colored based on tokens/sec
-                # Handle case where tps might be None even for non-error segments
                 color = self.bali_adapter.get_color_for_tokens_per_sec(
                     tps, vmin, vmax
                 )
                 hatch = None
-                edgecolor = "red"
+                edgecolor = "gray"
+                alpha = 0.75
+                is_error_segment = False
             
             rect = plt.Rectangle(
                 (start, y_min),
                 dur,
                 height,
                 facecolor=color,
-                alpha=0.75,
+                alpha=alpha,
                 edgecolor=edgecolor,
-                linestyle="-",
-                linewidth=0.5,
+                linestyle="--",
+                linewidth=1,
                 hatch=hatch,
                 zorder=0.5,
             )
+            
+            # Explicitly set edge color to ensure matplotlib state doesn't interfere
+            rect.set_edgecolor(edgecolor)
             rect._bali_info = {
                 "model": s.get("model", "n/a"),
                 "framework": s.get("framework", "n/a"),
@@ -494,6 +499,14 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 "is_error": is_error,
                 "error_message": s.get("error_message", ""),
             }
+            # Store original style for restoration after selection
+            rect._original_style = {
+                "facecolor": color,
+                "edgecolor": edgecolor,
+                "hatch": hatch,
+                "linewidth": 1,
+                "is_error_segment": is_error_segment,
+            }
             ax.add_patch(rect)
             ax._bali_patches.append(rect)
 
@@ -502,11 +515,14 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 return
             for patch in ax._bali_patches:
                 if patch.contains(event)[0]:
-                    # Reset previous selection
+                    # Reset previous selection to original style
                     if ax._bali_selected_patch:
-                        ax._bali_selected_patch.set_hatch(None)
-                        ax._bali_selected_patch.set_linewidth(0.5)
-                        ax._bali_selected_patch.set_edgecolor("red")
+                        prev_patch = ax._bali_selected_patch
+                        original = prev_patch._original_style
+                        prev_patch.set_hatch(original["hatch"])
+                        prev_patch.set_linewidth(original["linewidth"])
+                        prev_patch.set_edgecolor(original["edgecolor"])
+                        prev_patch.set_facecolor(original["facecolor"])
 
                     # Highlight new selection
                     patch.set_hatch("///")

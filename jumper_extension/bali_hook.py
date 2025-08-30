@@ -9,11 +9,8 @@ class BaliResultsParser:
     def __init__(self, base_search_path: str = "."):
         self.base_search_path = base_search_path
         self.colormap = mpl.colors.LinearSegmentedColormap.from_list(
-            "custom_cmap",
-            [
-                mpl.colors.to_rgb(c)
-                for c in ("#EADFB4", "#9BB0C1", "#F6995C", "#874C62")
-            ],
+            "muted_yellow_red_cmap",
+            ["#D4B483", "#C67E5C", "#A0522D"]
         )
 
     def _find_bali_directories(self, pid: int) -> List[str]:
@@ -160,8 +157,7 @@ class BaliResultsParser:
         self, tokens_per_sec: float, vmin: float, vmax: float
     ) -> Tuple[float, float, float, float]:
         # Handle None tokens_per_sec (for error segments or missing data)
-        if tokens_per_sec is None:
-            return self.colormap(0.5)  # Use middle color for unknown values
+
         if vmax == vmin:
             return self.colormap(0.5)
         normalized = max(
