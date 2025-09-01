@@ -6,50 +6,104 @@ from .extension_messages import (
 )
 from typing import List
 
+from pathlib import Path
+from IPython.display import display, HTML
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from .utilities import filter_perfdata
-from .analyzer import PerformanceAnalyzer, PerformanceTag
+from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
 
 
 logger = logging.getLogger("extension")
 
 
+# NEW: UI map for tag colors/icons
+TAG_UI = {
+    PerformanceTag.CPU_BOUND:         {"icon": "🔥", "color": "#ef4444"},  # red
+    PerformanceTag.MEMORY_BOUND:      {"icon": "🧠", "color": "#3b82f6"},  # blue
+    PerformanceTag.GPU_UTIL_BOUND:    {"icon": "🎮", "color": "#8b5cf6"},  # violet
+    PerformanceTag.GPU_MEMORY_BOUND:  {"icon": "💾", "color": "#14b8a6"},  # teal
+    PerformanceTag.NORMAL:            {"icon": "✅", "color": "#22c55e"},  # green
+}
+
+
 class PerformanceReporter:
-    def __init__(self, monitor, cell_history, min_duration=None):
+    def __init__(self, monitor, cell_history, min_duration=None, templates_dir=None):
         self.monitor = monitor
         self.cell_history = cell_history
         self.min_duration = min_duration
         self.analyzer = PerformanceAnalyzer()
 
+        self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent / "templates"
+
     @staticmethod
     def _format_performance_tags(ranked_tags: List[TagScore]):
         """Format ranked performance tags for display"""
         if not ranked_tags:
-            return "❓ UNKNOWN"
+            return [{"name": "UNKNOWN", "icon": "❓", "color": "#9ca3af"}]
 
-        tag_colors = {
-            PerformanceTag.CPU_BOUND: "🔥",
-            PerformanceTag.MEMORY_BOUND: "🧠",
-            PerformanceTag.GPU_UTIL_BOUND: "🎮",
-            PerformanceTag.GPU_MEMORY_BOUND: "💾",
-            PerformanceTag.NORMAL: "✅"
-        }
-
-        # Handle special cases
-        if len(ranked_tags) == 1:
-            tag_score = ranked_tags[0]
-            if tag_score.tag == PerformanceTag.NORMAL:
-                return f"✅ NORMAL"
+        # single NORMAL -> 100%
+        if len(ranked_tags) == 1 and ranked_tags[0].tag == PerformanceTag.NORMAL:
+            ui = TAG_UI[PerformanceTag.NORMAL]
+            return [{"name": "NORMAL", "icon": ui["icon"], "color": ui["color"]}]
 
         # Format all tags with their scores/ratios
         tag_displays = []
         for tag_score in ranked_tags:
-            symbol = tag_colors.get(tag_score.tag, "❓")
+            ui = TAG_UI.get(tag_score.tag, {"icon": "❓", "color": "#9ca3af"})
             # Convert ratio to percentage for display
-            percentage = tag_score.score * 100.0
             tag_name = str(tag_score.tag).upper()
-            tag_displays.append(f"{symbol} {tag_name} ({percentage:.1f}%)")
+            percentage = tag_score.score * 100.0
+            tag_displays.append({
+                "name": tag_name,
+                "icon": ui["icon"],
+                "color": ui["color"],
+            })
+        return tag_displays
 
-        return "\n".join(tag_displays)
+    def _collect_performance_data(self, cell_range=None, level="process"):
+        """Collect performance data from monitor"""
+        if not self.monitor:
+            print("[JUmPER]: No active performance monitoring session")
+            return
+
+        if cell_range is None:
+            valid_cells = self.cell_history.view()
+
+            if len(valid_cells) > 0:
+                # Filter for non-short cells
+                min_duration = (
+                    self.min_duration if self.min_duration is not None else 0
+                )
+                non_short_cells = valid_cells[
+                    valid_cells["duration"] >= min_duration
+                    ]
+
+                if len(non_short_cells) > 0:
+                    # Get the last non-short cell index
+                    last_valid_cell_idx = int(
+                        non_short_cells.iloc[-1]["index"]
+                    )
+                    cell_range = (last_valid_cell_idx, last_valid_cell_idx)
+                else:
+                    print("[JUmPER]: No non-short cells found")
+                    return
+            else:
+                return
+
+                # Filter cell history data first using cell_range
+        start_idx, end_idx = cell_range
+        filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+
+        perfdata = self.monitor.data.view(level=level)
+        perfdata = filter_perfdata(
+            filtered_cells, perfdata, compress_idle=False
+        )
+
+        # Check if non-empty, otherwise print results
+        if perfdata.empty:
+            print("[JUmPER]: No performance data available")
+            return
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""
@@ -69,7 +123,7 @@ class PerformanceReporter:
                 )
                 non_short_cells = valid_cells[
                     valid_cells["duration"] >= min_duration
-                ]
+                    ]
 
                 if len(non_short_cells) > 0:
                     # Get the last non-short cell index
@@ -87,7 +141,7 @@ class PerformanceReporter:
             else:
                 return
 
-        # Filter cell history data first using cell_range
+                # Filter cell history data first using cell_range
         start_idx, end_idx = cell_range
         filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
 
@@ -105,7 +159,7 @@ class PerformanceReporter:
             )
             return
 
-        # Analyze cell performance
+            # Analyze cell performance
         memory_limit = self.monitor.memory_limits[level]
         gpu_memory_limit = self.monitor.gpu_memory if self.monitor.num_gpus > 0 else None
 
@@ -165,3 +219,94 @@ class PerformanceReporter:
                     f"{perfdata[col].min():<8.2f} {perfdata[col].max():<8.2f} "
                     f"{total:<8}"
                 )
+
+    def display(self, cell_range=None, level="process"):
+        """Print performance report"""
+        if not self.monitor:
+            print("[JUmPER]: No active performance monitoring session")
+            return
+
+        if cell_range is None:
+            valid_cells = self.cell_history.view()
+
+            if len(valid_cells) > 0:
+                # Filter for non-short cells
+                min_duration = (
+                    self.min_duration if self.min_duration is not None else 0
+                )
+                non_short_cells = valid_cells[
+                    valid_cells["duration"] >= min_duration
+                ]
+
+                if len(non_short_cells) > 0:
+                    # Get the last non-short cell index
+                    last_valid_cell_idx = int(
+                        non_short_cells.iloc[-1]["cell_index"]
+                    )
+                    cell_range = (last_valid_cell_idx, last_valid_cell_idx)
+                else:
+                    print("[JUmPER]: No non-short cells found")
+                    return
+            else:
+                return
+
+        # Filter cell history data first using cell_range
+        start_idx, end_idx = cell_range
+        filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+
+        perfdata = self.monitor.data.view(level=level)
+        perfdata = filter_perfdata(
+            filtered_cells, perfdata, compress_idle=False
+        )
+
+        # Check if non-empty, otherwise print results
+        if perfdata.empty:
+            print("[JUmPER]: No performance data available")
+            return
+
+        # Analyze cell performance
+        memory_limit = self.monitor.memory_limits[level]
+        gpu_memory_limit = self.monitor.gpu_memory if self.monitor.num_gpus > 0 else None
+
+        ranked_tags = self.analyzer.analyze_cell_performance(
+            perfdata,
+            memory_limit,
+            gpu_memory_limit
+        )
+        tags_model = self._format_performance_tags(ranked_tags)
+
+        # Calculate the total duration of selected cells
+        total_duration = filtered_cells["duration"].sum()
+
+        # Build report
+        metrics_spec = [
+            (f"CPU Util (Across {self.monitor.num_cpus} CPUs)", "cpu_util_avg", "-"),
+            ("Memory (GB)", "memory", f"{self.monitor.memory_limits[level]:.2f}" if hasattr(self.monitor, "memory_limits") else "-"),
+            (f"GPU Util (Across {getattr(self.monitor, 'num_gpus', 0)} GPUs)", "gpu_util_avg", "-"),
+            ("GPU Memory (GB)", "gpu_mem_avg", f"{getattr(self.monitor, 'gpu_memory', 0.0):.2f}"),
+        ]
+        metrics_rows = []
+        for name, col, total in metrics_spec:
+            if col in perfdata.columns:
+                metrics_rows.append({
+                    "name": name,
+                    "avg": float(perfdata[col].mean()),
+                    "min": float(perfdata[col].min()),
+                    "max": float(perfdata[col].max()),
+                    "total": total,
+                })
+
+        # 2) Render Jinja2 HTML from external files
+        env = Environment(
+            loader=FileSystemLoader(str(self.templates_dir)),
+            autoescape=select_autoescape(["html", "xml"])
+        )
+        # NOTE: report.html itself includes styles.css via `{% include 'styles.css' %}`
+        template = env.get_template("report.html")
+        html = template.render(
+            duration=total_duration,
+            n_cells=len(filtered_cells) if filtered_cells is not None else 1,
+            metrics=metrics_rows,
+            tags=tags_model,
+        )
+        display(HTML(html))

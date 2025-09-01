@@ -133,6 +133,11 @@ class perfmonitorMagics(Magics):
             choices=get_available_levels(),
             help="Performance level",
         )
+        parser.add_argument(
+            "--text",
+            action="store_true",
+            help="Show report in text format"
+        )
         try:
             return parser.parse_args(shlex.split(line))
         except Exception:
@@ -214,7 +219,10 @@ class perfmonitorMagics(Magics):
             cell_range = self._parse_cell_range(args.cell, self.cell_history)
             if not cell_range:
                 return
-        self.reporter.print(cell_range=cell_range, level=args.level)
+        if args.text:
+            self.reporter.print(cell_range=cell_range, level=args.level)
+        else:
+            self.reporter.display(cell_range=cell_range, level=args.level)
 
     @line_magic
     def perfmonitor_export_perfdata(self, line):
