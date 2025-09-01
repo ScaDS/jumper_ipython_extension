@@ -235,6 +235,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
         ax: plt.Axes = None,
         level="process",
         show_bali=False,
+        custom_vmin_vmax=None,
     ):
         """Plot a single metric using its configuration"""
         config = next(
@@ -349,7 +350,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             ax.set_ylim(ylim)
         if not show_bali:
             self._draw_cell_boundaries(ax, cell_range, show_idle)
-        self._draw_bali_segments(ax, show_bali, show_idle, cell_range)
+        self._draw_bali_segments(ax, show_bali, show_idle, cell_range, custom_vmin_vmax)
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
@@ -415,7 +416,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 )
 
     def _draw_bali_segments(
-        self, ax, show_bali=False, show_idle=True, cell_range=None
+        self, ax, show_bali=False, show_idle=True, cell_range=None, custom_vmin_vmax=None
     ):
         """Draw BALI segments as colored rectangles with click selection."""
         if not show_bali:
@@ -437,7 +438,11 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 for s in segments
             ]
 
-        vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
+        # Use custom vmin/vmax if provided, otherwise use data range
+        if custom_vmin_vmax:
+            vmin, vmax = custom_vmin_vmax
+        else:
+            vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
 
         # Clean up previous event handlers
         if hasattr(ax, "_bali_click"):
@@ -810,6 +815,8 @@ class InteractivePlotWrapper:
         )
         # Store plot panels for updates
         self.plot_panels = []
+        # Initialize custom_vmin_vmax for all instances
+        self.custom_vmin_vmax = None
 
         self.output_container = widgets.HBox(
             layout=Layout(
@@ -829,8 +836,11 @@ class InteractivePlotWrapper:
         # BALI colorbar components
         if show_bali:
             self.bali_colorbar_output = widgets.Output()
+            # Add vmin/vmax controls
+            self.vmin_widget = widgets.FloatText(value=0.0, description="vmin:", step=0.1)
+            self.vmax_widget = widgets.FloatText(value=100.0, description="vmax:", step=0.1)
             self.bali_colorbar_container = widgets.HBox(
-                [self.bali_colorbar_output],
+                [self.vmin_widget, self.vmax_widget, self.bali_colorbar_output],
                 layout=Layout(
                     display="flex", justify_content="center", width="100%"
                 ),
@@ -843,6 +853,8 @@ class InteractivePlotWrapper:
             self.bali_colorbar_output = None
             self.bali_colorbar_container = None
             self.bali_adapter = None
+            self.vmin_widget = None
+            self.vmax_widget = None
 
     def _create_bali_colorbar(self):
         """Create and display the BALI colorbar."""
@@ -859,7 +871,17 @@ class InteractivePlotWrapper:
         if not segments:
             return
 
-        vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
+        # Use custom vmin/vmax if available, otherwise use data range
+        if self.custom_vmin_vmax:
+            vmin, vmax = self.custom_vmin_vmax
+        else:
+            vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
+            # Initialize widgets with data range on first creation
+            if self.vmin_widget and self.vmax_widget:
+                self.vmin_widget.value = vmin
+                self.vmax_widget.value = vmax
+                self.custom_vmin_vmax = (vmin, vmax)
+
         with self.bali_colorbar_output:
             self.bali_colorbar_output.clear_output(wait=True)
             fig = plt.figure(figsize=(8, 0.8))
@@ -889,6 +911,17 @@ class InteractivePlotWrapper:
 
         if self.show_bali:
             self._create_bali_colorbar()
+            # Add observers to vmin/vmax widgets
+            def on_vmin_vmax_change(change):
+                if change["type"] == "change" and change["name"] == "value":
+                    self.custom_vmin_vmax = (self.vmin_widget.value, self.vmax_widget.value)
+                    self._create_bali_colorbar()  # Redraw colorbar
+                    # Redraw all plot panels
+                    for panel in self.plot_panels:
+                        panel["update_plot"]()
+            
+            self.vmin_widget.observe(on_vmin_vmax_change)
+            self.vmax_widget.observe(on_vmin_vmax_change)
             ui_components.append(self.bali_colorbar_container)
 
         ui_components.append(self.output_container)
@@ -959,6 +992,7 @@ class InteractivePlotWrapper:
                         ax,
                         level,
                         self.show_bali,
+                        self.custom_vmin_vmax,
                     )
                     fig.canvas.draw_idle()
                     if not is_ipympl_backend():
