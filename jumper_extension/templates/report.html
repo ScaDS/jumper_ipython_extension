@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Performance Report</title>
+  <style>
+    {% include 'styles.css' %}
+  </style>
+</head>
+<body>
+
+<h2>Performance Report</h2>
+
+<div class="report-grid">
+  <!-- LEFT: metrics table/rows -->
+  <div class="report-left">
+    {% for metric in metrics %}
+        <div class="metric-row">
+          <div class="metric-label">{{ metric.name }}</div>
+          <div class="metric-percent">{{ "%.2f"|format(metric.avg) }}</div>
+          <div class="metric-value">
+            <span class="metric-minmax">min {{ "%.2f"|format(metric.min) }} · max {{ "%.2f"|format(metric.max) }}</span>
+            {% if metric.total and metric.total != "-" %}
+            <span class="metric-total">total {{ metric.total }}</span>
+            {% endif %}
+          </div>
+          <div class="metric-bar">
+            <div class="metric-bar-fill" style="width: {{ metric.avg }}%;"></div>
+          </div>
+        </div>
+    {% endfor %}
+  </div>
+
+  <!-- RIGHT: performance tags -->
+  <aside class="report-right">
+    <div class="tags-title">Performance Tags</div>
+    <div class="tags-list">
+      {% for t in tags %}
+          <div class="tag-row" style="--tag-color: {{ t.color }};">
+            <div class="tag-bar">
+              <div class="tag-bar-fill"></div>
+            </div>
+            <div class="tag-icon" aria-hidden="true">{{ t.icon }}</div>
+            <div class="tag-name">{{ t.name }}</div>
+          </div>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+
+</body>
+</html>

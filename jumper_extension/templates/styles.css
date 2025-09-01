@@ -1,0 +1,101 @@
+/* === layout for metrics + right sidebar === */
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+/* left column (you already had .metric-row etc. — оставляем) */
+.metric-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-rows: auto auto;
+  gap: 6px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.metric-label { font-weight: 600; }
+.metric-percent { font-variant-numeric: tabular-nums; }
+.metric-value { color: #6b7280; font-size: 12px; }
+.metric-minmax { margin-right: 8px; }
+.metric-total { opacity: 0.9; }
+.metric-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.metric-bar-fill {
+  height: 100%;
+  background: #94a3b8;
+  width: 0%;
+}
+
+/* right column (tags) */
+.report-right {
+  position: sticky;
+  top: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+}
+.tags-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.tags-list {
+  display: grid;
+  gap: 8px;
+}
+
+/* one tag row:
+   - --pct is set inline (0..100%)
+   - --tag-color is the color for this tag
+*/
+.tag-row {
+  --pct: 0%;
+  --tag-color: #9ca3af;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-rows: auto;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 6px 6px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+/* background bar showing length proportional to percent */
+.tag-bar {
+  position: relative;
+  height: 10px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.tag-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: var(--pct);
+  background: var(--tag-color);
+}
+
+/* icon scales with percent; min/max clamps to keep sane sizes */
+.tag-icon {
+  font-size: clamp(14px, calc(10px + var(--pct) * 0.25), 28px);
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+/* name + percent */
+.tag-name { font-weight: 600; }
+.tag-pct {
+  font-variant-numeric: tabular-nums;
+  color: #374151;
+}
