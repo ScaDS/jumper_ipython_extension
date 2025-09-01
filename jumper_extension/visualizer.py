@@ -876,8 +876,10 @@ class InteractivePlotWrapper:
                 cax=fig.add_axes([0.1, 0.3, 0.8, 0.4]),
                 orientation="horizontal",
             )
-            cbar.set_label("Tokens/Second", fontsize=12, fontweight="bold")
+            cbar.set_label("Tokens/Second", fontsize=12)
             cbar.ax.tick_params(labelsize=10)
+            cbar.ax.set_facecolor("none")
+            fig.patch.set_facecolor("none")
             plt.close(fig)
             display(fig)
 
