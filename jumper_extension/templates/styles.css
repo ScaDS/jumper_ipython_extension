@@ -84,7 +84,8 @@ html, body {
 .jr-tags .jr-section-title { display: none; }
 
 .jr-taglist {
-  position: static;
+  /* Keep tag row in normal document flow and avoid overlapping table */
+  position: static !important;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -92,9 +93,12 @@ html, body {
   justify-content: flex-start;
   overflow: visible;
   gap: 8px;
-  margin: 8px 0 12px 40px;      /* separate from neighbors */
+  /* Shift the tag row slightly to the right so the chip isn't clipped
+     by the notebook's left gutter, without affecting other content */
+  margin: 8px 0 12px clamp(16px, 4vw, 48px);
   width: 100%;             /* span same width as header/table */
   padding-left: 12px;       /* comfortable left inset so chip fully fits */
+  z-index: 0;               /* sit below subsequent content if stacked */
 }
 
 .jr-tag {
@@ -129,6 +133,8 @@ html, body {
   max-width: 720px;
   background: var(--bg);
   margin-top: 4px;
+  position: relative; /* ensure it sits above tag row if ever stacked */
+  z-index: 1;
 }
 
 .jr-table {
