@@ -34,17 +34,22 @@ html, body {
   display: flex;
   flex-direction: row; /* title left, meta right */
   flex-wrap: wrap;     /* allow header to grow in height on small widths */
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   gap: 6px;
   margin-bottom: 14px;
   padding-right: 0;
+  position: relative;
 }
 
 .jr-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  margin-left: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
 }
 
 .jr-title {
@@ -95,9 +100,10 @@ html, body {
   gap: 8px;
   /* Shift the tag row slightly to the right so the chip isn't clipped
      by the notebook's left gutter, without affecting other content */
-  margin: 8px 0 12px clamp(16px, 4vw, 48px);
+  margin: 8px 0 1px clamp(16px, 4vw, 48px);
   width: 100%;             /* span same width as header/table */
-  padding-left: 12px;       /* comfortable left inset so chip fully fits */
+  padding-left: 12px;       /* comfortable left insetq so chip fully fits */
+  padding-bottom: 1px !important;
   z-index: 0;               /* sit below subsequent content if stacked */
 }
 
@@ -108,7 +114,7 @@ html, body {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 8px 12px; /* enough room for dot and text */
+  padding: 1px 10px !important; /* enough room for dot and text */
   color: var(--text);
   line-height: 1.2;
   min-height: 28px;
