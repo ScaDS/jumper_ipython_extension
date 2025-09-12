@@ -5,6 +5,10 @@
   --accent: #1f2937;       /* neutral accent for tags outline dots */
 }
 
+/* Normalize box sizing to avoid width overflow/layout overlap */
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -19,9 +23,17 @@ html, body {
   position: relative; /* allow absolute children like taglist */
 }
 
+/* Common content width to align header subtitle with table right edge */
+.jr-content {
+  max-width: 720px; /* matches .jr-table-wrap */
+  width: 100%;
+  margin: 0; /* keep left-aligned within container */
+}
+
 .jr-header {
   display: flex;
-  flex-direction: row; /* stack title, subtitle, then tags */
+  flex-direction: row; /* title left, meta right */
+  flex-wrap: wrap;     /* allow header to grow in height on small widths */
   justify-content: space-between;
   align-items: flex-start;
   gap: 6px;
@@ -68,17 +80,23 @@ html, body {
   margin: 12px 0 8px;
 }
 
-/* Hide the section title for tags (no separate section heading) */
+/* Hide the section title for tags (was replaced by tag row) */
 .jr-tags .jr-section-title { display: none; }
 
-/* Tags list directly under subtitle, stacked vertically */
 .jr-taglist {
   position: static;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* keep tags right-aligned under subtitle */
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: visible;
   gap: 8px;
+  margin: 8px 0 12px 40px;      /* separate from neighbors */
+  width: 100%;             /* span same width as header/table */
+  padding-left: 12px;       /* comfortable left inset so chip fully fits */
 }
+
 .jr-tag {
   display: inline-flex;
   gap: 10px;
@@ -103,10 +121,14 @@ html, body {
 .jr-tag--small { padding: 4px 8px; }
 .jr-tag--small .jr-tag-name { font-size: 12px; }
 
+/* Ensure the metrics section starts on its own line in normal flow */
+.jr-metrics { display: block; clear: both; }
+
 /* Metrics table (left-aligned, constrained) */
 .jr-table-wrap {
   max-width: 720px;
   background: var(--bg);
+  margin-top: 4px;
 }
 
 .jr-table {
@@ -134,27 +156,3 @@ html, body {
   color: var(--text);
   font-weight: 500;
 }
-
-/* No hover effects */
-
-/* Bottom-right widget */
-.jr-widget {
-  position: fixed;
-  right: 18px;
-  bottom: 16px;
-  z-index: 2147483647; /* ensure on top in notebooks */
-  background: transparent;
-  padding: 6px 8px;
-  max-width: min(46vw, 420px);
-}
-
-.jr-widget-title {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 8px;
-}
-
-.jr-widget-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-

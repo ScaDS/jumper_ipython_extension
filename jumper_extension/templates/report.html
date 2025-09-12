@@ -10,75 +10,60 @@
 </head>
 <body>
   <div class="jr-container">
-    <header class="jr-header">
-      <div class="jr-title">JUmPER Performance Report</div>
-      <div class="jr-right">
-        <div class="jr-subtitle">
-          <span class="jr-kv">
-            <span class="jr-k">Duration</span>
-            <span class="jr-v">{{ '%.2f' % duration }}s</span>
-          </span>
-          <span class="jr-sep">•</span>
-          <span class="jr-kv">
-            <span class="jr-k">Cells</span>
-            <span class="jr-v">{{ n_cells }}</span>
-          </span>
-        </div>
-
-        <!-- Tags list directly under subtitle -->
-        <div class="jr-tags">
-          <div class="jr-taglist">
-            {% for t in tags %}
-              <span class="jr-tag" style="--tag-color: {{ t.color }}">
-                <span class="jr-tag-icon">{{ t.icon }}</span>
-                <span class="jr-tag-name">{{ t.name }}</span>
-              </span>
-            {% endfor %}
+    <div class="jr-content">
+      <header class="jr-header">
+        <div class="jr-title">JUmPER Performance Report</div>
+        <div class="jr-right">
+          <div class="jr-subtitle">
+            <span class="jr-kv">
+              <span class="jr-k">Duration</span>
+              <span class="jr-v">{{ '%.2f' % duration }}s</span>
+            </span>
+            <span class="jr-sep">•</span>
+            <span class="jr-kv">
+              <span class="jr-k">Cells</span>
+              <span class="jr-v">{{ n_cells }}</span>
+            </span>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
 
-    <section class="jr-metrics">
-      <div class="jr-section-title">Metrics</div>
-      <div class="jr-table-wrap">
-        <table class="jr-table" role="grid">
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>AVG</th>
-              <th>MIN</th>
-              <th>MAX</th>
-              <th>Total/Limit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in metrics %}
+      <div class="jr-taglist">
+        {% for t in tags %}
+          <span class="jr-tag" style="--tag-color: {{ t.color }}">
+            <span class="jr-tag-icon">{{ t.icon }}</span>
+            <span class="jr-tag-name">{{ t.name }}</span>
+          </span>
+        {% endfor %}
+      </div>
+
+      <section class="jr-metrics">
+        <div class="jr-table-wrap">
+          <table class="jr-table" role="grid">
+            <thead>
               <tr>
-                <td class="jr-col-metric">{{ row.name }}</td>
-                <td>{{ '%.2f' % row.avg }}</td>
-                <td>{{ '%.2f' % row.min }}</td>
-                <td>{{ '%.2f' % row.max }}</td>
-                <td>{{ row.total }}</td>
+                <th>Metric</th>
+                <th>AVG</th>
+                <th>MIN</th>
+                <th>MAX</th>
+                <th>Total/Limit</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
-  <!-- Bottom-right performance tag widget -->
-  <aside class="jr-widget" aria-label="Performance Tags Widget">
-    <div class="jr-widget-title">Performance</div>
-    <div class="jr-widget-tags">
-      {% for t in tags %}
-        <span class="jr-tag jr-tag--small" style="--tag-color: {{ t.color }}">
-          <span class="jr-tag-icon">{{ t.icon }}</span>
-          <span class="jr-tag-name">{{ t.name }}</span>
-        </span>
-      {% endfor %}
+            </thead>
+            <tbody>
+              {% for row in metrics %}
+                <tr>
+                  <td class="jr-col-metric">{{ row.name }}</td>
+                  <td>{{ '%.2f' % row.avg }}</td>
+                  <td>{{ '%.2f' % row.min }}</td>
+                  <td>{{ '%.2f' % row.max }}</td>
+                  <td>{{ row.total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
-  </aside>
+  </div>
 </body>
 </html>
