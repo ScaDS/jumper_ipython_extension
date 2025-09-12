@@ -1,52 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Performance Report</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JUmPER Performance Report</title>
   <style>
-    {% include 'styles.css' %}
+  {{ inline_styles | safe }}
   </style>
 </head>
 <body>
+  <div class="jr-container">
+    <header class="jr-header">
+      <div class="jr-title">JUmPER Performance Report</div>
+      <div class="jr-right">
+        <div class="jr-subtitle">
+          <span class="jr-kv">
+            <span class="jr-k">Duration</span>
+            <span class="jr-v">{{ '%.2f' % duration }}s</span>
+          </span>
+          <span class="jr-sep">•</span>
+          <span class="jr-kv">
+            <span class="jr-k">Cells</span>
+            <span class="jr-v">{{ n_cells }}</span>
+          </span>
+        </div>
 
-<h2>Performance Report</h2>
-
-<div class="report-grid">
-  <!-- LEFT: metrics table/rows -->
-  <div class="report-left">
-    {% for metric in metrics %}
-        <div class="metric-row">
-          <div class="metric-label">{{ metric.name }}</div>
-          <div class="metric-percent">{{ "%.2f"|format(metric.avg) }}</div>
-          <div class="metric-value">
-            <span class="metric-minmax">min {{ "%.2f"|format(metric.min) }} · max {{ "%.2f"|format(metric.max) }}</span>
-            {% if metric.total and metric.total != "-" %}
-            <span class="metric-total">total {{ metric.total }}</span>
-            {% endif %}
-          </div>
-          <div class="metric-bar">
-            <div class="metric-bar-fill" style="width: {{ metric.avg }}%;"></div>
+        <!-- Tags list directly under subtitle -->
+        <div class="jr-tags">
+          <div class="jr-taglist">
+            {% for t in tags %}
+              <span class="jr-tag" style="--tag-color: {{ t.color }}">
+                <span class="jr-tag-icon">{{ t.icon }}</span>
+                <span class="jr-tag-name">{{ t.name }}</span>
+              </span>
+            {% endfor %}
           </div>
         </div>
-    {% endfor %}
+      </div>
+    </header>
+
+    <section class="jr-metrics">
+      <div class="jr-section-title">Metrics</div>
+      <div class="jr-table-wrap">
+        <table class="jr-table" role="grid">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>AVG</th>
+              <th>MIN</th>
+              <th>MAX</th>
+              <th>Total/Limit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in metrics %}
+              <tr>
+                <td class="jr-col-metric">{{ row.name }}</td>
+                <td>{{ '%.2f' % row.avg }}</td>
+                <td>{{ '%.2f' % row.min }}</td>
+                <td>{{ '%.2f' % row.max }}</td>
+                <td>{{ row.total }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <!-- RIGHT: performance tags -->
-  <aside class="report-right">
-    <div class="tags-title">Performance Tags</div>
-    <div class="tags-list">
+  <!-- Bottom-right performance tag widget -->
+  <aside class="jr-widget" aria-label="Performance Tags Widget">
+    <div class="jr-widget-title">Performance</div>
+    <div class="jr-widget-tags">
       {% for t in tags %}
-          <div class="tag-row" style="--tag-color: {{ t.color }};">
-            <div class="tag-bar">
-              <div class="tag-bar-fill"></div>
-            </div>
-            <div class="tag-icon" aria-hidden="true">{{ t.icon }}</div>
-            <div class="tag-name">{{ t.name }}</div>
-          </div>
+        <span class="jr-tag jr-tag--small" style="--tag-color: {{ t.color }}">
+          <span class="jr-tag-icon">{{ t.icon }}</span>
+          <span class="jr-tag-name">{{ t.name }}</span>
+        </span>
       {% endfor %}
     </div>
   </aside>
-</div>
-
 </body>
 </html>

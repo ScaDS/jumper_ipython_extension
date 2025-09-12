@@ -134,11 +134,19 @@ class PerformanceReporter:
             autoescape=select_autoescape(["html", "xml"])
         )
         template = env.get_template("report.html")
+        # Read external stylesheet and inline it for notebook rendering
+        try:
+            styles_path = self.templates_dir / "styles.css"
+            inline_styles = styles_path.read_text(encoding="utf-8") if styles_path.exists() else ""
+        except Exception:
+            inline_styles = ""
+
         html = template.render(
             duration=total_duration,
             n_cells=len(filtered_cells) if filtered_cells is not None else 1,
             metrics=metrics_rows,
             tags=tags_display,
+            inline_styles=inline_styles,
         )
         display(HTML(html))
 

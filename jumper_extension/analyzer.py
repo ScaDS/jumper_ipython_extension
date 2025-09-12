@@ -27,7 +27,7 @@ class PerformanceAnalyzer:
 
     MIB_TO_BYTES = 1024 * 1024
 
-    # Default thresholds (relative to system limits)
+    # Default thresholds
     DEFAULT_THRESHOLDS = {
         'memory_ratio': 0.30,  # memory limit 0.80
         'cpu_ratio': 0.60,  # CPU capacity 0.70
