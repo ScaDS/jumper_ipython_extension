@@ -115,9 +115,17 @@ html, body {
 }
 .jr-tag::before {
   content: "";
-  width: 8px; height: 8px; border-radius: 999px;
+  display: block; /* treat as a block inside flex item */
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  max-width: 8px;
+  min-height: 8px;
+  max-height: 8px;
+  border-radius: 50%;
   background: var(--tag-color, var(--accent));
-  flex: 0 0 8px;
+  flex: 0 0 8px; /* fixed basis to prevent horizontal growth */
+  align-self: center; /* ensure vertical centering without stretch */
 }
 .jr-tag-icon { opacity: 0.9; }
 .jr-tag-name { font-size: 13px; letter-spacing: 0.02em; }
