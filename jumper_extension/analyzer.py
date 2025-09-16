@@ -1,6 +1,10 @@
+import logging
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+
+
+logger = logging.getLogger("extension")
 
 
 class PerformanceTag(Enum):
@@ -34,6 +38,15 @@ class PerformanceAnalyzer:
         'cpu_ratio': 0.0,  # CPU capacity 0.70
         'gpu_util_ratio': 0.0,  # GPU utilization
         'gpu_memory_ratio': 0.0,  # GPU memory
+
+        # --- thresholds for "GPU allocated but not used" detection
+        # minimum memory usage required to treat GPU as allocated
+        'gpu_alloc_min_mem_gb': 0.0,
+        # minimum GPU utilization to treat GPU in idle state
+        'gpu_util_idle_threshold': 0.05,
+        # minimum overall usage fraction required to trigger the tag
+        'gpu_alloc_min_fraction': 0.5,
+
     }
 
     def __init__(
@@ -70,6 +83,12 @@ class PerformanceAnalyzer:
 
         # Create the ranked tags list
         ranked_tags = self._create_ranked_tags(ratios)
+
+        # Detect "GPU allocated but not used" and prepend if applicable
+        gpu_unused_tag = self._detect_gpu_allocated_but_not_used(perfdata, gpu_memory_limit)
+        if gpu_unused_tag is not None:
+            # Prepend the GPU allocated but not used as this is the most important tag
+            ranked_tags = [gpu_unused_tag] + ranked_tags
 
         return ranked_tags
 
@@ -123,6 +142,8 @@ class PerformanceAnalyzer:
         else:
             ratios['gpu_memory'] = 0.0
 
+        logger.debug(f"ratios: {ratios}")
+
         return ratios
 
     @staticmethod
@@ -160,3 +181,46 @@ class PerformanceAnalyzer:
                     ranked_tags.append(TagScore(tag, ratio))
 
         return ranked_tags if ranked_tags else [TagScore(PerformanceTag.NORMAL, 0.0)]
+
+    def _detect_gpu_allocated_but_not_used(
+        self,
+        perfdata,
+        gpu_memory_limit: Optional[float],
+    ) -> Optional[TagScore]:
+        """
+        Detect case when GPU memory is allocated but GPU compute utilization stays idle
+        for a significant fraction of measurement time.
+        """
+        # must have GPU columns and a GPU present
+        if gpu_memory_limit is None:
+            return None
+        if 'gpu_mem_avg' not in perfdata.columns or 'gpu_util_avg' not in perfdata.columns:
+            return None
+        if perfdata.empty:
+            return None
+
+        memory_threshold_gb = max(float(self.thresholds.get('gpu_alloc_min_mem_gb', 0.1)), 0.0)
+        utilization_idle_threshold = float(self.thresholds.get('gpu_util_idle_threshold', 0.05))  # 0..1
+        min_fraction = float(self.thresholds.get('gpu_alloc_min_fraction', 0.5))        # 0..1
+
+        # allocation considered if memory usage exceeds memory_threshold_gb
+        mask_alloc = perfdata['gpu_mem_avg'] > memory_threshold_gb
+        if mask_alloc.sum() == 0:
+            return None
+
+        # idle if util ≤ util_idle_thr * 100 (%)
+        mask_idle = perfdata['gpu_util_avg'] <= (utilization_idle_threshold * 100.0)
+
+        mask_alloc_and_idle = mask_alloc & mask_idle
+        frac = float(mask_alloc_and_idle.mean())
+
+        logger.debug(f"GPU allocated but not used:")
+        logger.debug(f"{perfdata['gpu_mem_avg'] = }")
+        logger.debug(f"{perfdata['gpu_util_avg'] = }")
+        logger.debug(f"{min_fraction = }")
+        logger.debug(f"{frac = }")
+
+        if frac >= min_fraction:
+            return TagScore(PerformanceTag.GPU_ALLOCATED_BUT_NOT_USED, frac)
+        return None
+
