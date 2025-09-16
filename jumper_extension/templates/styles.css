@@ -135,6 +135,7 @@ html, body {
 .jr-tag--gpu-memory-bound { --tag-color: #14b8a6; } /* teal */
 .jr-tag--normal         { --tag-color: #22c55e; } /* green */
 .jr-tag--unknown        { --tag-color: #9ca3af; } /* gray */
+.jr-tag--gpu-allocated-but-not-used { --tag-color: #9ca3af; } /* gray */
 
 /* Icon placeholder: allows inlining SVG later via --tag-icon variable */
 .jr-tag-icon {
