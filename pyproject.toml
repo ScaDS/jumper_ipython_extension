@@ -17,6 +17,7 @@ dependencies = [
     "psutil",
     "itables",
     "ipywidgets",
+    "jinja2",
 ]
 urls = {Homepage = "https://github.com/ScaDS/jumper_ipython_extension"}
 
