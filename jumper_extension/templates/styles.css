@@ -3,6 +3,7 @@
   --text: #111827;         /* near black */
   --muted: #4b5563;        /* gray-600 */
   --accent: #1f2937;       /* neutral accent for tags outline dots */
+  --tag-icon-size: 25px;  /* default icon size for tag widgets */
 }
 
 /* Normalize box sizing to avoid width overflow/layout overlap */
@@ -119,25 +120,43 @@ html, body {
   line-height: 1.2;
   min-height: 28px;
 }
-.jr-tag::before {
-  content: "";
-  display: block; /* treat as a block inside flex item */
-  width: 8px;
-  height: 8px;
-  min-width: 8px;
-  max-width: 8px;
-  min-height: 8px;
-  max-height: 8px;
-  border-radius: 50%;
-  background: var(--tag-color, var(--accent));
-  flex: 0 0 8px; /* fixed basis to prevent horizontal growth */
-  align-self: center; /* ensure vertical centering without stretch */
-}
+/* Remove the colored dot before each tag; only SVG + name remain */
+.jr-tag::before { content: none; display: none; }
 .jr-tag-icon { opacity: 0.9; }
 .jr-tag-name { font-size: 13px; letter-spacing: 0.02em; }
 
 .jr-tag--small { padding: 4px 8px; }
 .jr-tag--small .jr-tag-name { font-size: 12px; }
+
+/* Tag theme classes: set color via CSS custom property */
+.jr-tag--cpu-bound      { --tag-color: #ef4444; } /* red */
+.jr-tag--memory-bound   { --tag-color: #3b82f6; } /* blue */
+.jr-tag--gpu-util-bound { --tag-color: #8b5cf6; } /* violet */
+.jr-tag--gpu-memory-bound { --tag-color: #14b8a6; } /* teal */
+.jr-tag--normal         { --tag-color: #22c55e; } /* green */
+.jr-tag--unknown        { --tag-color: #9ca3af; } /* gray */
+
+/* Icon placeholder: allows inlining SVG later via --tag-icon variable */
+.jr-tag-icon {
+  display: inline-flex;
+  width: var(--tag-icon-size, 20px);
+  height: var(--tag-icon-size, 20px);
+  align-items: center;
+  justify-content: center;
+}
+/* Render masked icon only when there is no inline SVG inside */
+.jr-tag-icon:empty::before {
+  content: "";
+  display: block;
+  width: var(--tag-icon-size, 20px);
+  height: var(--tag-icon-size, 20px);
+  /* If --tag-icon is provided as a URL to an SVG, mask it; otherwise stays empty */
+  background-color: currentColor;
+  -webkit-mask: var(--tag-icon) no-repeat center / contain;
+  mask: var(--tag-icon) no-repeat center / contain;
+}
+/* Ensure any inline SVG scales nicely inside the placeholder */
+.jr-tag-icon svg { display: block; width: var(--tag-icon-size, 20px); height: var(--tag-icon-size, 20px); }
 
 /* Ensure the metrics section starts on its own line in normal flow */
 .jr-metrics { display: block; clear: both; }

@@ -10,6 +10,7 @@ class PerformanceTag(Enum):
     MEMORY_BOUND = "memory-bound"
     GPU_UTIL_BOUND = "gpu-util-bound"
     GPU_MEMORY_BOUND = "gpu-memory-bound"
+    GPU_ALLOCATED_BUT_NOT_USED = "gpu-allocated-but-not-used"
 
     def __str__(self):
         return self.value
@@ -29,10 +30,10 @@ class PerformanceAnalyzer:
 
     # Default thresholds
     DEFAULT_THRESHOLDS = {
-        'memory_ratio': 0.30,  # memory limit 0.80
-        'cpu_ratio': 0.60,  # CPU capacity 0.70
-        'gpu_util_ratio': 0.70,  # GPU utilization
-        'gpu_memory_ratio': 0.80,  # GPU memory
+        'memory_ratio': 0.0,  # memory limit 0.80
+        'cpu_ratio': 0.0,  # CPU capacity 0.70
+        'gpu_util_ratio': 0.0,  # GPU utilization
+        'gpu_memory_ratio': 0.0,  # GPU memory
     }
 
     def __init__(

@@ -16,17 +16,6 @@ from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
 
 logger = logging.getLogger("extension")
 
-
-# NEW: UI map for tag colors/icons
-TAG_UI = {
-    PerformanceTag.CPU_BOUND:         {"icon": "🔥", "color": "#ef4444"},  # red
-    PerformanceTag.MEMORY_BOUND:      {"icon": "🧠", "color": "#3b82f6"},  # blue
-    PerformanceTag.GPU_UTIL_BOUND:    {"icon": "🎮", "color": "#8b5cf6"},  # violet
-    PerformanceTag.GPU_MEMORY_BOUND:  {"icon": "💾", "color": "#14b8a6"},  # teal
-    PerformanceTag.NORMAL:            {"icon": "✅", "color": "#22c55e"},  # green
-}
-
-
 class PerformanceReporter:
     def __init__(self, monitor, cell_history, min_duration=None, templates_dir=None):
         self.monitor = monitor
@@ -247,23 +236,20 @@ class PerformanceReporter:
     def _format_performance_tags(ranked_tags: List[TagScore]):
         """Format ranked performance tags for display"""
         if not ranked_tags:
-            return [{"name": "UNKNOWN", "icon": "❓", "color": "#9ca3af"}]
+            return [{"name": "UNKNOWN", "slug": "unknown"}]
 
         # single NORMAL -> 100%
         if len(ranked_tags) == 1 and ranked_tags[0].tag == PerformanceTag.NORMAL:
-            ui = TAG_UI[PerformanceTag.NORMAL]
-            return [{"name": "NORMAL", "icon": ui["icon"], "color": ui["color"]}]
+            return [{"name": "NORMAL", "slug": "normal"}]
 
         # Format all tags with their scores/ratios
         tag_displays = []
         for tag_score in ranked_tags:
-            ui = TAG_UI.get(tag_score.tag, {"icon": "❓", "color": "#9ca3af"})
-            # Convert ratio to percentage for display
-            tag_name = str(tag_score.tag).upper()
-            percentage = tag_score.score * 100.0
+            # Create slug for CSS hooks and uppercase name for display
+            tag_slug = str(tag_score.tag)
+            tag_name = tag_slug.upper()
             tag_displays.append({
                 "name": tag_name,
-                "icon": ui["icon"],
-                "color": ui["color"],
+                "slug": tag_slug,
             })
         return tag_displays
