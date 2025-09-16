@@ -96,9 +96,10 @@ class PerformanceAnalyzer:
         if gpu_unused_tag is not None:
             # Prepend the GPU allocated but not used as this is the most important tag
             ranked_tags = [gpu_unused_tag] +  ranked_tags
+
         logger.debug(f"{ranked_tags = }")
 
-        return ranked_tags
+        return ranked_tags if ranked_tags else [TagScore(PerformanceTag.NORMAL, 0.0)]
 
     @staticmethod
     def _compute_metrics(
@@ -188,7 +189,7 @@ class PerformanceAnalyzer:
                 if tag:
                     ranked_tags.append(TagScore(tag, ratio))
 
-        return ranked_tags if ranked_tags else [TagScore(PerformanceTag.NORMAL, 0.0)]
+        return ranked_tags
 
     def _detect_gpu_allocated_but_not_used(
         self,
@@ -223,8 +224,10 @@ class PerformanceAnalyzer:
         frac = float(mask_alloc_and_idle.mean())
 
         logger.debug(f"GPU allocated but not used:")
-        logger.debug(f"{perfdata['gpu_mem_avg'] = }")
-        logger.debug(f"{perfdata['gpu_util_avg'] = }")
+        logger.debug(f"gpu_mem_avg:\n{perfdata['gpu_mem_avg']}")
+        logger.debug(f"mask_alloc:\n{mask_alloc}\n")
+        logger.debug(f"gpu_util_avg:\n{perfdata['gpu_util_avg']}")
+        logger.debug(f"mask_idle:\n{mask_idle}\n")
         logger.debug(f"{min_fraction = }")
         logger.debug(f"{frac = }")
 
