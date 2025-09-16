@@ -34,14 +34,14 @@ class PerformanceAnalyzer:
 
     # Default thresholds
     DEFAULT_THRESHOLDS = {
-        'memory_ratio': 0.0,  # memory limit 0.80
-        'cpu_ratio': 0.0,  # CPU capacity 0.70
-        'gpu_util_ratio': 0.0,  # GPU utilization
-        'gpu_memory_ratio': 0.0,  # GPU memory
+        'memory_ratio': 0.8,  # memory limit 0.80
+        'cpu_ratio': 0.7,  # CPU capacity 0.70
+        'gpu_util_ratio': 0.8,  # GPU utilization
+        'gpu_memory_ratio': 0.8,  # GPU memory
 
         # --- thresholds for "GPU allocated but not used" detection
         # minimum memory usage required to treat GPU as allocated
-        'gpu_alloc_min_mem_gb': 0.0,
+        'gpu_alloc_min_mem_gb': 0.1,
         # minimum GPU utilization to treat GPU in idle state
         'gpu_util_idle_threshold': 0.05,
         # minimum overall usage fraction required to trigger the tag
@@ -61,8 +61,12 @@ class PerformanceAnalyzer:
         """
         self.thresholds = {**self.DEFAULT_THRESHOLDS, **(thresholds or {})}
 
-    def analyze_cell_performance(self, perfdata, memory_limit: float,
-                                 gpu_memory_limit: Optional[float] = None) -> List[TagScore]:
+    def analyze_cell_performance(
+        self,
+        perfdata,
+        memory_limit: float,
+        gpu_memory_limit: Optional[float] = None
+    ) -> List[TagScore]:
         """
         Analyze cell performance and determine tags
 
@@ -74,6 +78,9 @@ class PerformanceAnalyzer:
         Returns:
             List[TagScore]: Ranked performance tags for the cell
         """
+
+        logger.debug(f"{memory_limit = }")
+        logger.debug(f"{gpu_memory_limit = }")
 
         # Compute normalized metrics
         metrics = self._compute_metrics(perfdata, gpu_memory_limit)
@@ -88,7 +95,8 @@ class PerformanceAnalyzer:
         gpu_unused_tag = self._detect_gpu_allocated_but_not_used(perfdata, gpu_memory_limit)
         if gpu_unused_tag is not None:
             # Prepend the GPU allocated but not used as this is the most important tag
-            ranked_tags = [gpu_unused_tag] + ranked_tags
+            ranked_tags = [gpu_unused_tag] +  ranked_tags
+        logger.debug(f"{ranked_tags = }")
 
         return ranked_tags
 

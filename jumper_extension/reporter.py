@@ -49,7 +49,10 @@ class PerformanceReporter:
 
         # Output performance tags
         tags_display = self._format_performance_tags(tags_model)
-        print(f"Performance Tags:\n{tags_display}")
+        if tags_display:
+            print("Signature(s):")
+            print(tags_display)
+            print("-" * 40)
 
         # Report table
         metrics = [
@@ -122,10 +125,11 @@ class PerformanceReporter:
             loader=FileSystemLoader(str(self.templates_dir)),
             autoescape=select_autoescape(["html", "xml"])
         )
-        template = env.get_template("report.html")
+        report_html_path = Path("report") / "report.html"
+        template = env.get_template(report_html_path.as_posix())
         # Read external stylesheet and inline it for notebook rendering
         try:
-            styles_path = self.templates_dir / "styles.css"
+            styles_path = self.templates_dir / "report" / "styles.css"
             inline_styles = styles_path.read_text(encoding="utf-8") if styles_path.exists() else ""
         except Exception:
             inline_styles = ""
@@ -238,9 +242,9 @@ class PerformanceReporter:
         if not ranked_tags:
             return [{"name": "UNKNOWN", "slug": "unknown"}]
 
-        # single NORMAL -> 100%
+        # If the only classification is NORMAL, do not display any tag
         if len(ranked_tags) == 1 and ranked_tags[0].tag == PerformanceTag.NORMAL:
-            return [{"name": "NORMAL", "slug": "normal"}]
+            return []
 
         # Format all tags with their scores/ratios
         tag_displays = []
