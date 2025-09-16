@@ -51,7 +51,9 @@ class PerformanceReporter:
         tags_display = self._format_performance_tags(tags_model)
         if tags_display:
             print("Signature(s):")
-            print(tags_display)
+            tags_line = " | ".join(tag["name"] for tag in tags_display)
+            print(tags_line)
+
             print("-" * 40)
 
         # Report table
