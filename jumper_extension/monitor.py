@@ -288,7 +288,7 @@ class PerformanceMonitor:
                     self._get_filtered_processes(level, "gpu", handle)
                 )
                 filtered_mem = sum(
-                    p.usedGpuMemory for p in filtered_gpu_processes
+                    p.usedGpuMemory for p in filtered_gpu_processes if p.usedGpuMemory
                 ) / (1024**3)
                 filtered_util = (
                     (
