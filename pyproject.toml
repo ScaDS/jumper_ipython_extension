@@ -33,3 +33,6 @@ test = [
 
 [tool.setuptools]
 packages = ["jumper_extension"]
+
+[tool.setuptools.package-data]
+jumper_extension = ["*.json"]

@@ -1,0 +1,117 @@
+{
+  "cpu_all": {
+    "cpu": {
+      "type": "multi_series",
+      "prefix": "cpu_util_",
+      "title": "CPU Utilization (%) - Across Cores",
+      "ylim": [0, 100],
+      "label": "CPU Utilization (All Cores)"
+    }
+  },
+  "gpu_all": {
+    "gpu_util": {
+      "type": "multi_series",
+      "prefix": "gpu_util_",
+      "title": "GPU Utilization (%) - Across GPUs",
+      "ylim": [0, 100],
+      "label": "GPU Utilization (All GPUs)"
+    },
+    "gpu_band": {
+      "type": "multi_series",
+      "prefix": "gpu_band_",
+      "title": "GPU Bandwidth Usage (%) - Across GPUs",
+      "ylim": [0, 100],
+      "label": "GPU Bandwidth (All GPUs)"
+    },
+    "gpu_mem": {
+      "type": "multi_series",
+      "prefix": "gpu_mem_",
+      "title": "GPU Memory Usage (GB) - Across GPUs",
+      "ylim": [0, "{{gpu_memory}}"],
+      "label": "GPU Memory (All GPUs)"
+    }
+  },
+  "cpu": {
+    "cpu_summary": {
+      "type": "summary_series",
+      "columns": [
+        "cpu_util_min",
+        "cpu_util_avg",
+        "cpu_util_max"
+      ],
+      "title": "CPU Utilization (%) - {{num_cpus}} CPUs",
+      "ylim": [0, 100],
+      "label": "CPU Utilization Summary"
+    }
+  },
+  "gpu": {
+    "gpu_util_summary": {
+      "type": "summary_series",
+      "columns": [
+        "gpu_util_min",
+        "gpu_util_avg",
+        "gpu_util_max"
+      ],
+      "title": "GPU Utilization (%) - {{num_gpus}} GPUs",
+      "ylim": [0, 100],
+      "label": "GPU Utilization Summary"
+    },
+    "gpu_band_summary": {
+      "type": "summary_series",
+      "columns": [
+        "gpu_band_min",
+        "gpu_band_avg",
+        "gpu_band_max"
+      ],
+      "title": "GPU Bandwidth Usage (%) - {{num_gpus}} GPUs",
+      "ylim": [0, 100],
+      "label": "GPU Bandwidth Summary"
+    },
+    "gpu_mem_summary": {
+      "type": "summary_series",
+      "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
+      "title": "GPU Memory Usage (GB) - {{num_gpus}} GPUs",
+      "ylim": [0, "{{gpu_memory}}"],
+      "label": "GPU Memory Summary"
+    }
+  },
+  "mem": {
+    "memory": {
+      "type": "single_series",
+      "column": "memory",
+      "title": "Memory Usage (GB)",
+      "ylim": [[0, "{{memory_process}}"], [0, "{{memory_user}}"], [0, "{{memory_system}}"], [0, "{{memory_slurm}}"]],
+      "label": "Memory Usage"
+    }
+  },
+  "io": {
+    "io_read": {
+      "type": "single_series",
+      "column": "io_read",
+      "title": "I/O Read (MB/s)",
+      "ylim": null,
+      "label": "IO Read MB/s"
+    },
+    "io_write": {
+      "type": "single_series",
+      "column": "io_write",
+      "title": "I/O Write (MB/s)",
+      "ylim": null,
+      "label": "IO Write MB/s"
+    },
+    "io_read_count": {
+      "type": "single_series",
+      "column": "io_read_count",
+      "title": "I/O Read Operations (ops/s)",
+      "ylim": null,
+      "label": "IO Read Ops"
+    },
+    "io_write_count": {
+      "type": "single_series",
+      "column": "io_write_count",
+      "title": "I/O Write Operations (ops/s)",
+      "ylim": null,
+      "label": "IO Write Ops"
+    }
+  }
+}
