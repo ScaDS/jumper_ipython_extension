@@ -295,10 +295,31 @@ class perfmonitorMagics(Magics):
             )
 
     @line_magic
+    def perfmonitor_fast_setup(self, line):
+        """Quick setup: enable ipympl interactive plots, start perfmonitor, and enable perfreports"""
+        self._skip_report = True
+        
+        # 1. Enable ipympl interactive plots
+        try:
+            self.shell.run_line_magic('matplotlib', 'ipympl')
+            print("[JUmPER]: Enabled ipympl interactive plots")
+        except Exception as e:
+            logger.warning(f"Failed to enable ipympl interactive plots: {e}")
+        
+        # 2. Start performance monitor with default interval (1 second)
+        self.perfmonitor_start("1.0")
+        
+        # 3. Enable performance reports with default level (process)
+        self.perfmonitor_enable_perfreports("--level process")
+        
+        print("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
+
+    @line_magic
     def perfmonitor_help(self, line):
         """Show comprehensive help information for all available commands"""
         self._skip_report = True
         commands = [
+            "perfmonitor_fast_setup -- quick setup: enable ipympl plots, start monitor, enable reports",
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
             "cell_history -- show interactive table of cell execution history",
