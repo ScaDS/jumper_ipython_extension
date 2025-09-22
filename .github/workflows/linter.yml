@@ -6,19 +6,15 @@ on:
     types: [completed]
     branches:
       - '*'
+  workflow_dispatch:
 
 jobs:
   linter:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
-      - name: Check out source repository
-        uses: actions/checkout@v4
-      - name: Set up Python environment
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: py-actions/flake8@v2
         with:
-          python-version: "3.11"
-      - name: Install flake8
-        run: pip install flake8
-      - name: Run flake8
-        run: flake8 --extend-ignore=E203 jumper_extension
+          ignore: "E203"
+          path: "jumper_extension"
