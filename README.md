@@ -148,6 +148,7 @@ The extension supports four different levels of metric collection, each providin
 
 | Command | Description |
 |---------|-------------|
+| `%perfmonitor_fast_setup` | Fast setup of JUmPER. Starts monitor (1.0s interval), enables perfreports (--level process) and interactive plots (ipympl) |
 | `%perfmonitor_help` | Show all available commands with examples |
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
