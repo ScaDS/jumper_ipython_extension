@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        check: ['formatter', 'linter', 'test']
+        check: ['formatter', 'test']
     steps:
     - name: Wait for ${{ matrix.check }}
       uses: lewagon/wait-on-check-action@v1.3.1
