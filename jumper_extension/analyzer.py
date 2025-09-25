@@ -28,10 +28,14 @@ class TagScore:
 
 
 class PerformanceAnalyzer:
-    """Performance analyzer to determine workload type using relative thresholds"""
+    """
+    Performance analyzer to determine workload type using relative thresholds.
 
-    MIB_TO_BYTES = 1024 * 1024
-
+    Inspired by `JobLabeller` from:
+    https://gitlab.hrz.tu-chemnitz.de/pika/pika-server/-/blob/
+    619d62926cd85f8c20589c75aba0c6e2c51087e1/
+    src/post_processing/post_processing.py#L711
+    """
     # Default thresholds
     DEFAULT_THRESHOLDS = {
         'memory_ratio': 0.8,  # memory limit 0.80
