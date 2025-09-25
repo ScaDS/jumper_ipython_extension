@@ -39,7 +39,7 @@ class PerformanceAnalyzer:
         'gpu_util_ratio': 0.8,  # GPU utilization
         'gpu_memory_ratio': 0.8,  # GPU memory
 
-        # --- thresholds for "GPU allocated but not used" detection
+        # --- thresholds for "GPU idle" detection
         # minimum memory usage required to treat GPU as allocated
         'gpu_alloc_min_mem_gb': 0.1,
         # minimum GPU utilization to treat GPU in idle state
@@ -223,7 +223,7 @@ class PerformanceAnalyzer:
         mask_alloc_and_idle = mask_alloc & mask_idle
         frac = float(mask_alloc_and_idle.mean())
 
-        logger.debug(f"GPU allocated but not used:")
+        logger.debug(f"GPU idle check:")
         logger.debug(f"gpu_mem_avg:\n{perfdata['gpu_mem_avg']}")
         logger.debug(f"mask_alloc:\n{mask_alloc}\n")
         logger.debug(f"gpu_util_avg:\n{perfdata['gpu_util_avg']}")
