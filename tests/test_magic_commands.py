@@ -72,10 +72,10 @@ def test_cell_operations(ipython, mock_cpu_only):
     assert magics.perfreports_level == "user"
     # First call to post_run_cell resets _skip_report flag
     magics.post_run_cell(result)
-    with patch.object(magics.reporter, "print") as mock_print:
+    with patch.object(magics.reporter, "display") as mock_display:
         magics.post_run_cell(result)
         # Verify that the reporter.print was called with the correct level
-        mock_print.assert_called_with(cell_range=None, level="user")
+        mock_display.assert_called_with(cell_range=None, level="user")
     magics.perfmonitor_disable_perfreports("")
     magics.perfmonitor_stop("")
 
