@@ -1,6 +1,7 @@
 import argparse
 import logging
 import shlex
+from typing import Union
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
@@ -29,6 +30,7 @@ class perfmonitorMagics(Magics):
         self.cell_history = CellHistory()
         self.print_perfreports = self._skip_report = False
         self.perfreports_level = "process"
+        self.perfreports_text = False
         self.min_duration = None
 
     def pre_run_cell(self, info):
@@ -37,13 +39,21 @@ class perfmonitorMagics(Magics):
 
     def post_run_cell(self, result):
         self.cell_history.end_cell(result.result)
+        logger.info(
+            f'{self.monitor=}\n'
+            f'{self.reporter=}\n'
+            f'{self.print_perfreports=}\n'
+        )
         if (
             self.monitor
             and self.reporter
             and self.print_perfreports
             and not self._skip_report
         ):
-            self.reporter.print(cell_range=None, level=self.perfreports_level)
+            if self.perfreports_text:
+                self.reporter.print(cell_range=None, level=self.perfreports_level)
+            else:
+                self.reporter.display(cell_range=None, level=self.perfreports_level)
         self._skip_report = False
 
     @line_magic
@@ -81,6 +91,10 @@ class perfmonitorMagics(Magics):
         """Start performance monitoring with specified interval
         (default: 1 second)"""
         self._skip_report = True
+        self._setup_performance_monitoring(line)
+
+
+    def _setup_performance_monitoring(self, interval: Union[float, str]):
         if self.monitor and self.monitor.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
@@ -89,27 +103,28 @@ class perfmonitorMagics(Magics):
             )
             return
 
-        interval = 1.0
-        if line:
+        interval_number = 1.0
+        if interval:
             try:
-                interval = float(line)
+                interval_number = float(interval)
             except ValueError:
                 logger.warning(
                     EXTENSION_ERROR_MESSAGES[
                         ExtensionErrorCode.INVALID_INTERVAL_VALUE
-                    ].format(interval=line)
+                    ].format(interval=interval)
                 )
                 return
 
-        self.monitor = PerformanceMonitor(interval=interval)
+        self.monitor = PerformanceMonitor(interval=interval_number)
         self.monitor.start()
         self.visualizer = PerformanceVisualizer(
-            self.monitor, self.cell_history, min_duration=interval
+            self.monitor, self.cell_history, min_duration=interval_number
         )
         self.reporter = PerformanceReporter(
-            self.monitor, self.cell_history, min_duration=interval
+            self.monitor, self.cell_history, min_duration=interval_number
         )
         self.min_duration = interval
+
 
     @line_magic
     def perfmonitor_stop(self, line):
@@ -122,8 +137,9 @@ class perfmonitorMagics(Magics):
             return
         self.monitor.stop()
 
-    def _parse_arguments(self, line):
-        parser = argparse.ArgumentParser(add_help=False)
+    def _parse_arguments(self, line, parser: argparse.ArgumentParser = None):
+        if not parser:
+            parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument(
             "--cell", type=str, help="Cell index or range (e.g., 5, 2:8, :5)"
         )
@@ -179,15 +195,32 @@ class perfmonitorMagics(Magics):
     def perfmonitor_enable_perfreports(self, line):
         """Enable automatic performance reports after each cell execution"""
         self._skip_report = True
-        args = self._parse_arguments(line)
+        self.print_perfreports = True
+
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument(
+            "--interval",
+            type=float,
+            default=1.0,
+            help="Interval between automatic reports (default: 1 second)",
+        )
+        args = self._parse_arguments(line, parser)
         if args is None:
             return
+
         self.perfreports_level = args.level
-        self.print_perfreports = True
+        self.perfreports_text = args.text
+        interval = args.interval
+
+        self._setup_performance_monitoring(interval)
+
         logger.info(
             EXTENSION_INFO_MESSAGES[
                 ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED
-            ].format(level=self.perfreports_level)
+            ].format(
+                level=self.perfreports_level,
+                format=f", format: text" if self.perfreports_text else "",
+            )
         )
 
     @line_magic
@@ -317,7 +350,7 @@ class perfmonitorMagics(Magics):
             "show report",
             "perfmonitor_plot -- interactive plot with widgets for data "
             "exploration",
-            "perfmonitor_enable_perfreports [--level LEVEL] -- enable "
+            "perfmonitor_enable_perfreports [--level LEVEL] [--interval INTERVAL] [--text] -- enable "
             "auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
             "perfmonitor_export_perfdata [--file FILE] [--level LEVEL] -- "

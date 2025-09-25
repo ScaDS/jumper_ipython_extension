@@ -79,7 +79,7 @@ _BASE_EXTENSION_INFO_MESSAGES = {
         "Performance reports for each celldisabled"
     ),
     ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED: (
-        "Performance reports enabled for each cell (level: {level})"
+        "Performance reports enabled for each cell (level: {level}{format})"
     ),
     ExtensionInfoCode.EXTENSION_LOADED: ("Perfmonitor extension loaded"),
     ExtensionInfoCode.MONITOR_STARTED: (
