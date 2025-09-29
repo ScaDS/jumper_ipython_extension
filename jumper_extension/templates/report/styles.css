@@ -4,6 +4,7 @@
   --muted: #4b5563;        /* gray-600 */
   --accent: #1f2937;       /* neutral accent for tags outline dots */
   --tag-icon-size: 25px;  /* default icon size for tag widgets */
+  --max-content-width: 720px;
 }
 
 /* Normalize box sizing to avoid width overflow/layout overlap */
@@ -18,6 +19,14 @@ html, body {
   color: var(--text);
 }
 
+.jr-divider {
+  border: 0;
+  border-top: 1px solid #9ca3af;
+  margin: 0 0 8px 0;
+  max-width: var(--max-content-width, 720px);
+  width: 100%;
+}
+
 .jr-container {
   background: var(--bg);
   padding: 12px 4px 4px 4px;
@@ -26,7 +35,7 @@ html, body {
 
 /* Common content width to align header subtitle with table right edge */
 .jr-content {
-  max-width: 720px; /* matches .jr-table-wrap */
+  max-width: var(--max-content-width); /* matches .jr-table-wrap */
   width: 100%;
   margin: 0; /* keep left-aligned within container */
 }
