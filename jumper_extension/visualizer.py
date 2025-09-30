@@ -79,6 +79,53 @@ class PerformanceVisualizer:
 
         return compressed_perfdata, cell_boundaries
 
+    def _metric_has_data(self, metric_key, config, perfdata_by_level):
+        """Check if a metric has valid data in at least one level."""
+        if not isinstance(config, dict):
+            return False
+
+        plot_type = config.get("type")
+
+        for level, df in perfdata_by_level.items():
+            if df.empty:
+                continue
+
+            if plot_type == "single_series":
+                column = config.get("column")
+                if column and column in df.columns and df[column].notna().any():
+                    return True
+
+            elif plot_type == "multi_series":
+                prefix = config.get("prefix", "")
+                series_cols = [
+                    col
+                    for col in df.columns
+                    if prefix
+                    and col.startswith(prefix)
+                    and not col.endswith("avg")
+                ]
+                avg_column = f"{prefix}avg" if prefix else None
+
+                # Check if any series column has data
+                if any(df[col].notna().any() for col in series_cols):
+                    return True
+                # Check if avg column has data
+                if (
+                    avg_column
+                    and avg_column in df.columns
+                    and df[avg_column].notna().any()
+                ):
+                    return True
+
+            elif plot_type == "summary_series":
+                columns = config.get("columns", [])
+                if any(
+                    col in df.columns and df[col].notna().any() for col in columns
+                ):
+                    return True
+
+        return False
+
     def _plot_metric(
         self,
         df,
@@ -369,15 +416,17 @@ class PerformanceVisualizer:
             labeled_options = []
             for subset in self.subsets:
                 for metric_key, cfg in self.subsets[subset].items():
-                    metrics.append(metric_key)
-                    label = (
-                        cfg.get("label")
-                        if isinstance(cfg, dict)
-                        else metric_key
-                    )
-                    labeled_options.append(
-                        (label or metric_key, metric_key)
-                    )
+                    # Filter out metrics with no data in any level
+                    if self._metric_has_data(metric_key, cfg, processed_perfdata):
+                        metrics.append(metric_key)
+                        label = (
+                            cfg.get("label")
+                            if isinstance(cfg, dict)
+                            else metric_key
+                        )
+                        labeled_options.append(
+                            (label or metric_key, metric_key)
+                        )
 
             with plot_output:
                 if plot_wrapper is None:
