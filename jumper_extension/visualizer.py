@@ -36,144 +36,9 @@ class PerformanceVisualizer:
         self.cell_history = cell_history
         self.figsize = (5, 3)
         self.min_duration = min_duration
-        # Smooth IO with ~1s rolling window based on sampling interval
-        try:
-            self._io_window = max(
-                1, int(round(1.0 / (self.monitor.interval or 1.0)))
-            )
-        except Exception:
-            self._io_window = 1
 
-        # Compressed metrics configuration (dict-based entries for clarity)
-        self.subsets = {
-            "cpu_all": {
-                "cpu": {
-                    "type": "multi_series",
-                    "prefix": "cpu_util_",
-                    "title": "CPU Utilization (%) - Across Cores",
-                    "ylim": (0, 100),
-                    "label": "CPU Utilization (All Cores)",
-                }
-            },
-            "gpu_all": {
-                "gpu_util": {
-                    "type": "multi_series",
-                    "prefix": "gpu_util_",
-                    "title": "GPU Utilization (%) - Across GPUs",
-                    "ylim": (0, 100),
-                    "label": "GPU Utilization (All GPUs)",
-                },
-                "gpu_band": {
-                    "type": "multi_series",
-                    "prefix": "gpu_band_",
-                    "title": "GPU Bandwidth Usage (%) - Across GPUs",
-                    "ylim": (0, 100),
-                    "label": "GPU Bandwidth (All GPUs)",
-                },
-                "gpu_mem": {
-                    "type": "multi_series",
-                    "prefix": "gpu_mem_",
-                    "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, monitor.gpu_memory),
-                    "label": "GPU Memory (All GPUs)",
-                },
-            },
-            "cpu": {
-                "cpu_summary": {
-                    "type": "summary_series",
-                    "columns": [
-                        "cpu_util_min",
-                        "cpu_util_avg",
-                        "cpu_util_max",
-                    ],
-                    "title": (
-                        "CPU Utilization (%) - "
-                        f"{self.monitor.num_cpus} CPUs"
-                    ),
-                    "ylim": (0, 100),
-                    "label": "CPU Utilization Summary",
-                }
-            },
-            "gpu": {
-                "gpu_util_summary": {
-                    "type": "summary_series",
-                    "columns": [
-                        "gpu_util_min",
-                        "gpu_util_avg",
-                        "gpu_util_max",
-                    ],
-                    "title": (
-                        "GPU Utilization (%) - "
-                        f"{self.monitor.num_gpus} GPUs"
-                    ),
-                    "ylim": (0, 100),
-                    "label": "GPU Utilization Summary",
-                },
-                "gpu_band_summary": {
-                    "type": "summary_series",
-                    "columns": [
-                        "gpu_band_min",
-                        "gpu_band_avg",
-                        "gpu_band_max",
-                    ],
-                    "title": (
-                        "GPU Bandwidth Usage (%) - "
-                        f"{self.monitor.num_gpus} GPUs"
-                    ),
-                    "ylim": (0, 100),
-                    "label": "GPU Bandwidth Summary",
-                },
-                "gpu_mem_summary": {
-                    "type": "summary_series",
-                    "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
-                    "title": (
-                        "GPU Memory Usage (GB) - "
-                        f"{self.monitor.num_gpus} GPUs"
-                    ),
-                    "ylim": (0, monitor.gpu_memory),
-                    "label": "GPU Memory Summary",
-                },
-            },
-            "mem": {
-                "memory": {
-                    "type": "single_series",
-                    "column": "memory",
-                    "title": "Memory Usage (GB)",
-                    "ylim": None,  # Will be set dynamically based on level
-                    "label": "Memory Usage",
-                }
-            },
-            "io": {
-                "io_read": {
-                    "type": "single_series",
-                    "column": "io_read",
-                    "title": "I/O Read (MB/s)",
-                    "ylim": None,
-                    "label": "IO Read MB/s",
-                },
-                "io_write": {
-                    "type": "single_series",
-                    "column": "io_write",
-                    "title": "I/O Write (MB/s)",
-                    "ylim": None,
-                    "label": "IO Write MB/s",
-                },
-                "io_read_count": {
-                    "type": "single_series",
-                    "column": "io_read_count",
-                    "title": "I/O Read Operations (ops/s)",
-                    "ylim": None,
-                    "label": "IO Read Ops",
-                },
-                "io_write_count": {
-                    "type": "single_series",
-                    "column": "io_write_count",
-                    "title": "I/O Write Operations (ops/s)",
-                    "ylim": None,
-                    "label": "IO Write Ops",
-                },
-            },
-        }
+        # Load metrics configuration from monitor
+        self.subsets = self.monitor.get_visualizer_config()
 
     def _compress_time_axis(self, perfdata, cell_range):
         """Compress time axis by removing idle periods between cells"""
@@ -214,6 +79,53 @@ class PerformanceVisualizer:
 
         return compressed_perfdata, cell_boundaries
 
+    def _metric_has_data(self, metric_key, config, perfdata_by_level):
+        """Check if a metric has valid data in at least one level."""
+        if not isinstance(config, dict):
+            return False
+
+        plot_type = config.get("type")
+
+        for level, df in perfdata_by_level.items():
+            if df.empty:
+                continue
+
+            if plot_type == "single_series":
+                column = config.get("column")
+                if column and column in df.columns and df[column].notna().any():
+                    return True
+
+            elif plot_type == "multi_series":
+                prefix = config.get("prefix", "")
+                series_cols = [
+                    col
+                    for col in df.columns
+                    if prefix
+                    and col.startswith(prefix)
+                    and not col.endswith("avg")
+                ]
+                avg_column = f"{prefix}avg" if prefix else None
+
+                # Check if any series column has data
+                if any(df[col].notna().any() for col in series_cols):
+                    return True
+                # Check if avg column has data
+                if (
+                    avg_column
+                    and avg_column in df.columns
+                    and df[avg_column].notna().any()
+                ):
+                    return True
+
+            elif plot_type == "summary_series":
+                columns = config.get("columns", [])
+                if any(
+                    col in df.columns and df[col].notna().any() for col in columns
+                ):
+                    return True
+
+        return False
+
     def _plot_metric(
         self,
         df,
@@ -240,19 +152,24 @@ class PerformanceVisualizer:
             return
 
         plot_type = config.get("type")
+
+        # Helper function to resolve level-specific ylim
+        def resolve_ylim(ylim_config):
+            if isinstance(ylim_config, list) and len(ylim_config) > 0 and isinstance(ylim_config[0], list):
+                level_map = {'process': 0, 'user': 1, 'system': 2, 'slurm': 3}
+                return ylim_config[level_map.get(level, 0)]
+            return ylim_config
+
         if plot_type == "single_series":
             column = config.get("column")
             title = config.get("title", "")
-            ylim = config.get("ylim")
-            # Set dynamic memory limit for memory metric
-            if metric == "memory" and ylim is None:
-                ylim = (0, self.monitor.memory_limits[level])
+            ylim = resolve_ylim(config.get("ylim"))
             if not column or column not in df.columns:
                 return
         elif plot_type == "multi_series":
             prefix = config.get("prefix", "")
             title = config.get("title", "")
-            ylim = config.get("ylim")
+            ylim = resolve_ylim(config.get("ylim"))
             series_cols = [
                 col
                 for col in df.columns
@@ -269,11 +186,7 @@ class PerformanceVisualizer:
         elif plot_type == "summary_series":
             columns = config.get("columns", [])
             title = config.get("title", "")
-            ylim = config.get("ylim")
-            if level == "system":
-                title = re.sub(
-                    r"\d+", str(self.monitor.num_system_cpus), title
-                )
+            ylim = resolve_ylim(config.get("ylim"))
             available_cols = [col for col in columns if col in df.columns]
             if not available_cols:
                 return
@@ -286,22 +199,6 @@ class PerformanceVisualizer:
         # Plot based on type
         if plot_type == "single_series":
             series = df[column]
-            # For IO metrics, compute simple diffs from cumulative counters
-            if metric in (
-                "io_read",
-                "io_write",
-                "io_read_count",
-                "io_write_count",
-            ):
-                diffs = df[column].astype(float).diff().clip(lower=0)
-                if metric in ("io_read", "io_write"):
-                    diffs = diffs / (1024**2)  # bytes -> MB
-                series = diffs.fillna(0.0)
-                if self._io_window > 1:
-                    series = series.rolling(
-                        window=self._io_window, min_periods=1
-                    ).mean()
-
             ax.plot(df["time"], series, color="blue", linewidth=2)
         elif plot_type == "summary_series":
             line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
@@ -399,20 +296,10 @@ class PerformanceVisualizer:
                     start_time, cell["duration"], int(cell["cell_index"]), 0.5
                 )
 
-    def plot(
-        self,
-        metric_subsets=("cpu", "mem", "io"),
-        cell_range=None,
-        show_idle=False,
-    ):
-        if self.monitor.num_gpus:
-            metric_subsets += (
-                "gpu",
-                "gpu_all",
-            )
-
+    def plot(self):
         """Plot performance metrics with interactive widgets for
         configuration."""
+        show_idle = False
         valid_cells = self.cell_history.view()
         if len(valid_cells) == 0:
             logger.warning(
@@ -424,16 +311,16 @@ class PerformanceVisualizer:
         min_cell_idx, max_cell_idx = int(
             valid_cells.iloc[0]["cell_index"]
         ), int(valid_cells.iloc[-1]["cell_index"])
-        if cell_range is None:
-            cell_start_index = 0
-            for cell_idx in range(len(valid_cells) - 1, -1, -1):
-                if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
-                    cell_start_index = cell_idx
-                    break
-            cell_range = (
-                int(valid_cells.iloc[cell_start_index]["cell_index"]),
-                int(valid_cells.iloc[-1]["cell_index"]),
-            )
+        
+        cell_start_index = 0
+        for cell_idx in range(len(valid_cells) - 1, -1, -1):
+            if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
+                cell_start_index = cell_idx
+                break
+        cell_range = (
+            int(valid_cells.iloc[cell_start_index]["cell_index"]),
+            int(valid_cells.iloc[-1]["cell_index"]),
+        )
 
         # Create interactive widgets
         style = {"description_width": "initial"}
@@ -527,9 +414,10 @@ class PerformanceVisualizer:
             # Get metrics for subsets and build labeled dropdown options
             metrics = []
             labeled_options = []
-            for subset in metric_subsets:
-                if subset in self.subsets:
-                    for metric_key, cfg in self.subsets[subset].items():
+            for subset in self.subsets:
+                for metric_key, cfg in self.subsets[subset].items():
+                    # Filter out metrics with no data in any level
+                    if self._metric_has_data(metric_key, cfg, processed_perfdata):
                         metrics.append(metric_key)
                         label = (
                             cfg.get("label")
@@ -539,15 +427,6 @@ class PerformanceVisualizer:
                         labeled_options.append(
                             (label or metric_key, metric_key)
                         )
-                else:
-                    logger.warning(
-                        EXTENSION_ERROR_MESSAGES[
-                            ExtensionErrorCode.INVALID_METRIC_SUBSET
-                        ].format(
-                            subset=subset,
-                            supported_subsets=", ".join(self.subsets.keys()),
-                        )
-                    )
 
             with plot_output:
                 if plot_wrapper is None:

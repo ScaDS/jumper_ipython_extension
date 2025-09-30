@@ -43,10 +43,10 @@ class PerformanceData:
         columns = [
             "time",
             "memory",
-            "io_read_count",
-            "io_write_count",
-            "io_read",
-            "io_write",
+            "io_read_count_cum",
+            "io_write_count_cum",
+            "io_read_cum",
+            "io_write_cum",
             "cpu_util_avg",
             "cpu_util_min",
             "cpu_util_max",
@@ -84,10 +84,24 @@ class PerformanceData:
         """View data for a specific level with optional slicing."""
         self._validate_level(level)
         base = (
-            self.data[level]
+            self.data[level].copy()
             if slice_ is None
-            else self.data[level].iloc[slice_[0] : slice_[1] + 1]
+            else self.data[level].iloc[slice_[0] : slice_[1] + 1].copy()
         )
+
+        # Compute IO rates from cumulative values using diff()
+        if len(base) > 0:
+            time_diffs = base["time"].diff()
+
+            # Calculate rates (ops/s and MB/s)
+            base["io_read_count"] = (base["io_read_count_cum"].diff() / time_diffs).clip(lower=0).fillna(0)
+            base["io_write_count"] = (base["io_write_count_cum"].diff() / time_diffs).clip(lower=0).fillna(0)
+            base["io_read"] = (base["io_read_cum"].diff() / time_diffs / (1024**2)).clip(lower=0).fillna(0)
+            base["io_write"] = (base["io_write_cum"].diff() / time_diffs / (1024**2)).clip(lower=0).fillna(0)
+
+            # Drop cumulative columns from view
+            base = base.drop(columns=["io_read_count_cum", "io_write_count_cum", "io_read_cum", "io_write_cum"])
+
         return (
             self._attach_cell_index(base, cell_history)
             if cell_history is not None
@@ -110,20 +124,13 @@ class PerformanceData:
             self.num_system_cpus if level == "system" else self.num_cpus
         )
 
-        last_timestamp = 0
-        if len(self.data[level]):
-            last_timestamp = self.data[level].loc[len(self.data[level]) - 1][
-                "time"
-            ]
-
-        cumulative_metrics_ratio = time_mark - last_timestamp
         row_data = {
             "time": time_mark,
             "memory": memory,
-            "io_read_count": io_counters[0] / cumulative_metrics_ratio,
-            "io_write_count": io_counters[1] / cumulative_metrics_ratio,
-            "io_read": io_counters[2] / cumulative_metrics_ratio,
-            "io_write": io_counters[3] / cumulative_metrics_ratio,
+            "io_read_count_cum": io_counters[0],
+            "io_write_count_cum": io_counters[1],
+            "io_read_cum": io_counters[2],
+            "io_write_cum": io_counters[3],
             "cpu_util_avg": sum(cpu_util_per_core) / effective_num_cpus,
             "cpu_util_min": min(cpu_util_per_core),
             "cpu_util_max": max(cpu_util_per_core),

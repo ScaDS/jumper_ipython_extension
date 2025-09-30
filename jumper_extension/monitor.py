@@ -1,8 +1,10 @@
+import json
 import logging
 import os
 import threading
 import time
 import unittest.mock
+from pathlib import Path
 
 import psutil
 
@@ -18,6 +20,9 @@ from .utilities import (
     is_slurm_available,
     detect_memory_limit,
 )
+
+# Global path to visualizer configuration file
+VISUALIZER_CONFIG_PATH = Path(__file__).parent / "visualizer_config.json"
 
 logger = logging.getLogger("extension")
 
@@ -366,3 +371,39 @@ class PerformanceMonitor:
                 seconds=time.perf_counter() - self.start_time
             )
         )
+
+    def get_visualizer_config(self):
+        """Load and patch visualizer configuration."""
+        with open(VISUALIZER_CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+
+        # Recursively patch template values in the config
+        def patch_values(obj):
+            if isinstance(obj, dict):
+                return {k: patch_values(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [patch_values(item) for item in obj]
+            elif isinstance(obj, str):
+                # Replace template variables with actual values
+                result = obj
+                result = result.replace('{{num_cpus}}', str(self.num_cpus))
+                result = result.replace('{{num_gpus}}', str(self.num_gpus))
+                result = result.replace('{{gpu_memory}}', str(self.gpu_memory))
+                
+                # Patch memory limits for all levels
+                for level in ['process', 'user', 'system', 'slurm']:
+                    limit = self.memory_limits.get(level, 0)
+                    result = result.replace(f'{{{{memory_{level}}}}}', str(limit))
+                
+                # Try to convert back to number if it's a numeric string
+                try:
+                    if '.' in result:
+                        return float(result)
+                    else:
+                        return int(result)
+                except ValueError:
+                    return result
+            else:
+                return obj
+
+        return patch_values(config)
