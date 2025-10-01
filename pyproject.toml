@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper-extension"
-version = "0.3.0"
+version = "0.3.1"
 description = "IPython extension for monitoring cell performance"
 readme={ file='README.md', content-type="text/markdown"}
 license-files=["LICENSE"]
@@ -33,4 +33,4 @@ test = [
 ]
 
 [tool.setuptools]
-packages = ["jumper_extension"]
+packages = ["jumper_extension", "jumper_extension.templates"]
