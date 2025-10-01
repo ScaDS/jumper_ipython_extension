@@ -278,7 +278,7 @@ class PerformanceMonitor:
                     for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
                         handle
                     )
-                    if p.pid in pids
+                    if p.pid in pids and p.usedGpuMemory
                 ) / (1024**3)
                 gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
                 gpu_band.append(0.0)
@@ -288,7 +288,7 @@ class PerformanceMonitor:
                     self._get_filtered_processes(level, "gpu", handle)
                 )
                 filtered_mem = sum(
-                    p.usedGpuMemory for p in filtered_gpu_processes
+                    p.usedGpuMemory for p in filtered_gpu_processes if p.usedGpuMemory
                 ) / (1024**3)
                 filtered_util = (
                     (
