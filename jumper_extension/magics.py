@@ -91,11 +91,6 @@ class perfmonitorMagics(Magics):
 
     def _setup_performance_monitoring(self, interval: Union[float, str]) -> Union[None, ExtensionErrorCode]:
         if self.monitor and self.monitor.running:
-            logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.MONITOR_ALREADY_RUNNING
-                ]
-            )
             return ExtensionErrorCode.MONITOR_ALREADY_RUNNING
 
         interval_number = 1.0
@@ -103,11 +98,6 @@ class perfmonitorMagics(Magics):
             try:
                 interval_number = float(interval)
             except ValueError:
-                logger.warning(
-                    EXTENSION_ERROR_MESSAGES[
-                        ExtensionErrorCode.INVALID_INTERVAL_VALUE
-                    ].format(interval=interval)
-                )
                 return ExtensionErrorCode.INVALID_INTERVAL_VALUE
 
         self.monitor = PerformanceMonitor(interval=interval_number)
@@ -120,6 +110,21 @@ class perfmonitorMagics(Magics):
         )
         self.min_duration = interval
         return None
+
+    @staticmethod
+    def _handle_setup_error_messages(error_code: ExtensionErrorCode, interval: Union[float, str] = None):
+        if error_code == ExtensionErrorCode.MONITOR_ALREADY_RUNNING:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.MONITOR_ALREADY_RUNNING
+                ]
+            )
+        elif error_code == ExtensionErrorCode.INVALID_INTERVAL_VALUE:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.INVALID_INTERVAL_VALUE
+                ].format(interval=interval)
+            )
 
 
     @line_magic
@@ -208,16 +213,20 @@ class perfmonitorMagics(Magics):
         self.perfreports_text = args.text
         interval = args.interval
 
+        format_message = "text" if self.perfreports_text else "html"
+        options_message = f"level: {self.perfreports_level}, interval: {interval}, format: {format_message}"
+
         error_code = self._setup_performance_monitoring(interval)
-        if error_code is None:
-            logger.info(
-                EXTENSION_INFO_MESSAGES[
-                    ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED
-                ].format(
-                    level=self.perfreports_level,
-                    format=f", format: text" if self.perfreports_text else "",
-                )
+        self._handle_setup_error_messages(error_code, interval)
+
+        logger.info(
+            EXTENSION_INFO_MESSAGES[
+                ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED
+            ].format(
+                options_message=options_message,
             )
+        )
+
 
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
