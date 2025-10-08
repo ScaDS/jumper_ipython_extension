@@ -217,23 +217,23 @@ class PerformanceAnalyzer:
         min_fraction = float(self.thresholds.get('gpu_alloc_min_fraction', 0.5))        # 0..1
 
         # allocation considered if memory usage exceeds memory_threshold_gb
-        mask_alloc = perfdata['gpu_mem_avg'] > memory_threshold_gb
-        if mask_alloc.sum() == 0:
+        mask_allocated = perfdata['gpu_mem_avg'] > memory_threshold_gb
+        if mask_allocated.sum() == 0:
             return None
 
         # idle if util ≤ util_idle_thr * 100 (%)
         mask_idle = perfdata['gpu_util_avg'] <= (utilization_idle_threshold * 100.0)
 
-        mask_alloc_and_idle = mask_alloc & mask_idle
-        frac = float(mask_alloc_and_idle.mean())
+        mask_allocated_and_idle = mask_allocated & mask_idle
+        frac = float(mask_allocated_and_idle.mean())
 
         logger.debug(f"GPU idle check:")
         logger.debug(f"gpu_mem_avg:\n{perfdata['gpu_mem_avg']}")
-        logger.debug(f"mask_alloc:\n{mask_alloc}\n")
+        logger.debug(f"mask_allocated:\n{mask_allocated}\n")
         logger.debug(f"gpu_util_avg:\n{perfdata['gpu_util_avg']}")
         logger.debug(f"mask_idle:\n{mask_idle}\n")
-        logger.debug(f"{min_fraction = }")
-        logger.debug(f"{frac = }")
+        logger.debug(f"GPU not used {min_fraction = }")
+        logger.debug(f"GPU not used {frac = }")
 
         if frac >= min_fraction:
             return TagScore(PerformanceTag.GPU_ALLOCATED_BUT_NOT_USED, frac)
