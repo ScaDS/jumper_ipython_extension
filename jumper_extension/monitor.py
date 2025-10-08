@@ -39,6 +39,8 @@ except Exception:
         ]
     )
 
+import torch
+
 
 class PerformanceMonitor:
     def __init__(self, interval=1.0):
@@ -263,7 +265,7 @@ class PerformanceMonitor:
         self._validate_level(level)
         gpu_util, gpu_band, gpu_mem = [], [], []
 
-        for handle in self.gpu_handles:
+        for idx, handle in enumerate(self.gpu_handles):
             util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
 
             if level == "system":
@@ -278,8 +280,19 @@ class PerformanceMonitor:
                     for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
                         handle
                     )
-                    if p.pid in pids and p.usedGpuMemory
+                    if p.pid in pids # and p.usedGpuMemory
                 ) / (1024**3)
+
+                try:
+                    if torch.cuda.is_available() and idx < torch.cuda.device_count():
+                        bytes_reserved = torch.cuda.memory_allocated(idx)
+                        process_mem = bytes_reserved / (1024 ** 3)
+                        logger.debug(f"GPU process memory (PyTorch fallback, device {idx}): {process_mem}")
+                except Exception:
+                    pass
+
+
+                logger.debug(f"GPU process memory: {process_mem}")
                 gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
                 gpu_band.append(0.0)
                 gpu_mem.append(process_mem)

@@ -68,7 +68,7 @@ LOGGING = {
     "loggers": {
         "extension": {
             "handlers": ["console", "debug_file", "info_file", "error_file"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": True,
         },
     },
