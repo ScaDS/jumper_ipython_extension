@@ -17,6 +17,7 @@ from .reporter import PerformanceReporter
 from .utilities import get_available_levels, is_pure_line_magic_cell
 from .visualizer import PerformanceVisualizer
 from .state import ExtensionState, MonitorState
+from .write_script import NotebookScriptWriter
 
 logger = logging.getLogger("extension")
 
@@ -32,9 +33,15 @@ class PerfmonitorMagics(Magics):
         self._skip_report = False
         self.min_duration = None
         self.state = ExtensionState()
+        self.script_writer = NotebookScriptWriter()
 
     def pre_run_cell(self, info):
         self.cell_history.start_cell(info.raw_cell)
+        self._skip_report = False
+
+        if self.script_writer.is_recording:
+            cell_index = len(self.cell_history) - 1
+            self.script_writer.record_cell(info.raw_cell, cell_index)
         self._skip_report = is_pure_line_magic_cell(info.raw_cell)
 
     def post_run_cell(self, result):
@@ -498,6 +505,45 @@ class PerfmonitorMagics(Magics):
         print("\nMetric Categories:")
         print("  cpu, gpu, mem, io (default: all available)")
         print("  cpu_all, gpu_all for detailed per-core/per-GPU metrics")
+
+    @line_magic
+    def start_write_script(self, line):
+        """
+        Start recording code from cells to a Python script.
+
+        Usage:
+          %start_write_script [output_path]
+
+        Examples:
+          %start_write_script
+          %start_write_script my_script.py
+        """
+        self._skip_report = True
+
+        output_path = line.strip() if line else None
+        self.script_writer.start_recording(output_path)
+
+        if output_path:
+            print(f"[JUmPER]: Started script recording to '{output_path}'")
+        else:
+            print("[JUmPER]: Started script recording (filename will be auto-generated)")
+
+    @line_magic
+    def end_write_script(self, line):
+        """
+        Stop recording and save accumulated code to file.
+
+        Usage:
+          %end_write_script
+        """
+        self._skip_report = True
+
+        output_path = self.script_writer.stop_recording()
+
+        if output_path:
+            print(f"[JUmPER]: Script successfully saved to '{output_path}'")
+        else:
+            print("[JUmPER]: Failed to save script (recording may not have been active)")
 
 
 def load_ipython_extension(ipython):
