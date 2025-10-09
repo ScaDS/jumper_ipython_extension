@@ -11,11 +11,13 @@ class MonitorState(Enum):
 
 
 class ReporterState(Enum):
-    pass
+    enabled = "enabled"
+    disabled = "disabled"
 
 
 class VisualizerState(Enum):
-    pass
+    enabled = "enabled"
+    disabled = "disabled"
 
 
 @dataclass
@@ -24,6 +26,10 @@ class Runtime:
     monitor_state: MonitorState = MonitorState.stopped
     monitor_started_at: Optional[float] = None
     monitor_stopped_at: Optional[float] = None
+    # Performance reports
+    report_state: ReporterState = ReporterState.disabled
+    # Visualization
+    visualizer_state: VisualizerState = VisualizerState.disabled
 
 
 @dataclass
