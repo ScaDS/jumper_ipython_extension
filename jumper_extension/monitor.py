@@ -67,6 +67,7 @@ class PerformanceMonitor:
         self.interval = interval
         self.running = False
         self.start_time = None
+        self.stop_time = None
         self.monitor_thread = None
         self.process = psutil.Process()
         self.n_measurements = 0
@@ -511,9 +512,10 @@ class PerformanceMonitor:
         self.running = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2.0)
+        self.stop_time = time.perf_counter()
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STOPPED].format(
-                seconds=time.perf_counter() - self.start_time
+                seconds=self.stop_time - self.start_time
             )
         )
         logger.info(

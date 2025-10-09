@@ -16,6 +16,7 @@ from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
 from .utilities import get_available_levels
 from .visualizer import PerformanceVisualizer
+from .state import ExtensionState
 
 logger = logging.getLogger("extension")
 
@@ -32,6 +33,7 @@ class perfmonitorMagics(Magics):
         self.perfreports_level = "process"
         self.perfreports_text = False
         self.min_duration = None
+        self.state = ExtensionState()
 
     def pre_run_cell(self, info):
         self.cell_history.start_cell(info.raw_cell)
@@ -93,15 +95,18 @@ class perfmonitorMagics(Magics):
         if self.monitor and self.monitor.running:
             return ExtensionErrorCode.MONITOR_ALREADY_RUNNING
 
-        interval_number = 1.0
         if interval:
             try:
                 interval_number = float(interval)
             except ValueError:
                 return ExtensionErrorCode.INVALID_INTERVAL_VALUE
+        else:
+            interval_number = self.state.settings.default_interval
 
         self.monitor = PerformanceMonitor(interval=interval_number)
         self.monitor.start()
+        self.state.mark_monitor_running(interval_number, self.monitor.start_time)
+
         self.visualizer = PerformanceVisualizer(
             self.monitor, self.cell_history, min_duration=interval_number
         )
@@ -137,6 +142,7 @@ class perfmonitorMagics(Magics):
             )
             return
         self.monitor.stop()
+        self.state.mark_monitor_stopped(self.monitor.stop_time)
 
     def _parse_arguments(self, line, parser: argparse.ArgumentParser = None):
         if not parser:
