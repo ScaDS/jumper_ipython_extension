@@ -14,9 +14,9 @@ from .extension_messages import (
 )
 from .monitor import PerformanceMonitor
 from .reporter import PerformanceReporter
-from .utilities import get_available_levels
+from .utilities import get_available_levels, is_pure_line_magic_cell
 from .visualizer import PerformanceVisualizer
-from .state import ExtensionState
+from .state import ExtensionState, MonitorState
 
 logger = logging.getLogger("extension")
 
@@ -24,39 +24,38 @@ _perfmonitor_magics = None
 
 
 @magics_class
-class perfmonitorMagics(Magics):
+class PerfmonitorMagics(Magics):
     def __init__(self, shell):
         super().__init__(shell)
         self.monitor = self.visualizer = self.reporter = None
         self.cell_history = CellHistory()
-        self.print_perfreports = self._skip_report = False
-        self.perfreports_level = "process"
-        self.perfreports_text = False
+        self._skip_report = False
         self.min_duration = None
         self.state = ExtensionState()
 
     def pre_run_cell(self, info):
         self.cell_history.start_cell(info.raw_cell)
-        self._skip_report = False
+        self._skip_report = is_pure_line_magic_cell(info.raw_cell)
 
     def post_run_cell(self, result):
         self.cell_history.end_cell(result.result)
         if (
-            self.monitor
-            and self.reporter
-            and self.print_perfreports
-            and not self._skip_report
+            not self._skip_report
+            and self.state.runtime.monitor_state == MonitorState.running
+            and self.state.settings.perfreports_enabled
         ):
-            if self.perfreports_text:
-                self.reporter.print(cell_range=None, level=self.perfreports_level)
+            if self.state.settings.perfreports_text:
+                self.reporter.print(
+                    cell_range=None, level=self.state.settings.perfreports_level
+                )
             else:
-                self.reporter.display(cell_range=None, level=self.perfreports_level)
-        self._skip_report = False
+                self.reporter.display(
+                    cell_range=None, level=self.state.settings.perfreports_level
+                )
 
     @line_magic
     def perfmonitor_resources(self, line):
         """Display available hardware resources (CPUs, memory, GPUs)"""
-        self._skip_report = True
         if not self.monitor:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
@@ -80,19 +79,17 @@ class perfmonitorMagics(Magics):
     def cell_history(self, line):
         """Show interactive table of all executed cells with timestamps and
         durations"""
-        self._skip_report = True
         self.cell_history.show_itable()
 
     @line_magic
     def perfmonitor_start(self, line):
         """Start performance monitoring with specified interval
         (default: 1 second)"""
-        self._skip_report = True
         self._setup_performance_monitoring(line)
 
 
     def _setup_performance_monitoring(self, interval: Union[float, str]) -> Union[None, ExtensionErrorCode]:
-        if self.monitor and self.monitor.running:
+        if self.state.runtime.monitor_state == MonitorState.running:
             return ExtensionErrorCode.MONITOR_ALREADY_RUNNING
 
         if interval:
@@ -135,7 +132,6 @@ class perfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_stop(self, line):
         """Stop the active performance monitoring session"""
-        self._skip_report = True
         if not self.monitor:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
@@ -223,8 +219,7 @@ class perfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_plot(self, line):
         """Open interactive plot with widgets for exploring performance data"""
-        self._skip_report = True
-        if not self.monitor:
+        if not self.state.runtime.monitor_state == MonitorState.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
@@ -293,8 +288,7 @@ class perfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_enable_perfreports(self, line):
         """Enable automatic performance reports after each cell execution"""
-        self._skip_report = True
-        self.print_perfreports = True
+        self.state.settings.perfreports_enabled = True
 
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument(
@@ -307,12 +301,13 @@ class perfmonitorMagics(Magics):
         if args is None:
             return
 
-        self.perfreports_level = args.level
-        self.perfreports_text = args.text
+        self.state.settings.perfreports_level = args.level
+        self.state.settings.perfreports_text = args.text
         interval = args.interval
 
-        format_message = "text" if self.perfreports_text else "html"
-        options_message = f"level: {self.perfreports_level}, interval: {interval}, format: {format_message}"
+        format_message = "text" if self.state.settings.perfreports_text else "html"
+        options_message = (f"level: {self.state.settings.perfreports_level},"
+                           f" interval: {interval}, format: {format_message}")
 
         error_code = self._setup_performance_monitoring(interval)
         self._handle_setup_error_messages(error_code, interval)
@@ -329,8 +324,7 @@ class perfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
         """Disable automatic performance reports after cell execution"""
-        self._skip_report = True
-        self.print_perfreports = False
+        self.state.settings.perfreports_enabled = False
         logger.info(
             EXTENSION_INFO_MESSAGES[
                 ExtensionInfoCode.PERFORMANCE_REPORTS_DISABLED
@@ -341,8 +335,7 @@ class perfmonitorMagics(Magics):
     def perfmonitor_perfreport(self, line):
         """Show performance report with optional cell range and level
         filters"""
-        self._skip_report = True
-        if not self.reporter:
+        if not self.state.runtime.monitor_state == MonitorState.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
@@ -370,8 +363,7 @@ class perfmonitorMagics(Magics):
           %perfmonitor_export_perfdata [--level LEVEL]
             # push DataFrame
         """
-        self._skip_report = True
-        if not self.monitor:
+        if not self.state.runtime.monitor_state == MonitorState.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
@@ -418,7 +410,6 @@ class perfmonitorMagics(Magics):
           %perfmonitor_export_cell_history --file <path>  # export to file
           %perfmonitor_export_cell_history                # push DataFrame
         """
-        self._skip_report = True
 
         # Parse optional --file argument
         parser = argparse.ArgumentParser(add_help=False)
@@ -441,8 +432,6 @@ class perfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_fast_setup(self, line):
         """Quick setup: enable ipympl interactive plots, start perfmonitor, and enable perfreports"""
-        self._skip_report = True
-        
         # 1. Enable ipympl interactive plots
         try:
             self.shell.run_line_magic('matplotlib', 'ipympl')
@@ -461,7 +450,6 @@ class perfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_help(self, line):
         """Show comprehensive help information for all available commands"""
-        self._skip_report = True
         commands = [
             "perfmonitor_fast_setup -- quick setup: enable ipympl plots, start monitor, enable reports",
             "perfmonitor_help -- show this comprehensive help",
@@ -514,7 +502,7 @@ class perfmonitorMagics(Magics):
 
 def load_ipython_extension(ipython):
     global _perfmonitor_magics
-    _perfmonitor_magics = perfmonitorMagics(ipython)
+    _perfmonitor_magics = PerfmonitorMagics(ipython)
     ipython.events.register("pre_run_cell", _perfmonitor_magics.pre_run_cell)
     ipython.events.register("post_run_cell", _perfmonitor_magics.post_run_cell)
     ipython.register_magics(_perfmonitor_magics)
@@ -532,4 +520,7 @@ def unload_ipython_extension(ipython):
         )
         if _perfmonitor_magics.monitor:
             _perfmonitor_magics.monitor.stop()
+            _perfmonitor_magics.state.mark_monitor_stopped(
+                _perfmonitor_magics.monitor.stop_time
+            )
         _perfmonitor_magics = None
