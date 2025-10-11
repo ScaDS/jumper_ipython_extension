@@ -148,6 +148,7 @@ The extension supports four different levels of metric collection, each providin
 
 | Command | Description |
 |---------|-------------|
+| `%perfmonitor_fast_setup` | Fast setup of JUmPER. Starts monitor (1.0s interval), enables perfreports (--level process) and interactive plots (ipympl) |
 | `%perfmonitor_help` | Show all available commands with examples |
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
@@ -157,8 +158,7 @@ The extension supports four different levels of metric collection, each providin
 | `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
-| `%perfmonitor_export_perfdata [filename] [--level LEVEL]` |Export performance data to CSV |
-| `%perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL]` |Export performance data to Pandas dataframe |
+| `%perfmonitor_export_perfdata [--file filename] [--level LEVEL]` | Export performance data to dataframe. Export performance data to CSV if `--file` is set. |
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |
 
 ## Contribution and Citing:

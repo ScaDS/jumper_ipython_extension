@@ -205,7 +205,7 @@ class PerformanceVisualizer:
                 )
                 cell_boundaries.append(
                     {
-                        "index": cell["index"],
+                        "cell_index": cell["cell_index"],
                         "start_time": current_time,
                         "end_time": current_time + cell_duration,
                         "duration": cell_duration,
@@ -497,7 +497,7 @@ class PerformanceVisualizer:
                 draw_cell_rect(
                     cell["start_time"],
                     cell["duration"],
-                    int(cell["index"]),
+                    int(cell["cell_index"]),
                     0.4,
                 )
         else:
@@ -510,7 +510,7 @@ class PerformanceVisualizer:
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
                 draw_cell_rect(
-                    start_time, cell["duration"], int(cell["index"]), 0.5
+                    start_time, cell["duration"], int(cell["cell_index"]), 0.5
                 )
 
     def plot(
@@ -538,9 +538,9 @@ class PerformanceVisualizer:
             return
 
         # Default to all cells if no range specified
-        min_cell_idx, max_cell_idx = int(valid_cells.iloc[0]["index"]), int(
-            valid_cells.iloc[-1]["index"]
-        )
+        min_cell_idx, max_cell_idx = int(
+            valid_cells.iloc[0]["cell_index"]
+        ), int(valid_cells.iloc[-1]["cell_index"])
         if cell_range is None:
             cell_start_index = 0
             for cell_idx in range(len(valid_cells) - 1, -1, -1):
@@ -548,8 +548,8 @@ class PerformanceVisualizer:
                     cell_start_index = cell_idx
                     break
             cell_range = (
-                int(valid_cells.iloc[cell_start_index]["index"]),
-                int(valid_cells.iloc[-1]["index"]),
+                int(valid_cells.iloc[cell_start_index]["cell_index"]),
+                int(valid_cells.iloc[-1]["cell_index"]),
             )
 
         # If level is specified, plot directly without widgets

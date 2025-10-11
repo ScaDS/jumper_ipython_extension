@@ -60,10 +60,6 @@ class PerformanceMonitor:
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
-        # Backward-compatible attribute expected by tests/UI
-        self.memory = self.memory_limits.get(
-            "slurm", self.memory_limits.get("system")
-        )
 
         self.gpu_handles = []
         self.gpu_memory = 0
@@ -282,7 +278,7 @@ class PerformanceMonitor:
                     for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
                         handle
                     )
-                    if p.pid in pids
+                    if p.pid in pids and p.usedGpuMemory
                 ) / (1024**3)
                 gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
                 gpu_band.append(0.0)
@@ -292,7 +288,7 @@ class PerformanceMonitor:
                     self._get_filtered_processes(level, "gpu", handle)
                 )
                 filtered_mem = sum(
-                    p.usedGpuMemory for p in filtered_gpu_processes
+                    p.usedGpuMemory for p in filtered_gpu_processes if p.usedGpuMemory
                 ) / (1024**3)
                 filtered_util = (
                     (
@@ -334,7 +330,8 @@ class PerformanceMonitor:
                 print(
                     EXTENSION_INFO_MESSAGES[
                         ExtensionInfoCode.IMPRECISE_INTERVAL
-                    ].format(interval=self.interval), end="\r"
+                    ].format(interval=self.interval),
+                    end="\r",
                 )
             else:
                 time.sleep(self.interval - time_measurement)

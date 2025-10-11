@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper-extension"
-version = "0.2.1"
+version = "0.3.4"
 description = "IPython extension for monitoring cell performance"
 readme={ file='README.md', content-type="text/markdown"}
 license-files=["LICENSE"]
@@ -14,9 +14,11 @@ dependencies = [
     "matplotlib",
     "pandas",
     "numpy",
+    "ipympl",
     "psutil",
     "itables",
     "ipywidgets",
+    "jinja2",
 ]
 urls = {Homepage = "https://github.com/ScaDS/jumper_ipython_extension"}
 
@@ -32,4 +34,7 @@ test = [
 ]
 
 [tool.setuptools]
-packages = ["jumper_extension"]
+packages = ["jumper_extension", "jumper_extension.templates", "jumper_extension.templates.report"]
+
+[tool.setuptools.package-data]
+"jumper_extension.templates.report" = ["*.html", "*.css"]

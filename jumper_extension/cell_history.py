@@ -21,13 +21,19 @@ logger = logging.getLogger("extension")
 class CellHistory:
     def __init__(self):
         self.data = pd.DataFrame(
-            columns=["index", "raw_cell", "start_time", "end_time", "duration"]
+            columns=[
+                "cell_index",
+                "raw_cell",
+                "start_time",
+                "end_time",
+                "duration",
+            ]
         )
         self.current_cell = None
 
     def start_cell(self, raw_cell):
         self.current_cell = {
-            "index": len(self.data),
+            "cell_index": len(self.data),
             "raw_cell": raw_cell,
             "start_time": time.perf_counter(),
             "end_time": None,
@@ -56,7 +62,7 @@ class CellHistory:
     def print(self):
         for _, cell in self.data.iterrows():
             print(
-                f"Cell #{int(cell['index'])} - Duration: "
+                f"Cell #{int(cell['cell_index'])} - Duration: "
                 f"{cell['duration']:.2f}s"
             )
             print("-" * 40)
@@ -75,7 +81,7 @@ class CellHistory:
             duration = row["end_time"] - row["start_time"]
             data.append(
                 {
-                    "Cell index": row["index"],
+                    "Cell index": row["cell_index"],
                     "Duration (s)": f"{duration:.2f}",
                     "Start Time": time.strftime(
                         "%H:%M:%S", time.localtime(row["start_time"])
@@ -107,6 +113,11 @@ class CellHistory:
         # Determine format from filename extension
         _, ext = os.path.splitext(filename)
         format = ext.lower().lstrip(".")
+        
+        # Default to csv if no extension provided
+        if not format:
+            format = "csv"
+            filename += ".csv"
 
         if format == "json":
             with open(filename, "w") as f:

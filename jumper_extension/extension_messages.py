@@ -79,7 +79,7 @@ _BASE_EXTENSION_INFO_MESSAGES = {
         "Performance reports for each celldisabled"
     ),
     ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED: (
-        "Performance reports enabled for each cell (level: {level})"
+        "Performance reports enabled for each cell ({options_message})"
     ),
     ExtensionInfoCode.EXTENSION_LOADED: ("Perfmonitor extension loaded"),
     ExtensionInfoCode.MONITOR_STARTED: (
@@ -93,8 +93,9 @@ _BASE_EXTENSION_INFO_MESSAGES = {
 
 
 def _apply_prefix(messages):
-    return {code: f"{MESSAGE_PREFIX}: {text}"
-            for code, text in messages.items()}
+    return {
+        code: f"{MESSAGE_PREFIX}: {text}" for code, text in messages.items()
+    }
 
 
 EXTENSION_ERROR_MESSAGES = _apply_prefix(_BASE_EXTENSION_ERROR_MESSAGES)

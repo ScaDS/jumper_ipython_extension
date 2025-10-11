@@ -72,10 +72,10 @@ def test_cell_operations(ipython, mock_cpu_only):
     assert magics.perfreports_level == "user"
     # First call to post_run_cell resets _skip_report flag
     magics.post_run_cell(result)
-    with patch.object(magics.reporter, "print") as mock_print:
+    with patch.object(magics.reporter, "display") as mock_display:
         magics.post_run_cell(result)
         # Verify that the reporter.print was called with the correct level
-        mock_print.assert_called_with(cell_range=None, level="user")
+        mock_display.assert_called_with(cell_range=None, level="user")
     magics.perfmonitor_disable_perfreports("")
     magics.perfmonitor_stop("")
 
@@ -189,17 +189,17 @@ def test_export_and_help(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
     with patch.object(magics.monitor.data, "export"):
         magics.perfmonitor_export_perfdata("")
-        magics.perfmonitor_export_perfdata("custom.csv")
+        magics.perfmonitor_export_perfdata("--file custom.csv")
     magics.perfmonitor_stop("")
 
     # Test cell history export
     with patch.object(magics.cell_history, "export"):
         magics.perfmonitor_export_cell_history("")
-        magics.perfmonitor_export_cell_history("custom.json")
+        magics.perfmonitor_export_cell_history("--file custom.json")
 
     # Test CSV export
     with patch.object(magics.cell_history, "export") as mock_export:
-        magics.perfmonitor_export_cell_history("test.csv")
+        magics.perfmonitor_export_cell_history("--file test.csv")
         mock_export.assert_called_with("test.csv")
 
     # Test help
