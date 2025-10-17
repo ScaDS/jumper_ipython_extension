@@ -31,17 +31,11 @@ class PerfmonitorMagics(Magics):
         self.monitor = self.visualizer = self.reporter = None
         self.cell_history = CellHistory()
         self._skip_report = False
-        self.min_duration = None
         self.state = ExtensionState()
         self.script_writer = NotebookScriptWriter()
 
     def pre_run_cell(self, info):
         self.cell_history.start_cell(info.raw_cell)
-        self._skip_report = False
-
-        if self.script_writer.is_recording:
-            cell_index = len(self.cell_history) - 1
-            self.script_writer.record_cell(info.raw_cell, cell_index)
         self._skip_report = is_pure_line_magic_cell(info.raw_cell)
 
     def post_run_cell(self, result):
@@ -117,7 +111,6 @@ class PerfmonitorMagics(Magics):
         self.reporter = PerformanceReporter(
             self.monitor, self.cell_history, min_duration=interval_number
         )
-        self.min_duration = interval
         return None
 
     @staticmethod
@@ -320,10 +313,10 @@ class PerfmonitorMagics(Magics):
         self._handle_setup_error_messages(error_code, interval)
 
         logger.info(
-            EXTENSION_INFO_MESSAGES[
-                ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED
-            ].format(
-                options_message=options_message,
+                EXTENSION_INFO_MESSAGES[
+                    ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED
+                ].format(
+                    options_message=options_message,
             )
         )
 
@@ -518,8 +511,6 @@ class PerfmonitorMagics(Magics):
           %start_write_script
           %start_write_script my_script.py
         """
-        self._skip_report = True
-
         output_path = line.strip() if line else None
         self.script_writer.start_recording(output_path)
 
@@ -536,8 +527,6 @@ class PerfmonitorMagics(Magics):
         Usage:
           %end_write_script
         """
-        self._skip_report = True
-
         output_path = self.script_writer.stop_recording()
 
         if output_path:
