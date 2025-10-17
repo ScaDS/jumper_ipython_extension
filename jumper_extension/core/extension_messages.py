@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-from .logging_config import LOGGING
+from jumper_extension.logging_config import LOGGING
 
 MESSAGE_PREFIX = "[JUmPER]"
 
