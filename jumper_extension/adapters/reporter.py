@@ -1,6 +1,6 @@
 import logging
 
-from extension_messages import (
+from ..core.extension_messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
@@ -10,8 +10,8 @@ from pathlib import Path
 from IPython.display import display, HTML
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from utilities import filter_perfdata
-from adapters.analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
+from jumper_extension.utilities import filter_perfdata
+from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
 
 
 logger = logging.getLogger("extension")
@@ -23,7 +23,7 @@ class PerformanceReporter:
         self.min_duration = min_duration
         self.analyzer = PerformanceAnalyzer()
 
-        self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent / "templates"
+        self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent.parent / "templates"
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""

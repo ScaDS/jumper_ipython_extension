@@ -5,18 +5,18 @@ from typing import Union
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
-from .cell_history import CellHistory
-from .extension_messages import (
+from jumper_extension.core.cell_history import CellHistory
+from jumper_extension.core.extension_messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
-from .monitor import PerformanceMonitor
-from .reporter import PerformanceReporter
+from jumper_extension.adapters.monitor import PerformanceMonitor
+from jumper_extension.adapters.reporter import PerformanceReporter
 from .utilities import get_available_levels, is_pure_line_magic_cell
-from .visualizer import PerformanceVisualizer
-from .state import ExtensionState, MonitorState
+from jumper_extension.adapters.visualizer import PerformanceVisualizer
+from jumper_extension.core.state import ExtensionState, MonitorState
 from .write_script import NotebookScriptWriter
 
 logger = logging.getLogger("extension")

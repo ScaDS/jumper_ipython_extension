@@ -8,7 +8,7 @@ import warnings
 import pandas as pd
 from itables import show
 
-from .extension_messages import (
+from jumper_extension.core.extension_messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
