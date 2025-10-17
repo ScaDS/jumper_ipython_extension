@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
-from .extension_messages import (
+from jumper_extension.core.extension_messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
-from .utilities import filter_perfdata, get_available_levels
-from .logo import logo_image, jumper_colors
+from jumper_extension.utilities import filter_perfdata, get_available_levels
+from jumper_extension.logo import logo_image, jumper_colors
 
 logger = logging.getLogger("extension")
 

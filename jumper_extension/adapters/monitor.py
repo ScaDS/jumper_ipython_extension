@@ -6,14 +6,14 @@ import unittest.mock
 
 import psutil
 
-from .data import PerformanceData
-from .extension_messages import (
+from jumper_extension.core.data import PerformanceData
+from jumper_extension.core.extension_messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
-from .utilities import (
+from jumper_extension.utilities import (
     get_available_levels,
     is_slurm_available,
     detect_memory_limit,
