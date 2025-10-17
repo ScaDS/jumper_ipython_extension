@@ -1,6 +1,6 @@
 import logging
 
-from .extension_messages import (
+from extension_messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
@@ -10,8 +10,8 @@ from pathlib import Path
 from IPython.display import display, HTML
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .utilities import filter_perfdata
-from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
+from utilities import filter_perfdata
+from adapters.analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
 
 
 logger = logging.getLogger("extension")
