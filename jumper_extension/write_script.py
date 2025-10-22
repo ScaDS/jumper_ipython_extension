@@ -23,10 +23,7 @@ class NotebookScriptWriter:
                         If None, will be generated automatically.
         """
         self.output_path = output_path
-        self.is_recording = False
         self.recorded_cells: List[dict] = []
-        self.start_time: Optional[datetime] = None
-        self.cell_count = 0
         
     def start_recording(self, output_path: Optional[str] = None):
         """
@@ -35,10 +32,6 @@ class NotebookScriptWriter:
         Args:
             output_path: Path to the output file (overrides value from __init__)
         """
-        if self.is_recording:
-            logger.warning("[NotebookScriptWriter]: Recording is already active")
-            return
-            
         if output_path:
             self.output_path = output_path
             
@@ -47,11 +40,8 @@ class NotebookScriptWriter:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             self.output_path = f"notebook_script_{timestamp}.py"
             
-        self.is_recording = True
         self.recorded_cells = []
-        self.start_time = datetime.now()
-        self.cell_count = 0
-        
+
         logger.info(
             f"[NotebookScriptWriter]: Started recording to file '{self.output_path}'"
         )
@@ -63,12 +53,6 @@ class NotebookScriptWriter:
         Returns:
             Path to the created file or None on error
         """
-        if not self.is_recording:
-            logger.warning("[NotebookScriptWriter]: Recording is not active")
-            return None
-            
-        self.is_recording = False
-        
         if not self.recorded_cells:
             logger.warning(
                 "[NotebookScriptWriter]: No recorded cells to save"
@@ -87,27 +71,9 @@ class NotebookScriptWriter:
                 f"[NotebookScriptWriter]: Error writing file: {e}"
             )
             return None
-            
-    def record_cell(self, cell_code: str, cell_index: Optional[int] = None):
-        """
-        Record code from a single cell.
-        
-        Args:
-            cell_code: Cell code
-            cell_index: Cell number (optional)
-        """
-        if not self.is_recording:
-            return
-            
-        if not cell_code or not cell_code.strip():
-            return
-            
-        self.recorded_cells.append({
-            "code": cell_code,
-            "index": cell_index if cell_index is not None else self.cell_count,
-            "timestamp": datetime.now()
-        })
-        self.cell_count += 1
+
+    def _parse_magics(self, code: str):
+        pass
         
     def _write_to_file(self):
         """
@@ -119,7 +85,7 @@ class NotebookScriptWriter:
         with open(output_path, "w", encoding="utf-8") as f:
             # File header
             f.write("#!/usr/bin/env python3\n")
-            f.write("\n")
+            f.write('"""')
             f.write("Auto-generated script from Jupyter notebook\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             if self.start_time:
@@ -135,17 +101,3 @@ class NotebookScriptWriter:
                 f.write(f"# Recorded at: {cell['timestamp'].strftime('%H:%M:%S')}\n")
                 f.write(f"{cell['code']}\n")
                 f.write("\n")
-                
-    def get_status(self) -> dict:
-        """
-        Get current writer status.
-        
-        Returns:
-            Dictionary with status information
-        """
-        return {
-            "is_recording": self.is_recording,
-            "output_path": self.output_path,
-            "cell_count": self.cell_count,
-            "start_time": self.start_time.isoformat() if self.start_time else None,
-        }
