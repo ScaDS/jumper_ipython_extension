@@ -1,9 +1,19 @@
 """Module containing parser utilities for the JUmPER extension."""
 import argparse
 import shlex
+from dataclasses import dataclass
 from typing import Optional, Tuple, List, Any
 
 from jumper_extension.utilities import get_available_levels
+
+
+@dataclass
+class Parsers:
+    """Configuration for command-line argument parsers."""
+    perfreport: argparse.ArgumentParser
+    auto_perfreports: argparse.ArgumentParser
+    export_perfdata: argparse.ArgumentParser
+    export_cell_history: argparse.ArgumentParser
 
 
 def build_perfreport_parser() -> argparse.ArgumentParser:

@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Union, List, Dict
 import pandas as pd
 
 from jumper_extension.core.parsers import parse_cell_range, parse_arguments, build_perfreport_parser, \
-    build_auto_perfreports_parser, build_export_perfdata_parser, build_export_cell_history_parser
+    build_auto_perfreports_parser, build_export_perfdata_parser, build_export_cell_history_parser, Parsers
 
 from jumper_extension.core.state import UserSettings
 from jumper_extension.core.messages import (
@@ -36,10 +36,7 @@ class PerfmonitorService:
         visualizer: PerformanceVisualizer,
         reporter: PerformanceReporter,
         cell_history: CellHistory,
-        perfreport_parser: argparse.ArgumentParser,
-        auto_perfreports_parser: argparse.ArgumentParser,
-        export_perfdata_parser: argparse.ArgumentParser,
-        export_cell_history_parser: argparse.ArgumentParser,
+        parsers: Parsers
     ):
         self.settings = settings
         self.monitor = monitor
@@ -48,12 +45,7 @@ class PerfmonitorService:
         self.cell_history = cell_history
         self.script_writer = None
         self._skip_report = False
-
-        # Parsers
-        self.perfreport_parser = perfreport_parser
-        self.auto_perfreports_parser = auto_perfreports_parser
-        self.export_perfdata_parser = export_perfdata_parser
-        self.export_cell_history_parser = export_cell_history_parser
+        self.parsers = parsers
 
 
     def on_pre_run_cell(self, raw_cell: str, cell_magics: List[str], should_skip_report: bool):
@@ -182,7 +174,7 @@ class PerfmonitorService:
         """Enable automatic performance reports after each cell execution"""
         self.settings.perfreports.enabled = True
 
-        args = parse_arguments(self.auto_perfreports_parser, line)
+        args = parse_arguments(self.parsers.auto_perfreports, line)
         if args is None:
             return
 
@@ -222,7 +214,7 @@ class PerfmonitorService:
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
-        args = parse_arguments(self.perfreport_parser, line)
+        args = parse_arguments(self.parsers.perfreport, line)
         if not args:
             return
         cell_range = None
@@ -251,7 +243,7 @@ class PerfmonitorService:
             return {}
 
         # Parse optional --file and --level arguments
-        args = parse_arguments(self.export_perfdata_parser, line)
+        args = parse_arguments(self.parsers.export_perfdata, line)
 
         if args and args.file:
             self.monitor.data.export(
@@ -279,7 +271,7 @@ class PerfmonitorService:
         """
 
         # Parse optional --file argument
-        args = parse_arguments(self.export_cell_history_parser, line)
+        args = parse_arguments(self.parsers.export_cell_history, line)
         if args and args.file:
             self.cell_history.export(args.file)
             return {}
@@ -400,18 +392,17 @@ def build_perfmonitor_service():
     cell_history = CellHistory()
     visualizer = PerformanceVisualizer(cell_history)
     reporter = PerformanceReporter(cell_history)
-    perfreport_parser = build_perfreport_parser()
-    auto_perfreports_parser = build_auto_perfreports_parser()
-    export_perfdata_parser = build_export_perfdata_parser()
-    export_cell_history_parser = build_export_cell_history_parser()
+    parsers = Parsers(
+        perfreport=build_perfreport_parser(),
+        auto_perfreports=build_auto_perfreports_parser(),
+        export_perfdata=build_export_perfdata_parser(),
+        export_cell_history=build_export_cell_history_parser(),
+    )
     return PerfmonitorService(
         settings,
         monitor,
         visualizer,
         reporter,
         cell_history,
-        perfreport_parser,
-        auto_perfreports_parser,
-        export_perfdata_parser,
-        export_cell_history_parser,
+        parsers,
     )
