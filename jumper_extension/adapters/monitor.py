@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import unittest.mock
+from typing import Protocol, Optional, runtime_checkable
 
 import psutil
 
@@ -61,10 +62,29 @@ except Exception:
         EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.AMD_DRIVERS_NOT_AVAILABLE]
     )
 
+@runtime_checkable
+class PerformanceMonitorProtocol(Protocol):
+    # required readable attributes
+    interval: float
+    data: "PerformanceData"
+    start_time: float | None
+    num_cpus: int
+    num_system_cpus: int
+    num_gpus: int
+    gpu_memory: float
+    memory_limits: dict
+    cpu_handles: list[int]
+    gpu_name: str
+
+    # required control & lifecycle
+    running: bool
+    def start(self, interval: float = 1.0) -> None: ...
+    def stop(self) -> None: ...
+
 
 class PerformanceMonitor:
-    def __init__(self, interval=1.0):
-        self.interval = interval
+    def __init__(self):
+        self.interval = 1.0
         self.running = False
         self.start_time = None
         self.stop_time = None
@@ -487,7 +507,7 @@ class PerformanceMonitor:
             else:
                 time.sleep(self.interval - time_measurement)
 
-    def start(self):
+    def start(self, interval: float = 1.0):
         if self.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
@@ -495,6 +515,7 @@ class PerformanceMonitor:
                 ]
             )
             return
+        self.interval = interval
         self.start_time = time.perf_counter()
         self.running = True
         self.monitor_thread = threading.Thread(
@@ -523,3 +544,54 @@ class PerformanceMonitor:
                 perc_missed_measurements=self.n_missed_measurements / self.n_measurements
             )
         )
+
+class MonitorUnavailableError(RuntimeError):
+    """This monitor is a stub and cannot be used."""
+
+class UnavailablePerformanceMonitor:
+    """
+    A stub that type-checks against PerformanceMonitorProto but fails at runtime.
+
+    - Declares all required attributes for structural typing.
+    - Any attribute access or method call raises MonitorUnavailableError,
+      except 'running', which is always readable and returns False.
+    """
+
+    # --- Protocol surface ---
+    interval: float
+    data: "PerformanceData"
+    start_time: Optional[float]
+    num_cpus: int
+    num_system_cpus: int
+    num_gpus: int
+    gpu_memory: float
+    memory_limits: dict
+    running: bool
+
+    def start(self, interval: float = 1.0) -> None: ...
+    def stop(self) -> None: ...
+
+    # --- Runtime behavior ---
+    def __init__(self, reason: str = "Performance monitor is not available"):
+        object.__setattr__(self, "_reason", reason)
+
+    def __getattribute__(self, name: str):
+        # allow a few safe attributes + running
+        if name in {
+            "_reason", "__class__", "__repr__", "__str__",
+            "__init__", "__getattribute__", "__setattr__",
+            "__dict__", "__annotations__"
+        }:
+            return object.__getattribute__(self, name)
+
+        reason = object.__getattribute__(self, "_reason")
+        raise MonitorUnavailableError(f"Access to '{name}' is not allowed: {reason}")
+
+    def __setattr__(self, name: str, value):
+        if name in {"_reason", "__dict__", "__annotations__"}:
+            return object.__setattr__(self, name, value)
+        reason = object.__getattribute__(self, "_reason")
+        raise MonitorUnavailableError(f"Setting '{name}' is not allowed: {reason}")
+
+    def __repr__(self) -> str:
+        return f"<UnavailablePerformanceMonitor: {self._reason}>"

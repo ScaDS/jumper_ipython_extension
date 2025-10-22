@@ -31,6 +31,7 @@ class ExtensionInfoCode(Enum):
     MONITOR_STARTED = auto()
     MONITOR_STOPPED = auto()
     EXPORT_SUCCESS = auto()
+    PERFORMANCE_DATA_AVAILABLE = auto()
 
 
 _BASE_EXTENSION_ERROR_MESSAGES = {
@@ -101,6 +102,9 @@ _BASE_EXTENSION_INFO_MESSAGES = {
         "Performance monitoring stopped (ran for {seconds:.2f} seconds)"
     ),
     ExtensionInfoCode.EXPORT_SUCCESS: ("Exported to {filename}"),
+    ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE: (
+        "Performance data DataFrame available as '{var_name}'"
+    ),
 }
 
 

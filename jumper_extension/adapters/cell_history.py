@@ -4,6 +4,7 @@ import logging.config
 import os
 import time
 import warnings
+from typing import List
 
 import pandas as pd
 from itables import show
@@ -31,9 +32,10 @@ class CellHistory:
         )
         self.current_cell = None
 
-    def start_cell(self, raw_cell):
+    def start_cell(self, raw_cell: str, cell_magics: List[str]):
         self.current_cell = {
             "cell_index": len(self.data),
+            "cell_magics": cell_magics,
             "raw_cell": raw_cell,
             "start_time": time.perf_counter(),
             "end_time": None,
