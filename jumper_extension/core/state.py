@@ -5,15 +5,10 @@ from threading import RLock
 from typing import Any, Optional, Tuple, Dict
 
 
-class MonitorState(Enum):
-    stopped = "stopped"
-    running = "running"
-
-
 @dataclass
 class Runtime:
     # Performance monitoring
-    monitor_state: MonitorState = MonitorState.stopped
+    monitor_is_running: bool = False
     monitor_started_at: Optional[float] = None
     monitor_stopped_at: Optional[float] = None
 
@@ -45,13 +40,13 @@ class ExtensionState:
         return d
 
     def mark_monitor_running(self, interval: Optional[float], started_at: float):
-        if self.runtime.monitor_state == MonitorState.running:
+        if self.runtime.monitor_is_running == MonitorState.running:
             return False
         self.settings.user_interval = interval or self.settings.default_interval
-        self.runtime.monitor_state = MonitorState.running
+        self.runtime.monitor_is_running = MonitorState.running
         self.runtime.monitor_started_at = started_at
         return True
 
     def mark_monitor_stopped(self, stopped_at: float):
-        self.runtime.monitor_state = MonitorState.stopped
+        self.runtime.monitor_is_running = MonitorState.stopped
         self.runtime.monitor_stopped_at = stopped_at
