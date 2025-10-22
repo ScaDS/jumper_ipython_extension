@@ -7,7 +7,10 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
-from jumper_extension.core.extension_messages import (
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.adapters.monitor import PerformanceMonitor, UnavailablePerformanceMonitor, \
+    PerformanceMonitorProtocol
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
@@ -32,11 +35,23 @@ class PerformanceVisualizer:
     'slurm' (if available)
     """
 
-    def __init__(self, monitor, cell_history, min_duration=None):
-        self.monitor = monitor
+    def __init__(self, cell_history: CellHistory):
+        self.monitor = UnavailablePerformanceMonitor(
+            reason="Monitor has not been started yet."
+        )
         self.cell_history = cell_history
         self.figsize = (5, 3)
-        self.min_duration = min_duration
+        self.min_duration = None
+        self._io_window = None
+        self.subsets = {}
+
+    def attach(
+        self,
+        monitor: PerformanceMonitorProtocol,
+    ):
+        """Attach started PerformanceMonitor."""
+        self.monitor = monitor
+        self.min_duration = self.monitor.interval
         # Smooth IO with ~1s rolling window based on sampling interval
         try:
             self._io_window = max(
@@ -44,7 +59,11 @@ class PerformanceVisualizer:
             )
         except Exception:
             self._io_window = 1
+        self._build_subsets()
 
+    def _build_subsets(self):
+        """Build a dictionary of metric subsets based on the provided
+        configuration"""
         # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
             "cpu_all": {
@@ -75,7 +94,7 @@ class PerformanceVisualizer:
                     "type": "multi_series",
                     "prefix": "gpu_mem_",
                     "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
             },
@@ -131,7 +150,7 @@ class PerformanceVisualizer:
                         "GPU Memory Usage (GB) - "
                         f"{self.monitor.num_gpus} GPUs"
                     ),
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory Summary",
                 },
             },

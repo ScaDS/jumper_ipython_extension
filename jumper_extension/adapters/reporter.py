@@ -1,6 +1,7 @@
 import logging
 
-from ..core.messages import (
+from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, UnavailablePerformanceMonitor
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
@@ -17,13 +18,23 @@ from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
 logger = logging.getLogger("extension")
 
 class PerformanceReporter:
-    def __init__(self, monitor, cell_history, min_duration=None, templates_dir=None):
-        self.monitor = monitor
+    def __init__(self, cell_history, templates_dir=None):
+        self.monitor = UnavailablePerformanceMonitor(
+            reason="Monitor has not been started yet."
+        )
         self.cell_history = cell_history
-        self.min_duration = min_duration
+        self.min_duration = None
         self.analyzer = PerformanceAnalyzer()
 
         self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent.parent / "templates"
+
+    def attach(
+        self,
+        monitor: PerformanceMonitorProtocol,
+    ):
+        """Attach started PerformanceMonitor"""
+        self.monitor = monitor
+        self.min_duration = self.monitor.interval
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""
