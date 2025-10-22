@@ -1,6 +1,6 @@
 import logging
 
-from ..core.extension_messages import (
+from ..core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )

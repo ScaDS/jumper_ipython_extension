@@ -7,7 +7,7 @@ import unittest.mock
 import psutil
 
 from jumper_extension.core.data import PerformanceData
-from jumper_extension.core.extension_messages import (
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
