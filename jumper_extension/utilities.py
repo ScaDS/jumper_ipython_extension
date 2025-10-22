@@ -136,3 +136,24 @@ def is_pure_line_magic_cell(raw_cell: str) -> bool:
         # any other non-empty line is considered code -> not "pure"
         return False
     return True
+
+
+def get_called_line_magics(raw_cell: str) -> list:
+    """
+    Get the list of line magics called in a cell
+    """
+    line_magics = get_line_magics_cached()
+    called_line_magics = []
+    # Get the list of available line magics, names without '%'
+    lines = raw_cell.splitlines()
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            # skip empty lines
+            continue
+        if stripped.startswith("#"):
+            # skip comments
+            continue
+        if is_known_line_magic(line, line_magics):
+            called_line_magics.append(stripped[1:])
+    return called_line_magics
