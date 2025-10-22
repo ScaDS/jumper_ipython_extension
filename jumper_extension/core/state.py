@@ -6,47 +6,21 @@ from typing import Any, Optional, Tuple, Dict
 
 
 @dataclass
-class Runtime:
-    # Performance monitoring
-    monitor_is_running: bool = False
-    monitor_started_at: Optional[float] = None
-    monitor_stopped_at: Optional[float] = None
-
-
-@dataclass
 class ExportVars:
     perfdata: str = "perfdata_df"
     cell_history: str = "cell_history_df"
 
 
 @dataclass
-class UserSettings:
-    perfreports_enabled: bool = False
-    perfreports_level: str = "process"
-    perfreports_text: bool = False
-    default_interval: float = 1.0
-    user_interval: Optional[float] = None
-    export_vars: ExportVars = field(default_factory=ExportVars)
+class PerfomanceReports:
+    enabled: bool = False
+    level: str = "process"
+    text: bool = False
 
 
 @dataclass
-class ExtensionState:
-    version: int = 1
-    runtime: Runtime = field(default_factory=Runtime)
-    settings: UserSettings = field(default_factory=UserSettings)
-
-    def snapshot(self) -> Dict[str, Any]:
-        d = asdict(self)
-        return d
-
-    def mark_monitor_running(self, interval: Optional[float], started_at: float):
-        if self.runtime.monitor_is_running == MonitorState.running:
-            return False
-        self.settings.user_interval = interval or self.settings.default_interval
-        self.runtime.monitor_is_running = MonitorState.running
-        self.runtime.monitor_started_at = started_at
-        return True
-
-    def mark_monitor_stopped(self, stopped_at: float):
-        self.runtime.monitor_is_running = MonitorState.stopped
-        self.runtime.monitor_stopped_at = stopped_at
+class UserSettings:
+    perfreports: PerfomanceReports = field(default_factory=PerfomanceReports)
+    default_interval: float = 1.0
+    user_interval: Optional[float] = None
+    export_vars: ExportVars = field(default_factory=ExportVars)
