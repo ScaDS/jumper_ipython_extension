@@ -5,8 +5,8 @@ from typing import Union
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
-from jumper_extension.core.cell_history import CellHistory
-from jumper_extension.core.extension_messages import (
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,

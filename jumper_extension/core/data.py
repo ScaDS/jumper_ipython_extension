@@ -6,7 +6,7 @@ import logging.config
 
 from jumper_extension.utilities import get_available_levels
 
-from jumper_extension.core.extension_messages import (
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
