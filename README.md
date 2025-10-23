@@ -96,6 +96,36 @@ pip install .
 
 ![](doc/plot_out.png)
 
+### Direct plotting mode and exports
+
+You can also run `%perfmonitor_plot` in a direct (non-widget) mode and save or export results.
+
+- **Plot specific metrics (no ipywidgets):**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary,memory
+  ```
+
+- **Choose monitoring level and cell range:**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary --level user --cell 2:5
+  ```
+
+- **Save the plot as JPEG:**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary,memory --save-jpeg performance_analysis.jpg
+  ```
+
+- **Export plot data to a pickle file (to reload later with full interactivity):**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary --level user --pickle analysis_data.pkl
+  ```
+  The command prints a small Python snippet showing how to load the pickle and display the plot in a separate session.
+
+Notes:
+- `--metrics` accepts a comma-separated list of metric keys (e.g., `cpu_summary`, `memory`, `io_read`, `io_write`, `io_read_count`, `io_write_count`, `gpu_util_summary`, `gpu_band_summary`, `gpu_mem_summary`).
+- `--level` supports the same levels as reports: `process` (default), `user`, `system`, and `slurm` (if available).
+- `--cell` supports formats like `5`, `2:8`, `:5`, `3:`. Negative indices are supported (e.g., `-3:-1`).
+
 
 
 5. **View cell execution history**:
@@ -154,7 +184,7 @@ The extension supports four different levels of metric collection, each providin
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
 | `%perfmonitor_stop` | Stop monitoring |
 | `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
-| `%perfmonitor_plot` | Interactive plot with widgets for exploring performance data |
+| `%perfmonitor_plot [--metrics LIST] [--cell RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE]` | Interactive plot with widgets; direct plotting of selected metrics; optional export to JPEG or pickle |
 | `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
