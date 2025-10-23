@@ -21,7 +21,8 @@ from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
 )
 from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, PerformanceMonitor
-from jumper_extension.adapters.visualizer import PerformanceVisualizer
+from jumper_extension.adapters.visualizer import build_performance_visualizer, \
+    PerformanceVisualizerProtocol
 from jumper_extension.adapters.reporter import PerformanceReporter, build_performance_reporter
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.utilities import get_available_levels
@@ -39,7 +40,7 @@ class PerfmonitorService:
         self,
         settings: UserSettings,
         monitor: PerformanceMonitorProtocol,
-        visualizer: PerformanceVisualizer,
+        visualizer: PerformanceVisualizerProtocol,
         reporter: PerformanceReporter,
         cell_history: CellHistory,
         parsers: ArgParsers
@@ -389,13 +390,26 @@ class PerfmonitorService:
             self.monitor.stop()
 
 
-def build_perfmonitor_service():
+def build_perfmonitor_service(
+        plots_disabled: bool = False,
+        plots_disabled_reason: str = "Plotting not available.",
+        display_disabled: bool = False,
+        display_disabled_reason: str = "Display not available."
+):
     """Build a new instance of the perfmonitor service."""
     settings = UserSettings()
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
-    visualizer = PerformanceVisualizer(cell_history)
-    reporter = build_performance_reporter(cell_history)
+    visualizer = build_performance_visualizer(
+        cell_history,
+        plots_disabled=plots_disabled,
+        plots_disabled_reason=plots_disabled_reason,
+    )
+    reporter = build_performance_reporter(
+        cell_history,
+        display_disabled=display_disabled,
+        display_disabled_reason=display_disabled_reason,
+    )
     parsers = ArgParsers(
         perfreport=build_perfreport_parser(),
         auto_perfreports=build_auto_perfreports_parser(),

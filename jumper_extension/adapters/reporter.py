@@ -3,9 +3,9 @@ import logging
 from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, UnavailablePerformanceMonitor
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
-    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_ERROR_MESSAGES, EXTENSION_INFO_MESSAGES, ExtensionInfoCode,
 )
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Protocol, runtime_checkable
 
 from pathlib import Path
 from IPython.display import display, HTML
@@ -220,6 +220,13 @@ class ReportPrinter(ReportBuilder):
                     f"{total:<8}"
                 )
 
+
+@runtime_checkable
+class ReportDisplayerProtocol(Protocol):
+    """Structural protocol for HTML/text report displayers."""
+    def display(self, cell_range=None, level: str = "process") -> None: ...
+
+
 class ReportDisplayer(ReportBuilder):
     def __init__(
         self,
@@ -287,15 +294,25 @@ class ReportDisplayer(ReportBuilder):
         display(HTML(html))
 
 
-class NullReportDisplayer:
+class UnavailableReportDisplayer:
+    def __init__(self, reason="Display not available."):
+        self._reason = reason
+
     def display(self, cell_range=None, level="process"):
         """non-opt display"""
-        raise RuntimeError("Display method not available.")
+        logger.info(
+            EXTENSION_INFO_MESSAGES[
+                ExtensionInfoCode.HTML_REPORTS_NOT_AVAILABLE
+            ].format(reason=self._reason))
 
 
 class PerformanceReporter:
     """Adapter class for performance reporting"""
-    def __init__(self, printer, displayer):
+    def __init__(
+        self,
+        printer: ReportPrinter,
+        displayer: ReportDisplayerProtocol
+    ):
         self.printer = printer
         self.displayer = displayer
 
@@ -322,8 +339,9 @@ class PerformanceReporter:
 
 def build_performance_reporter(
     cell_history: CellHistory,
-    display_on: bool = True,
-    templates_dir=None
+    templates_dir=None,
+    display_disabled: bool = False,
+    display_disabled_reason="Display not available."
 ):
     """
     Build PerformanceReporter object.
@@ -334,15 +352,17 @@ def build_performance_reporter(
     )
     analyzer = PerformanceAnalyzer()
     printer = ReportPrinter(monitor, cell_history, analyzer)
-    if display_on:
+    if display_disabled:
+        displayer = UnavailableReportDisplayer(
+            reason=display_disabled_reason
+        )
+    else:
         displayer = ReportDisplayer(
             monitor,
             cell_history,
             analyzer,
             templates_dir
         )
-    else:
-        displayer = NullReportDisplayer()
     return PerformanceReporter(printer, displayer)
 
 

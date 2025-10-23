@@ -1,7 +1,7 @@
 import logging
 import pickle
 import re
-from typing import List
+from typing import List, runtime_checkable, Protocol
 
 import matplotlib.pyplot as plt
 from IPython.display import display
@@ -12,7 +12,7 @@ from jumper_extension.adapters.monitor import PerformanceMonitor, UnavailablePer
     PerformanceMonitorProtocol
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
-    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_ERROR_MESSAGES, ExtensionInfoCode, EXTENSION_INFO_MESSAGES,
 )
 from jumper_extension.utilities import filter_perfdata, get_available_levels
 from jumper_extension.logo import logo_image, jumper_colors
@@ -26,6 +26,18 @@ def is_ipympl_backend():
     except Exception:
         return False
     return ("ipympl" in backend) or ("widget" in backend)
+
+
+@runtime_checkable
+class PerformanceVisualizerProtocol(Protocol):
+    """Structural protocol for visualizers used by the service."""
+    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None: ...
 
 
 class PerformanceVisualizer:
@@ -720,6 +732,30 @@ class PerformanceVisualizer:
         update_plots()
 
 
+class UnavailableVisualizer:
+    """
+    A stub that type-checks against PerformanceVisualizerProtocol but
+    only logs that visualization is unavailable.
+    """
+    def __init__(self, reason: str = "Plotting not available."):
+        self._reason = reason
+
+    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None:
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.PLOTS_NOT_AVAILABLE].format(
+                reason=self._reason
+            )
+        )
+
+
+
 class InteractivePlotWrapper:
     """Interactive plotter with dropdown selection and reusable matplotlib
     axes."""
@@ -872,3 +908,18 @@ class InteractivePlotWrapper:
         for panel in self.plot_panels:
             panel["output"].clear_output(wait=True)
             panel["update_plot"]()
+
+
+def build_performance_visualizer(
+    cell_history: CellHistory,
+    plots_disabled: bool = False,
+    plots_disabled_reason: str = "Plotting not available.",
+) -> PerformanceVisualizerProtocol:
+    """
+    Build PerformanceVisualizer object.
+    Allows building a visualizer that degrades to a no-op when plots are disabled.
+    """
+    if plots_disabled:
+        return UnavailableVisualizer(reason=plots_disabled_reason)
+    return PerformanceVisualizer(cell_history)
+
