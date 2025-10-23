@@ -21,7 +21,7 @@ from .utilities import (
 
 logger = logging.getLogger("extension")
 
-# GPU monitoring setup
+# NVIDIA GPU monitoring setup
 PYNVML_AVAILABLE = False
 try:
     import pynvml
@@ -37,6 +37,28 @@ except Exception:
         EXTENSION_ERROR_MESSAGES[
             ExtensionErrorCode.NVIDIA_DRIVERS_NOT_AVAILABLE
         ]
+    )
+
+# AMD GPU monitoring setup
+ADLX_AVAILABLE = False
+try:
+    from ADLXPybind import (
+        ADLX,
+        ADLXHelper,
+        ADLX_RESULT,
+    )
+
+    adlx_helper = ADLXHelper()
+    if adlx_helper.Initialize() == ADLX_RESULT.ADLX_OK:
+        ADLX_AVAILABLE = True
+        adlx_system = adlx_helper.GetSystemServices()
+except ImportError:
+    logger.warning(
+        EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.ADLX_NOT_AVAILABLE]
+    )
+except Exception:
+    logger.warning(
+        EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.AMD_DRIVERS_NOT_AVAILABLE]
     )
 
 
@@ -61,12 +83,17 @@ class PerformanceMonitor:
             for level in self.levels
         }
 
-        self.gpu_handles = []
+        self.nvidia_gpu_handles = []
+        self.amd_gpu_handles = []
         self.gpu_memory = 0
         self.gpu_name = ""
         if PYNVML_AVAILABLE:
-            self._setup_gpu()
-        self.num_gpus = len(self.gpu_handles)
+            self._setup_nvidia_gpu()
+        if ADLX_AVAILABLE:
+            self._setup_amd_gpu()
+        self.num_gpus = len(self.nvidia_gpu_handles) + len(
+            self.amd_gpu_handles
+        )
 
         self.metrics = [
             "cpu",
@@ -84,23 +111,50 @@ class PerformanceMonitor:
             self.num_cpus, self.num_system_cpus, self.num_gpus
         )
 
-    def _setup_gpu(self):
+    def _setup_nvidia_gpu(self):
         try:
             ngpus = pynvml.nvmlDeviceGetCount()
-            self.gpu_handles = [
+            self.nvidia_gpu_handles = [
                 pynvml.nvmlDeviceGetHandleByIndex(i) for i in range(ngpus)
             ]
-            if self.gpu_handles:
-                handle = self.gpu_handles[0]
-                self.gpu_memory = round(
+            if self.nvidia_gpu_handles:
+                handle = self.nvidia_gpu_handles[0]
+                gpu_mem = round(
                     pynvml.nvmlDeviceGetMemoryInfo(handle).total / (1024**3), 2
                 )
+                if self.gpu_memory == 0:
+                    self.gpu_memory = gpu_mem
                 name = pynvml.nvmlDeviceGetName(handle)
-                self.gpu_name = (
-                    name.decode() if isinstance(name, bytes) else name
-                )
+                gpu_name = name.decode() if isinstance(name, bytes) else name
+                if not self.gpu_name:
+                    self.gpu_name = gpu_name
+                else:
+                    self.gpu_name += f", {gpu_name}"
         except Exception:
-            self.gpu_handles = []
+            self.nvidia_gpu_handles = []
+
+    def _setup_amd_gpu(self):
+        try:
+            gpus_list = adlx_system.GetGPUs()
+            num_amd_gpus = gpus_list.Size()
+            self.amd_gpu_handles = [
+                gpus_list.At(i) for i in range(num_amd_gpus)
+            ]
+            if self.amd_gpu_handles:
+                gpu = self.amd_gpu_handles[0]
+                # Get memory info
+                gpu_mem_info = gpu.TotalVRAM()
+                gpu_mem = round(gpu_mem_info / (1024**3), 2)
+                if self.gpu_memory == 0:
+                    self.gpu_memory = gpu_mem
+                # Get GPU name
+                gpu_name = gpu.Name()
+                if not self.gpu_name:
+                    self.gpu_name = gpu_name
+                else:
+                    self.gpu_name += f", {gpu_name}"
+        except Exception:
+            self.amd_gpu_handles = []
 
     def _get_process_pids(self):
         """Get current process PID and all its children PIDs"""
@@ -146,7 +200,7 @@ class PerformanceMonitor:
                     proc, lambda p: self._filter_process(p, level), False
                 )
             ]
-        elif mode == "gpu":
+        elif mode == "nvidia_gpu":
             all_procs = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
             filtered = [
                 p
@@ -257,13 +311,35 @@ class PerformanceMonitor:
         return totals
 
     def _collect_gpu(self, level="process"):
-        if not PYNVML_AVAILABLE or not self.gpu_handles:
+        if not (PYNVML_AVAILABLE or ADLX_AVAILABLE) or self.num_gpus == 0:
             return [], [], []
 
         self._validate_level(level)
         gpu_util, gpu_band, gpu_mem = [], [], []
 
-        for handle in self.gpu_handles:
+        # Collect NVIDIA GPU metrics
+        if PYNVML_AVAILABLE and self.nvidia_gpu_handles:
+            nvidia_util, nvidia_band, nvidia_mem = self._collect_nvidia_gpu(
+                level
+            )
+            gpu_util.extend(nvidia_util)
+            gpu_band.extend(nvidia_band)
+            gpu_mem.extend(nvidia_mem)
+
+        # Collect AMD GPU metrics
+        if ADLX_AVAILABLE and self.amd_gpu_handles:
+            amd_util, amd_band, amd_mem = self._collect_amd_gpu(level)
+            gpu_util.extend(amd_util)
+            gpu_band.extend(amd_band)
+            gpu_mem.extend(amd_mem)
+
+        return gpu_util, gpu_band, gpu_mem
+
+    def _collect_nvidia_gpu(self, level="process"):
+        """Collect NVIDIA GPU metrics"""
+        gpu_util, gpu_band, gpu_mem = [], [], []
+
+        for handle in self.nvidia_gpu_handles:
             util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
 
             if level == "system":
@@ -285,10 +361,12 @@ class PerformanceMonitor:
                 gpu_mem.append(process_mem)
             else:  # user or slurm
                 filtered_gpu_processes, all_processes = (
-                    self._get_filtered_processes(level, "gpu", handle)
+                    self._get_filtered_processes(level, "nvidia_gpu", handle)
                 )
                 filtered_mem = sum(
-                    p.usedGpuMemory for p in filtered_gpu_processes if p.usedGpuMemory
+                    p.usedGpuMemory
+                    for p in filtered_gpu_processes
+                    if p.usedGpuMemory
                 ) / (1024**3)
                 filtered_util = (
                     (
@@ -302,6 +380,55 @@ class PerformanceMonitor:
                 gpu_util.append(filtered_util)
                 gpu_band.append(0.0)
                 gpu_mem.append(filtered_mem)
+
+        return gpu_util, gpu_band, gpu_mem
+
+    def _collect_amd_gpu(self, level="process"):
+        """Collect AMD GPU metrics"""
+        gpu_util, gpu_band, gpu_mem = [], [], []
+
+        for gpu_handle in self.amd_gpu_handles:
+            try:
+                # Get performance metrics interface
+                perf_monitoring = (
+                    adlx_system.GetPerformanceMonitoringServices()
+                )
+
+                # Get current metrics
+                current_metrics = perf_monitoring.GetCurrentPerformanceMetrics(
+                    gpu_handle
+                )
+
+                # Get GPU utilization
+                util = current_metrics.GPUUsage()
+
+                # Get memory info
+                mem_info = current_metrics.GPUVRAMUsage()
+
+                if level == "system":
+                    gpu_util.append(util)
+                    gpu_band.append(
+                        0.0
+                    )  # AMD ADLX doesn't provide memory bandwidth easily
+                    # Convert VRAM usage from MB to GB
+                    gpu_mem.append(mem_info / 1024.0)
+                elif level == "process":
+                    # AMD ADLX doesn't provide per-process metrics easily
+                    # For now, we'll report 0 for process-level
+                    gpu_util.append(0.0)
+                    gpu_band.append(0.0)
+                    gpu_mem.append(0.0)
+                else:  # user or slurm
+                    # AMD ADLX doesn't provide per-user metrics easily
+                    # For now, we'll report 0 for user/slurm level
+                    gpu_util.append(0.0)
+                    gpu_band.append(0.0)
+                    gpu_mem.append(0.0)
+            except Exception:
+                # If we can't get metrics, append zeros
+                gpu_util.append(0.0)
+                gpu_band.append(0.0)
+                gpu_mem.append(0.0)
 
         return gpu_util, gpu_band, gpu_mem
 

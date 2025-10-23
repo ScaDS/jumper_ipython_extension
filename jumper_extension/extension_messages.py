@@ -8,6 +8,8 @@ MESSAGE_PREFIX = "[JUmPER]"
 class ExtensionErrorCode(Enum):
     PYNVML_NOT_AVAILABLE = auto()
     NVIDIA_DRIVERS_NOT_AVAILABLE = auto()
+    ADLX_NOT_AVAILABLE = auto()
+    AMD_DRIVERS_NOT_AVAILABLE = auto()
     NO_PERFORMANCE_DATA = auto()
     INVALID_CELL_RANGE = auto()
     INVALID_INTERVAL_VALUE = auto()
@@ -35,7 +37,13 @@ _BASE_EXTENSION_ERROR_MESSAGES = {
         "Pynvml not available. GPU monitoring disabled."
     ),
     ExtensionErrorCode.NVIDIA_DRIVERS_NOT_AVAILABLE: (
-        "NVIDIA drivers not available. GPU monitoring disabled."
+        "NVIDIA drivers not available. NVIDIA GPU monitoring disabled."
+    ),
+    ExtensionErrorCode.ADLX_NOT_AVAILABLE: (
+        "ADLXPybind not available. AMD GPU monitoring disabled."
+    ),
+    ExtensionErrorCode.AMD_DRIVERS_NOT_AVAILABLE: (
+        "AMD drivers not available. AMD GPU monitoring disabled."
     ),
     ExtensionErrorCode.NO_PERFORMANCE_DATA: (
         "No performance data available or recorded cells are too short"

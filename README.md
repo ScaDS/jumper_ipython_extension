@@ -43,6 +43,20 @@ or install it from source:
 pip install .
 ```
 
+**Optional GPU Support:**
+
+For NVIDIA GPU monitoring:
+```bash
+pip install pynvml
+```
+
+For AMD GPU monitoring:
+```bash
+pip install ADLXPybind
+```
+
+Both GPU libraries can be installed simultaneously to monitor mixed GPU systems.
+
 ## Quick Start
 
 ### Load the Extension
@@ -172,7 +186,11 @@ The extension supports four different levels of metric collection, each providin
 | `gpu_mem` | GPU memory usage in GB across GPUs |
 | `io_write_mb` | Total data written in MB |
 
-*Note: GPU metrics require NVIDIA GPUs with pynvml library. Memory limits are automatically detected from SLURM cgroups when available.*
+*Note: GPU metrics support both NVIDIA GPUs (via pynvml library) and AMD GPUs (via ADLXPybind library). Both GPU types can be monitored simultaneously. Memory limits are automatically detected from SLURM cgroups when available.*
+
+**GPU Support Details:**
+- **NVIDIA GPUs**: Full support for all monitoring levels (process, user, system, slurm) including per-process GPU memory tracking
+- **AMD GPUs**: System-level monitoring supported; per-process and per-user metrics are limited by AMD ADLX API capabilities
 
 ## Available Commands
 
