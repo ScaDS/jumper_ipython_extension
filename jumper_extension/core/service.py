@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Union, List, Dict
 
 import pandas as pd
 
+from jumper_extension.adapters.script_writer import NotebookScriptWriter
 from jumper_extension.core.parsers import (
     parse_cell_range,
     parse_arguments,
@@ -43,6 +44,7 @@ class PerfmonitorService:
         visualizer: PerformanceVisualizerProtocol,
         reporter: PerformanceReporter,
         cell_history: CellHistory,
+        script_writer: NotebookScriptWriter,
         parsers: ArgParsers
     ):
         self.settings = settings
@@ -50,7 +52,7 @@ class PerfmonitorService:
         self.visualizer = visualizer
         self.reporter = reporter
         self.cell_history = cell_history
-        self.script_writer = None
+        self.script_writer = script_writer
         self._skip_report = False
         self.parsers = parsers
 
@@ -59,7 +61,7 @@ class PerfmonitorService:
         self._skip_report = should_skip_report
 
     def on_post_run_cell(self, result):
-        self.cell_history.end_cell(result.result)
+        self.cell_history.end_cell(result)
         if (
                 not self._skip_report
                 and self.monitor.running
@@ -410,6 +412,7 @@ def build_perfmonitor_service(
         display_disabled=display_disabled,
         display_disabled_reason=display_disabled_reason,
     )
+    script_writer = NotebookScriptWriter(cell_history)
     parsers = ArgParsers(
         perfreport=build_perfreport_parser(),
         auto_perfreports=build_auto_perfreports_parser(),
@@ -422,5 +425,6 @@ def build_perfmonitor_service(
         visualizer,
         reporter,
         cell_history,
+        script_writer,
         parsers,
     )
