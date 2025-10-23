@@ -34,7 +34,7 @@ class PerfmonitorMagics(Magics):
         )
 
     def post_run_cell(self, result):
-        self.service.on_post_run_cell(result)
+        self.service.on_post_run_cell(result.result)
 
     @line_magic
     def perfmonitor_resources(self, line):
