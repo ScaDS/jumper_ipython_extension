@@ -8,7 +8,7 @@ from jumper_extension.utilities import get_available_levels
 
 
 @dataclass
-class Parsers:
+class ArgParsers:
     """Configuration for command-line argument parsers."""
     perfreport: argparse.ArgumentParser
     auto_perfreports: argparse.ArgumentParser

@@ -13,148 +13,23 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from jumper_extension.utilities import filter_perfdata
 from .analyzer import PerformanceAnalyzer, PerformanceTag, TagScore
-
+from .cell_history import CellHistory
 
 logger = logging.getLogger("extension")
 
-class PerformanceReporter:
-    def __init__(self, cell_history, templates_dir=None):
-        self.monitor = UnavailablePerformanceMonitor(
-            reason="Monitor has not been started yet."
-        )
-        self.cell_history = cell_history
-        self.min_duration = None
-        self.analyzer = PerformanceAnalyzer()
 
-        self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent.parent / "templates"
-
-    def attach(
+class ReportBuilder:
+    """Base class for report builders"""
+    def __init__(
         self,
         monitor: PerformanceMonitorProtocol,
+        cell_history: CellHistory,
+        analyzer: PerformanceAnalyzer,
     ):
-        """Attach started PerformanceMonitor"""
         self.monitor = monitor
-        self.min_duration = self.monitor.interval
-
-    def print(self, cell_range=None, level="process"):
-        """Print performance report"""
-
-        data = self._prepare_report_data(cell_range, level)
-        if data is None:
-            return
-
-        filtered_cells = data['filtered_cells']
-        perfdata = data['perfdata']
-        tags_model = data['tags_model']
-        total_duration = data['total_duration']
-
-        print("-" * 40)
-        print("JUmPER Performance Report")
-        print("-" * 40)
-        n_cells = len(filtered_cells)
-        print(
-            f"Duration: {total_duration:.2f}s "
-            f"({n_cells} cell{'s' if n_cells != 1 else ''})"
-        )
-        print("-" * 40)
-
-        # Output performance tags
-        tags_display = self._format_performance_tags(tags_model)
-        if tags_display:
-            print("Signature(s):")
-            tags_line = " | ".join(tag["name"] for tag in tags_display)
-            print(tags_line)
-
-            print("-" * 40)
-
-        # Report table
-        metrics = [
-            (
-                f"CPU Util (Across {self.monitor.num_cpus} CPUs)",
-                "cpu_util_avg",
-                "-",
-            ),
-            (
-                "Memory (GB)",
-                "memory",
-                f"{self.monitor.memory_limits[level]:.2f}",
-            ),
-            (
-                f"GPU Util (Across {self.monitor.num_gpus} GPUs)",
-                "gpu_util_avg",
-                "-",
-            ),
-            (
-                "GPU Memory (GB)",
-                "gpu_mem_avg",
-                f"{self.monitor.gpu_memory:.2f}",
-            ),
-        ]
-
-        print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")
-        print("-" * 65)
-        for name, col, total in metrics:
-            if col in perfdata.columns:
-                print(
-                    f"{name:<25} {perfdata[col].mean():<8.2f} "
-                    f"{perfdata[col].min():<8.2f} {perfdata[col].max():<8.2f} "
-                    f"{total:<8}"
-                )
-
-    def display(self, cell_range=None, level="process"):
-        """Print performance report"""
-
-        data = self._prepare_report_data(cell_range, level)
-        if data is None:
-            return
-
-        filtered_cells = data['filtered_cells']
-        perfdata = data['perfdata']
-        tags_model = data['tags_model']
-        total_duration = data['total_duration']
-
-        tags_display = self._format_performance_tags(tags_model)
-
-        # Build report
-        metrics_spec = [
-            (f"CPU Util (Across {self.monitor.num_cpus} CPUs)", "cpu_util_avg", "-"),
-            ("Memory (GB)", "memory", f"{self.monitor.memory_limits[level]:.2f}" if hasattr(self.monitor, "memory_limits") else "-"),
-            (f"GPU Util (Across {getattr(self.monitor, 'num_gpus', 0)} GPUs)", "gpu_util_avg", "-"),
-            ("GPU Memory (GB)", "gpu_mem_avg", f"{getattr(self.monitor, 'gpu_memory', 0.0):.2f}"),
-        ]
-        metrics_rows = []
-        for name, col, total in metrics_spec:
-            if col in perfdata.columns:
-                metrics_rows.append({
-                    "name": name,
-                    "avg": float(perfdata[col].mean()),
-                    "min": float(perfdata[col].min()),
-                    "max": float(perfdata[col].max()),
-                    "total": total,
-                })
-
-        # Render Jinja2 HTML from external files
-        env = Environment(
-            loader=FileSystemLoader(str(self.templates_dir)),
-            autoescape=select_autoescape(["html", "xml"])
-        )
-        report_html_path = Path("report") / "report.html"
-        template = env.get_template(report_html_path.as_posix())
-        # Read external stylesheet and inline it for notebook rendering
-        try:
-            styles_path = self.templates_dir / "report" / "styles.css"
-            inline_styles = styles_path.read_text(encoding="utf-8") if styles_path.exists() else ""
-        except Exception:
-            inline_styles = ""
-
-        html = template.render(
-            duration=total_duration,
-            n_cells=len(filtered_cells) if filtered_cells is not None else 1,
-            metrics=metrics_rows,
-            tags=tags_display,
-            inline_styles=inline_styles,
-        )
-        display(HTML(html))
+        self.cell_history = cell_history
+        self.min_duration = None
+        self.analyzer = analyzer
 
     def _prepare_report_data(self, cell_range, level):
         """Prepare all necessary data for performance reporting.
@@ -270,3 +145,205 @@ class PerformanceReporter:
                 "slug": tag_slug,
             })
         return tag_displays
+
+
+class ReportPrinter(ReportBuilder):
+    def __init__(
+        self,
+        monitor: PerformanceMonitorProtocol,
+        cell_history: CellHistory,
+        analyzer: PerformanceAnalyzer,
+    ):
+        super().__init__(monitor, cell_history, analyzer)
+
+    def print(self, cell_range=None, level="process"):
+        """Print performance report"""
+        data = self._prepare_report_data(cell_range, level)
+        if data is None:
+            return
+
+        filtered_cells = data['filtered_cells']
+        perfdata = data['perfdata']
+        tags_model = data['tags_model']
+        total_duration = data['total_duration']
+
+        print("-" * 40)
+        print("JUmPER Performance Report")
+        print("-" * 40)
+        n_cells = len(filtered_cells)
+        print(
+            f"Duration: {total_duration:.2f}s "
+            f"({n_cells} cell{'s' if n_cells != 1 else ''})"
+        )
+        print("-" * 40)
+
+        # Output performance tags
+        tags_display = self._format_performance_tags(tags_model)
+        if tags_display:
+            print("Signature(s):")
+            tags_line = " | ".join(tag["name"] for tag in tags_display)
+            print(tags_line)
+
+            print("-" * 40)
+
+        # Report table
+        metrics = [
+            (
+                f"CPU Util (Across {self.monitor.num_cpus} CPUs)",
+                "cpu_util_avg",
+                "-",
+            ),
+            (
+                "Memory (GB)",
+                "memory",
+                f"{self.monitor.memory_limits[level]:.2f}",
+            ),
+            (
+                f"GPU Util (Across {self.monitor.num_gpus} GPUs)",
+                "gpu_util_avg",
+                "-",
+            ),
+            (
+                "GPU Memory (GB)",
+                "gpu_mem_avg",
+                f"{self.monitor.gpu_memory:.2f}",
+            ),
+        ]
+
+        print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")
+        print("-" * 65)
+        for name, col, total in metrics:
+            if col in perfdata.columns:
+                print(
+                    f"{name:<25} {perfdata[col].mean():<8.2f} "
+                    f"{perfdata[col].min():<8.2f} {perfdata[col].max():<8.2f} "
+                    f"{total:<8}"
+                )
+
+class ReportDisplayer(ReportBuilder):
+    def __init__(
+        self,
+        monitor: PerformanceMonitorProtocol,
+        cell_history: CellHistory,
+        analyzer: PerformanceAnalyzer,
+        templates_dir=None
+    ):
+        super().__init__(monitor, cell_history, analyzer)
+        self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent.parent / "templates"
+
+    def display(self, cell_range=None, level="process"):
+        """Print performance report"""
+
+        data = self._prepare_report_data(cell_range, level)
+        if data is None:
+            return
+
+        filtered_cells = data['filtered_cells']
+        perfdata = data['perfdata']
+        tags_model = data['tags_model']
+        total_duration = data['total_duration']
+
+        tags_display = self._format_performance_tags(tags_model)
+
+        # Build report
+        metrics_spec = [
+            (f"CPU Util (Across {self.monitor.num_cpus} CPUs)", "cpu_util_avg", "-"),
+            ("Memory (GB)", "memory", f"{self.monitor.memory_limits[level]:.2f}" if hasattr(self.monitor, "memory_limits") else "-"),
+            (f"GPU Util (Across {getattr(self.monitor, 'num_gpus', 0)} GPUs)", "gpu_util_avg", "-"),
+            ("GPU Memory (GB)", "gpu_mem_avg", f"{getattr(self.monitor, 'gpu_memory', 0.0):.2f}"),
+        ]
+        metrics_rows = []
+        for name, col, total in metrics_spec:
+            if col in perfdata.columns:
+                metrics_rows.append({
+                    "name": name,
+                    "avg": float(perfdata[col].mean()),
+                    "min": float(perfdata[col].min()),
+                    "max": float(perfdata[col].max()),
+                    "total": total,
+                })
+
+        # Render Jinja2 HTML from external files
+        env = Environment(
+            loader=FileSystemLoader(str(self.templates_dir)),
+            autoescape=select_autoescape(["html", "xml"])
+        )
+        report_html_path = Path("report") / "report.html"
+        template = env.get_template(report_html_path.as_posix())
+        # Read external stylesheet and inline it for notebook rendering
+        try:
+            styles_path = self.templates_dir / "report" / "styles.css"
+            inline_styles = styles_path.read_text(encoding="utf-8") if styles_path.exists() else ""
+        except Exception:
+            inline_styles = ""
+
+        html = template.render(
+            duration=total_duration,
+            n_cells=len(filtered_cells) if filtered_cells is not None else 1,
+            metrics=metrics_rows,
+            tags=tags_display,
+            inline_styles=inline_styles,
+        )
+        display(HTML(html))
+
+
+class NullReportDisplayer:
+    def display(self, cell_range=None, level="process"):
+        """non-opt display"""
+        raise RuntimeError("Display method not available.")
+
+
+class PerformanceReporter:
+    """Adapter class for performance reporting"""
+    def __init__(self, printer, displayer):
+        self.printer = printer
+        self.displayer = displayer
+
+    def attach(
+        self,
+        monitor: PerformanceMonitorProtocol,
+    ):
+        """Attach started PerformanceMonitor"""
+        # Attach to printer
+        self.printer.monitor = monitor
+        self.printer.min_duration = monitor.interval
+        # Attach to displayer
+        self.displayer.monitor = monitor
+        self.displayer.min_duration = monitor.interval
+
+    def print(self, cell_range=None, level="process"):
+        """Print performance report"""
+        self.printer.print(cell_range, level)
+
+    def display(self, cell_range=None, level="process"):
+        """Display performance report"""
+        self.displayer.display(cell_range, level)
+
+
+def build_performance_reporter(
+    cell_history: CellHistory,
+    display_on: bool = True,
+    templates_dir=None
+):
+    """
+    Build PerformanceReporter object.
+    Allows building a reporter without displaying.
+    """
+    monitor = UnavailablePerformanceMonitor(
+        reason="Monitor has not been started yet."
+    )
+    analyzer = PerformanceAnalyzer()
+    printer = ReportPrinter(monitor, cell_history, analyzer)
+    if display_on:
+        displayer = ReportDisplayer(
+            monitor,
+            cell_history,
+            analyzer,
+            templates_dir
+        )
+    else:
+        displayer = NullReportDisplayer()
+    return PerformanceReporter(printer, displayer)
+
+
+

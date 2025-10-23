@@ -4,9 +4,15 @@ from typing import Optional, Tuple, Union, List, Dict
 
 import pandas as pd
 
-from jumper_extension.core.parsers import parse_cell_range, parse_arguments, build_perfreport_parser, \
-    build_auto_perfreports_parser, build_export_perfdata_parser, build_export_cell_history_parser, Parsers
-
+from jumper_extension.core.parsers import (
+    parse_cell_range,
+    parse_arguments,
+    build_perfreport_parser,
+    build_auto_perfreports_parser,
+    build_export_perfdata_parser,
+    build_export_cell_history_parser,
+    ArgParsers,
+)
 from jumper_extension.core.state import UserSettings
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -16,7 +22,7 @@ from jumper_extension.core.messages import (
 )
 from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, PerformanceMonitor
 from jumper_extension.adapters.visualizer import PerformanceVisualizer
-from jumper_extension.adapters.reporter import PerformanceReporter
+from jumper_extension.adapters.reporter import PerformanceReporter, build_performance_reporter
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.utilities import get_available_levels
 
@@ -36,7 +42,7 @@ class PerfmonitorService:
         visualizer: PerformanceVisualizer,
         reporter: PerformanceReporter,
         cell_history: CellHistory,
-        parsers: Parsers
+        parsers: ArgParsers
     ):
         self.settings = settings
         self.monitor = monitor
@@ -46,7 +52,6 @@ class PerfmonitorService:
         self.script_writer = None
         self._skip_report = False
         self.parsers = parsers
-
 
     def on_pre_run_cell(self, raw_cell: str, cell_magics: List[str], should_skip_report: bool):
         self.cell_history.start_cell(raw_cell, cell_magics)
@@ -378,7 +383,6 @@ class PerfmonitorService:
         self.script_writer = None
         print(f"Script saved to: {output_path}")
 
-
     def close(self):
         """Close the service and release any resources."""
         if self.monitor:
@@ -391,8 +395,8 @@ def build_perfmonitor_service():
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
     visualizer = PerformanceVisualizer(cell_history)
-    reporter = PerformanceReporter(cell_history)
-    parsers = Parsers(
+    reporter = build_performance_reporter(cell_history)
+    parsers = ArgParsers(
         perfreport=build_perfreport_parser(),
         auto_perfreports=build_auto_perfreports_parser(),
         export_perfdata=build_export_perfdata_parser(),

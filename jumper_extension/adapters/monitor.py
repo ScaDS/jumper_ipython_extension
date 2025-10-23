@@ -67,7 +67,7 @@ class PerformanceMonitorProtocol(Protocol):
     # required readable attributes
     interval: float
     data: "PerformanceData"
-    start_time: float | None
+    start_time: Optional[float]
     num_cpus: int
     num_system_cpus: int
     num_gpus: int
@@ -550,7 +550,7 @@ class MonitorUnavailableError(RuntimeError):
 
 class UnavailablePerformanceMonitor:
     """
-    A stub that type-checks against PerformanceMonitorProto but fails at runtime.
+    A stub that type-checks against PerformanceMonitor Protocol but fails at runtime.
 
     - Declares all required attributes for structural typing.
     - Any attribute access or method call raises MonitorUnavailableError,
@@ -566,6 +566,8 @@ class UnavailablePerformanceMonitor:
     num_gpus: int
     gpu_memory: float
     memory_limits: dict
+    cpu_handles: list[int]
+    gpu_name: str
     running: bool
 
     def start(self, interval: float = 1.0) -> None: ...
@@ -583,6 +585,9 @@ class UnavailablePerformanceMonitor:
             "__dict__", "__annotations__"
         }:
             return object.__getattribute__(self, name)
+
+        if name == "running":
+            return False
 
         reason = object.__getattribute__(self, "_reason")
         raise MonitorUnavailableError(f"Access to '{name}' is not allowed: {reason}")
