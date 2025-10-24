@@ -22,6 +22,8 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 # Table of Content
 
 * [Installation](#installation)
+* [Configuration](#configuration)
+	+ [Environment Variables](#environment-variables)
 * [Quick Start](#quick-start)
 	+ [Load the Extension](#load-the-extension)
 	+ [Basic Usage](#basic-usage)
@@ -56,6 +58,14 @@ pip install ADLXPybind
 ```
 
 Both GPU libraries can be installed simultaneously to monitor mixed GPU systems.
+
+## Configuration
+
+### Environment Variables
+
+- **`JUMPER_LOG_DIR`**: Directory where JUmPER stores log files (info.log, debug.log, error.log)
+  - Default: User's home directory
+  - Example: `export JUMPER_LOG_DIR=/path/to/logs`
 
 ## Quick Start
 
