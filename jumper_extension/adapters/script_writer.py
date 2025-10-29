@@ -4,6 +4,7 @@ from textwrap import dedent
 from typing import Optional, List
 from datetime import datetime
 
+from jumper_extension.core.state import Settings
 from jumper_extension.adapters.cell_history import CellHistory
 
 logger = logging.getLogger("extension")
@@ -24,16 +25,19 @@ class NotebookScriptWriter:
         self._recording = False
         self._start_time = None
         self._start_cell_index: Optional[int] = None
+        self._settings_state = Settings()
         # names of magics that start/stop script writing (to exclude their cells)
         self._control_magics = {"start_write_script", "end_write_script"}
 
-    def start_recording(self, output_path: Optional[str] = None):
+    def start_recording(self, settings_state: Settings, output_path: Optional[str] = None):
         """
         Start recording code from cells.
 
         Args:
+            settings_state: Current extension settings
             output_path: Path to the output file (overrides value from __init__)
         """
+        self._settings_state = settings_state
         if output_path:
             self.output_path = output_path
         else:
@@ -64,39 +68,24 @@ class NotebookScriptWriter:
 
         # collect cells recorded since start, excluding start/end control magic cells
         try:
-            df = self.cell_history.view()
+            history = self.cell_history.view()
         except Exception as e:
             logger.error(f"[NotebookScriptWriter]: Failed to access CellHistory: {e}")
             return None
 
-        if df is None or df.empty:
+        if history is None or history.empty:
             logger.warning("[NotebookScriptWriter]: No cells in CellHistory")
             return None
 
-        # Select cells with index >= start and exclude cells that contain control magics
-        def is_control_cell(cell_magics):
-            if cell_magics is None:
-                return False
-            try:
-                for m in cell_magics:
-                    # m may be like "%perfmonitor_start ..." or "perfmonitor_start ..."
-                    name = m.lstrip("%")
-                    name = name.split(maxsplit=1)[0]
-                    if name in self._control_magics:
-                        return True
-            except Exception:
-                pass
-            return False
-
         selected = []
-        for _, row in df.iterrows():
+        for _, row in history.iterrows():
             try:
                 idx = int(row.get("cell_index"))
             except Exception:
                 continue
             if self._start_cell_index is not None and idx < self._start_cell_index:
                 continue
-            if is_control_cell(row.get("cell_magics")):
+            if self._is_control_cell(row.get("cell_magics")):
                 continue
             selected.append(
                 {
@@ -133,9 +122,20 @@ class NotebookScriptWriter:
             self._recording = False
             self._start_cell_index = None
 
-    # compatibility with service.end_write_script that calls script_writer.stop()
-    def stop(self) -> Optional[str]:
-        return self.stop_recording()
+    def _is_control_cell(self, cell_magics):
+        """Select cells with index >= start and exclude cells that contain control magics"""
+        if cell_magics is None:
+            return False
+        try:
+            for m in cell_magics:
+                # m may be like "%perfmonitor_start ..." or "perfmonitor_start ..."
+                name = m.lstrip("%")
+                name = name.split(maxsplit=1)[0]
+                if name in self._control_magics:
+                    return True
+        except Exception:
+            pass
+        return False
 
     def _write_to_file(self, recorded_cells: List[dict]):
         """
@@ -162,13 +162,15 @@ class NotebookScriptWriter:
                     display_disabled=True,
                     display_disabled_reason="Display disabled in generated script."
                 )
-
+                
+                {self._restore_perfmonitor()}
             """)
             f.write(header)
 
             # Write code from each recorded cell
             for cell in recorded_cells:
                 f.write(f"# Cell {cell['index']}\n")
+                f.write(f"print('Cell {cell['index']}')\n")
                 ts = cell['timestamp']
                 f.write(f"# Recorded at: {ts.strftime('%H:%M:%S') if isinstance(ts, datetime) else ts}\n")
                 raw_cell = cell.get("raw_cell", "")
@@ -193,6 +195,28 @@ class NotebookScriptWriter:
                 f.write("service.on_post_run_cell('')\n")
                 f.write("\n")
 
+    def _restore_perfmonitor(self) -> str:
+        if self._settings_state.monitoring.running:
+            settings = self._settings_state
+
+            # Determine interval to restore
+            interval = settings.monitoring.user_interval
+            if not interval:
+                interval = settings.monitoring.default_interval
+
+            # If auto-reports were enabled, a single enable call will both start monitoring
+            # (if needed) and configure reports consistently with original settings.
+            if settings.perfreports.enabled:
+                level = settings.perfreports.level
+                args = f"--level {level} --interval {interval}"
+                if settings.perfreports.text:
+                    args += " --text"
+                return f"service.perfmonitor_enable_perfreports({args!r})\n"
+
+            # Otherwise just restore monitor start with the same interval
+            return f"service.perfmonitor_start({str(interval)!r})\n"
+
+        return ""
 
     def _transform_cell_code(self, raw_cell: str, cell_magics: List[str]) -> str:
         """
