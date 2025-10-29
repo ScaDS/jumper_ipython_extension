@@ -527,8 +527,10 @@ class PerformanceMonitor:
             )
         )
 
+
 class MonitorUnavailableError(RuntimeError):
     """This monitor is a stub and cannot be used."""
+
 
 class UnavailablePerformanceMonitor:
     """
