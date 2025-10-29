@@ -234,7 +234,7 @@ class PerformanceMonitor:
                 proc = psutil.Process(proc)
             result = proc_func(proc)
             return result if result is not None else default
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
             return default
         except TypeError:
             # in test case, where psutil is a mock
