@@ -14,7 +14,7 @@ from jumper_extension.core.parsers import (
     build_export_cell_history_parser,
     ArgParsers,
 )
-from jumper_extension.core.state import UserSettings
+from jumper_extension.core.state import Settings
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -39,7 +39,7 @@ class PerfmonitorService:
     """
     def __init__(
         self,
-        settings: UserSettings,
+        settings: Settings,
         monitor: PerformanceMonitorProtocol,
         visualizer: PerformanceVisualizerProtocol,
         reporter: PerformanceReporter,
@@ -76,7 +76,7 @@ class PerfmonitorService:
                     cell_range=None, level=self.settings.perfreports.level
                     )
 
-    def perfmonitor_resources(self):
+    def perfmonitor_resources(self, line: str):
         """Display available hardware resources (CPUs, memory, GPUs)"""
         if not self.monitor.running:
             logger.warning(
@@ -97,16 +97,16 @@ class PerfmonitorService:
         if self.monitor.num_gpus:
             print(f"    {self.monitor.gpu_name}, {self.monitor.gpu_memory} GB")
 
-    def cell_history(self):
+    def cell_history(self, line: str):
         """Show interactive table of all executed cells with timestamps and
         durations"""
         self.cell_history.show_itable()
 
-    def perfmonitor_start(self, line):
+    def perfmonitor_start(self, line: str):
         """Start performance monitoring with specified interval
         (default: 1 second)"""
         error_code = self._setup_performance_monitoring(line)
-        self._handle_setup_error_messages(error_code, line)
+        self._handle_setup_monitor_errors(error_code, line)
 
     def _setup_performance_monitoring(self, interval: Union[float, str]) -> Union[None, ExtensionErrorCode]:
         if self.monitor.running:
@@ -115,19 +115,19 @@ class PerfmonitorService:
         if interval:
             try:
                 interval_number = float(interval)
-                self.settings.user_interval = interval_number
+                self.settings.monitoring.user_interval = interval
             except ValueError:
                 return ExtensionErrorCode.INVALID_INTERVAL_VALUE
         else:
-            interval_number = self.settings.default_interval
+            interval_number = self.settings.monitoring.default_interval
 
         self.monitor.start(interval_number)
+        self.settings.monitoring.running = self.monitor.running
         self.visualizer.attach(self.monitor)
         self.reporter.attach(self.monitor)
         return None
 
-    @staticmethod
-    def _handle_setup_error_messages(error_code: ExtensionErrorCode, interval: Union[float, str] = None):
+    def _handle_setup_monitor_errors(self, error_code: ExtensionErrorCode, interval: Union[float, str] = None):
         if error_code == ExtensionErrorCode.MONITOR_ALREADY_RUNNING:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
@@ -141,7 +141,7 @@ class PerfmonitorService:
                 ].format(interval=interval)
             )
 
-    def perfmonitor_stop(self):
+    def perfmonitor_stop(self, line: str):
         """Stop the active performance monitoring session"""
         if not self.monitor:
             logger.warning(
@@ -149,6 +149,7 @@ class PerfmonitorService:
             )
             return
         self.monitor.stop()
+        self.settings.monitoring.running = False
 
     def _parse_cell_range(self, cell_str, cell_history) -> Optional[Tuple[int, int]]:
         """Parse a cell range string into start and end indices.
@@ -169,7 +170,7 @@ class PerfmonitorService:
             )
         return result
 
-    def perfmonitor_plot(self):
+    def perfmonitor_plot(self, line: str):
         """Open interactive plot with widgets for exploring performance data"""
         if not self.monitor.running:
             logger.warning(
@@ -178,14 +179,13 @@ class PerfmonitorService:
             return
         self.visualizer.plot()
 
-    def perfmonitor_enable_perfreports(self, line):
+    def perfmonitor_enable_perfreports(self, line: str):
         """Enable automatic performance reports after each cell execution"""
-        self.settings.perfreports.enabled = True
-
         args = parse_arguments(self.parsers.auto_perfreports, line)
         if args is None:
             return
 
+        self.settings.perfreports.enabled = True
         self.settings.perfreports.level = args.level
         self.settings.perfreports.text = args.text
         interval = args.interval
@@ -195,7 +195,7 @@ class PerfmonitorService:
                            f" interval: {interval}, format: {format_message}")
 
         error_code = self._setup_performance_monitoring(interval)
-        self._handle_setup_error_messages(error_code, interval)
+        self._handle_setup_monitor_errors(error_code, interval)
 
         logger.info(
             EXTENSION_INFO_MESSAGES[
@@ -205,7 +205,7 @@ class PerfmonitorService:
             )
         )
 
-    def perfmonitor_disable_perfreports(self):
+    def perfmonitor_disable_perfreports(self, line: str):
         """Disable automatic performance reports after cell execution"""
         self.settings.perfreports.enabled = False
         logger.info(
@@ -270,7 +270,7 @@ class PerfmonitorService:
             )
             return {var_name: df}
 
-    def perfmonitor_export_cell_history(self, line):
+    def perfmonitor_export_cell_history(self, line: str):
         """Export cell history or push as DataFrame
 
         Usage:
@@ -291,7 +291,7 @@ class PerfmonitorService:
             )
             return {var_name: df}
 
-    def perfmonitor_fast_setup(self):
+    def perfmonitor_fast_setup(self, line: str):
         """Quick setup: start perfmonitor, and enable perfreports"""
         # 2. Start performance monitor with default interval (1 second)
         self.perfmonitor_start("1.0")
@@ -301,7 +301,7 @@ class PerfmonitorService:
 
         print("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
 
-    def perfmonitor_help(self):
+    def perfmonitor_help(self, line: str):
         """Show comprehensive help information for all available commands"""
         commands = [
             "perfmonitor_fast_setup -- quick setup: enable ipympl plots, start monitor, enable reports",
@@ -364,7 +364,7 @@ class PerfmonitorService:
           %start_write_script my_script.py
         """
         output_path = line.strip() if line else None
-        self.script_writer.start_recording(output_path)
+        self.script_writer.start_recording(self.settings.snapshot(), output_path)
 
         if output_path:
             print(f"[JUmPER]: Started script recording to '{output_path}'")
@@ -382,7 +382,7 @@ class PerfmonitorService:
             print("No script recording in progress. Use %start_write_script first.")
             return
 
-        output_path = self.script_writer.stop()
+        output_path = self.script_writer.stop_recording()
         self.script_writer = None
         print(f"Script saved to: {output_path}")
 
@@ -399,7 +399,7 @@ def build_perfmonitor_service(
         display_disabled_reason: str = "Display not available."
 ):
     """Build a new instance of the perfmonitor service."""
-    settings = UserSettings()
+    settings = Settings()
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
     visualizer = build_performance_visualizer(

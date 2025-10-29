@@ -1,8 +1,7 @@
 # Python
-from dataclasses import dataclass, field, asdict
-from enum import Enum
-from threading import RLock
-from typing import Any, Optional, Tuple, Dict
+import copy
+from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -19,8 +18,18 @@ class PerfomanceReports:
 
 
 @dataclass
-class UserSettings:
-    perfreports: PerfomanceReports = field(default_factory=PerfomanceReports)
+class PerformanceMonitoring:
     default_interval: float = 1.0
     user_interval: Optional[float] = None
+    running: bool = False
+
+
+@dataclass
+class Settings:
+    perfreports: PerfomanceReports = field(default_factory=PerfomanceReports)
+    monitoring: PerformanceMonitoring = field(default_factory=PerformanceMonitoring)
     export_vars: ExportVars = field(default_factory=ExportVars)
+
+    def snapshot(self) -> "Settings":
+        return copy.deepcopy(self)
+
