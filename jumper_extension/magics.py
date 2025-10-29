@@ -39,13 +39,13 @@ class PerfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_resources(self, line):
         """Display available hardware resources (CPUs, memory, GPUs)"""
-        self.service.perfmonitor_resources()
+        self.service.perfmonitor_resources(line)
 
     @line_magic
     def cell_history(self, line):
         """Show interactive table of all executed cells with timestamps and
         durations"""
-        self.service.cell_history()
+        self.service.cell_history(line)
 
     @line_magic
     def perfmonitor_start(self, line):
@@ -56,12 +56,12 @@ class PerfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_stop(self, line):
         """Stop the active performance monitoring session"""
-        self.service.perfmonitor_stop()
+        self.service.perfmonitor_stop(line)
 
     @line_magic
     def perfmonitor_plot(self, line):
         """Open interactive plot with widgets for exploring performance data"""
-        self.service.perfmonitor_plot()
+        self.service.perfmonitor_plot(line)
 
     @line_magic
     def perfmonitor_enable_perfreports(self, line):
@@ -72,7 +72,7 @@ class PerfmonitorMagics(Magics):
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
         """Disable automatic performance reports after cell execution"""
-        self.service.perfmonitor_disable_perfreports()
+        self.service.perfmonitor_disable_perfreports(line)
 
     @line_magic
     def perfmonitor_perfreport(self, line):
@@ -113,12 +113,17 @@ class PerfmonitorMagics(Magics):
             print("[JUmPER]: Enabled ipympl interactive plots")
         except Exception as e:
             logger.warning(f"Failed to enable ipympl interactive plots: {e}")
-        self.service.perfmonitor_fast_setup()
+        self.service.perfmonitor_fast_setup(line)
+
+    @line_magic
+    def cell_history(self, line):
+        """Show interactive table of all executed cells with timestamps"""
+        self.service.cell_history(line)
 
     @line_magic
     def perfmonitor_help(self, line):
         """Show comprehensive help information for all available commands"""
-        self.service.perfmonitor_help()
+        self.service.perfmonitor_help(line)
 
     @line_magic
     def start_write_script(self, line):
