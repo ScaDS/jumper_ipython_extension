@@ -69,8 +69,18 @@ class PerformanceMonitor:
         self.start_time = None
         self.monitor_thread = None
         self.process = psutil.Process()
-        self.cpu_handles = self.process.cpu_affinity()
-        self.num_cpus = len(self.cpu_handles)
+        """
+        on MacOS cpu_affinity is not implemented in psutil 
+        (raises AttributeError)
+        set the num_cpus to the number of cpus in the system
+        same for cpu_affinity
+        """
+        try:
+            self.cpu_handles = self.process.cpu_affinity()
+            self.num_cpus = len(self.cpu_handles)
+        except AttributeError:
+            self.cpu_handles = []
+            self.num_cpus = len(psutil.cpu_percent(percpu=True))
         self.num_system_cpus = len(psutil.cpu_percent(percpu=True))
         self.pid = os.getpid()
         self.uid = os.getuid()
