@@ -85,7 +85,17 @@ class ReportBuilder:
         }
 
     def _resolve_cell_range(self, cell_range) -> Union[Tuple[int, int], None]:
-        """Resolve cell range for performance reporting."""
+        """
+        Resolve cell range for performance reporting.
+
+        Behavior:
+        - If cell_range is None, selects the last cell whose duration is not "short"
+         and returns it as a singleton range (idx, idx).
+        - Returns None if:
+          - no active monitor is attached,
+          - the history has no cells,
+          - there is no cell with a non-short duration.
+        """
 
         if not self.monitor:
             logger.warning(
