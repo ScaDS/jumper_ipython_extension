@@ -52,7 +52,7 @@ class NotebookScriptWriter:
         self._start_cell_index = len(self.cell_history)
 
         logger.info(
-            f"[NotebookScriptWriter]: Started recording to file '{self.output_path}'"
+            f"[JUmPER]: Started recording to file '{self.output_path}'"
         )
 
     def stop_recording(self) -> Optional[str]:
@@ -63,18 +63,18 @@ class NotebookScriptWriter:
             Path to the created file or None on error
         """
         if not self._recording:
-            logger.warning("[NotebookScriptWriter]: Recording was not started")
+            logger.warning("[JUmPER]: Recording was not started")
             return None
 
         # collect cells recorded since start, excluding start/end control magic cells
         try:
             history = self.cell_history.view()
         except Exception as e:
-            logger.error(f"[NotebookScriptWriter]: Failed to access CellHistory: {e}")
+            logger.error(f"[JUmPER]: Failed to access CellHistory: {e}")
             return None
 
         if history is None or history.empty:
-            logger.warning("[NotebookScriptWriter]: No cells in CellHistory")
+            logger.warning("[JUmPER]: No cells in CellHistory")
             return None
 
         selected = []
@@ -99,7 +99,7 @@ class NotebookScriptWriter:
             )
 
         if not selected:
-            logger.warning("[NotebookScriptWriter]: No recorded cells to save")
+            logger.warning("[JUmPER]: No recorded cells to save")
             # reset state
             self._recording = False
             self._start_cell_index = None
@@ -108,13 +108,13 @@ class NotebookScriptWriter:
         try:
             self._write_to_file(selected)
             logger.info(
-                f"[NotebookScriptWriter]: Recorded {len(selected)} cells "
+                f"[JUmPER]: Recorded {len(selected)} cells "
                 f"to file '{self.output_path}'"
             )
             return self.output_path
         except Exception as e:
             logger.error(
-                f"[NotebookScriptWriter]: Error writing file: {e}"
+                f"[JUmPER]: Error writing file: {e}"
             )
             return None
         finally:
