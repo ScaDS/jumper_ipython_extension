@@ -3,17 +3,18 @@ import os
 import threading
 import time
 import unittest.mock
+from typing import Protocol, Optional, runtime_checkable
 
 import psutil
 
-from .data import PerformanceData
-from .extension_messages import (
+from jumper_extension.core.data import PerformanceData
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
-from .utilities import (
+from jumper_extension.utilities import (
     get_available_levels,
     is_slurm_available,
     detect_memory_limit,
@@ -61,12 +62,32 @@ except Exception:
         EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.AMD_DRIVERS_NOT_AVAILABLE]
     )
 
+@runtime_checkable
+class PerformanceMonitorProtocol(Protocol):
+    # required readable attributes
+    interval: float
+    data: "PerformanceData"
+    start_time: Optional[float]
+    num_cpus: int
+    num_system_cpus: int
+    num_gpus: int
+    gpu_memory: float
+    memory_limits: dict
+    cpu_handles: list[int]
+    gpu_name: str
+
+    # required control & lifecycle
+    running: bool
+    def start(self, interval: float = 1.0) -> None: ...
+    def stop(self) -> None: ...
+
 
 class PerformanceMonitor:
-    def __init__(self, interval=1.0):
-        self.interval = interval
+    def __init__(self):
+        self.interval = 1.0
         self.running = False
         self.start_time = None
+        self.stop_time = None
         self.monitor_thread = None
         self.process = psutil.Process()
         """
@@ -473,7 +494,7 @@ class PerformanceMonitor:
             else:
                 time.sleep(self.interval - time_measurement)
 
-    def start(self):
+    def start(self, interval: float = 1.0):
         if self.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
@@ -481,6 +502,7 @@ class PerformanceMonitor:
                 ]
             )
             return
+        self.interval = interval
         self.start_time = time.perf_counter()
         self.running = True
         self.monitor_thread = threading.Thread(
@@ -498,8 +520,67 @@ class PerformanceMonitor:
         self.running = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2.0)
+        self.stop_time = time.perf_counter()
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STOPPED].format(
-                seconds=time.perf_counter() - self.start_time
+                seconds=self.stop_time - self.start_time
             )
         )
+
+
+class MonitorUnavailableError(RuntimeError):
+    """This monitor is a stub and cannot be used."""
+
+
+class UnavailablePerformanceMonitor:
+    """
+    A stub that type-checks against PerformanceMonitor Protocol but fails at runtime.
+
+    - Declares all required attributes for structural typing.
+    - Any attribute access or method call raises MonitorUnavailableError,
+      except 'running', which is always readable and returns False.
+    """
+
+    # --- Protocol surface ---
+    interval: float
+    data: "PerformanceData"
+    start_time: Optional[float]
+    num_cpus: int
+    num_system_cpus: int
+    num_gpus: int
+    gpu_memory: float
+    memory_limits: dict
+    cpu_handles: list[int]
+    gpu_name: str
+    running: bool
+
+    def start(self, interval: float = 1.0) -> None: ...
+    def stop(self) -> None: ...
+
+    # --- Runtime behavior ---
+    def __init__(self, reason: str = "Performance monitor is not available"):
+        object.__setattr__(self, "_reason", reason)
+
+    def __getattribute__(self, name: str):
+        # allow a few safe attributes + running
+        if name in {
+            "_reason", "__class__", "__repr__", "__str__",
+            "__init__", "__getattribute__", "__setattr__",
+            "__dict__", "__annotations__"
+        }:
+            return object.__getattribute__(self, name)
+
+        if name == "running":
+            return False
+
+        reason = object.__getattribute__(self, "_reason")
+        raise MonitorUnavailableError(f"Access to '{name}' is not allowed: {reason}")
+
+    def __setattr__(self, name: str, value):
+        if name in {"_reason", "__dict__", "__annotations__"}:
+            return object.__setattr__(self, name, value)
+        reason = object.__getattribute__(self, "_reason")
+        raise MonitorUnavailableError(f"Setting '{name}' is not allowed: {reason}")
+
+    def __repr__(self) -> str:
+        return f"<UnavailablePerformanceMonitor: {self._reason}>"

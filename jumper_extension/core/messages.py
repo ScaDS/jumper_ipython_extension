@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-from .logging_config import LOGGING
+from jumper_extension.logging_config import LOGGING
 
 MESSAGE_PREFIX = "[JUmPER]"
 
@@ -30,7 +30,9 @@ class ExtensionInfoCode(Enum):
     MONITOR_STARTED = auto()
     MONITOR_STOPPED = auto()
     EXPORT_SUCCESS = auto()
-
+    PERFORMANCE_DATA_AVAILABLE = auto()
+    HTML_REPORTS_NOT_AVAILABLE = auto()
+    PLOTS_NOT_AVAILABLE = auto()
 
 _BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.PYNVML_NOT_AVAILABLE: (
@@ -97,6 +99,15 @@ _BASE_EXTENSION_INFO_MESSAGES = {
         "Performance monitoring stopped (ran for {seconds:.2f} seconds)"
     ),
     ExtensionInfoCode.EXPORT_SUCCESS: ("Exported to {filename}"),
+    ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE: (
+        "Performance data DataFrame available as '{var_name}'"
+    ),
+    ExtensionInfoCode.HTML_REPORTS_NOT_AVAILABLE: (
+        "HTML reports are not available: {reason}"
+    ),
+    ExtensionInfoCode.PLOTS_NOT_AVAILABLE: (
+        "Plots are not available: {reason}"
+    ),
 }
 
 
