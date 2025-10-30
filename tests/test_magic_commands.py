@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from jumper_extension.magics import (
+from jumper_extension.ipython.magics import (
     load_ipython_extension,
     perfmonitorMagics,
     unload_ipython_extension,
@@ -214,14 +214,14 @@ def test_extension_lifecycle(ipython, mock_cpu_only):
         load_ipython_extension(ipython)
 
     # Test unload with monitor
-    from jumper_extension.magics import _perfmonitor_magics
+    from jumper_extension.ipython.magics import _perfmonitor_magics
 
     _perfmonitor_magics.perfmonitor_start("")
     with patch.object(ipython.events, "unregister"):
         unload_ipython_extension(ipython)
 
     # Test unload without magics
-    from jumper_extension import magics
+    from jumper_extension.ipython import magics
 
     magics._perfmonitor_magics = None
     unload_ipython_extension(ipython)
