@@ -169,17 +169,23 @@ class NotebookScriptWriter:
             # Write code from each recorded cell
             for cell in recorded_cells:
                 f.write(f"# Cell {cell['index']}\n")
-                f.write(f"print('Cell {cell['index']}')\n")
                 ts = cell['timestamp']
                 f.write(f"# Recorded at: {ts.strftime('%H:%M:%S') if isinstance(ts, datetime) else ts}\n")
                 raw_cell = cell.get("raw_cell", "")
+                f.write("# --- Cell print ---\n")
+                f.write(f"raw_cell = {raw_cell!r}\n")
+                f.write(f"print('-' * 40)\n")
+                f.write(f"print('Cell {cell['index']}')\n")
+                f.write(f"print('-' * 40)\n")
+                f.write(f"print(raw_cell)\n")
+                f.write("print('-' * 13 + ' Cell output ' + '-' * 14)\n")
                 cell_magics = cell.get("cell_magics") or []
                 # compute should_skip_report: True if cell contains only line magics (non-empty lines start with '%')
                 non_empty_lines = [ln for ln in raw_cell.splitlines() if ln.strip()]
                 is_pure_magic = bool(non_empty_lines) and all(ln.lstrip().startswith("%") for ln in non_empty_lines)
                 f.write(
                     "service.on_pre_run_cell("
-                    f"{raw_cell!r}, "
+                    f"raw_cell, "
                     f"{cell_magics!r}, "
                     f"{is_pure_magic!r}"
                     ")\n"
