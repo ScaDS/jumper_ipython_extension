@@ -34,7 +34,7 @@ class NotebookScriptWriter:
         Start recording code from cells.
 
         Args:
-            settings_state: Current extension settings
+            settings_state: Extension settings at the time of recording started
             output_path: Path to the output file (overrides value from __init__)
         """
         self._settings_state = settings_state
@@ -136,7 +136,6 @@ class NotebookScriptWriter:
         except Exception:
             pass
         return False
-
     def _write_to_file(self, recorded_cells: List[dict]):
         """
         Write accumulated cells to Python file.
@@ -194,6 +193,19 @@ class NotebookScriptWriter:
                 f.write("# --- Cell End -------\n")
                 f.write("service.on_post_run_cell('')\n")
                 f.write("\n")
+            base_name = output_path.stem
+            perf_csv = f"{base_name}_perfdata.csv"
+            cell_csv = f"{base_name}_cell_history.csv"
+            footer = dedent(
+                f"""\
+                # --- Export results to CSV ---
+                # Performance data by level (default level from settings)
+                service.perfmonitor_export_perfdata("--file {perf_csv}")
+                # Cell execution history
+                service.perfmonitor_export_cell_history("--file {cell_csv}")
+                """
+            )
+            f.write(footer)
 
     def _restore_perfmonitor(self) -> str:
         if self._settings_state.monitoring.running:
