@@ -1,20 +1,12 @@
 import logging
 
-
 from IPython.core.magic import Magics, line_magic, magics_class
 
-from jumper_extension.core.messages import (
-    ExtensionErrorCode,
-    ExtensionInfoCode,
-    EXTENSION_ERROR_MESSAGES,
-    EXTENSION_INFO_MESSAGES,
-)
-from jumper_extension.utilities import is_pure_line_magic_cell, get_called_line_magics
-from jumper_extension.core.service import PerfmonitorService, build_perfmonitor_service
+from jumper_extension.ipython.utilities import is_pure_line_magic_cell, get_called_line_magics
+from jumper_extension.core.service import PerfmonitorService
+
 
 logger = logging.getLogger("extension")
-
-_perfmonitor_magics = None
 
 
 @magics_class
@@ -40,12 +32,6 @@ class PerfmonitorMagics(Magics):
     def perfmonitor_resources(self, line):
         """Display available hardware resources (CPUs, memory, GPUs)"""
         self.service.perfmonitor_resources(line)
-
-    @line_magic
-    def cell_history(self, line):
-        """Show interactive table of all executed cells with timestamps and
-        durations"""
-        self.service.cell_history(line)
 
     @line_magic
     def perfmonitor_start(self, line):
@@ -148,26 +134,3 @@ class PerfmonitorMagics(Magics):
           %end_write_script
         """
         self.service.end_write_script(line)
-
-
-def load_ipython_extension(ipython):
-    global _perfmonitor_magics
-    service = build_perfmonitor_service()
-    _perfmonitor_magics = PerfmonitorMagics(ipython, service)
-    ipython.events.register("pre_run_cell", _perfmonitor_magics.pre_run_cell)
-    ipython.events.register("post_run_cell", _perfmonitor_magics.post_run_cell)
-    ipython.register_magics(_perfmonitor_magics)
-    logger.info(EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXTENSION_LOADED])
-
-
-def unload_ipython_extension(ipython):
-    global _perfmonitor_magics
-    if _perfmonitor_magics:
-        ipython.events.unregister(
-            "pre_run_cell", _perfmonitor_magics.pre_run_cell
-        )
-        ipython.events.unregister(
-            "post_run_cell", _perfmonitor_magics.post_run_cell
-        )
-        _perfmonitor_magics.service.close()
-        _perfmonitor_magics = None
