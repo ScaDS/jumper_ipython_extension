@@ -1,3 +1,8 @@
+"""JUmPER IPython/Jupyter extension package.
+
+Provides instrumentation, monitoring, magics, and reporting utilities
+for interactive Python sessions.
+"""
 import logging.config
 
 from .logging_config import LOGGING
