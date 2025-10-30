@@ -97,9 +97,8 @@ class PerfmonitorService:
         if self.monitor.num_gpus:
             print(f"    {self.monitor.gpu_name}, {self.monitor.gpu_memory} GB")
 
-    def cell_history(self, line: str):
-        """Show interactive table of all executed cells with timestamps and
-        durations"""
+    def cell_history_show(self, line: str):
+        """Show interactive table of all executed cells with timestamps and durations"""
         self.cell_history.show_itable()
 
     def perfmonitor_start(self, line: str):
@@ -307,7 +306,7 @@ class PerfmonitorService:
             "perfmonitor_fast_setup -- quick setup: enable ipympl plots, start monitor, enable reports",
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
-            "cell_history -- show interactive table of cell execution history",
+            "cell_history_show -- show interactive table of cell execution history",
             "perfmonitor_start [interval] -- start monitoring "
             "(default: 1 second)",
             "perfmonitor_stop -- stop monitoring",

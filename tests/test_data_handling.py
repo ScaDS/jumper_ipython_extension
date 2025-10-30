@@ -5,8 +5,8 @@ from unittest.mock import patch
 import pytest
 import pandas as pd
 
-from jumper_extension.cell_history import CellHistory
-from jumper_extension.data import PerformanceData
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.core.data import PerformanceData
 
 
 def test_performance_data(temp_dir):
@@ -138,14 +138,14 @@ def test_performance_data_multi_level():
 @pytest.fixture
 def simple_history():
     history = CellHistory()
-    history.start_cell("print('hello')")
+    history.start_cell("print('hello')", [])
     history.end_cell(None)
     return history
 
 
 def test_start_current_end_cell():
     history = CellHistory()
-    history.start_cell("print('hello')")
+    history.start_cell("print('hello')", [])
     assert history.current_cell["cell_index"] == 0
     history.end_cell(None)
     assert len(history.data) == 1
@@ -166,7 +166,7 @@ def test_view_method(simple_history, capsys, caplog):
 
 
 def test_show_itable(simple_history):
-    with patch("jumper_extension.cell_history.show") as mock_show:
+    with patch("jumper_extension.adapters.cell_history.show") as mock_show:
         simple_history.show_itable()
         assert mock_show.called, "Expected show() to be called"
 

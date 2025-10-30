@@ -102,9 +102,9 @@ class PerfmonitorMagics(Magics):
         self.service.perfmonitor_fast_setup(line)
 
     @line_magic
-    def cell_history(self, line):
+    def cell_history_show(self, line):
         """Show interactive table of all executed cells with timestamps"""
-        self.service.cell_history(line)
+        self.service.cell_history_show(line)
 
     @line_magic
     def perfmonitor_help(self, line):
