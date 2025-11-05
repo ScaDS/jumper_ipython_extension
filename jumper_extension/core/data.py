@@ -1,5 +1,7 @@
 import json
 import os
+from typing import Optional, Callable
+
 import pandas as pd
 import logging
 import logging.config
@@ -24,6 +26,15 @@ class PerformanceData:
         self.levels = get_available_levels()
         self.data = {
             level: self._initialize_dataframe(level) for level in self.levels
+        }
+        # File writers/readers mappings
+        self._file_writers = {
+            "json": self._write_json,
+            "csv": self._write_csv,
+        }
+        self._file_readers = {
+            "json": pd.read_json,
+            "csv": pd.read_csv,
         }
 
     def _validate_level(self, level):
@@ -71,7 +82,7 @@ class PerformanceData:
 
         return pd.DataFrame(columns=columns)
 
-    def _attach_cell_index(self, df, cell_history):
+    def _attach_cell_index(self, df, cell_history) -> pd.DataFrame:
         result = df.copy()
         result["cell_index"] = pd.NA
         times = result["time"].to_numpy()
@@ -79,6 +90,13 @@ class PerformanceData:
             mask = (times >= row.start_time) & (times <= row.end_time)
             result.loc[mask, "cell_index"] = row.cell_index
         return result
+
+    def _write_json(self, filename: str, df: pd.DataFrame) -> None:
+        with open(filename, "w") as f:
+            json.dump(df.to_dict("records"), f, indent=2)
+
+    def _write_csv(self, filename: str, df: pd.DataFrame) -> None:
+        df.to_csv(filename, index=False)
 
     def view(self, level="process", slice_=None, cell_history=None):
         """View data for a specific level with optional slicing."""
@@ -181,24 +199,73 @@ class PerformanceData:
             else self.data[level]
         )
 
-        if format == "json":
-            with open(filename, "w") as f:
-                json.dump(df_to_write.to_dict("records"), f, indent=2)
-        elif format == "csv":
-            df_to_write.to_csv(filename, index=False)
-        else:
+        writer = self._file_writers.get(format)
+        if writer is None:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT
+                    ExtensionErrorCode.UNSUPPORTED_FORMAT
                 ].format(
                     format=format,
                     supported_formats=", ".join(["json", "csv"]),
                 )
             )
             return
+        writer(filename, df_to_write)
 
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
                 filename=filename
             )
         )
+        
+    def import_(self, filename: str, level: Optional[str] = None):
+        """Import performance data from CSV or JSON into the internal store.
+
+        If level is not provided, it is inferred from a single-unique 'level' column
+        if present; otherwise defaults to 'process'.
+        """
+        _, ext = os.path.splitext(filename)
+        format = ext.lower().lstrip(".")
+
+        try:
+            reader = self._file_readers.get(format)
+            if reader is None:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.UNSUPPORTED_FORMAT
+                    ].format(
+                        format=format or "",
+                        supported_formats=", ".join(["json", "csv"]),
+                    )
+                )
+                return
+            df = reader(filename)
+        except Exception as e:
+            logger.warning(f"[JUmPER]: Failed to import performance data: {e}")
+            return
+
+        # Resolve level
+        if level is None and "level" in df.columns:
+            uniques = df["level"].dropna().unique()
+            if len(uniques) == 1:
+                level = uniques[0]
+        if level is None:
+            level = "process"
+
+        # Validate level
+        try:
+            self._validate_level(level)
+        except ValueError as e:
+            logger.warning(str(e))
+            return
+
+        # Align to known schema for the level
+        known_cols = list(self.data[level].columns)
+        df = df[[c for c in df.columns if c in known_cols]].copy()
+        for col in known_cols:
+            if col not in df.columns:
+                df[col] = pd.NA
+        df = df[known_cols].reset_index(drop=True)
+
+        self.data[level] = df
+        logger.info(f"[JUmPER]: Imported performance data into level '{level}' from {filename}")
