@@ -6,7 +6,7 @@ import pandas as pd
 import logging
 import logging.config
 
-from jumper_extension.utilities import get_available_levels
+from jumper_extension.utilities import get_available_levels, load_dataframe_from_file
 
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -24,6 +24,18 @@ class PerformanceData:
         self.num_system_cpus = num_system_cpus
         self.num_gpus = num_gpus
         self.levels = get_available_levels()
+        # Minimal required base columns for loaded performance data
+        self._base_columns = [
+            "time",
+            "memory",
+            "io_read_count",
+            "io_write_count",
+            "io_read",
+            "io_write",
+            "cpu_util_avg",
+            "cpu_util_min",
+            "cpu_util_max",
+        ]
         self.data = {
             level: self._initialize_dataframe(level) for level in self.levels
         }
@@ -51,17 +63,7 @@ class PerformanceData:
             self.num_system_cpus if level == "system" else self.num_cpus
         )
 
-        columns = [
-            "time",
-            "memory",
-            "io_read_count",
-            "io_write_count",
-            "io_read",
-            "io_write",
-            "cpu_util_avg",
-            "cpu_util_min",
-            "cpu_util_max",
-        ] + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
+        columns = self._base_columns + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
 
         if self.num_gpus > 0:
             gpu_metrics = ["util", "band", "mem"]
@@ -218,54 +220,15 @@ class PerformanceData:
             )
         )
         
-    def import_(self, filename: str, level: Optional[str] = None):
-        """Import performance data from CSV or JSON into the internal store.
+    def load(self, filename: str) -> Optional[pd.DataFrame]:
+        """Load performance data from CSV or JSON file.
 
-        If level is not provided, it is inferred from a single-unique 'level' column
-        if present; otherwise defaults to 'process'.
+        Returns:
+            DataFrame if successful, None otherwise
         """
-        _, ext = os.path.splitext(filename)
-        format = ext.lower().lstrip(".")
-
-        try:
-            reader = self._file_readers.get(format)
-            if reader is None:
-                logger.warning(
-                    EXTENSION_ERROR_MESSAGES[
-                        ExtensionErrorCode.UNSUPPORTED_FORMAT
-                    ].format(
-                        format=format or "",
-                        supported_formats=", ".join(["json", "csv"]),
-                    )
-                )
-                return
-            df = reader(filename)
-        except Exception as e:
-            logger.warning(f"[JUmPER]: Failed to import performance data: {e}")
-            return
-
-        # Resolve level
-        if level is None and "level" in df.columns:
-            uniques = df["level"].dropna().unique()
-            if len(uniques) == 1:
-                level = uniques[0]
-        if level is None:
-            level = "process"
-
-        # Validate level
-        try:
-            self._validate_level(level)
-        except ValueError as e:
-            logger.warning(str(e))
-            return
-
-        # Align to known schema for the level
-        known_cols = list(self.data[level].columns)
-        df = df[[c for c in df.columns if c in known_cols]].copy()
-        for col in known_cols:
-            if col not in df.columns:
-                df[col] = pd.NA
-        df = df[known_cols].reset_index(drop=True)
-
-        self.data[level] = df
-        logger.info(f"[JUmPER]: Imported performance data into level '{level}' from {filename}")
+        return load_dataframe_from_file(
+            filename,
+            self._file_readers,
+            self._base_columns,
+            entity_name="performance data",
+        )

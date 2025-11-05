@@ -1,7 +1,16 @@
 import os
+import logging
+from typing import Optional, Dict, Callable, List
 
 import pandas as pd
 import psutil
+
+from jumper_extension.core.messages import (
+    ExtensionErrorCode,
+    EXTENSION_ERROR_MESSAGES,
+)
+
+logger = logging.getLogger("extension")
 
 
 def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
@@ -92,3 +101,55 @@ def detect_memory_limit(level, uid, slurm_job):
             pass
 
     return system_mem
+
+
+def load_dataframe_from_file(
+    filename: str,
+    readers: Dict[str, Callable],
+    required_columns: List[str],
+    entity_name: str = "data",
+) -> Optional[pd.DataFrame]:
+    """Load a DataFrame from CSV or JSON file with validation.
+
+    Args:
+        filename: Path to the file to load
+        readers: Dict mapping format (e.g., 'csv', 'json') to reader functions
+        required_columns: List of column names that must be present
+        entity_name: Human-readable name for logging (e.g., 'performance data')
+
+    Returns:
+        DataFrame if successful, None otherwise
+    """
+    if not filename:
+        return None
+
+    _, ext = os.path.splitext(filename)
+    file_format = ext.lower().lstrip(".")
+
+    try:
+        reader = readers.get(file_format)
+        if reader is None:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.UNSUPPORTED_FORMAT
+                ].format(
+                    format=file_format or "",
+                    supported_formats=", ".join(readers.keys()),
+                )
+            )
+            return None
+        df = reader(filename)
+    except Exception as e:
+        logger.warning(f"[JUmPER]: Failed to load {entity_name}: {e}")
+        return None
+
+    # Validate required columns
+    missing = [col for col in required_columns if col not in df.columns]
+    if missing:
+        logger.warning(
+            f"[JUmPER]: Cannot load {entity_name}. "
+            f"Missing required columns: {', '.join(missing)}"
+        )
+        return None
+
+    return df

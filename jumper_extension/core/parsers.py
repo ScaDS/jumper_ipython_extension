@@ -67,18 +67,14 @@ def build_export_cell_history_parser() -> argparse.ArgumentParser:
 
 def build_import_perfdata_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--file", type=str, required=True, help="Input filename (CSV or JSON)")
-    parser.add_argument(
-        "--level",
-        default=None,
-        choices=get_available_levels(),
-        help="Performance level for imported data (required if not encoded in file)",
-    )
+    # Positional filename, no --file or --level required
+    parser.add_argument("file", type=str, help="Input performance data filename")
     return parser
 
 def build_import_cell_history_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--file", type=str, required=True, help="Input filename (CSV or JSON)")
+    # Positional filename, no --file required
+    parser.add_argument("file", type=str, help="Input cell history filename")
     return parser
 
 def parse_arguments(parser: argparse.ArgumentParser, line: str) -> Optional[argparse.Namespace]:
