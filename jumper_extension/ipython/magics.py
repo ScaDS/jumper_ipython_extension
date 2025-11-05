@@ -91,6 +91,25 @@ class PerfmonitorMagics(Magics):
         self.shell.push(cell_history_data)
 
     @line_magic
+    def perfmonitor_import_perfdata(self, line):
+        """Import performance data
+
+        Usage:
+          %perfmonitor_import_perfdata --file <path>
+            # import from file
+        """
+        pass
+
+    @line_magic
+    def perfmonitor_import_cell_history(self, line):
+        """Import cell history or push as DataFrame
+
+        Usage:
+          %perfmonitor_import_cell_history --file <path>  # import from file
+        """
+        pass
+
+    @line_magic
     def perfmonitor_fast_setup(self, line):
         """Quick setup: enable ipympl interactive plots, start perfmonitor, and enable perfreports"""
         # Enable ipympl interactive plots
