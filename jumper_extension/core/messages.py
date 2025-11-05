@@ -16,7 +16,7 @@ class ExtensionErrorCode(Enum):
     INVALID_METRIC_SUBSET = auto()
     NO_ACTIVE_MONITOR = auto()
     MONITOR_ALREADY_RUNNING = auto()
-    UNSUPPORTED_EXPORT_FORMAT = auto()
+    UNSUPPORTED_FORMAT = auto()
     INVALID_LEVEL = auto()
     DEFINE_LEVEL = auto()
     NO_CELL_HISTORY = auto()
@@ -67,7 +67,7 @@ _BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.MONITOR_ALREADY_RUNNING: (
         "Performance monitoring already running"
     ),
-    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT: (
+    ExtensionErrorCode.UNSUPPORTED_FORMAT: (
         "Unsupported format: {format}. Supported formats: {supported_formats}"
     ),
     ExtensionErrorCode.INVALID_LEVEL: (

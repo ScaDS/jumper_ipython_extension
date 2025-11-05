@@ -98,7 +98,7 @@ class PerfmonitorMagics(Magics):
           %perfmonitor_import_perfdata --file <path>
             # import from file
         """
-        pass
+        self.service.perfmonitor_import_perfdata(line)
 
     @line_magic
     def perfmonitor_import_cell_history(self, line):
@@ -107,7 +107,7 @@ class PerfmonitorMagics(Magics):
         Usage:
           %perfmonitor_import_cell_history --file <path>  # import from file
         """
-        pass
+        self.service.perfmonitor_import_cell_history(line)
 
     @line_magic
     def perfmonitor_fast_setup(self, line):

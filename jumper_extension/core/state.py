@@ -1,4 +1,3 @@
-# Python
 import copy
 from dataclasses import dataclass, field
 from typing import Optional
