@@ -129,7 +129,7 @@ class CellHistory:
         else:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT
+                    ExtensionErrorCode.UNSUPPORTED_FORMAT
                 ].format(
                     format=format,
                     supported_formats=", ".join(["json", "csv"]),
