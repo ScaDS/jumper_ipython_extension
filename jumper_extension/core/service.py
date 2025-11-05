@@ -272,7 +272,7 @@ class PerfmonitorService:
             )
             return {var_name: df}
 
-    def perfmonitor_import_perfdata(self, line: str):
+    def perfmonitor_load_perfdata(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:
         """Import performance data from file
 
         Usage:
@@ -280,56 +280,18 @@ class PerfmonitorService:
         """
         args = parse_arguments(self.parsers.import_perfdata, line)
         if not args:
-            return
+            return {}
 
         filename = args.file
-        # Delegate import logic to data layer (mirrors export pattern)
-        self.monitor.data.import_(filename, level=args.level)
-
-    def perfmonitor_import_cell_history(self, line: str):
-        """Import cell history from file
-
-        Usage:
-          %perfmonitor_import_cell_history --file <path>
-        """
-        args = parse_arguments(self.parsers.import_cell_history, line)
-        if not args:
-            return
-
-        filename = args.file
-        import os
-        import pandas as pd
-        _, ext = os.path.splitext(filename)
-        format = ext.lower().lstrip(".")
-
-        try:
-            if format == "json":
-                df = pd.read_json(filename)
-            elif format == "csv":
-                df = pd.read_csv(filename)
-            else:
-                logger.warning(
-                    EXTENSION_ERROR_MESSAGES[
-                        ExtensionErrorCode.UNSUPPORTED_FORMAT
-                    ].format(
-                        format=format or "",
-                        supported_formats=", ".join(["json", "csv"]),
-                    )
-                )
-                return
-        except Exception as e:
-            logger.warning(f"[JUmPER]: Failed to import cell history: {e}")
-            return
-
-        # Align to expected cell history schema
-        required_cols = ["cell_index", "raw_cell", "start_time", "end_time", "duration"]
-        for c in required_cols:
-            if c not in df.columns:
-                df[c] = pd.NA
-        df = df[required_cols]
-
-        self.cell_history.data = df.reset_index(drop=True)
-        logger.info(f"[JUmPER]: Imported cell history from {filename}")
+        df = self.monitor.data.load(filename)
+        var_name = self.settings.loaded_vars.perfdata
+        if df is not None:
+            logger.info(
+                EXTENSION_INFO_MESSAGES[
+                    ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE
+                ].format(var_name=var_name)
+            )
+        return {var_name: df}
 
     def perfmonitor_export_cell_history(self, line: str):
         """Export cell history or push as DataFrame
@@ -346,11 +308,30 @@ class PerfmonitorService:
             return {}
         else:
             df = self.cell_history.view()
-            var_name = "cell_history_df"
-            print(
-                f"[JUmPER]: Cell history DataFrame available as '{var_name}'"
+            var_name = self.settings.export_vars.cell_history
+            logger.info(
+                f"[JUmPER]: Cell history data available as '{var_name}'"
             )
             return {var_name: df}
+
+    def perfmonitor_load_cell_history(self, line: str):
+        """Import cell history from file
+
+        Usage:
+          %perfmonitor_import_cell_history --file <path>
+        """
+        args = parse_arguments(self.parsers.import_cell_history, line)
+        if not args:
+            return
+
+        filename = args.file
+        df = self.cell_history.load(filename)
+        var_name = self.settings.loaded_vars.cell_history
+        if df is not None:
+            logger.info(
+                f"[JUmPER]: Cell history data available as '{var_name}'"
+            )
+        return {var_name: df}
 
     def perfmonitor_fast_setup(self, line: str):
         """Quick setup: start perfmonitor, and enable perfreports"""

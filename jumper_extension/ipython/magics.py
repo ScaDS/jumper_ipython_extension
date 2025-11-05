@@ -91,23 +91,25 @@ class PerfmonitorMagics(Magics):
         self.shell.push(cell_history_data)
 
     @line_magic
-    def perfmonitor_import_perfdata(self, line):
+    def perfmonitor_load_perfdata(self, line):
         """Import performance data
 
         Usage:
-          %perfmonitor_import_perfdata --file <path>
+          %perfmonitor_load_perfdata --file <path>
             # import from file
         """
-        self.service.perfmonitor_import_perfdata(line)
+        perfdata = self.service.perfmonitor_load_perfdata(line)
+        self.shell.push(perfdata)
 
     @line_magic
-    def perfmonitor_import_cell_history(self, line):
+    def perfmonitor_load_cell_history(self, line):
         """Import cell history or push as DataFrame
 
         Usage:
-          %perfmonitor_import_cell_history --file <path>  # import from file
+          %perfmonitor_load_cell_history --file <path>  # import from file
         """
-        self.service.perfmonitor_import_cell_history(line)
+        cell_history_data = self.service.perfmonitor_load_cell_history(line)
+        self.shell.push(cell_history_data)
 
     @line_magic
     def perfmonitor_fast_setup(self, line):

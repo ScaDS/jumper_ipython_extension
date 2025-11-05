@@ -243,3 +243,124 @@ def test_end_write_script_magic(ipython):
     with patch.object(magics.service, "end_write_script") as mock_end:
         magics.end_write_script("")
         mock_end.assert_called_once_with("")
+
+
+def test_load_perfdata_csv(ipython, tmp_path):
+    """Load perfdata from CSV and verify returned DataFrame."""
+    magics = PerfmonitorMagics(ipython, build_perfmonitor_service())
+
+    # Create a CSV with all required base columns
+    import os
+    df = pd.DataFrame([
+        {
+            "time": 1.23,
+            "memory": 4.56,
+            "io_read_count": 100,
+            "io_write_count": 200,
+            "io_read": 1024,
+            "io_write": 2048,
+            "cpu_util_avg": 12.0,
+            "cpu_util_min": 10.0,
+            "cpu_util_max": 15.0,
+        },
+        {
+            "time": 2.34,
+            "memory": 5.67,
+            "io_read_count": 150,
+            "io_write_count": 250,
+            "io_read": 1536,
+            "io_write": 3072,
+            "cpu_util_avg": 34.0,
+            "cpu_util_min": 30.0,
+            "cpu_util_max": 38.0,
+        },
+    ])
+    csv_path = os.path.join(tmp_path, "perfdata.csv")
+    df.to_csv(csv_path, index=False)
+
+    # Load without --file flag (positional argument)
+    magics.perfmonitor_load_perfdata(str(csv_path))
+
+    # Verify DataFrame was pushed to IPython namespace
+    loaded_var = magics.service.settings.loaded_vars.perfdata
+    assert loaded_var in ipython.user_ns
+    loaded_df = ipython.user_ns[loaded_var]
+    assert len(loaded_df) == 2
+    assert float(loaded_df.loc[0, "time"]) == 1.23
+    assert float(loaded_df.loc[0, "memory"]) == 4.56
+    assert float(loaded_df.loc[0, "cpu_util_avg"]) == 12.0
+
+
+def test_load_perfdata_json(ipython, tmp_path):
+    """Load perfdata from JSON and verify returned DataFrame."""
+    magics = PerfmonitorMagics(ipython, build_perfmonitor_service())
+
+    import json, os
+    rows = [
+        {
+            "time": 10.0,
+            "memory": 1.0,
+            "io_read_count": 50,
+            "io_write_count": 100,
+            "io_read": 512,
+            "io_write": 1024,
+            "cpu_util_avg": 5.0,
+            "cpu_util_min": 3.0,
+            "cpu_util_max": 7.0,
+        },
+        {
+            "time": 11.0,
+            "memory": 2.0,
+            "io_read_count": 75,
+            "io_write_count": 125,
+            "io_read": 768,
+            "io_write": 1536,
+            "cpu_util_avg": 15.0,
+            "cpu_util_min": 13.0,
+            "cpu_util_max": 17.0,
+        },
+    ]
+    json_path = os.path.join(tmp_path, "perfdata.json")
+    with open(json_path, "w") as f:
+        json.dump(rows, f)
+
+    # Load without --file flag (positional argument)
+    magics.perfmonitor_load_perfdata(str(json_path))
+
+    # Verify DataFrame was pushed to IPython namespace
+    loaded_var = magics.service.settings.loaded_vars.perfdata
+    assert loaded_var in ipython.user_ns
+    loaded_df = ipython.user_ns[loaded_var]
+    assert len(loaded_df) == 2
+    assert float(loaded_df.loc[1, "time"]) == 11.0
+    assert float(loaded_df.loc[1, "cpu_util_avg"]) == 15.0
+
+
+def test_load_cell_history_csv(ipython, tmp_path):
+    """Load cell history from CSV and verify returned DataFrame."""
+    magics = PerfmonitorMagics(ipython, build_perfmonitor_service())
+
+    import os
+    ch_df = pd.DataFrame([
+        {
+            "cell_index": 0,
+            "raw_cell": "print('hi')",
+            "start_time": 1.0,
+            "end_time": 2.0,
+            "duration": 1.0,
+        }
+    ])
+    csv_path = os.path.join(tmp_path, "cell_history.csv")
+    ch_df.to_csv(csv_path, index=False)
+
+    # Load without --file flag (positional argument)
+    magics.perfmonitor_load_cell_history(str(csv_path))
+
+    # Verify DataFrame was pushed to IPython namespace
+    loaded_var = magics.service.settings.loaded_vars.cell_history
+    assert loaded_var in ipython.user_ns
+    loaded_df = ipython.user_ns[loaded_var]
+    assert len(loaded_df) == 1
+    assert int(loaded_df.loc[0, "cell_index"]) == 0
+    assert loaded_df.loc[0, "raw_cell"] == "print('hi')"
+    assert float(loaded_df.loc[0, "duration"]) == 1.0

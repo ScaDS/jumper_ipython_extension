@@ -8,6 +8,11 @@ class ExportVars:
     perfdata: str = "perfdata_df"
     cell_history: str = "cell_history_df"
 
+@dataclass
+class LoadedVars:
+    perfdata: str = "loaded_perfdata_df"
+    cell_history: str = "loaded_cell_history_df"
+
 
 @dataclass
 class PerfomanceReports:
@@ -28,6 +33,7 @@ class Settings:
     perfreports: PerfomanceReports = field(default_factory=PerfomanceReports)
     monitoring: PerformanceMonitoring = field(default_factory=PerformanceMonitoring)
     export_vars: ExportVars = field(default_factory=ExportVars)
+    loaded_vars: LoadedVars = field(default_factory=LoadedVars)
 
     def snapshot(self) -> "Settings":
         return copy.deepcopy(self)
