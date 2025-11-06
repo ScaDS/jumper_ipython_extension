@@ -1,5 +1,6 @@
 import argparse
 import logging
+from contextlib import contextmanager
 from typing import Optional, Tuple, Union, List, Dict
 import os
 
@@ -427,6 +428,19 @@ class PerfmonitorService:
         output_path = self.script_writer.stop_recording()
         self.script_writer = None
         print(f"Script saved to: {output_path}")
+
+    @contextmanager
+    def monitored(self):
+        unavailable_message = "unavailable on monitored context"
+        self.on_pre_run_cell(
+            raw_cell=f"# <Code {unavailable_message}>",
+            cell_magics=[f"<Magics {unavailable_message}>"],
+            should_skip_report=False
+        )
+        try:
+            yield self
+        finally:
+            self.on_post_run_cell(None)
 
     def close(self):
         """Close the service and release any resources."""
