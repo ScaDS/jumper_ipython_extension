@@ -34,7 +34,13 @@ test = [
 ]
 
 [tool.setuptools]
-packages = ["jumper_extension", "jumper_extension.templates", "jumper_extension.templates.report"]
+packages = [
+    "jumper_extension",
+    "jumper_extension.core",
+    "jumper_extension.adapters",
+    "jumper_extension.templates",
+    "jumper_extension.templates.report",
+]
 
 [tool.setuptools.package-data]
 "jumper_extension.templates.report" = ["*.html", "*.css"]

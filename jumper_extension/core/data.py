@@ -1,12 +1,14 @@
 import json
 import os
+from typing import Optional, Callable
+
 import pandas as pd
 import logging
 import logging.config
 
-from .utilities import get_available_levels
+from jumper_extension.utilities import get_available_levels, load_dataframe_from_file
 
-from .extension_messages import (
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
@@ -22,8 +24,29 @@ class PerformanceData:
         self.num_system_cpus = num_system_cpus
         self.num_gpus = num_gpus
         self.levels = get_available_levels()
+        # Minimal required base columns for loaded performance data
+        self._base_columns = [
+            "time",
+            "memory",
+            "io_read_count",
+            "io_write_count",
+            "io_read",
+            "io_write",
+            "cpu_util_avg",
+            "cpu_util_min",
+            "cpu_util_max",
+        ]
         self.data = {
             level: self._initialize_dataframe(level) for level in self.levels
+        }
+        # File writers/readers mappings
+        self._file_writers = {
+            "json": self._write_json,
+            "csv": self._write_csv,
+        }
+        self._file_readers = {
+            "json": pd.read_json,
+            "csv": pd.read_csv,
         }
 
     def _validate_level(self, level):
@@ -40,17 +63,7 @@ class PerformanceData:
             self.num_system_cpus if level == "system" else self.num_cpus
         )
 
-        columns = [
-            "time",
-            "memory",
-            "io_read_count",
-            "io_write_count",
-            "io_read",
-            "io_write",
-            "cpu_util_avg",
-            "cpu_util_min",
-            "cpu_util_max",
-        ] + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
+        columns = self._base_columns + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
 
         if self.num_gpus > 0:
             gpu_metrics = ["util", "band", "mem"]
@@ -71,7 +84,7 @@ class PerformanceData:
 
         return pd.DataFrame(columns=columns)
 
-    def _attach_cell_index(self, df, cell_history):
+    def _attach_cell_index(self, df, cell_history) -> pd.DataFrame:
         result = df.copy()
         result["cell_index"] = pd.NA
         times = result["time"].to_numpy()
@@ -79,6 +92,13 @@ class PerformanceData:
             mask = (times >= row.start_time) & (times <= row.end_time)
             result.loc[mask, "cell_index"] = row.cell_index
         return result
+
+    def _write_json(self, filename: str, df: pd.DataFrame) -> None:
+        with open(filename, "w") as f:
+            json.dump(df.to_dict("records"), f, indent=2)
+
+    def _write_csv(self, filename: str, df: pd.DataFrame) -> None:
+        df.to_csv(filename, index=False)
 
     def view(self, level="process", slice_=None, cell_history=None):
         """View data for a specific level with optional slicing."""
@@ -181,24 +201,34 @@ class PerformanceData:
             else self.data[level]
         )
 
-        if format == "json":
-            with open(filename, "w") as f:
-                json.dump(df_to_write.to_dict("records"), f, indent=2)
-        elif format == "csv":
-            df_to_write.to_csv(filename, index=False)
-        else:
+        writer = self._file_writers.get(format)
+        if writer is None:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT
+                    ExtensionErrorCode.UNSUPPORTED_FORMAT
                 ].format(
                     format=format,
                     supported_formats=", ".join(["json", "csv"]),
                 )
             )
             return
+        writer(filename, df_to_write)
 
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
                 filename=filename
             )
+        )
+        
+    def load(self, filename: str) -> Optional[pd.DataFrame]:
+        """Load performance data from CSV or JSON file.
+
+        Returns:
+            DataFrame if successful, None otherwise
+        """
+        return load_dataframe_from_file(
+            filename,
+            self._file_readers,
+            self._base_columns,
+            entity_name="performance data",
         )

@@ -1,18 +1,21 @@
 import logging
 import pickle
 import re
-from typing import List
+from typing import List, runtime_checkable, Protocol
 
 import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
-from .extension_messages import (
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.adapters.monitor import PerformanceMonitor, UnavailablePerformanceMonitor, \
+    PerformanceMonitorProtocol
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
-    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_ERROR_MESSAGES, ExtensionInfoCode, EXTENSION_INFO_MESSAGES,
 )
-from .utilities import filter_perfdata, get_available_levels
-from .logo import logo_image, jumper_colors
+from jumper_extension.utilities import filter_perfdata, get_available_levels
+from jumper_extension.logo import logo_image, jumper_colors
 
 logger = logging.getLogger("extension")
 
@@ -25,6 +28,18 @@ def is_ipympl_backend():
     return ("ipympl" in backend) or ("widget" in backend)
 
 
+@runtime_checkable
+class PerformanceVisualizerProtocol(Protocol):
+    """Structural protocol for visualizers used by the service."""
+    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None: ...
+
+
 class PerformanceVisualizer:
     """Visualizes performance metrics collected by PerformanceMonitor.
 
@@ -32,11 +47,23 @@ class PerformanceVisualizer:
     'slurm' (if available)
     """
 
-    def __init__(self, monitor, cell_history, min_duration=None):
-        self.monitor = monitor
+    def __init__(self, cell_history: CellHistory):
+        self.monitor = UnavailablePerformanceMonitor(
+            reason="Monitor has not been started yet."
+        )
         self.cell_history = cell_history
         self.figsize = (5, 3)
-        self.min_duration = min_duration
+        self.min_duration = None
+        self._io_window = None
+        self.subsets = {}
+
+    def attach(
+        self,
+        monitor: PerformanceMonitorProtocol,
+    ):
+        """Attach started PerformanceMonitor."""
+        self.monitor = monitor
+        self.min_duration = self.monitor.interval
         # Smooth IO with ~1s rolling window based on sampling interval
         try:
             self._io_window = max(
@@ -44,7 +71,11 @@ class PerformanceVisualizer:
             )
         except Exception:
             self._io_window = 1
+        self._build_subsets()
 
+    def _build_subsets(self):
+        """Build a dictionary of metric subsets based on the provided
+        configuration"""
         # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
             "cpu_all": {
@@ -75,7 +106,7 @@ class PerformanceVisualizer:
                     "type": "multi_series",
                     "prefix": "gpu_mem_",
                     "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
             },
@@ -131,7 +162,7 @@ class PerformanceVisualizer:
                         "GPU Memory Usage (GB) - "
                         f"{self.monitor.num_gpus} GPUs"
                     ),
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory Summary",
                 },
             },
@@ -701,6 +732,30 @@ class PerformanceVisualizer:
         update_plots()
 
 
+class UnavailableVisualizer:
+    """
+    A stub that type-checks against PerformanceVisualizerProtocol but
+    only logs that visualization is unavailable.
+    """
+    def __init__(self, reason: str = "Plotting not available."):
+        self._reason = reason
+
+    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None:
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.PLOTS_NOT_AVAILABLE].format(
+                reason=self._reason
+            )
+        )
+
+
+
 class InteractivePlotWrapper:
     """Interactive plotter with dropdown selection and reusable matplotlib
     axes."""
@@ -853,3 +908,18 @@ class InteractivePlotWrapper:
         for panel in self.plot_panels:
             panel["output"].clear_output(wait=True)
             panel["update_plot"]()
+
+
+def build_performance_visualizer(
+    cell_history: CellHistory,
+    plots_disabled: bool = False,
+    plots_disabled_reason: str = "Plotting not available.",
+) -> PerformanceVisualizerProtocol:
+    """
+    Build PerformanceVisualizer object.
+    Allows building a visualizer that degrades to a no-op when plots are disabled.
+    """
+    if plots_disabled:
+        return UnavailableVisualizer(reason=plots_disabled_reason)
+    return PerformanceVisualizer(cell_history)
+
