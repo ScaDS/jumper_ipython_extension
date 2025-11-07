@@ -24,6 +24,7 @@ class ExtensionErrorCode(Enum):
 
 class ExtensionInfoCode(Enum):
     IMPRECISE_INTERVAL = auto()
+    MISSED_MEASUREMENTS = auto()
     PERFORMANCE_REPORTS_DISABLED = auto()
     EXTENSION_LOADED = auto()
     PERFORMANCE_REPORTS_ENABLED = auto()
@@ -82,6 +83,9 @@ _BASE_EXTENSION_INFO_MESSAGES = {
     ExtensionInfoCode.IMPRECISE_INTERVAL: (
         "Measurements might not meet the desired interval ({interval}s) "
         "due to performance constraints"
+    ),
+    ExtensionInfoCode.MISSED_MEASUREMENTS: (
+        "Missed measurements: ({perc_missed_measurements: .2f})"
     ),
     ExtensionInfoCode.PERFORMANCE_REPORTS_DISABLED: (
         "Performance reports for each celldisabled"

@@ -69,6 +69,8 @@ class PerformanceMonitor:
         self.start_time = None
         self.monitor_thread = None
         self.process = psutil.Process()
+        self.n_measurements = 0
+        self.n_missed_measurements = 0
         """
         on MacOS cpu_affinity is not implemented in psutil 
         (raises AttributeError)
@@ -350,7 +352,14 @@ class PerformanceMonitor:
         gpu_util, gpu_band, gpu_mem = [], [], []
 
         for handle in self.nvidia_gpu_handles:
-            util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
+            try:
+                util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
+            except pynvml.NVMLError:
+                # If permission denied or other error, use default values
+                class DefaultUtilRates:
+                    gpu = 0.0
+                    memory = 0.0
+                util_rates = DefaultUtilRates()
 
             if level == "system":
                 memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
@@ -463,13 +472,17 @@ class PerformanceMonitor:
             for level, data_tuple in zip(self.levels, metrics):
                 self.data.add_sample(level, *data_tuple)
             time_measurement = time.perf_counter() - time_start_measurement
+            self.n_measurements += 1
             if time_measurement > self.interval:
-                print(
+                """
+                logger.warning(
                     EXTENSION_INFO_MESSAGES[
                         ExtensionInfoCode.IMPRECISE_INTERVAL
                     ].format(interval=self.interval),
                     end="\r",
                 )
+                """
+                self.n_missed_measurements += 1
             else:
                 time.sleep(self.interval - time_measurement)
 
@@ -501,5 +514,10 @@ class PerformanceMonitor:
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STOPPED].format(
                 seconds=time.perf_counter() - self.start_time
+            )
+        )
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MISSED_MEASUREMENTS].format(
+                perc_missed_measurements=self.n_missed_measurements / self.n_measurements
             )
         )
