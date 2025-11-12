@@ -154,8 +154,8 @@ class NotebookScriptWriter:
                 Total cells: {len(recorded_cells)}
                 \"\"\"
 
-                from jumper_extension.core.service import build_perfmonitor_service
-                service = build_perfmonitor_service(
+                from jumper_extension.core.magic_adapter import build_perfmonitor_magic_adapter
+                magic_adapter = build_perfmonitor_magic_adapter(
                     plots_disabled=True,
                     plots_disabled_reason="Plotting disabled in generated script.",
                     display_disabled=True,
@@ -184,7 +184,7 @@ class NotebookScriptWriter:
                 non_empty_lines = [ln for ln in raw_cell.splitlines() if ln.strip()]
                 is_pure_magic = bool(non_empty_lines) and all(ln.lstrip().startswith("%") for ln in non_empty_lines)
                 f.write(
-                    "service.on_pre_run_cell("
+                    "magic_adapter.on_pre_run_cell("
                     f"raw_cell, "
                     f"{cell_magics!r}, "
                     f"{is_pure_magic!r}"
@@ -197,7 +197,7 @@ class NotebookScriptWriter:
                 )
                 f.write(f"{transformed}\n")
                 f.write("# --- Cell End -------\n")
-                f.write("service.on_post_run_cell('')\n")
+                f.write("magic_adapter.on_post_run_cell('')\n")
                 f.write("\n")
             base_name = output_path.stem
             perf_csv = f"{base_name}_perfdata.csv"
@@ -206,9 +206,9 @@ class NotebookScriptWriter:
                 f"""\
                 # --- Export results to CSV ---
                 # Performance data by level (default level from settings)
-                service.perfmonitor_export_perfdata("--file {perf_csv}")
+                magic_adapter.perfmonitor_export_perfdata("--file {perf_csv}")
                 # Cell execution history
-                service.perfmonitor_export_cell_history("--file {cell_csv}")
+                magic_adapter.perfmonitor_export_cell_history("--file {cell_csv}")
                 """
             )
             f.write(footer)
@@ -229,22 +229,22 @@ class NotebookScriptWriter:
                 args = f"--level {level} --interval {interval}"
                 if settings.perfreports.text:
                     args += " --text"
-                return f"service.perfmonitor_enable_perfreports({args!r})\n"
+                return f"magic_adapter.perfmonitor_enable_perfreports({args!r})\n"
 
             # Otherwise just restore monitor start with the same interval
-            return f"service.perfmonitor_start({str(interval)!r})\n"
+            return f"magic_adapter.perfmonitor_start({str(interval)!r})\n"
 
         return ""
 
     def _transform_cell_code(self, raw_cell: str, cell_magics: List[str]) -> str:
         """
-        Replace captured magic commands with service calls while keeping
+        Replace captured magic commands with magic_adapter calls while keeping
         the rest of the code intact.
         """
         if not raw_cell:
             return ""
 
-        # Build a lookup from magic line prefix to service call string
+        # Build a lookup from magic line prefix to magic_adapter call string
         # We rely on CellHistory.cell_magics entries having the original magic lines (e.g. "%perfmonitor_start 1.0")
         replacements = {}
         for magic in cell_magics:
@@ -253,13 +253,13 @@ class NotebookScriptWriter:
             parts = stripped_no_pct.split(maxsplit=1)
             cmd = parts[0]
             args = parts[1] if len(parts) > 1 else ""
-            # construct a Python call to the service method
+            # construct a Python call to the magic_adapter method
             # prefer passing the whole "line" string of arguments
             if args:
-                call = f"service.{cmd}({args!r})"
+                call = f"magic_adapter.{cmd}({args!r})"
             else:
                 # Methods generally accept a single 'line' argument; pass empty string for uniformity
-                call = f'service.{cmd}("")'
+                call = f'magic_adapter.{cmd}("")'
             # map original magic literal (with or without %) to replacement
             replacements[magic] = call
             # also allow matching without the leading '%', just in case

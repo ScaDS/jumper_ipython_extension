@@ -4,7 +4,7 @@ from jumper_extension.core.messages import (
     ExtensionInfoCode,
     EXTENSION_INFO_MESSAGES,
 )
-from jumper_extension.core.service import build_perfmonitor_service
+from jumper_extension.core.service import build_perfmonitor_magic_adapter
 from jumper_extension.ipython.magics import PerfmonitorMagics
 
 
@@ -14,8 +14,8 @@ _perfmonitor_magics = None
 
 def load_ipython_extension(ipython):
     global _perfmonitor_magics
-    service = build_perfmonitor_service()
-    _perfmonitor_magics = PerfmonitorMagics(ipython, service)
+    magic_adapter = build_perfmonitor_magic_adapter()
+    _perfmonitor_magics = PerfmonitorMagics(ipython, magic_adapter)
     ipython.events.register("pre_run_cell", _perfmonitor_magics.pre_run_cell)
     ipython.events.register("post_run_cell", _perfmonitor_magics.post_run_cell)
     ipython.register_magics(_perfmonitor_magics)
@@ -31,5 +31,5 @@ def unload_ipython_extension(ipython):
         ipython.events.unregister(
             "post_run_cell", _perfmonitor_magics.post_run_cell
         )
-        _perfmonitor_magics.service.close()
+        _perfmonitor_magics.magic_adapter.close()
         _perfmonitor_magics = None
