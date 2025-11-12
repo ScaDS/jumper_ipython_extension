@@ -3,7 +3,7 @@ import logging
 from IPython.core.magic import Magics, line_magic, magics_class
 
 from jumper_extension.ipython.utilities import is_pure_line_magic_cell, get_called_line_magics
-from jumper_extension.core.service import PerfmonitorService
+from jumper_extension.core.service import PerfmonitorMagicAdapter
 
 
 logger = logging.getLogger("extension")
@@ -11,60 +11,60 @@ logger = logging.getLogger("extension")
 
 @magics_class
 class PerfmonitorMagics(Magics):
-    def __init__(self, shell, service: PerfmonitorService):
+    def __init__(self, shell, magic_adapter: PerfmonitorMagicAdapter):
         super().__init__(shell)
-        self.service = service
+        self.magic_adapter = magic_adapter
 
     def pre_run_cell(self, info):
         raw_cell = info.raw_cell
         called_line_magics = get_called_line_magics(raw_cell)
         should_skip_report = is_pure_line_magic_cell(raw_cell)
-        self.service.on_pre_run_cell(
+        self.magic_adapter.on_pre_run_cell(
             raw_cell,
             called_line_magics,
             should_skip_report,
         )
 
     def post_run_cell(self, result):
-        self.service.on_post_run_cell(result.result)
+        self.magic_adapter.on_post_run_cell(result.result)
 
     @line_magic
     def perfmonitor_resources(self, line):
         """Display available hardware resources (CPUs, memory, GPUs)"""
-        self.service.perfmonitor_resources(line)
+        self.magic_adapter.perfmonitor_resources(line)
 
     @line_magic
     def perfmonitor_start(self, line):
         """Start performance monitoring with specified interval
         (default: 1 second)"""
-        self.service.perfmonitor_start(line)
+        self.magic_adapter.perfmonitor_start(line)
 
     @line_magic
     def perfmonitor_stop(self, line):
         """Stop the active performance monitoring session"""
-        self.service.perfmonitor_stop(line)
+        self.magic_adapter.perfmonitor_stop(line)
 
     @line_magic
     def perfmonitor_plot(self, line):
         """Open interactive plot with widgets for exploring performance data"""
-        self.service.perfmonitor_plot(line)
+        self.magic_adapter.perfmonitor_plot(line)
 
     @line_magic
     def perfmonitor_enable_perfreports(self, line):
         """Enable automatic performance reports after each cell execution"""
-        self.service.perfmonitor_enable_perfreports(line)
+        self.magic_adapter.perfmonitor_enable_perfreports(line)
 
 
     @line_magic
     def perfmonitor_disable_perfreports(self, line):
         """Disable automatic performance reports after cell execution"""
-        self.service.perfmonitor_disable_perfreports(line)
+        self.magic_adapter.perfmonitor_disable_perfreports(line)
 
     @line_magic
     def perfmonitor_perfreport(self, line):
         """Show performance report with optional cell range and level
         filters"""
-        self.service.perfmonitor_perfreport(line)
+        self.magic_adapter.perfmonitor_perfreport(line)
 
     @line_magic
     def perfmonitor_export_perfdata(self, line):
@@ -76,7 +76,7 @@ class PerfmonitorMagics(Magics):
           %perfmonitor_export_perfdata [--level LEVEL]
             # push DataFrame
         """
-        perfdata = self.service.perfmonitor_export_perfdata(line)
+        perfdata = self.magic_adapter.perfmonitor_export_perfdata(line)
         self.shell.push(perfdata)
 
     @line_magic
@@ -87,7 +87,7 @@ class PerfmonitorMagics(Magics):
           %perfmonitor_export_cell_history --file <path>  # export to file
           %perfmonitor_export_cell_history                # push DataFrame
         """
-        cell_history_data = self.service.perfmonitor_export_cell_history(line)
+        cell_history_data = self.magic_adapter.perfmonitor_export_cell_history(line)
         self.shell.push(cell_history_data)
 
     @line_magic
@@ -98,7 +98,7 @@ class PerfmonitorMagics(Magics):
           %perfmonitor_load_perfdata --file <path>
             # import from file
         """
-        perfdata = self.service.perfmonitor_load_perfdata(line)
+        perfdata = self.magic_adapter.perfmonitor_load_perfdata(line)
         self.shell.push(perfdata)
 
     @line_magic
@@ -108,7 +108,7 @@ class PerfmonitorMagics(Magics):
         Usage:
           %perfmonitor_load_cell_history --file <path>  # import from file
         """
-        cell_history_data = self.service.perfmonitor_load_cell_history(line)
+        cell_history_data = self.magic_adapter.perfmonitor_load_cell_history(line)
         self.shell.push(cell_history_data)
 
     @line_magic
@@ -120,17 +120,17 @@ class PerfmonitorMagics(Magics):
             print("[JUmPER]: Enabled ipympl interactive plots")
         except Exception as e:
             logger.warning(f"Failed to enable ipympl interactive plots: {e}")
-        self.service.perfmonitor_fast_setup(line)
+        self.magic_adapter.perfmonitor_fast_setup(line)
 
     @line_magic
-    def cell_history_show(self, line):
+    def show_cell_history(self, line):
         """Show interactive table of all executed cells with timestamps"""
-        self.service.cell_history_show(line)
+        self.magic_adapter.show_cell_history(line)
 
     @line_magic
     def perfmonitor_help(self, line):
         """Show comprehensive help information for all available commands"""
-        self.service.perfmonitor_help(line)
+        self.magic_adapter.perfmonitor_help(line)
 
     @line_magic
     def start_write_script(self, line):
@@ -144,7 +144,7 @@ class PerfmonitorMagics(Magics):
           %start_write_script
           %start_write_script my_script.py
         """
-        self.service.start_write_script(line)
+        self.magic_adapter.start_write_script(line)
 
     @line_magic
     def end_write_script(self, line):
@@ -154,4 +154,4 @@ class PerfmonitorMagics(Magics):
         Usage:
           %end_write_script
         """
-        self.service.end_write_script(line)
+        self.magic_adapter.end_write_script(line)

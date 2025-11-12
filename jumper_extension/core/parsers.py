@@ -4,6 +4,7 @@ import shlex
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Any
 
+from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.utilities import get_available_levels
 
 
@@ -98,12 +99,12 @@ def parse_arguments(parser: argparse.ArgumentParser, line: str) -> Optional[argp
     return args
 
 
-def parse_cell_range(cell_str: str, cell_history: List[Any]) -> Optional[Tuple[int, int]]:
+def parse_cell_range(cell_str: str, cell_history_length: int) -> Optional[Tuple[int, int]]:
     """Parse a cell range string into start and end indices.
     
     Args:
         cell_str: String representing cell range (e.g., "1:3", "5", ":10")
-        cell_history: List of cell history entries to validate indices against
+        cell_history_length: Length of cell history
         
     Returns:
         Tuple of (start_idx, end_idx) or None if invalid
@@ -112,7 +113,7 @@ def parse_cell_range(cell_str: str, cell_history: List[Any]) -> Optional[Tuple[i
         return None
         
     try:
-        max_idx = len(cell_history) - 1
+        max_idx = cell_history_length - 1
         if ":" in cell_str:
             start_str, end_str = cell_str.split(":", 1)
             start_idx = 0 if not start_str else int(start_str)
