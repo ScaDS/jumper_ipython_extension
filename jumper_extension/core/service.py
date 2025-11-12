@@ -431,6 +431,7 @@ class PerfmonitorService:
 
     @contextmanager
     def monitored(self):
+        """Code performance monitoring context manager."""
         unavailable_message = "unavailable on monitored context"
         self.on_pre_run_cell(
             raw_cell=f"# <Code {unavailable_message}>",
