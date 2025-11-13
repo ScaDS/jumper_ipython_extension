@@ -112,6 +112,26 @@ class PerfmonitorMagics(Magics):
         self.shell.push(cell_history_data)
 
     @line_magic
+    def export_session(self, line):
+        """Export full session (CSV+manifest) to directory or zip.
+
+        Usage:
+          %export_session
+          %export_session my_dir
+          %export_session my.zip --zip
+        """
+        self.magic_adapter.export_session(line)
+
+    @line_magic
+    def import_session(self, line):
+        """Import full session (CSV+manifest) from directory or zip.
+
+        Usage:
+          %import_session path/to/dir-or-zip
+        """
+        self.magic_adapter.import_session(line)
+
+    @line_magic
     def perfmonitor_fast_setup(self, line):
         """Quick setup: enable ipympl interactive plots, start perfmonitor, and enable perfreports"""
         # Enable ipympl interactive plots

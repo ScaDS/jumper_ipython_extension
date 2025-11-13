@@ -3,11 +3,12 @@ import os
 import threading
 import time
 import unittest.mock
-from typing import Protocol, Optional, runtime_checkable
+from typing import Protocol, Optional, runtime_checkable, Dict
 
 import psutil
 
 from jumper_extension.core.data import PerformanceData
+import pandas as pd
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -602,3 +603,62 @@ class UnavailablePerformanceMonitor:
 
     def __repr__(self) -> str:
         return f"<UnavailablePerformanceMonitor: {self._reason}>"
+
+
+class OfflinePerformanceMonitor:
+    """
+    Offline monitor adapter that satisfies PerformanceMonitorProtocol
+    but does not collect live data.
+
+    It is initialized from a manifest and a set of CSV dataframes loaded
+    from an exported session. The monitor exposes the same attributes
+    expected by Visualizer/Reporter and keeps running=False.
+    """
+
+    def __init__(
+        self,
+        *,
+        manifest: Dict,
+        perf_dfs: Dict[str, pd.DataFrame],
+    ):
+        monitor_info = manifest.get("monitor", {})
+
+        # Protocol surface
+        self.interval: float = float(monitor_info.get("interval", 1.0) or 1.0)
+        self.running: bool = False
+        self.start_time: Optional[float] = monitor_info.get("start_time")
+        self.stop_time: Optional[float] = monitor_info.get("stop_time")
+
+        # Hardware/context
+        self.num_cpus: int = int(monitor_info.get("num_cpus", 0) or 0)
+        self.num_system_cpus: int = int(monitor_info.get("num_system_cpus", self.num_cpus) or self.num_cpus)
+        self.num_gpus: int = int(monitor_info.get("num_gpus", 0) or 0)
+        self.gpu_memory: float = float(monitor_info.get("gpu_memory", 0.0) or 0.0)
+        self.gpu_name: str = monitor_info.get("gpu_name", "") or ""
+        self.cpu_handles: list[int] = monitor_info.get("cpu_handles", []) or []
+        self.memory_limits: dict = monitor_info.get("memory_limits", {}) or {}
+
+        # Prepare data container
+        self.data = PerformanceData(
+            self.num_cpus,
+            self.num_system_cpus,
+            self.num_gpus,
+        )
+
+        # Replace auto-initialized empty frames with loaded ones when available
+        for level, df in (perf_dfs or {}).items():
+            try:
+                self.data._validate_level(level)
+            except Exception:
+                # If the level is not recognized in current environment, still attach
+                # under the key to keep downstream consumers working when explicitly asked.
+                pass
+            self.data.data[level] = df
+
+    # No-op lifecycle controls to satisfy protocol
+    def start(self, interval: float = 1.0) -> None:
+        self.interval = interval
+        self.running = False
+
+    def stop(self) -> None:
+        self.running = False
