@@ -1,8 +1,14 @@
 import tempfile
+import os
 from unittest.mock import Mock, patch
 
 import pytest
 from IPython.testing.globalipapp import get_ipython
+
+# Ensure logging goes to a writable temp directory for the entire test session
+if "JUMPER_LOG_DIR" not in os.environ:
+    _log_dir = tempfile.mkdtemp(prefix="jumper_test_logs_")
+    os.environ["JUMPER_LOG_DIR"] = _log_dir
 
 
 @pytest.fixture
