@@ -351,7 +351,8 @@ def build_performance_reporter(
     cell_history: CellHistory,
     templates_dir=None,
     display_disabled: bool = False,
-    display_disabled_reason="Display not available."
+    display_disabled_reason="Display not available.",
+    thresholds=None,
 ):
     """
     Build PerformanceReporter object.
@@ -360,7 +361,7 @@ def build_performance_reporter(
     monitor = UnavailablePerformanceMonitor(
         reason="Monitor has not been started yet."
     )
-    analyzer = PerformanceAnalyzer()
+    analyzer = PerformanceAnalyzer(thresholds=thresholds)
     printer = ReportPrinter(monitor, cell_history, analyzer)
     if display_disabled:
         displayer = UnavailableReportDisplayer(
@@ -374,6 +375,5 @@ def build_performance_reporter(
             templates_dir
         )
     return PerformanceReporter(printer, displayer)
-
 
 

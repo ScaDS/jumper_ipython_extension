@@ -17,6 +17,8 @@ class ArgParsers:
     export_cell_history: argparse.ArgumentParser
     import_perfdata: argparse.ArgumentParser
     import_cell_history: argparse.ArgumentParser
+    export_session: argparse.ArgumentParser
+    import_session: argparse.ArgumentParser
 
 
 def build_perfreport_parser() -> argparse.ArgumentParser:
@@ -76,6 +78,38 @@ def build_import_cell_history_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(add_help=False)
     # Positional filename, no --file required
     parser.add_argument("file", type=str, help="Input cell history filename")
+    return parser
+
+def build_export_session_parser() -> argparse.ArgumentParser:
+    """Build parser for exporting a full session package.
+
+    Usage examples in magics:
+      %export_session                        # uses default directory name
+      %export_session my_dir                 # export into directory
+      %export_session my_session.zip --zip   # export and zip
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help="Target directory or .zip path (defaults to jumper-session-<timestamp>)",
+    )
+    parser.add_argument(
+        "--zip",
+        action="store_true",
+        help="Package the exported directory into a .zip archive",
+    )
+    return parser
+
+def build_import_session_parser() -> argparse.ArgumentParser:
+    """Build parser for importing a full session package from directory or zip."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "path",
+        type=str,
+        help="Path to exported session directory or .zip archive",
+    )
     return parser
 
 def parse_arguments(parser: argparse.ArgumentParser, line: str) -> Optional[argparse.Namespace]:
