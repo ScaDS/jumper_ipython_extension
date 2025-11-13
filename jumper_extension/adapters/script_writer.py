@@ -154,7 +154,7 @@ class NotebookScriptWriter:
                 Total cells: {len(recorded_cells)}
                 \"\"\"
 
-                from jumper_extension.core.magic_adapter import build_perfmonitor_magic_adapter
+                from jumper_extension.core.service import build_perfmonitor_magic_adapter
                 magic_adapter = build_perfmonitor_magic_adapter(
                     plots_disabled=True,
                     plots_disabled_reason="Plotting disabled in generated script.",
