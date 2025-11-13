@@ -118,7 +118,7 @@ class PerfmonitorMagics(Magics):
         Usage:
           %export_session
           %export_session my_dir
-          %export_session my.zip --zip
+          %export_session my_archive.zip
         """
         self.magic_adapter.export_session(line)
 

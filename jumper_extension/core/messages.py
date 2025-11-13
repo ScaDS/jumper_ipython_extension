@@ -34,6 +34,9 @@ class ExtensionInfoCode(Enum):
     PERFORMANCE_DATA_AVAILABLE = auto()
     HTML_REPORTS_NOT_AVAILABLE = auto()
     PLOTS_NOT_AVAILABLE = auto()
+    SESSION_IMPORTED = auto()
+    IMPORTED_SESSION_PLOT = auto()
+    IMPORTED_SESSION_RESOURCES = auto()
 
 _BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.PYNVML_NOT_AVAILABLE: (
@@ -112,6 +115,9 @@ _BASE_EXTENSION_INFO_MESSAGES = {
     ExtensionInfoCode.PLOTS_NOT_AVAILABLE: (
         "Plots are not available: {reason}"
     ),
+    ExtensionInfoCode.SESSION_IMPORTED: ("Session imported successfully: {source}"),
+    ExtensionInfoCode.IMPORTED_SESSION_PLOT: ("Using imported session data for plotting: {source}"),
+    ExtensionInfoCode.IMPORTED_SESSION_RESOURCES: ("Showing resources from imported session: {source}"),
 }
 
 

@@ -76,6 +76,9 @@ class PerformanceMonitorProtocol(Protocol):
     memory_limits: dict
     cpu_handles: list[int]
     gpu_name: str
+    # session state
+    is_imported: bool
+    session_source: Optional[str]
 
     # required control & lifecycle
     running: bool
@@ -144,6 +147,9 @@ class PerformanceMonitor:
         self.data = PerformanceData(
             self.num_cpus, self.num_system_cpus, self.num_gpus
         )
+        # session state
+        self.is_imported = False
+        self.session_source = None
 
     def _setup_nvidia_gpu(self):
         try:
@@ -606,13 +612,9 @@ class UnavailablePerformanceMonitor:
 
 
 class OfflinePerformanceMonitor:
-    """
-    Offline monitor adapter that satisfies PerformanceMonitorProtocol
-    but does not collect live data.
+    """Offline monitor that satisfies PerformanceMonitorProtocol.
 
-    It is initialized from a manifest and a set of CSV dataframes loaded
-    from an exported session. The monitor exposes the same attributes
-    expected by Visualizer/Reporter and keeps running=False.
+    It holds static data frames plus metadata from a manifest; does not collect live data.
     """
 
     def __init__(
@@ -620,42 +622,43 @@ class OfflinePerformanceMonitor:
         *,
         manifest: Dict,
         perf_dfs: Dict[str, pd.DataFrame],
+        source: Optional[str] = None,
     ):
         monitor_info = manifest.get("monitor", {})
 
         # Protocol surface
-        self.interval: float = float(monitor_info.get("interval", 1.0) or 1.0)
-        self.running: bool = False
-        self.start_time: Optional[float] = monitor_info.get("start_time")
-        self.stop_time: Optional[float] = monitor_info.get("stop_time")
+        self.interval = float(monitor_info.get("interval", 1.0) or 1.0)
+        self.running = False
+        self.start_time = monitor_info.get("start_time")
+        self.stop_time = monitor_info.get("stop_time")
 
         # Hardware/context
-        self.num_cpus: int = int(monitor_info.get("num_cpus", 0) or 0)
-        self.num_system_cpus: int = int(monitor_info.get("num_system_cpus", self.num_cpus) or self.num_cpus)
-        self.num_gpus: int = int(monitor_info.get("num_gpus", 0) or 0)
-        self.gpu_memory: float = float(monitor_info.get("gpu_memory", 0.0) or 0.0)
-        self.gpu_name: str = monitor_info.get("gpu_name", "") or ""
-        self.cpu_handles: list[int] = monitor_info.get("cpu_handles", []) or []
-        self.memory_limits: dict = monitor_info.get("memory_limits", {}) or {}
+        self.num_cpus = int(monitor_info.get("num_cpus", 0) or 0)
+        self.num_system_cpus = int(monitor_info.get("num_system_cpus", self.num_cpus) or self.num_cpus)
+        self.num_gpus = int(monitor_info.get("num_gpus", 0) or 0)
+        self.gpu_memory = float(monitor_info.get("gpu_memory", 0.0) or 0.0)
+        self.gpu_name = monitor_info.get("gpu_name", "") or ""
+        self.cpu_handles = monitor_info.get("cpu_handles", []) or []
+        self.memory_limits = monitor_info.get("memory_limits", {}) or {}
 
-        # Prepare data container
+        # Performance data container
         self.data = PerformanceData(
             self.num_cpus,
             self.num_system_cpus,
             self.num_gpus,
         )
-
-        # Replace auto-initialized empty frames with loaded ones when available
         for level, df in (perf_dfs or {}).items():
             try:
                 self.data._validate_level(level)
             except Exception:
-                # If the level is not recognized in current environment, still attach
-                # under the key to keep downstream consumers working when explicitly asked.
                 pass
             self.data.data[level] = df
 
-    # No-op lifecycle controls to satisfy protocol
+        # Imported session state
+        self.is_imported = True
+        self.session_source = source
+
+    # No-op lifecycle
     def start(self, interval: float = 1.0) -> None:
         self.interval = interval
         self.running = False
