@@ -533,11 +533,16 @@ class PerformanceVisualizer:
                 )
         else:
             filtered_cells = self.cell_history.view()
-            cells = (
-                filtered_cells.iloc[cell_range[0] : cell_range[1] + 1]
-                if cell_range
-                else filtered_cells
-            )
+            if cell_range:
+                try:
+                    mask = (filtered_cells["cell_index"] >= cell_range[0]) & (
+                        filtered_cells["cell_index"] <= cell_range[1]
+                    )
+                    cells = filtered_cells[mask]
+                except Exception:
+                    cells = filtered_cells
+            else:
+                cells = filtered_cells
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
                 draw_cell_rect(
@@ -569,19 +574,22 @@ class PerformanceVisualizer:
             return
 
         # Default to all cells if no range specified
-        min_cell_idx, max_cell_idx = int(
-            valid_cells.iloc[0]["cell_index"]
-        ), int(valid_cells.iloc[-1]["cell_index"])
+        try:
+            min_cell_idx = int(valid_cells["cell_index"].min())
+            max_cell_idx = int(valid_cells["cell_index"].max())
+        except Exception:
+            min_cell_idx, max_cell_idx = 0, len(valid_cells) - 1
         if cell_range is None:
             cell_start_index = 0
             for cell_idx in range(len(valid_cells) - 1, -1, -1):
                 if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
                     cell_start_index = cell_idx
                     break
-            cell_range = (
-                int(valid_cells.iloc[cell_start_index]["cell_index"]),
-                int(valid_cells.iloc[-1]["cell_index"]),
-            )
+            start = int(valid_cells.iloc[cell_start_index]["cell_index"])
+            end = int(valid_cells["cell_index"].max())
+            if start > end:
+                start, end = end, start
+            cell_range = (start, end)
 
         # If level is specified, plot directly without widgets
         if level is not None:
@@ -593,8 +601,18 @@ class PerformanceVisualizer:
         show_idle_checkbox = widgets.Checkbox(
             value=show_idle, description="Show idle periods"
         )
+        # Sanitize slider value within bounds and ordered
+        try:
+            s0, s1 = cell_range
+            if s0 > s1:
+                s0, s1 = s1, s0
+            s0 = max(min_cell_idx, min(s0, max_cell_idx))
+            s1 = max(min_cell_idx, min(s1, max_cell_idx))
+            slider_value = (s0, s1)
+        except Exception:
+            slider_value = (min_cell_idx, max_cell_idx)
         cell_range_slider = widgets.IntRangeSlider(
-            value=cell_range,
+            value=slider_value,
             min=min_cell_idx,
             max=max_cell_idx,
             step=1,
@@ -637,7 +655,14 @@ class PerformanceVisualizer:
                 show_idle_checkbox.value,
             )
             start_idx, end_idx = current_cell_range
-            filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+            cells_all = self.cell_history.view()
+            try:
+                mask = (cells_all["cell_index"] >= start_idx) & (
+                    cells_all["cell_index"] <= end_idx
+                )
+                filtered_cells = cells_all[mask]
+            except Exception:
+                filtered_cells = cells_all
             # Store all level data for subplot access
             perfdata_by_level = {}
             for available_level in get_available_levels():
@@ -922,4 +947,3 @@ def build_performance_visualizer(
     if plots_disabled:
         return UnavailableVisualizer(reason=plots_disabled_reason)
     return PerformanceVisualizer(cell_history)
-
