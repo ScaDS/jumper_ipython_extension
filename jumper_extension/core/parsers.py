@@ -86,7 +86,7 @@ def build_export_session_parser() -> argparse.ArgumentParser:
     Usage examples in magics:
       %export_session                        # uses default directory name
       %export_session my_dir                 # export into directory
-      %export_session my_session.zip --zip   # export and zip
+      %export_session my_session.zip         # export and zip (auto-detected by .zip extension)
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
@@ -94,11 +94,6 @@ def build_export_session_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=None,
         help="Target directory or .zip path (defaults to jumper-session-<timestamp>)",
-    )
-    parser.add_argument(
-        "--zip",
-        action="store_true",
-        help="Package the exported directory into a .zip archive",
     )
     return parser
 

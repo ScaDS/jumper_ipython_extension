@@ -35,6 +35,7 @@ from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
 )
 from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, PerformanceMonitor, OfflinePerformanceMonitor
+from jumper_extension.adapters.session import SessionExporter, SessionImporter
 from jumper_extension.adapters.visualizer import build_performance_visualizer, \
     PerformanceVisualizerProtocol
 from jumper_extension.adapters.reporter import PerformanceReporter, build_performance_reporter
@@ -89,12 +90,23 @@ class PerfmonitorService:
                 )
 
     def show_resources(self):
-        """Display available hardware resources (CPUs, memory, GPUs)"""
-        if not self.monitor.running:
+        """Display available hardware resources (CPUs, memory, GPUs).
+
+        Works for both live and imported sessions (when monitor.is_imported is True).
+        """
+        if not getattr(self.monitor, "running", False) and not getattr(
+            self.monitor, "is_imported", False
+        ):
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
+        if getattr(self.monitor, "is_imported", False):
+            logger.info(
+                EXTENSION_INFO_MESSAGES[ExtensionInfoCode.IMPORTED_SESSION_RESOURCES].format(
+                    source=getattr(self.monitor, "session_source", "")
+                )
+            )
         print("[JUmPER]:")
         cpu_info = (
             f"  CPUs: {self.monitor.num_cpus}\n    "
@@ -150,12 +162,20 @@ class PerfmonitorService:
         self.settings.monitoring.running = False
 
     def plot_performance(self):
-        """Open interactive plot with widgets for exploring performance data."""
-        if not self.monitor.running:
+        """Open interactive plot for live or imported sessions."""
+        if not getattr(self.monitor, "running", False) and not getattr(
+            self.monitor, "is_imported", False
+        ):
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
+        if getattr(self.monitor, "is_imported", False):
+            logger.info(
+                EXTENSION_INFO_MESSAGES[ExtensionInfoCode.IMPORTED_SESSION_PLOT].format(
+                    source=getattr(self.monitor, "session_source", "")
+                )
+            )
         self.visualizer.plot()
 
     def enable_perfreports(
@@ -317,225 +337,25 @@ class PerfmonitorService:
             )
         return {var_name: df}
 
-    def _default_session_dirname(self) -> str:
-        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        return f"jumper-session-{ts}"
-
-    def _app_version(self) -> str:
-        # Attempt a simple parse of pyproject.toml for version string
-        try:
-            here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            pyproject = os.path.join(here, "..", "pyproject.toml")
-            pyproject = os.path.normpath(pyproject)
-            if os.path.exists(pyproject):
-                with open(pyproject, "r", encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith("version") and "=" in line:
-                            parts = line.split("=", 1)[1].strip().strip('"')
-                            if parts:
-                                return parts
-        except Exception:
-            pass
-        return "unknown"
-
-    def export_session(self, path: Optional[str] = None, zip_output: bool = False) -> None:
-        """Export full session (perf data for all levels + cell history + manifest)."""
-        if not self.monitor.running:
+    def export_session(self, path: Optional[str] = None) -> None:
+        """Export full session using SessionExporter. If path ends with .zip, a zip is created automatically."""
+        if not getattr(self.monitor, "running", False) and not getattr(self.monitor, "is_imported", False):
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
-            # Continue to export available data
-
-        # Resolve target dir and optional zip
-        to_zip_only = False
-        if path and path.lower().endswith(".zip"):
-            export_dir = tempfile.mkdtemp(prefix="jumper-session-")
-            zip_path = path
-            to_zip_only = True
-        else:
-            export_dir = os.path.abspath(path or self._default_session_dirname())
-            zip_path = (export_dir + ".zip") if zip_output else None
-
-        os.makedirs(export_dir, exist_ok=True)
-
-        # Dump performance CSVs per level (with cell_index)
-        schemas_perf: Dict[str, List[str]] = {}
-        level_filenames = {
-            "process": "perf_process.csv",
-            "user": "perf_user.csv",
-            "system": "perf_system.csv",
-            "slurm": "perf_slurm.csv",
-        }
-        for level, df in self.monitor.data.data.items():
-            try:
-                df_out = self.monitor.data.view(level=level, cell_history=self.cell_history)
-            except Exception:
-                df_out = df
-            schemas_perf[level] = list(df_out.columns)
-            if not df_out.empty:
-                fname = level_filenames.get(level, f"perf_{level}.csv")
-                df_out.to_csv(os.path.join(export_dir, fname), index=False)
-
-        # Dump cell history
-        ch_df = self.cell_history.view()
-        if not ch_df.empty:
-            ch_df.to_csv(os.path.join(export_dir, "cell_history.csv"), index=False)
-
-        # Manifest metadata
-        manifest = {
-            "version": "1.0",
-            "app": {"name": "JUmPER", "version": self._app_version()},
-            "monitor": {
-                "interval": getattr(self.monitor, "interval", 1.0),
-                "start_time": getattr(self.monitor, "start_time", None),
-                "stop_time": getattr(self.monitor, "stop_time", None),
-                "num_cpus": getattr(self.monitor, "num_cpus", 0),
-                "num_system_cpus": getattr(self.monitor, "num_system_cpus", 0),
-                "num_gpus": getattr(self.monitor, "num_gpus", 0),
-                "gpu_memory": getattr(self.monitor, "gpu_memory", 0.0),
-                "gpu_name": getattr(self.monitor, "gpu_name", ""),
-                "memory_limits": getattr(self.monitor, "memory_limits", {}),
-                "cpu_handles": getattr(self.monitor, "cpu_handles", []),
-                "pid": getattr(self.monitor, "pid", None),
-                "uid": getattr(self.monitor, "uid", None),
-                "slurm_job": getattr(self.monitor, "slurm_job", None),
-                "os": os.name,
-                "python": sys.version.split(" ")[0],
-            },
-            "levels": list(self.monitor.data.data.keys()),
-            "schemas": {
-                "perf": schemas_perf,
-                "cell_history": list(ch_df.columns),
-            },
-            "visualizer": {
-                "default_metric_subsets": [
-                    "cpu",
-                    "mem",
-                    "io",
-                ] + (["gpu", "gpu_all"] if getattr(self.monitor, "num_gpus", 0) else []),
-                "figsize": list(getattr(self.visualizer, "figsize", (5, 3))),
-                "io_window": getattr(self.visualizer, "_io_window", None),
-                "last_state": {},
-            },
-            "reporter": {
-                "level": self.settings.perfreports.level,
-                "format": "text" if self.settings.perfreports.text else "html",
-                "thresholds": getattr(self.reporter.printer.analyzer, "thresholds", {}),
-            },
-            "time_origin": "perf_counter",
-            "timezone": time.tzname[0] if time.tzname else "",
-        }
-        with open(os.path.join(export_dir, "manifest.json"), "w", encoding="utf-8") as f:
-            json.dump(manifest, f, indent=2)
-
-        # Optional zip packaging
-        if zip_path:
-            with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                for root, _, files in os.walk(export_dir):
-                    for name in files:
-                        ap = os.path.join(root, name)
-                        rel = os.path.relpath(ap, export_dir)
-                        zf.write(ap, rel)
-            logger.info(
-                EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
-                    filename=zip_path
-                )
-            )
-
-        logger.info(
-            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
-                filename=export_dir
-            )
-        )
-
-        if to_zip_only:
-            try:
-                shutil.rmtree(export_dir)
-            except Exception:
-                pass
+        exporter = SessionExporter(self.monitor, self.cell_history, self.visualizer, self.reporter, logger)
+        exporter.export(path)
 
     def import_session(self, path: str) -> None:
-        """Import session from a directory or .zip archive and attach an offline monitor."""
-        if not path:
-            return
-
-        work_dir = None
-        cleanup_dir = False
-        try:
-            if path.lower().endswith(".zip"):
-                work_dir = tempfile.mkdtemp(prefix="jumper-session-import-")
-                cleanup_dir = True
-                with zipfile.ZipFile(path, "r") as zf:
-                    zf.extractall(work_dir)
-            else:
-                work_dir = path
-
-            manifest_path = os.path.join(work_dir, "manifest.json")
-            with open(manifest_path, "r", encoding="utf-8") as f:
-                manifest = json.load(f)
-
-            # cell history
-            ch_csv = os.path.join(work_dir, "cell_history.csv")
-            if os.path.exists(ch_csv):
-                try:
-                    ch_df = pd.read_csv(ch_csv)
-                    self.cell_history.data = ch_df
-                except Exception:
-                    pass
-
-            # perf data
-            level_files = {
-                "process": "perf_process.csv",
-                "user": "perf_user.csv",
-                "system": "perf_system.csv",
-                "slurm": "perf_slurm.csv",
-            }
-            perf_dfs: Dict[str, pd.DataFrame] = {}
-            for level, fname in level_files.items():
-                fpath = os.path.join(work_dir, fname)
-                if os.path.exists(fpath):
-                    try:
-                        perf_dfs[level] = pd.read_csv(fpath)
-                    except Exception:
-                        continue
-
-            offline = OfflinePerformanceMonitor(manifest=manifest, perf_dfs=perf_dfs)
-            self.monitor = offline
-            self.visualizer.attach(self.monitor)
-
-            # Rebuild reporter to apply thresholds (if available)
-            thresholds = None
-            try:
-                thresholds = manifest.get("reporter", {}).get("thresholds")
-            except Exception:
-                thresholds = None
-            self.reporter = build_performance_reporter(
-                self.cell_history,
-                display_disabled=False,
-                display_disabled_reason="Display not available.",
-                thresholds=thresholds,
+        """Import session using SessionImporter and announce success."""
+        importer = SessionImporter(logger)
+        ok = importer.import_(path, self)
+        if ok:
+            logger.info(
+                EXTENSION_INFO_MESSAGES[ExtensionInfoCode.SESSION_IMPORTED].format(
+                    source=getattr(self.monitor, "session_source", "")
+                )
             )
-            self.reporter.attach(self.monitor)
-
-            # Apply simple visualizer settings
-            try:
-                viz = manifest.get("visualizer", {})
-                if isinstance(viz.get("figsize"), list) and len(viz.get("figsize")) == 2:
-                    self.visualizer.figsize = (viz["figsize"][0], viz["figsize"][1])
-                if viz.get("io_window"):
-                    try:
-                        self.visualizer._io_window = int(viz.get("io_window"))
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-        finally:
-            if cleanup_dir and work_dir and os.path.isdir(work_dir):
-                try:
-                    shutil.rmtree(work_dir)
-                except Exception:
-                    pass
 
     def fast_setup(self):
         """Quick setup: start perfmonitor and enable perfreports."""
@@ -726,7 +546,7 @@ class PerfmonitorMagicAdapter:
             " without --file pushes DataFrame 'perfdata_df'",
             "perfmonitor_export_cell_history [--file FILE] -- export history to JSON/CSV;"
             " without --file pushes DataFrame 'cell_history_df'",
-            "export_session [target|target.zip] [--zip] -- export full session",
+            "export_session [target|target.zip] -- export full session",
             "import_session <dir-or-zip> -- import full session for offline analysis",
         ]
         print("Available commands:")
@@ -757,12 +577,12 @@ class PerfmonitorMagicAdapter:
         Usage:
           %export_session
           %export_session my_dir
-          %export_session my.zip --zip
+          %export_session my.zip
         """
         args = parse_arguments(self.parsers.export_session, line)
         if args is None:
             return
-        self.service.export_session(path=args.path, zip_output=bool(getattr(args, "zip", False)))
+        self.service.export_session(path=args.path)
 
     def import_session(self, line: str):
         """Import full session from a directory or zip.
