@@ -94,17 +94,15 @@ class PerfmonitorService:
 
         Works for both live and imported sessions (when monitor.is_imported is True).
         """
-        if not getattr(self.monitor, "running", False) and not getattr(
-            self.monitor, "is_imported", False
-        ):
+        if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
-        if getattr(self.monitor, "is_imported", False):
+        if self.monitor.is_imported:
             logger.info(
                 EXTENSION_INFO_MESSAGES[ExtensionInfoCode.IMPORTED_SESSION_RESOURCES].format(
-                    source=getattr(self.monitor, "session_source", "")
+                    source=self.monitor.session_source
                 )
             )
         print("[JUmPER]:")
@@ -134,6 +132,10 @@ class PerfmonitorService:
         Returns:
             Error code if operation failed, None on success
         """
+        # If an imported (offline) session is currently attached, swap to a live monitor
+        if self.monitor.is_imported:
+            self.monitor = PerformanceMonitor()
+
         if self.monitor.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.MONITOR_ALREADY_RUNNING]
@@ -163,17 +165,15 @@ class PerfmonitorService:
 
     def plot_performance(self):
         """Open interactive plot for live or imported sessions."""
-        if not getattr(self.monitor, "running", False) and not getattr(
-            self.monitor, "is_imported", False
-        ):
+        if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
-        if getattr(self.monitor, "is_imported", False):
+        if self.monitor.is_imported:
             logger.info(
                 EXTENSION_INFO_MESSAGES[ExtensionInfoCode.IMPORTED_SESSION_PLOT].format(
-                    source=getattr(self.monitor, "session_source", "")
+                    source=self.monitor.session_source
                 )
             )
         self.visualizer.plot()
@@ -339,7 +339,7 @@ class PerfmonitorService:
 
     def export_session(self, path: Optional[str] = None) -> None:
         """Export full session using SessionExporter. If path ends with .zip, a zip is created automatically."""
-        if not getattr(self.monitor, "running", False) and not getattr(self.monitor, "is_imported", False):
+        if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
@@ -353,7 +353,7 @@ class PerfmonitorService:
         if ok:
             logger.info(
                 EXTENSION_INFO_MESSAGES[ExtensionInfoCode.SESSION_IMPORTED].format(
-                    source=getattr(self.monitor, "session_source", "")
+                    source=self.monitor.session_source
                 )
             )
 
