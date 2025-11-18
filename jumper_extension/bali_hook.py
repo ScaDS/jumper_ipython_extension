@@ -9,8 +9,8 @@ class BaliResultsParser:
     def __init__(self, base_search_path: str = "."):
         self.base_search_path = base_search_path
         self.colormap = mpl.colors.LinearSegmentedColormap.from_list(
-            "muted_yellow_red_cmap",
-            ["#D4B483", "#C67E5C", "#A0522D"]
+            "blue_to_orange",
+            ['#51829B','#9BB0C1','#F6995C']
         )
 
     def _find_bali_directories(self, pid: int) -> List[str]:
