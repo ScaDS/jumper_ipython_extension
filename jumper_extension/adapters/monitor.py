@@ -7,7 +7,7 @@ from typing import Protocol, Optional, runtime_checkable, Dict
 
 import psutil
 
-from jumper_extension.core.data import PerformanceData
+from jumper_extension.adapters.data import PerformanceData
 import pandas as pd
 from jumper_extension.core.messages import (
     ExtensionErrorCode,

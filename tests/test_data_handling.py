@@ -6,7 +6,7 @@ import pytest
 import pandas as pd
 
 from jumper_extension.adapters.cell_history import CellHistory
-from jumper_extension.core.data import PerformanceData
+from jumper_extension.adapters.data import PerformanceData
 
 
 def test_performance_data(temp_dir):
