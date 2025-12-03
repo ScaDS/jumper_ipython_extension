@@ -1,8 +1,14 @@
 import tempfile
+import os
 from unittest.mock import Mock, patch
 
 import pytest
 from IPython.testing.globalipapp import get_ipython
+
+# Ensure logging goes to a writable temp directory for the entire test session
+if "JUMPER_LOG_DIR" not in os.environ:
+    _log_dir = tempfile.mkdtemp(prefix="jumper_test_logs_")
+    os.environ["JUMPER_LOG_DIR"] = _log_dir
 
 
 @pytest.fixture
@@ -30,7 +36,6 @@ def temp_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
 
-
 @pytest.fixture
 def mock_cpu_only():
     """Mock system with 1 CPU (4 cores) and no GPU"""
@@ -41,7 +46,7 @@ def mock_cpu_only():
     ) as mock_proc, patch(
         "psutil.disk_io_counters"
     ) as mock_disk, patch(
-        "jumper_extension.monitor.PYNVML_AVAILABLE", False
+        "jumper_extension.adapters.monitor.PYNVML_AVAILABLE", False
     ):
         mock_mem.return_value.total = 8 * 1024**3
         mock_mem.return_value.available = 4 * 1024**3
@@ -68,7 +73,7 @@ def mock_cpu_only():
 @pytest.fixture
 def mock_cpu_gpu(mock_cpu_only):
     """Mock system with 1 CPU (4 cores) and 1 GPU"""
-    with patch("jumper_extension.monitor.PYNVML_AVAILABLE", True), patch(
+    with patch("jumper_extension.adapters.monitor.PYNVML_AVAILABLE", True), patch(
         "pynvml.nvmlInit"
     ), patch("pynvml.nvmlDeviceGetCount", return_value=1), patch(
         "pynvml.nvmlDeviceGetHandleByIndex", return_value=Mock()

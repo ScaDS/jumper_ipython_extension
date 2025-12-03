@@ -1,18 +1,21 @@
 import logging
 import pickle
 import re
-from typing import List
+from typing import List, runtime_checkable, Protocol
 
 import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
-from .extension_messages import (
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.adapters.monitor import PerformanceMonitor, UnavailablePerformanceMonitor, \
+    PerformanceMonitorProtocol
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
-    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_ERROR_MESSAGES, ExtensionInfoCode, EXTENSION_INFO_MESSAGES,
 )
-from .utilities import filter_perfdata, get_available_levels
-from .logo import logo_image, jumper_colors
+from jumper_extension.utilities import filter_perfdata, get_available_levels
+from jumper_extension.logo import logo_image, jumper_colors
 
 logger = logging.getLogger("extension")
 
@@ -25,6 +28,18 @@ def is_ipympl_backend():
     return ("ipympl" in backend) or ("widget" in backend)
 
 
+@runtime_checkable
+class PerformanceVisualizerProtocol(Protocol):
+    """Structural protocol for visualizers used by the service."""
+    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None: ...
+
+
 class PerformanceVisualizer:
     """Visualizes performance metrics collected by PerformanceMonitor.
 
@@ -32,11 +47,23 @@ class PerformanceVisualizer:
     'slurm' (if available)
     """
 
-    def __init__(self, monitor, cell_history, min_duration=None):
-        self.monitor = monitor
+    def __init__(self, cell_history: CellHistory):
+        self.monitor = UnavailablePerformanceMonitor(
+            reason="Monitor has not been started yet."
+        )
         self.cell_history = cell_history
         self.figsize = (5, 3)
-        self.min_duration = min_duration
+        self.min_duration = None
+        self._io_window = None
+        self.subsets = {}
+
+    def attach(
+        self,
+        monitor: PerformanceMonitorProtocol,
+    ):
+        """Attach started PerformanceMonitor."""
+        self.monitor = monitor
+        self.min_duration = self.monitor.interval
         # Smooth IO with ~1s rolling window based on sampling interval
         try:
             self._io_window = max(
@@ -44,7 +71,11 @@ class PerformanceVisualizer:
             )
         except Exception:
             self._io_window = 1
+        self._build_subsets()
 
+    def _build_subsets(self):
+        """Build a dictionary of metric subsets based on the provided
+        configuration"""
         # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
             "cpu_all": {
@@ -75,7 +106,7 @@ class PerformanceVisualizer:
                     "type": "multi_series",
                     "prefix": "gpu_mem_",
                     "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
             },
@@ -131,7 +162,7 @@ class PerformanceVisualizer:
                         "GPU Memory Usage (GB) - "
                         f"{self.monitor.num_gpus} GPUs"
                     ),
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory Summary",
                 },
             },
@@ -502,11 +533,16 @@ class PerformanceVisualizer:
                 )
         else:
             filtered_cells = self.cell_history.view()
-            cells = (
-                filtered_cells.iloc[cell_range[0] : cell_range[1] + 1]
-                if cell_range
-                else filtered_cells
-            )
+            if cell_range:
+                try:
+                    mask = (filtered_cells["cell_index"] >= cell_range[0]) & (
+                        filtered_cells["cell_index"] <= cell_range[1]
+                    )
+                    cells = filtered_cells[mask]
+                except Exception:
+                    cells = filtered_cells
+            else:
+                cells = filtered_cells
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
                 draw_cell_rect(
@@ -538,19 +574,22 @@ class PerformanceVisualizer:
             return
 
         # Default to all cells if no range specified
-        min_cell_idx, max_cell_idx = int(
-            valid_cells.iloc[0]["cell_index"]
-        ), int(valid_cells.iloc[-1]["cell_index"])
+        try:
+            min_cell_idx = int(valid_cells["cell_index"].min())
+            max_cell_idx = int(valid_cells["cell_index"].max())
+        except Exception:
+            min_cell_idx, max_cell_idx = 0, len(valid_cells) - 1
         if cell_range is None:
             cell_start_index = 0
             for cell_idx in range(len(valid_cells) - 1, -1, -1):
                 if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
                     cell_start_index = cell_idx
                     break
-            cell_range = (
-                int(valid_cells.iloc[cell_start_index]["cell_index"]),
-                int(valid_cells.iloc[-1]["cell_index"]),
-            )
+            start = int(valid_cells.iloc[cell_start_index]["cell_index"])
+            end = int(valid_cells["cell_index"].max())
+            if start > end:
+                start, end = end, start
+            cell_range = (start, end)
 
         # If level is specified, plot directly without widgets
         if level is not None:
@@ -562,8 +601,18 @@ class PerformanceVisualizer:
         show_idle_checkbox = widgets.Checkbox(
             value=show_idle, description="Show idle periods"
         )
+        # Sanitize slider value within bounds and ordered
+        try:
+            s0, s1 = cell_range
+            if s0 > s1:
+                s0, s1 = s1, s0
+            s0 = max(min_cell_idx, min(s0, max_cell_idx))
+            s1 = max(min_cell_idx, min(s1, max_cell_idx))
+            slider_value = (s0, s1)
+        except Exception:
+            slider_value = (min_cell_idx, max_cell_idx)
         cell_range_slider = widgets.IntRangeSlider(
-            value=cell_range,
+            value=slider_value,
             min=min_cell_idx,
             max=max_cell_idx,
             step=1,
@@ -606,7 +655,14 @@ class PerformanceVisualizer:
                 show_idle_checkbox.value,
             )
             start_idx, end_idx = current_cell_range
-            filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+            cells_all = self.cell_history.view()
+            try:
+                mask = (cells_all["cell_index"] >= start_idx) & (
+                    cells_all["cell_index"] <= end_idx
+                )
+                filtered_cells = cells_all[mask]
+            except Exception:
+                filtered_cells = cells_all
             # Store all level data for subplot access
             perfdata_by_level = {}
             for available_level in get_available_levels():
@@ -699,6 +755,30 @@ class PerformanceVisualizer:
 
         display(widgets.VBox([config_widgets, plot_output]))
         update_plots()
+
+
+class UnavailableVisualizer:
+    """
+    A stub that type-checks against PerformanceVisualizerProtocol but
+    only logs that visualization is unavailable.
+    """
+    def __init__(self, reason: str = "Plotting not available."):
+        self._reason = reason
+
+    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None:
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.PLOTS_NOT_AVAILABLE].format(
+                reason=self._reason
+            )
+        )
+
 
 
 class InteractivePlotWrapper:
@@ -853,3 +933,17 @@ class InteractivePlotWrapper:
         for panel in self.plot_panels:
             panel["output"].clear_output(wait=True)
             panel["update_plot"]()
+
+
+def build_performance_visualizer(
+    cell_history: CellHistory,
+    plots_disabled: bool = False,
+    plots_disabled_reason: str = "Plotting not available.",
+) -> PerformanceVisualizerProtocol:
+    """
+    Build PerformanceVisualizer object.
+    Allows building a visualizer that degrades to a no-op when plots are disabled.
+    """
+    if plots_disabled:
+        return UnavailableVisualizer(reason=plots_disabled_reason)
+    return PerformanceVisualizer(cell_history)

@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-from .logging_config import LOGGING
+from jumper_extension.logging_config import LOGGING
 
 MESSAGE_PREFIX = "[JUmPER]"
 
@@ -16,7 +16,7 @@ class ExtensionErrorCode(Enum):
     INVALID_METRIC_SUBSET = auto()
     NO_ACTIVE_MONITOR = auto()
     MONITOR_ALREADY_RUNNING = auto()
-    UNSUPPORTED_EXPORT_FORMAT = auto()
+    UNSUPPORTED_FORMAT = auto()
     INVALID_LEVEL = auto()
     DEFINE_LEVEL = auto()
     NO_CELL_HISTORY = auto()
@@ -31,7 +31,12 @@ class ExtensionInfoCode(Enum):
     MONITOR_STARTED = auto()
     MONITOR_STOPPED = auto()
     EXPORT_SUCCESS = auto()
-
+    PERFORMANCE_DATA_AVAILABLE = auto()
+    HTML_REPORTS_NOT_AVAILABLE = auto()
+    PLOTS_NOT_AVAILABLE = auto()
+    SESSION_IMPORTED = auto()
+    IMPORTED_SESSION_PLOT = auto()
+    IMPORTED_SESSION_RESOURCES = auto()
 
 _BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.PYNVML_NOT_AVAILABLE: (
@@ -65,7 +70,7 @@ _BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.MONITOR_ALREADY_RUNNING: (
         "Performance monitoring already running"
     ),
-    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT: (
+    ExtensionErrorCode.UNSUPPORTED_FORMAT: (
         "Unsupported format: {format}. Supported formats: {supported_formats}"
     ),
     ExtensionErrorCode.INVALID_LEVEL: (
@@ -101,6 +106,18 @@ _BASE_EXTENSION_INFO_MESSAGES = {
         "Performance monitoring stopped (ran for {seconds:.2f} seconds)"
     ),
     ExtensionInfoCode.EXPORT_SUCCESS: ("Exported to {filename}"),
+    ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE: (
+        "Performance data DataFrame available as '{var_name}'"
+    ),
+    ExtensionInfoCode.HTML_REPORTS_NOT_AVAILABLE: (
+        "HTML reports are not available: {reason}"
+    ),
+    ExtensionInfoCode.PLOTS_NOT_AVAILABLE: (
+        "Plots are not available: {reason}"
+    ),
+    ExtensionInfoCode.SESSION_IMPORTED: ("Session imported successfully: {source}"),
+    ExtensionInfoCode.IMPORTED_SESSION_PLOT: ("Using imported session data for plotting: {source}"),
+    ExtensionInfoCode.IMPORTED_SESSION_RESOURCES: ("Showing resources from imported session: {source}"),
 }
 
 
