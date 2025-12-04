@@ -4,12 +4,13 @@ title: JUmPER IPython Extension Documentation
 
 # JUmPER IPython Extension
 
-Welcome to the JUmPER IPython extension documentation.
+Welcome to the documentation for the JUmPER IPython extension, a tool for monitoring the performance of code cells in IPython and Jupyter notebooks.
 
-This site provides:
-- A quick start guide to help you begin using the extension.
-- Advanced usage patterns and recommendations.
-- API-level information about the main public interfaces.
+JUmPER lets you:
 
-Use the navigation on the left to explore the guides and API sections.
+- Collect CPU, memory, GPU, and I/O metrics for individual cells.
+- View textual performance reports for entire sessions or selected cell ranges.
+- Explore interactive plots of collected metrics over time.
+- Export performance data and cell history for offline analysis.
 
+To get started quickly, follow the steps in the [Installation](getting-started/installation.md) and [Quickstart](getting-started/quickstart.md) guides. For detailed command descriptions and programmatic usage, refer to the [Public API](api/index.md) section.
