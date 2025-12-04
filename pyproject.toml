@@ -33,6 +33,11 @@ test = [
     "pynvml",
 ]
 
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
+
 [tool.setuptools]
 packages = [
     "jumper_extension",

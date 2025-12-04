@@ -1,0 +1,21 @@
+site_name: JUmPER IPython Extension
+site_description: IPython extension for monitoring cell performance
+repo_url: https://github.com/ScaDS/jumper_ipython_extension
+repo_name: ScaDS/jumper_ipython_extension
+
+docs_dir: docs
+
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Getting started: guides/getting-started.md
+      - Advanced usage: guides/advanced-usage.md
+  - API:
+      - JUmPER API: api/myproject.md
+
+plugins:
+  - search
+  - mkdocstrings
