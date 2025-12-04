@@ -1,3 +1,10 @@
+"""Message codes and templates used by the JUmPER extension.
+
+This module defines enums for error and info codes, maps them to
+human-readable message templates, and exposes helpers for working with
+those messages.
+"""
+
 from enum import Enum, auto
 
 from jumper_extension.logging_config import LOGGING
@@ -6,6 +13,8 @@ MESSAGE_PREFIX = "[JUmPER]"
 
 
 class ExtensionErrorCode(Enum):
+    """Error codes emitted by the extension."""
+
     PYNVML_NOT_AVAILABLE = auto()
     NVIDIA_DRIVERS_NOT_AVAILABLE = auto()
     ADLX_NOT_AVAILABLE = auto()
@@ -23,6 +32,8 @@ class ExtensionErrorCode(Enum):
 
 
 class ExtensionInfoCode(Enum):
+    """Informational codes emitted by the extension."""
+
     IMPRECISE_INTERVAL = auto()
     MISSED_MEASUREMENTS = auto()
     PERFORMANCE_REPORTS_DISABLED = auto()
@@ -120,8 +131,16 @@ _BASE_EXTENSION_INFO_MESSAGES = {
     ExtensionInfoCode.IMPORTED_SESSION_RESOURCES: ("Showing resources from imported session: {source}"),
 }
 
-
 def _apply_prefix(messages):
+    """Attach the standard JUmPER prefix to all message templates.
+
+    Args:
+        messages: Mapping from message code enum to message template.
+
+    Returns:
+        dict: New mapping with the message prefix added to each
+        template.
+    """
     return {
         code: f"{MESSAGE_PREFIX}: {text}" for code, text in messages.items()
     }
@@ -131,7 +150,12 @@ EXTENSION_ERROR_MESSAGES = _apply_prefix(_BASE_EXTENSION_ERROR_MESSAGES)
 EXTENSION_INFO_MESSAGES = _apply_prefix(_BASE_EXTENSION_INFO_MESSAGES)
 
 
-def get_jumper_process_error_hint():
+def get_jumper_process_error_hint() -> str:
+    """Return a hint pointing to the error log file.
+
+    Returns:
+        str: Human-readable hint with the path to the error log file.
+    """
     jumper_process_error_hint = (
         "\nHint: full error info saved to log file: "
         f"{LOGGING['handlers']['error_file']['filename']}"

@@ -4,6 +4,10 @@ title: JUmPER IPython Extension Documentation
 
 # JUmPER IPython Extension
 
+<p align="left">
+  <img src="img/JUmPER01.png" alt="JUmPER logo" width="450">
+</p>
+
 Welcome to the documentation for the JUmPER IPython extension, a tool for monitoring the performance of code cells in IPython and Jupyter notebooks.
 
 JUmPER lets you:

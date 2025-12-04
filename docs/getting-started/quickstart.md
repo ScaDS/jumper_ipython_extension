@@ -8,7 +8,7 @@ This quickstart shows how to enable the JUmPER IPython extension in a notebook, 
 
 All examples below assume that `jumper_extension` has been installed as described in the [Installation](installation.md) section.
 
-## Enable the extension
+## **Enable the extension**
 
 In a Jupyter notebook or IPython shell, load the extension once per session:
 
@@ -18,7 +18,7 @@ In a Jupyter notebook or IPython shell, load the extension once per session:
 
 This registers the `%perfmonitor_*` magic commands and wires them into the underlying monitoring service.
 
-## Minimal monitoring workflow
+## **Minimal monitoring workflow**
 
 ### 1. Start monitoring
 
@@ -95,7 +95,7 @@ When you are done collecting data, stop the monitor:
 %perfmonitor_stop
 ```
 
-## One‑command fast setup
+## **One‑command fast setup**
 
 For a fully configured environment with interactive plotting and automatic reports, use the fast setup command:
 

@@ -6,7 +6,7 @@ title: Python API
 
 The Python API is centered around `PerfmonitorService`, a standalone orchestration class defined in `jumper_extension.core.service`. It wires together monitoring, visualization, reporting, cell history, and session management and can be used directly from Python code without IPython magics.
 
-## Constructing a service
+## **Constructing a service**
 
 The recommended entry point is the factory function `build_perfmonitor_service`:
 
@@ -26,87 +26,68 @@ This function creates:
 
 The returned `PerfmonitorService` exposes methods that mirror the high‑level commands used by the Jupyter API.
 
-## Core service methods
+::: jumper_extension.core.service
+    options:
+      show_root_heading: false
+      show_root_full_path: false
+      show_root_toc_entry: false
+      members:
+        - build_perfmonitor_service
+        - build_perfmonitor_magic_adapter
 
-Key methods of `PerfmonitorService` include:
+## **Core service methods**
 
-- `start_monitoring(interval: Optional[float] = None) -> Optional[ExtensionErrorCode]`  
-  Start the monitor with a given sampling interval. If `interval` is `None`, the default from `settings.monitoring.default_interval` is used. When an offline session is currently attached, a new live `PerformanceMonitor` is created.
-
-- `stop_monitoring() -> None`  
-  Stop the active monitoring session and mark `settings.monitoring.running` as `False`.
-
-- `show_perfreport(cell_range: Optional[Tuple[int, int]] = None, level: Optional[str] = None, text: bool = False) -> None`  
-  Display a performance report using the `PerformanceReporter`.  
-  - `cell_range` restricts the report to specific cells.  
-  - `level` selects the monitoring scope.  
-  - `text` switches between HTML and plain‑text rendering.
-
-- `plot_performance() -> None`  
-  Open an interactive visualization using the attached `PerformanceVisualizer`. Works with both live and imported sessions.
-
-- `enable_perfreports(level: str, interval: Optional[float] = None, text: bool = False) -> None`  
-  Enable automatic reports after each cell. This updates `settings.perfreports` and calls `start_monitoring` if necessary.
-
-- `disable_perfreports() -> None`  
-  Disable automatic cell‑level reports.
-
-## Data access and export
-
-The service provides helpers to access collected data as pandas `DataFrame` objects or export them to disk:
-
-- `export_perfdata(file: Optional[str] = None, level: Optional[str] = None) -> Dict[str, pd.DataFrame]`  
-  - If `file` is `None`, returns a dictionary mapping `settings.export_vars.perfdata` to a `DataFrame` produced by `monitor.data.view`.  
-  - If `file` is set, forwards to `monitor.data.export` and returns an empty dictionary.
-
-- `load_perfdata(file: str) -> Dict[str, pd.DataFrame]`  
-  Load performance data from a file via `monitor.data.load` and return it under the key `settings.loaded_vars.perfdata`.
-
-- `export_cell_history(file: Optional[str] = None) -> Dict[str, pd.DataFrame]`  
-  - Without `file`, return a dictionary mapping `settings.export_vars.cell_history` to the `CellHistory.view()` `DataFrame`.  
-  - With `file`, export cell history via `CellHistory.export`.
-
-- `load_cell_history(file: str) -> Dict[str, pd.DataFrame]`  
-  Load cell history using `CellHistory.load` and return it under `settings.loaded_vars.cell_history`.
-
-## Sessions, scripts, and utilities
-
-Additional service methods cover higher‑level workflows:
-
-- `show_resources() -> None`  
-  Print information about CPUs, memory, and GPUs available to the current or imported session. When metrics come from an imported session, the source is included in the message.
-
-- `show_cell_history() -> None`  
-  Show an interactive table of executed cells using `CellHistory.show_itable`.
-
-- `export_session(path: Optional[str] = None) -> None`  
-  Export a full session (performance data and cell history) through `SessionExporter`. When `path` ends with `.zip`, a zip archive is created automatically.
-
-- `import_session(path: str) -> None`  
-  Import a session via `SessionImporter` and attach it to the service. On success, a log message announces the source of the imported session.
-
-- `fast_setup() -> None`  
-  Convenience method that starts monitoring with a `1.0` second interval and enables HTML per‑cell performance reports at the `process` level.
-
-- `start_script_recording(output_path: Optional[str] = None) -> None` and `stop_script_recording() -> Optional[str]`  
-  Coordinate `NotebookScriptWriter` to record cell code and write it to a Python script. When `output_path` is `None`, a filename is generated automatically.
-
-- `monitored()` (context manager)  
-  Provide a Python `with`‑statement context that marks the enclosed block as a virtual cell and ensures that pre‑ and post‑cell hooks are invoked around it.
-
-For direct interaction with string‑based commands or IPython magics, see the [String Based API](string.md) and [Jupyter API](jupyter.md) sections.
-
-## API reference
-
-The following reference is generated directly from the Python source code using mkdocstrings.
-
-### `PerfmonitorService`
+Core methods control monitoring, plotting, and automatic per‑cell reports.
 
 ::: jumper_extension.core.service.PerfmonitorService
+    options:
+      show_root_heading: false
+      show_root_full_path: false
+      show_root_toc_entry: false
+      members:
+        - start_monitoring
+        - stop_monitoring
+        - enable_perfreports
+        - disable_perfreports
+        - show_perfreport
+        - plot_performance
 
-### Builder functions
+## **Data access and export**
 
-::: jumper_extension.core.service.build_perfmonitor_service
+The service exposes helpers for accessing collected data as pandas
+`DataFrame` objects and exporting or loading them from disk.
 
-::: jumper_extension.core.service.build_perfmonitor_magic_adapter
+::: jumper_extension.core.service.PerfmonitorService
+    options:
+      show_root_heading: false
+      show_root_full_path: false
+      show_root_toc_entry: false
+      members:
+        - export_perfdata
+        - load_perfdata
+        - export_cell_history
+        - load_cell_history
 
+## **Sessions, scripts, and utilities**
+
+For higher‑level workflows, the service also exposes helpers for
+resources, sessions, and script recording.
+
+For direct interaction with string‑based commands or IPython magics,
+see the [String Based API](string.md) and [Jupyter API](jupyter.md)
+sections.
+
+::: jumper_extension.core.service.PerfmonitorService
+    options:
+      show_root_heading: false
+      show_root_full_path: false
+      show_root_toc_entry: false
+      members:
+        - show_resources
+        - show_cell_history
+        - export_session
+        - import_session
+        - fast_setup
+        - start_script_recording
+        - stop_script_recording
+        - monitored

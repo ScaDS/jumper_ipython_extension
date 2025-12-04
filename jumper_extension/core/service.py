@@ -47,8 +47,32 @@ logger = logging.getLogger("extension")
 
 
 class PerfmonitorService:
-    """
-    Core performance monitoring service with Python API.
+    """High-level performance monitoring service.
+
+    This service wires together monitoring, visualization, reporting,
+    cell history, and script recording. It is the main entry point for
+    using JUmPER from pure Python code.
+
+    Args:
+        settings: Runtime configuration for monitoring, reports, and
+            exports.
+        monitor: Performance monitor instance used to collect metrics.
+        visualizer: Visualizer used for plots and interactive
+            exploration.
+        reporter: Reporter used to render text or HTML performance
+            reports.
+        cell_history: Tracker of executed cells and their metadata.
+        script_writer: Helper used to record cells into a Python
+            script.
+
+    Examples:
+        Build a default service::
+
+            from jumper_extension.core.service import (
+                build_perfmonitor_service,
+            )
+
+            service = build_perfmonitor_service()
     """
     def __init__(
         self,
@@ -59,6 +83,16 @@ class PerfmonitorService:
         cell_history: CellHistory,
         script_writer: NotebookScriptWriter,
     ):
+        """Initialize a PerfmonitorService instance.
+
+        Args:
+            settings: Extension settings to use for this service.
+            monitor: Performance monitor that will collect metrics.
+            visualizer: Visualizer attached to the monitor.
+            reporter: Reporter responsible for performance reports.
+            cell_history: Cell history tracker for executed cells.
+            script_writer: Script writer used for code recording.
+        """
         self.settings = settings
         self.monitor = monitor
         self.visualizer = visualizer
@@ -67,13 +101,32 @@ class PerfmonitorService:
         self.script_writer = script_writer
         self._skip_report = False
 
-    def on_pre_run_cell(self, raw_cell: str, cell_magics: List[str], should_skip_report: bool):
-        """Prepare for cell execution."""
+    def on_pre_run_cell(
+        self,
+        raw_cell: str,
+        cell_magics: List[str],
+        should_skip_report: bool,
+    ):
+        """Prepare internal state before executing a cell.
+
+        Args:
+            raw_cell: Source code of the cell being executed.
+            cell_magics: List of magic commands detected in the cell.
+            should_skip_report: Whether automatic reporting should be
+                skipped for this cell.
+        """
         self.cell_history.start_cell(raw_cell, cell_magics)
         self._skip_report = should_skip_report
 
     def on_post_run_cell(self, result):
-        """Handle post-cell execution, including automatic reports."""
+        """Handle post-cell execution, including automatic reports.
+
+        If automatic reports are enabled and monitoring is running,
+        this will emit either a text or HTML report for the last cell.
+
+        Args:
+            result: Execution result object returned by IPython.
+        """
         self.cell_history.end_cell(result)
         if (
                 not self._skip_report
@@ -90,9 +143,13 @@ class PerfmonitorService:
                 )
 
     def show_resources(self):
-        """Display available hardware resources (CPUs, memory, GPUs).
+        """Display available hardware resources.
 
-        Works for both live and imported sessions (when monitor.is_imported is True).
+        Prints information about CPUs, memory, and GPUs available to the
+        current or imported session.
+
+        Examples:
+            >>> service.show_resources()
         """
         if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
@@ -120,17 +177,43 @@ class PerfmonitorService:
             print(f"    {self.monitor.gpu_name}, {self.monitor.gpu_memory} GB")
 
     def show_cell_history(self):
-        """Show interactive table of all executed cells."""
+        """Show an interactive table of executed cells.
+
+        Displays the tracked cell history using an interactive table
+        widget, if available.
+
+        Examples:
+            >>> service.show_cell_history()
+        """
         self.cell_history.show_itable()
 
-    def start_monitoring(self, interval: Optional[float] = None) -> Optional[ExtensionErrorCode]:
-        """Start performance monitoring with specified interval.
+    def start_monitoring(
+        self,
+        interval: Optional[float] = None,
+    ) -> Optional[ExtensionErrorCode]:
+        """Start performance monitoring.
+
+        This method configures and starts the underlying performance
+        monitor. If an offline (imported) session is currently
+        attached, it is replaced with a new live monitor instance.
 
         Args:
-            interval: Monitoring interval in seconds (uses default if None)
+            interval: Sampling interval in seconds. If ``None``, the
+                value from ``settings.monitoring.default_interval`` is
+                used.
 
         Returns:
-            Error code if operation failed, None on success
+            Optional[ExtensionErrorCode]: An error code if monitoring
+            was already running, otherwise ``None``.
+
+        Examples:
+            Start monitoring with the default interval::
+
+                service.start_monitoring()
+
+            Start monitoring with a custom interval::
+
+                service.start_monitoring(interval=0.5)
         """
         # If an imported (offline) session is currently attached, swap to a live monitor
         if self.monitor.is_imported:
@@ -154,7 +237,14 @@ class PerfmonitorService:
         return None
 
     def stop_monitoring(self):
-        """Stop the active performance monitoring session."""
+        """Stop the active performance monitoring session.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.stop_monitoring()
+        """
         if not self.monitor:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
@@ -164,7 +254,17 @@ class PerfmonitorService:
         self.settings.monitoring.running = False
 
     def plot_performance(self):
-        """Open interactive plot for live or imported sessions."""
+        """Open an interactive performance plot.
+
+        Works for both live and imported sessions. Uses the attached
+        visualizer to display metrics and interactive widgets.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.plot_performance()
+        """
         if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
@@ -184,12 +284,30 @@ class PerfmonitorService:
         interval: Optional[float] = None,
         text: bool = False
     ):
-        """Enable automatic performance reports after each cell execution.
+        """Enable automatic performance reports after each cell.
 
         Args:
-            level: Monitoring level (process, user, system, slurm)
-            interval: Monitoring interval in seconds (starts monitoring if not running)
-            text: Use text format instead of HTML
+            level: Monitoring level (``\"process\"``, ``\"user\"``,
+                ``\"system\"``, or ``\"slurm\"``).
+            interval: Sampling interval in seconds. If provided, this
+                value is used when starting monitoring.
+            text: If ``True``, use plain-text reports instead of HTML.
+
+        Returns:
+            None
+
+        Examples:
+            Enable HTML reports at process level::
+
+                service.enable_perfreports(level="process")
+
+            Enable text reports with a custom interval::
+
+                service.enable_perfreports(
+                    level="user",
+                    interval=0.5,
+                    text=True,
+                )
         """
         self.settings.perfreports.enabled = True
         self.settings.perfreports.level = level
@@ -209,7 +327,14 @@ class PerfmonitorService:
         )
 
     def disable_perfreports(self):
-        """Disable automatic performance reports after cell execution."""
+        """Disable automatic performance reports after cell execution.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.disable_perfreports()
+        """
         self.settings.perfreports.enabled = False
         logger.info(
             EXTENSION_INFO_MESSAGES[
@@ -223,12 +348,30 @@ class PerfmonitorService:
         level: Optional[str] = None,
         text: bool = False
     ):
-        """Show performance report with optional cell range and level filters.
+        """Show a performance report for the current session.
 
         Args:
-            cell_range: Tuple of (start_idx, end_idx) or None for all cells
-            level: Monitoring level or None to use default
-            text: Use text format instead of HTML
+            cell_range: Optional tuple ``(start_idx, end_idx)`` limiting
+                the report to a subset of cells. If ``None``, all cells
+                are included.
+            level: Optional monitoring level override. If ``None``,
+                the default report level is used.
+            text: If ``True``, render a text report instead of HTML.
+
+        Returns:
+            None
+
+        Examples:
+            Show a report for all cells::
+
+                service.show_perfreport()
+
+            Show a report for cells 2 through 5 at system level::
+
+                service.show_perfreport(
+                    cell_range=(2, 5),
+                    level="system",
+                )
         """
         if not self.monitor.running:
             logger.warning(
@@ -247,15 +390,33 @@ class PerfmonitorService:
         level: Optional[str] = None,
         name: Optional[str] = None
     ) -> Optional[Dict[str, pd.DataFrame]]:
-        """Export performance data to file or return as DataFrame.
+        """Export performance data or return it as data frames.
 
         Args:
-            file: File path for export or None to return DataFrame
-            level: Monitoring level or None for default
-            name: Custom variable name for returned DataFrame
+            file: Optional target file path. If provided, data is
+                written using the monitor's data adapter. If ``None``,
+                data is returned as a mapping of variable name to
+                ``pandas.DataFrame``.
+            level: Optional monitoring level override. If ``None``,
+                the default export level is used.
 
         Returns:
-            Dictionary with DataFrame if file is None, empty dict otherwise
+            Optional[Dict[str, pandas.DataFrame]]: If ``file`` is
+            ``None``, a mapping from variable name to data frame. If
+            ``file`` is set, an empty dictionary.
+
+        Examples:
+            Export metrics to a CSV file::
+
+                service.export_perfdata(
+                    file="performance.csv",
+                    level="process",
+                )
+
+            Get a DataFrame in memory::
+
+                frames = service.export_perfdata()
+                df = next(iter(frames.values()))
         """
         if not self.monitor.running:
             logger.warning(
@@ -281,13 +442,19 @@ class PerfmonitorService:
             return {var_name: df}
 
     def load_perfdata(self, file: str) -> Optional[Dict[str, pd.DataFrame]]:
-        """Import performance data from file.
+        """Load performance data from a file.
 
         Args:
-            file: File path to import from
+            file: Path to a CSV or JSON file containing performance
+                data.
 
         Returns:
-            Dictionary with loaded DataFrame
+            Optional[Dict[str, pandas.DataFrame]]: Mapping from the
+            configured variable name to the loaded data frame.
+
+        Examples:
+            >>> frames = service.load_perfdata("performance.csv")
+            >>> df = next(iter(frames.values()))
         """
         df = self.monitor.data.load(file)
         var_name = self.settings.loaded_vars.perfdata
@@ -304,14 +471,28 @@ class PerfmonitorService:
         file: Optional[str] = None,
         name: Optional[str] = None
     ) -> Optional[Dict[str, pd.DataFrame]]:
-        """Export cell history to file or return as DataFrame.
+        """Export cell history or return it as a data frame.
 
         Args:
-            file: File path for export or None to return DataFrame
-            name: Custom variable name for returned DataFrame
+            file: Optional target file path. If provided, the cell
+                history is written to disk. If ``None``, data is
+                returned as a mapping of variable name to
+                ``pandas.DataFrame``.
 
         Returns:
-            Dictionary with DataFrame if file is None, empty dict otherwise
+            Optional[Dict[str, pandas.DataFrame]]: If ``file`` is
+            ``None``, a mapping from variable name to data frame. If
+            ``file`` is set, an empty dictionary.
+
+        Examples:
+            Export cell history to CSV::
+
+                service.export_cell_history(file="cells.csv")
+
+            Get the history as a DataFrame::
+
+                frames = service.export_cell_history()
+                df = next(iter(frames.values()))
         """
         if file:
             self.cell_history.export(file)
@@ -325,13 +506,18 @@ class PerfmonitorService:
             return {var_name: df}
 
     def load_cell_history(self, file: str) -> Optional[Dict[str, pd.DataFrame]]:
-        """Import cell history from file.
+        """Load cell history from a file.
 
         Args:
-            file: File path to import from
+            file: Path to a CSV or JSON file containing cell history.
 
         Returns:
-            Dictionary with loaded DataFrame
+            Optional[Dict[str, pandas.DataFrame]]: Mapping from the
+            configured variable name to the loaded data frame.
+
+        Examples:
+            >>> frames = service.load_cell_history("cells.csv")
+            >>> df = next(iter(frames.values()))
         """
         df = self.cell_history.load(file)
         var_name = self.settings.loaded_vars.cell_history
@@ -342,7 +528,29 @@ class PerfmonitorService:
         return {var_name: df}
 
     def export_session(self, path: Optional[str] = None) -> None:
-        """Export full session using SessionExporter. If path ends with .zip, a zip is created automatically."""
+        """Export the full monitoring session.
+
+        This uses :class:`SessionExporter` to write performance data
+        and cell history to a directory or zip archive.
+
+        Args:
+            path: Optional target directory or ``.zip`` file. If the
+                path ends with ``.zip``, a temporary directory is used
+                and then compressed into that archive. If ``None``, a
+                timestamped directory is created.
+
+        Returns:
+            None
+
+        Examples:
+            Export to a directory::
+
+                service.export_session("session-dir")
+
+            Export to a zip archive::
+
+                service.export_session("session.zip")
+        """
         if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
@@ -351,7 +559,21 @@ class PerfmonitorService:
         exporter.export(path)
 
     def import_session(self, path: str) -> None:
-        """Import session using SessionImporter and announce success."""
+        """Import a monitoring session from disk.
+
+        Uses :class:`SessionImporter` to attach performance data and
+        cell history from the given directory or zip archive.
+
+        Args:
+            path: Directory or ``.zip`` archive previously created by
+                :meth:`export_session`.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.import_session("session.zip")
+        """
         importer = SessionImporter(logger)
         ok = importer.import_(path, self)
         if ok:
@@ -362,7 +584,18 @@ class PerfmonitorService:
             )
 
     def fast_setup(self):
-        """Quick setup: start perfmonitor and enable perfreports."""
+        """Quickly start monitoring with per-cell reports enabled.
+
+        This convenience helper starts monitoring with a one-second
+        interval and enables HTML performance reports at the ``process``
+        level.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.fast_setup()
+        """
         self.start_monitoring(1.0)
         self.enable_perfreports(level="process", interval=1.0, text=False)
         logger.info("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
@@ -371,7 +604,20 @@ class PerfmonitorService:
         """Start recording code from cells to a Python script.
 
         Args:
-            output_path: Optional output file path (auto-generated if None)
+            output_path: Optional path to the output script file. If
+                ``None``, a filename is generated automatically.
+
+        Returns:
+            None
+
+        Examples:
+            Start recording to an auto-generated file::
+
+                service.start_script_recording()
+
+            Record to a specific script path::
+
+                service.start_script_recording("analysis_script.py")
         """
         self.script_writer.start_recording(self.settings.snapshot(), output_path)
 
@@ -381,10 +627,15 @@ class PerfmonitorService:
             logger.info("[JUmPER]: Started script recording (filename will be auto-generated)")
 
     def stop_script_recording(self) -> Optional[str]:
-        """Stop recording and save accumulated code to file.
+        """Stop recording and save accumulated code to a script file.
 
         Returns:
-            Path to saved script file
+            Optional[str]: Path to the saved script file, or ``None``
+            if recording was not active or no cells were captured.
+
+        Examples:
+            >>> path = service.stop_script_recording()
+            >>> print(path)
         """
         if not self.script_writer:
             print("No script recording in progress.")
@@ -396,7 +647,22 @@ class PerfmonitorService:
 
     @contextmanager
     def monitored(self):
-        """Code performance monitoring context manager."""
+        """Context manager for monitoring a code block.
+
+        This helper simulates a virtual cell: it registers a synthetic
+        cell before the block and finalizes it afterwards so that the
+        enclosed code is tracked like any other cell.
+
+        Yields:
+            PerfmonitorService: The current service instance, for
+            optional use inside the context.
+
+        Examples:
+            Use the service as a monitoring context::
+
+                with service.monitored():
+                    do_expensive_work()
+        """
         unavailable_message = "unavailable on monitored context"
         self.on_pre_run_cell(
             raw_cell=f"# <Code {unavailable_message}>",
@@ -409,7 +675,14 @@ class PerfmonitorService:
             self.on_post_run_cell(None)
 
     def close(self):
-        """Close the magic_adapter and release any resources."""
+        """Stop monitoring and release resources held by the service.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.close()
+        """
         if self.monitor:
             self.monitor.stop()
 
@@ -647,10 +920,25 @@ def build_perfmonitor_service(
         display_disabled: bool = False,
         display_disabled_reason: str = "Display not available."
 ) -> PerfmonitorService:
-    """Build a new instance of the perfmonitor magic_adapter (core API).
+    """Build a new :class:`PerfmonitorService` instance.
+
+    This factory configures the default monitor, visualizer, reporter,
+    cell history, and script writer for use in Python code.
+
+    Args:
+        plots_disabled: If ``True``, disable plotting in the visualizer.
+        plots_disabled_reason: Human-readable reason shown when plots
+            are disabled.
+        display_disabled: If ``True``, disable rich display for reports.
+        display_disabled_reason: Human-readable reason shown when rich
+            display is disabled.
 
     Returns:
-        PerfmonitorService instance with Python API
+        PerfmonitorService: A fully initialized service instance.
+
+    Examples:
+        >>> from jumper_extension.core.service import build_perfmonitor_service
+        >>> service = build_perfmonitor_service()
     """
     settings = Settings()
     monitor = PerformanceMonitor()
@@ -683,10 +971,28 @@ def build_perfmonitor_magic_adapter(
         display_disabled: bool = False,
         display_disabled_reason: str = "Display not available."
 ) -> PerfmonitorMagicAdapter:
-    """Build a new instance of the perfmonitor magic adapter (string-based API).
+    """Build a new :class:`PerfmonitorMagicAdapter` instance.
+
+    This factory constructs a :class:`PerfmonitorService` and wraps it
+    with a string-based adapter suitable for IPython magics or other
+    command-style interfaces.
+
+    Args:
+        plots_disabled: If ``True``, disable plotting in the visualizer.
+        plots_disabled_reason: Human-readable reason shown when plots
+            are disabled.
+        display_disabled: If ``True``, disable rich display for reports.
+        display_disabled_reason: Human-readable reason shown when rich
+            display is disabled.
 
     Returns:
-        PerfmonitorMagicAdapter instance that wraps PerfmonitorService
+        PerfmonitorMagicAdapter: Adapter instance wrapping the service.
+
+    Examples:
+        >>> from jumper_extension.core.service import (
+        ...     build_perfmonitor_magic_adapter,
+        ... )
+        >>> adapter = build_perfmonitor_magic_adapter()
     """
     service = build_perfmonitor_service(
         plots_disabled=plots_disabled,

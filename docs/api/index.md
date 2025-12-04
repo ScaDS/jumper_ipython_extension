@@ -1,8 +1,8 @@
 ---
-title: JUmPER API
+title: Overview
 ---
 
-# JUmPER API
+# Overview
 
 The JUmPER IPython extension exposes a layered public API that lets you work with performance monitoring at different levels:
 
@@ -13,4 +13,3 @@ The JUmPER IPython extension exposes a layered public API that lets you work wit
 The following subsections describe each of these layers and how they relate to each other.
 
 For architectural context and component diagrams, see the [Architecture](../internals/architecture.md) page in the Internals section.
-
