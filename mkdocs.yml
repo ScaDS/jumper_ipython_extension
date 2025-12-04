@@ -10,12 +10,21 @@ theme:
 
 nav:
   - Home: index.md
-  - Guides:
-      - Getting started: guides/getting-started.md
-      - Advanced usage: guides/advanced-usage.md
-  - API:
-      - JUmPER API: api/myproject.md
-
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - How-to Guides:
+      - Stub: guides/index.md
+  - Public API:
+      - JUmPER API: api/index.md
+      - Jupyter API: api/jupyter.md
+      - Python API: api/python.md
+      - String Based API: api/string.md
+  - Internals:
+      - Architecture: internals/architecture.md
+      - Adapters: internals/adapters.md
+      - Core: internals/core.md
+      - IPython: internals/ipython.md
 plugins:
   - search
   - mkdocstrings
