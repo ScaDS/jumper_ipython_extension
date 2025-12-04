@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List, Optional
+import pandas as pd
 from dataclasses import dataclass
 from enum import Enum
 
@@ -67,9 +68,9 @@ class PerformanceAnalyzer:
 
     def analyze_cell_performance(
         self,
-        perfdata,
+        perfdata: "pd.DataFrame",
         memory_limit: float,
-        gpu_memory_limit: Optional[float] = None
+        gpu_memory_limit: Optional[float] = None,
     ) -> List[TagScore]:
         """
         Analyze cell performance and determine tags
@@ -107,8 +108,8 @@ class PerformanceAnalyzer:
 
     @staticmethod
     def _compute_metrics(
-            perfdata,
-            gpu_memory_limit: Optional[float]
+            perfdata: "pd.DataFrame",
+            gpu_memory_limit: Optional[float],
     ) -> Dict[str, float]:
         """Compute raw performance metrics"""
         metrics = {}
@@ -197,7 +198,7 @@ class PerformanceAnalyzer:
 
     def _detect_gpu_allocated_but_not_used(
         self,
-        perfdata,
+        perfdata: "pd.DataFrame",
         gpu_memory_limit: Optional[float],
     ) -> Optional[TagScore]:
         """
@@ -238,4 +239,3 @@ class PerformanceAnalyzer:
         if frac >= min_fraction:
             return TagScore(PerformanceTag.GPU_ALLOCATED_BUT_NOT_USED, frac)
         return None
-

@@ -1,8 +1,12 @@
 import logging
+from typing import Any
 
 from IPython.core.magic import Magics, line_magic, magics_class
 
-from jumper_extension.ipython.utilities import is_pure_line_magic_cell, get_called_line_magics
+from jumper_extension.ipython.utilities import (
+    is_pure_line_magic_cell,
+    get_called_line_magics,
+)
 from jumper_extension.core.service import PerfmonitorMagicAdapter
 
 
@@ -31,9 +35,9 @@ class PerfmonitorMagics(Magics):
 
     def __init__(
         self,
-        shell,
+        shell: Any,
         magic_adapter: PerfmonitorMagicAdapter,
-    ):
+    ) -> None:
         """Initialize the magics wrapper.
 
         Args:
@@ -44,7 +48,7 @@ class PerfmonitorMagics(Magics):
         super().__init__(shell)
         self.magic_adapter = magic_adapter
 
-    def pre_run_cell(self, info):
+    def pre_run_cell(self, info: Any) -> None:
         """Hook executed before each cell.
 
         This inspects the raw cell source, extracts any magic commands,
@@ -66,7 +70,7 @@ class PerfmonitorMagics(Magics):
             should_skip_report,
         )
 
-    def post_run_cell(self, result):
+    def post_run_cell(self, result: Any) -> None:
         """Hook executed after each cell has run.
 
         Delegates to the magic adapter so that post-cell reporting and
@@ -80,7 +84,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.on_post_run_cell(result.result)
 
     @line_magic
-    def perfmonitor_resources(self, line):
+    def perfmonitor_resources(self, line: str) -> None:
         """Show hardware resources available to the current session.
 
         This magic prints CPUs, memory, and GPU information for either
@@ -99,7 +103,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_resources(line)
 
     @line_magic
-    def perfmonitor_start(self, line):
+    def perfmonitor_start(self, line: str) -> None:
         """Start performance monitoring.
 
         If an interval is provided as a single numeric argument, it is
@@ -123,7 +127,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_start(line)
 
     @line_magic
-    def perfmonitor_stop(self, line):
+    def perfmonitor_stop(self, line: str) -> None:
         """Stop the active performance monitoring session.
 
         Args:
@@ -137,7 +141,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_stop(line)
 
     @line_magic
-    def perfmonitor_plot(self, line):
+    def perfmonitor_plot(self, line: str) -> None:
         """Open an interactive performance plot.
 
         This magic opens interactive widgets for exploring collected
@@ -156,7 +160,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_plot(line)
 
     @line_magic
-    def perfmonitor_enable_perfreports(self, line):
+    def perfmonitor_enable_perfreports(self, line: str) -> None:
         """Enable automatic performance reports after each cell.
 
         The line string is parsed for options such as monitoring level,
@@ -181,7 +185,7 @@ class PerfmonitorMagics(Magics):
 
 
     @line_magic
-    def perfmonitor_disable_perfreports(self, line):
+    def perfmonitor_disable_perfreports(self, line: str) -> None:
         """Disable automatic performance reports.
 
         Args:
@@ -195,7 +199,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_disable_perfreports(line)
 
     @line_magic
-    def perfmonitor_perfreport(self, line):
+    def perfmonitor_perfreport(self, line: str) -> None:
         """Show a performance report for the current session.
 
         The line string may include cell range and monitoring level
@@ -219,7 +223,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_perfreport(line)
 
     @line_magic
-    def perfmonitor_export_perfdata(self, line):
+    def perfmonitor_export_perfdata(self, line: str) -> None:
         """Export performance data or push it into the notebook.
 
         If ``--file`` is provided, data is written to disk. Otherwise,
@@ -244,7 +248,7 @@ class PerfmonitorMagics(Magics):
         self.shell.push(perfdata)
 
     @line_magic
-    def perfmonitor_export_cell_history(self, line):
+    def perfmonitor_export_cell_history(self, line: str) -> None:
         """Export cell history or push it into the notebook.
 
         If ``--file`` is provided, the cell history is written to disk.
@@ -269,7 +273,7 @@ class PerfmonitorMagics(Magics):
         self.shell.push(cell_history_data)
 
     @line_magic
-    def perfmonitor_load_perfdata(self, line):
+    def perfmonitor_load_perfdata(self, line: str) -> None:
         """Load performance data from disk and push it to the notebook.
 
         Args:
@@ -284,7 +288,7 @@ class PerfmonitorMagics(Magics):
         self.shell.push(perfdata)
 
     @line_magic
-    def perfmonitor_load_cell_history(self, line):
+    def perfmonitor_load_cell_history(self, line: str) -> None:
         """Load cell history from disk and push it to the notebook.
 
         Args:
@@ -299,7 +303,7 @@ class PerfmonitorMagics(Magics):
         self.shell.push(cell_history_data)
 
     @line_magic
-    def export_session(self, line):
+    def export_session(self, line: str) -> None:
         """Export the full monitoring session to a directory or zip.
 
         When the target ends with ``.zip``, a temporary directory is
@@ -323,7 +327,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.export_session(line)
 
     @line_magic
-    def import_session(self, line):
+    def import_session(self, line: str) -> None:
         """Import a monitoring session from a directory or zip.
 
         Args:
@@ -337,7 +341,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.import_session(line)
 
     @line_magic
-    def perfmonitor_fast_setup(self, line):
+    def perfmonitor_fast_setup(self, line: str) -> None:
         """Run a quick setup for interactive monitoring.
 
         This helper enables ``ipympl`` interactive plots (if available),
@@ -362,7 +366,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_fast_setup(line)
 
     @line_magic
-    def show_cell_history(self, line):
+    def show_cell_history(self, line: str) -> None:
         """Show an interactive table of executed cells.
 
         Args:
@@ -376,7 +380,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.show_cell_history(line)
 
     @line_magic
-    def perfmonitor_help(self, line):
+    def perfmonitor_help(self, line: str) -> None:
         """Show comprehensive help for all available magics.
 
         Args:
@@ -390,7 +394,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_help(line)
 
     @line_magic
-    def start_write_script(self, line):
+    def start_write_script(self, line: str) -> None:
         """Start recording code from subsequent cells to a Python script.
 
         If no path is provided, the script writer chooses a default
@@ -412,7 +416,7 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.start_write_script(line)
 
     @line_magic
-    def end_write_script(self, line):
+    def end_write_script(self, line: str) -> None:
         """Stop recording and save accumulated code to a script file.
 
         Args:
