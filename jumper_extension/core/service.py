@@ -1,7 +1,7 @@
 import argparse
 import logging
 from contextlib import contextmanager
-from typing import Optional, Tuple, Union, List, Dict
+from typing import Optional, Tuple, Union, List, Dict, Iterator
 import os
 import sys
 import time
@@ -52,18 +52,6 @@ class PerfmonitorService:
     This service wires together monitoring, visualization, reporting,
     cell history, and script recording. It is the main entry point for
     using JUmPER from pure Python code.
-
-    Args:
-        settings: Runtime configuration for monitoring, reports, and
-            exports.
-        monitor: Performance monitor instance used to collect metrics.
-        visualizer: Visualizer used for plots and interactive
-            exploration.
-        reporter: Reporter used to render text or HTML performance
-            reports.
-        cell_history: Tracker of executed cells and their metadata.
-        script_writer: Helper used to record cells into a Python
-            script.
 
     Examples:
         Build a default service::
@@ -142,11 +130,14 @@ class PerfmonitorService:
                     cell_range=None, level=self.settings.perfreports.level
                 )
 
-    def show_resources(self):
+    def show_resources(self) -> None:
         """Display available hardware resources.
 
         Prints information about CPUs, memory, and GPUs available to the
         current or imported session.
+
+        Returns:
+            None
 
         Examples:
             >>> service.show_resources()
@@ -176,11 +167,14 @@ class PerfmonitorService:
         if self.monitor.num_gpus:
             print(f"    {self.monitor.gpu_name}, {self.monitor.gpu_memory} GB")
 
-    def show_cell_history(self):
+    def show_cell_history(self) -> None:
         """Show an interactive table of executed cells.
 
         Displays the tracked cell history using an interactive table
         widget, if available.
+
+        Returns:
+            None
 
         Examples:
             >>> service.show_cell_history()
@@ -236,7 +230,7 @@ class PerfmonitorService:
         self.reporter.attach(self.monitor)
         return None
 
-    def stop_monitoring(self):
+    def stop_monitoring(self) -> None:
         """Stop the active performance monitoring session.
 
         Returns:
@@ -253,7 +247,7 @@ class PerfmonitorService:
         self.monitor.stop()
         self.settings.monitoring.running = False
 
-    def plot_performance(self):
+    def plot_performance(self) -> None:
         """Open an interactive performance plot.
 
         Works for both live and imported sessions. Uses the attached
@@ -283,7 +277,7 @@ class PerfmonitorService:
         level: str,
         interval: Optional[float] = None,
         text: bool = False
-    ):
+    ) -> None:
         """Enable automatic performance reports after each cell.
 
         Args:
@@ -326,7 +320,7 @@ class PerfmonitorService:
             )
         )
 
-    def disable_perfreports(self):
+    def disable_perfreports(self) -> None:
         """Disable automatic performance reports after cell execution.
 
         Returns:
@@ -347,7 +341,7 @@ class PerfmonitorService:
         cell_range: Optional[Tuple[int, int]] = None,
         level: Optional[str] = None,
         text: bool = False
-    ):
+    ) -> None:
         """Show a performance report for the current session.
 
         Args:
@@ -583,7 +577,7 @@ class PerfmonitorService:
                 )
             )
 
-    def fast_setup(self):
+    def fast_setup(self) -> None:
         """Quickly start monitoring with per-cell reports enabled.
 
         This convenience helper starts monitoring with a one-second
@@ -600,7 +594,7 @@ class PerfmonitorService:
         self.enable_perfreports(level="process", interval=1.0, text=False)
         logger.info("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
 
-    def start_script_recording(self, output_path: Optional[str] = None):
+    def start_script_recording(self, output_path: Optional[str] = None) -> None:
         """Start recording code from cells to a Python script.
 
         Args:
@@ -646,7 +640,7 @@ class PerfmonitorService:
         return output_path
 
     @contextmanager
-    def monitored(self):
+    def monitored(self) -> "Iterator[PerfmonitorService]":
         """Context manager for monitoring a code block.
 
         This helper simulates a virtual cell: it registers a synthetic
@@ -674,7 +668,7 @@ class PerfmonitorService:
         finally:
             self.on_post_run_cell(None)
 
-    def close(self):
+    def close(self) -> None:
         """Stop monitoring and release resources held by the service.
 
         Returns:
