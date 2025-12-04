@@ -3,7 +3,7 @@
 [![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
 
 <p align="center">
-<img width="450" src="doc/JUmPER01.png"/>
+<img width="450" src="docs/img/JUmPER01.png"/>
 </p>
 
 # JUmPER: Jupyter meets Performance
@@ -118,7 +118,7 @@ Both GPU libraries can be installed simultaneously to monitor mixed GPU systems.
 
    Opens an interactive plot with widgets to explore performance metrics over time, filter by cell ranges, and select different monitoring levels.
 
-![](doc/plot_out.png)
+![](docs/img/plot_out.png)
 
 ### Direct plotting mode and exports
 
