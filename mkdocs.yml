@@ -16,7 +16,7 @@ nav:
   - How-to Guides:
       - Stub: guides/index.md
   - Public API:
-      - JUmPER API: api/index.md
+      - Overview: api/index.md
       - Jupyter API: api/jupyter.md
       - Python API: api/python.md
       - String Based API: api/string.md

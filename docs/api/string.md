@@ -12,7 +12,7 @@ The string‑based API is implemented by `PerfmonitorMagicAdapter` in `jumper_ex
 
 This layer is also used by the notebook script writer when generating reproducible monitoring scripts.
 
-## Role in the public API
+## **Role in the public API**
 
 At runtime, the flow of a typical command is:
 
@@ -22,7 +22,7 @@ At runtime, the flow of a typical command is:
 
 This design keeps the parsing and text handling logic separate from the core monitoring and analysis code.
 
-## Example usage
+## **Example usage**
 
 While you typically interact with the string‑based API indirectly through magics, you can also construct it directly:
 
@@ -36,4 +36,3 @@ adapter.perfmonitor_export_perfdata("--file perf.csv --level system")
 ```
 
 The commands are identical to the magic syntax but passed as plain strings. This is the same interface that `NotebookScriptWriter` relies on when emitting code for `monitored_script.py`.
-

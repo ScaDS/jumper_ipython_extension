@@ -6,7 +6,7 @@ title: Architecture
 
 The JUmPER IPython extension is organized as a set of layers that separate public APIs from internal monitoring, visualization, and storage components. The diagrams in the `Public API` and `Underlying Structure` images, together with the internal documentation, describe how these layers fit together.
 
-## Public API layers
+## **Public API layers**
 
 ![Public API diagram](../img/Public%20API.jpg)
 
@@ -26,7 +26,7 @@ The `Public API` diagram shows how user‑facing entry points build on top of a 
 
 Together, these components allow the same core logic to be reused from notebooks, scripts, and direct Python APIs.
 
-## Underlying structure
+## **Underlying structure**
 
 ![Underlying structure diagram](../img/Underlying%20Structure.jpg)
 
@@ -54,7 +54,7 @@ The `Underlying Structure` diagram focuses on the internal levels that support t
 
 These layers are wired together by the `jumper_extension.core` package, as summarized in `INTERNAL_DOCS.md`.
 
-## Package layout
+## **Package layout**
 
 The directory layout of the main package is:
 
