@@ -7,6 +7,7 @@ docs_dir: docs
 
 theme:
   name: material
+  logo: img/JUmPER01.svg
 
 nav:
   - Home: index.md
@@ -15,6 +16,9 @@ nav:
       - Quickstart: getting-started/quickstart.md
   - How-to Guides:
       - Stub: guides/index.md
+      - Session Transfer: guides/session-transfer.md
+      - Python Script Export: guides/script-export.md
+      - Plot Export: guides/plot-export.md
   - Public API:
       - Overview: api/index.md
       - Jupyter API: api/jupyter.md
