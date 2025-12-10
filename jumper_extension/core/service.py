@@ -808,7 +808,7 @@ class PerfmonitorMagicAdapter:
             "perfmonitor_fast_setup -- quick setup: enable ipympl plots, start monitor, enable reports",
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
-            "cell_history_show -- show interactive table of cell execution history",
+            "show_cell_history -- show interactive table of cell execution history",
             "perfmonitor_start [interval] -- start monitoring (default: 1 second)",
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
@@ -821,6 +821,8 @@ class PerfmonitorMagicAdapter:
             " without --file pushes DataFrame (default 'cell_history_df')",
             "export_session [target|target.zip] -- export full session",
             "import_session <dir-or-zip> -- import full session for offline analysis",
+            "start_write_script [output_path] -- record subsequent cells to a Python script",
+            "end_write_script -- stop recording and save the script",
         ]
         print("Available commands:")
         for cmd in commands:
