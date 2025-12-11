@@ -6,4 +6,10 @@ title: Transfer Sessions Between Machines
 
 This guide will show how to export a monitoring session and import it on another system for offline analysis.
 
-> Content coming soon. In the meantime, see the `%export_session` and `%import_session` magics in the Public API docs.
+<iframe src="https://scribehow.com/embed/Export_and_Import_a_Jupyter_Notebook_Session__zGYSa5TrT86yAUlebmANyQ" width="800" height="679" allow="fullscreen" style="aspect-ratio: 1 / 1; border: 0; min-height: 480px"></iframe>
+
+
+<iframe src="https://scribehow.com/embed/Export_and_Import_a_Jupyter_Notebook_Session__zGYSa5TrT86yAUlebmANyQ?as=video" width="100%" height="800" allow="fullscreen" style="aspect-ratio: 16 / 12; border: 0; min-height: 480px"></iframe>
+
+
+<iframe src="https://scribehow.com/embed/Export_and_Import_a_Jupyter_Notebook_Session__zGYSa5TrT86yAUlebmANyQ?as=scrollable" width="100%" height="800" allow="fullscreen" style="border: 0; min-height: 640px"></iframe>
