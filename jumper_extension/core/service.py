@@ -19,6 +19,7 @@ from jumper_extension.core.parsers import (
     parse_arguments,
     build_perfreport_parser,
     build_auto_perfreports_parser,
+    build_perfmonitor_plot_parser,
     build_export_perfdata_parser,
     build_export_cell_history_parser,
     build_import_perfdata_parser,
@@ -247,17 +248,32 @@ class PerfmonitorService:
         self.monitor.stop()
         self.settings.monitoring.running = False
 
-    def plot_performance(self) -> None:
+    def plot_performance(
+        self,
+        metrics: Optional[List[str]] = None,
+        cell_range: Optional[Tuple[int, int]] = None,
+        level: Optional[str] = None,
+        save_jpeg: Optional[str] = None,
+        pickle_file: Optional[str] = None,
+    ) -> None:
         """Open an interactive performance plot.
 
         Works for both live and imported sessions. Uses the attached
-        visualizer to display metrics and interactive widgets.
+        visualizer to display metrics and interactive widgets. When
+        ``level`` is provided (or inferred for exports), the plot is
+        rendered directly without ipywidgets, which also enables JPEG
+        and pickle exports.
 
         Returns:
             None
 
         Examples:
             >>> service.plot_performance()
+            >>> service.plot_performance(
+            ...     metrics=["cpu_summary", "memory"],
+            ...     level="process",
+            ...     cell_range=(0, 3),
+            ... )
         """
         if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
@@ -270,7 +286,32 @@ class PerfmonitorService:
                     source=self.monitor.session_source
                 )
             )
-        self.visualizer.plot()
+
+        effective_level = level
+
+        if effective_level is None and (
+            metrics or save_jpeg or pickle_file
+        ):
+            # Default to configured level for direct plotting/export paths
+            effective_level = self.settings.perfreports.level
+
+        if effective_level is not None:
+            available_levels = get_available_levels()
+            if effective_level not in available_levels:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_LEVEL
+                    ].format(level=effective_level, levels=available_levels)
+                )
+                return
+
+        self.visualizer.plot(
+            metric_subsets=metrics,
+            cell_range=cell_range,
+            level=effective_level,
+            save_jpeg=save_jpeg,
+            pickle_file=pickle_file,
+        )
 
     def enable_perfreports(
         self,
@@ -731,8 +772,28 @@ class PerfmonitorMagicAdapter:
         self.service.stop_monitoring()
 
     def perfmonitor_plot(self, line: str):
-        """Open interactive plot with widgets for exploring performance data."""
-        self.service.plot_performance()
+        """Open interactive plot or direct plot/export of performance data."""
+        args = parse_arguments(self.parsers.perfmonitor_plot, line)
+        if args is None:
+            return
+
+        cell_range = None
+        if args.cell:
+            cell_range = self._parse_cell_range(args.cell)
+            if cell_range is None:
+                return
+
+        metrics = None
+        if args.metrics:
+            metrics = [item.strip() for item in args.metrics.split(",") if item.strip()]
+
+        self.service.plot_performance(
+            metrics=metrics,
+            cell_range=cell_range,
+            level=args.level,
+            save_jpeg=args.save_jpeg,
+            pickle_file=args.pickle_file,
+        )
 
     def perfmonitor_enable_perfreports(self, line: str):
         """Enable automatic performance reports after each cell execution."""
@@ -1000,6 +1061,7 @@ def build_perfmonitor_magic_adapter(
     parsers = ArgParsers(
         perfreport=build_perfreport_parser(),
         auto_perfreports=build_auto_perfreports_parser(),
+        perfmonitor_plot=build_perfmonitor_plot_parser(),
         export_perfdata=build_export_perfdata_parser(),
         export_cell_history=build_export_cell_history_parser(),
         import_perfdata=build_import_perfdata_parser(),

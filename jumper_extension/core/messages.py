@@ -104,7 +104,7 @@ _BASE_EXTENSION_INFO_MESSAGES = {
         "Missed measurements: ({perc_missed_measurements: .2f})"
     ),
     ExtensionInfoCode.PERFORMANCE_REPORTS_DISABLED: (
-        "Performance reports for each celldisabled"
+        "Performance reports for each cell disabled"
     ),
     ExtensionInfoCode.PERFORMANCE_REPORTS_ENABLED: (
         "Performance reports enabled for each cell ({options_message})"
