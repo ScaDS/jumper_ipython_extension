@@ -55,6 +55,7 @@ def build_auto_perfreports_parser() -> argparse.ArgumentParser:
 def build_export_perfdata_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--file", type=str, help="Output filename")
+    parser.add_argument("--name", type=str, help="Custom DataFrame variable name")
     parser.add_argument(
         "--level",
         default="process",
@@ -66,6 +67,7 @@ def build_export_perfdata_parser() -> argparse.ArgumentParser:
 def build_export_cell_history_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--file", type=str, help="Output filename")
+    parser.add_argument("--name", type=str, help="Custom DataFrame variable name")
     return parser
 
 def build_import_perfdata_parser() -> argparse.ArgumentParser:

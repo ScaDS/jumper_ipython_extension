@@ -73,8 +73,8 @@ class PerfmonitorMagics(Magics):
         Usage:
           %perfmonitor_export_perfdata --file <path> [--level LEVEL]
             # export to file
-          %perfmonitor_export_perfdata [--level LEVEL]
-            # push DataFrame
+          %perfmonitor_export_perfdata [--name NAME] [--level LEVEL]
+            # push DataFrame (optionally specify variable name)
         """
         perfdata = self.magic_adapter.perfmonitor_export_perfdata(line)
         self.shell.push(perfdata)
@@ -85,7 +85,7 @@ class PerfmonitorMagics(Magics):
 
         Usage:
           %perfmonitor_export_cell_history --file <path>  # export to file
-          %perfmonitor_export_cell_history                # push DataFrame
+          %perfmonitor_export_cell_history [--name NAME]  # push DataFrame
         """
         cell_history_data = self.magic_adapter.perfmonitor_export_cell_history(line)
         self.shell.push(cell_history_data)
