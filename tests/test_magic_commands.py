@@ -196,12 +196,32 @@ def test_export_and_help(ipython, mock_cpu_only):
 
     # Test exports with monitor
     magics.perfmonitor_start("")
+    df = pd.DataFrame({"time": [1.0]})
+    with patch.object(
+        magics.magic_adapter.service.monitor.data,
+        "view",
+        return_value=df,
+    ):
+        magics.perfmonitor_export_perfdata("--name custom_perf")
+        assert "custom_perf" in ipython.user_ns
+        assert ipython.user_ns["custom_perf"].equals(df)
+    ipython.user_ns.pop("custom_perf", None)
     with patch.object(magics.magic_adapter.service.monitor.data, "export"):
         magics.perfmonitor_export_perfdata("")
         magics.perfmonitor_export_perfdata("--file custom.csv")
     magics.perfmonitor_stop("")
 
     # Test cell history export
+    ch_df = pd.DataFrame({"cell_index": [0]})
+    with patch.object(
+        magics.magic_adapter.service.cell_history,
+        "view",
+        return_value=ch_df,
+    ):
+        magics.perfmonitor_export_cell_history("--name custom_history")
+        assert "custom_history" in ipython.user_ns
+        assert ipython.user_ns["custom_history"].equals(ch_df)
+    ipython.user_ns.pop("custom_history", None)
     with patch.object(magics.magic_adapter.service.cell_history, "export"):
         magics.perfmonitor_export_cell_history("")
         magics.perfmonitor_export_cell_history("--file custom.json")
