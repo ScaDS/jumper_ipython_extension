@@ -1,12 +1,9 @@
 name: Docs
 
-#documentation only on tagged releases:
-#on:
-#  push:
-#    tags:
-#      - 'v*'
-
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
