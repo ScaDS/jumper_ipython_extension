@@ -29,6 +29,12 @@ nav:
       - Adapters: internals/adapters.md
       - Core: internals/core.md
       - IPython: internals/ipython.md
+
+markdown_extensions:
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
 plugins:
   - search
   - mkdocstrings
