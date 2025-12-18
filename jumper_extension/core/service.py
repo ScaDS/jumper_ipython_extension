@@ -361,7 +361,7 @@ class PerfmonitorService:
         """Quick setup: start perfmonitor and enable perfreports."""
         self.start_monitoring(1.0)
         self.enable_perfreports(level="process", interval=1.0, text=False)
-        print("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
+        logger.info("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
 
     def start_script_recording(self, output_path: Optional[str] = None):
         """Start recording code from cells to a Python script.
@@ -372,9 +372,9 @@ class PerfmonitorService:
         self.script_writer.start_recording(self.settings.snapshot(), output_path)
 
         if output_path:
-            print(f"[JUmPER]: Started script recording to '{output_path}'")
+            logger.info(f"[JUmPER]: Started script recording to '{output_path}'")
         else:
-            print("[JUmPER]: Started script recording (filename will be auto-generated)")
+            logger.info("[JUmPER]: Started script recording (filename will be auto-generated)")
 
     def stop_script_recording(self) -> Optional[str]:
         """Stop recording and save accumulated code to file.
@@ -387,7 +387,7 @@ class PerfmonitorService:
             return None
 
         output_path = self.script_writer.stop_recording()
-        print(f"Script saved to: {output_path}")
+        logger.info(f"Script saved to: {output_path}")
         return output_path
 
     @contextmanager

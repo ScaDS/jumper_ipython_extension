@@ -29,6 +29,10 @@ class NotebookScriptWriter:
         # names of magics that start/stop script writing (to exclude their cells)
         self._control_magics = {"start_write_script", "end_write_script"}
 
+    def is_recording_active(self) -> bool:
+        """Check if cell is being recorded."""
+        return self._recording
+
     def start_recording(self, settings_state: Settings, output_path: Optional[str] = None):
         """
         Start recording code from cells.
@@ -50,10 +54,6 @@ class NotebookScriptWriter:
         self._start_time = datetime.now()
         # exclude the cell that triggered the start magic itself
         self._start_cell_index = len(self.cell_history)
-
-        logger.info(
-            f"[JUmPER]: Started recording to file '{self.output_path}'"
-        )
 
     def stop_recording(self) -> Optional[str]:
         """
@@ -85,7 +85,7 @@ class NotebookScriptWriter:
                 continue
             if self._start_cell_index is not None and idx < self._start_cell_index:
                 continue
-            if self._is_control_cell(row.get("cell_magics")):
+            if self.is_control_cell(row.get("cell_magics")):
                 continue
             selected.append(
                 {
@@ -122,7 +122,7 @@ class NotebookScriptWriter:
             self._recording = False
             self._start_cell_index = None
 
-    def _is_control_cell(self, cell_magics):
+    def is_control_cell(self, cell_magics):
         """Select cells with index >= start and exclude cells that contain control magics"""
         if cell_magics is None:
             return False
