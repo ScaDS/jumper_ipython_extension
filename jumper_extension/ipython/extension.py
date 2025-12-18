@@ -56,12 +56,12 @@ def load_ipython_extension(ipython):
     magic_adapter = build_perfmonitor_magic_adapter()
 
     tm = ipython.input_transformer_manager
-    transformer = DropCellTransformer(
+    drop_transformer = DropCellTransformer(
         is_control_cell=magic_adapter.service.script_writer.is_control_cell,
         is_recording_active=magic_adapter.service.script_writer.is_recording_active
     )
-    ipython._drop_cell_transformer = transformer
-    tm.cleanup_transforms.append(transformer)
+    ipython._drop_cell_transformer = drop_transformer
+    tm.cleanup_transforms.append(drop_transformer)
 
     _perfmonitor_magics = PerfmonitorMagics(ipython, magic_adapter)
     ipython.events.register("pre_run_cell", _perfmonitor_magics.pre_run_cell)
@@ -72,10 +72,11 @@ def load_ipython_extension(ipython):
 
 def unload_ipython_extension(ipython):
     tm = ipython.input_transformer_manager
-    transformer = ipython._drop_cell_transformer
-
-    tm.cleanup_transforms.remove(transformer)
-    del ipython._drop_cell_transformer
+    drop_transformer = getattr(ipython, "_drop_cell_transformer", None)
+    if drop_transformer:
+        if drop_transformer in tm.cleanup_transforms:
+            tm.cleanup_transforms.remove(drop_transformer)
+        del ipython._drop_cell_transformer
 
     global _perfmonitor_magics
     if _perfmonitor_magics:
