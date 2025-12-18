@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Git pre-commit hook to run code quality checks
+# This hook runs black, flake8, and pytest before allowing commits
+
+set -e
+
+# 1. Run black with line length 79
+echo "Running black formatting check..."
+if ! black -l 79 .; then
+    echo "❌ Black formatting failed. Please fix formatting issues."
+    exit 1
+fi
+echo "✅ Black formatting passed"
+
+# 2. Run flake8 on jumper_extension directory
+echo "Running flake8 linting..."
+if ! flake8 --extend-ignore=E203 jumper_extension; then
+    echo "❌ Flake8 linting failed. Please fix linting issues."
+    exit 1
+fi
+echo "✅ Flake8 linting passed"
+
+
+# 3. Run pytest with coverage
+echo "Running pytest with coverage..."
+if ! pytest tests/; then
+    echo "❌ Tests failed. Please fix failing tests."
+    exit 1
+fi
+echo "✅ All tests passed"
+
+echo "🎉 All pre-commit checks passed! Proceeding with commit."

@@ -1,0 +1,40 @@
+site_name: JUmPER IPython Extension
+site_description: IPython extension for monitoring cell performance
+repo_url: https://github.com/ScaDS/jumper_ipython_extension
+repo_name: ScaDS/jumper_ipython_extension
+
+docs_dir: docs
+
+theme:
+  name: material
+  logo: img/JUmPER01.svg
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - How-to Guides:
+      - Stub: guides/index.md
+      - Session Transfer: guides/session-transfer.md
+      - Python Script Export: guides/script-export.md
+      - Plot Export: guides/plot-export.md
+  - Public API:
+      - Overview: api/index.md
+      - Jupyter API: api/jupyter.md
+      - Python API: api/python.md
+      - String Based API: api/string.md
+  - Internals:
+      - Architecture: internals/architecture.md
+      - Adapters: internals/adapters.md
+      - Core: internals/core.md
+      - IPython: internals/ipython.md
+
+markdown_extensions:
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - mkdocstrings

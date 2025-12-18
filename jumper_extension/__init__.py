@@ -1,0 +1,14 @@
+"""JUmPER IPython/Jupyter extension package.
+
+Provides instrumentation, monitoring, magics, and reporting utilities
+for interactive Python sessions.
+"""
+import logging.config
+
+from .logging_config import LOGGING
+from jumper_extension.ipython.extension import load_ipython_extension, unload_ipython_extension
+
+# Initialize logging configuration
+logging.config.dictConfig(LOGGING)
+
+__all__ = ["load_ipython_extension", "unload_ipython_extension"]
