@@ -1647,9 +1647,7 @@ display is disabled.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 972</span>
-<span class="normal"> 973</span>
-<span class="normal"> 974</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 974</span>
 <span class="normal"> 975</span>
 <span class="normal"> 976</span>
 <span class="normal"> 977</span>
@@ -1695,7 +1693,9 @@ display is disabled.</p>
 <span class="normal">1017</span>
 <span class="normal">1018</span>
 <span class="normal">1019</span>
-<span class="normal">1020</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_service</span><span class="p">(</span>
+<span class="normal">1020</span>
+<span class="normal">1021</span>
+<span class="normal">1022</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_service</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1881,9 +1881,7 @@ display is disabled.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1023</span>
-<span class="normal">1024</span>
-<span class="normal">1025</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1025</span>
 <span class="normal">1026</span>
 <span class="normal">1027</span>
 <span class="normal">1028</span>
@@ -1932,7 +1930,9 @@ display is disabled.</p>
 <span class="normal">1071</span>
 <span class="normal">1072</span>
 <span class="normal">1073</span>
-<span class="normal">1074</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_magic_adapter</span><span class="p">(</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_magic_adapter</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2703,7 +2703,9 @@ service = build_perfmonitor_service()
 <span class="normal">717</span>
 <span class="normal">718</span>
 <span class="normal">719</span>
-<span class="normal">720</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorService</span><span class="p">:</span>
+<span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorService</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;High-level performance monitoring service.</span>
 
 <span class="sd">    This service wires together monitoring, visualization, reporting,</span>
@@ -3078,7 +3080,8 @@ service = build_perfmonitor_service()
     <span class="k">def</span><span class="w"> </span><span class="nf">export_perfdata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or return it as data frames.</span>
 
@@ -3123,7 +3126,7 @@ service = build_perfmonitor_service()
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">cell_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span>
             <span class="p">)</span>
-            <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="n">EXTENSION_INFO_MESSAGES</span><span class="p">[</span>
                     <span class="n">ExtensionInfoCode</span><span class="o">.</span><span class="n">PERFORMANCE_DATA_AVAILABLE</span>
@@ -3158,7 +3161,8 @@ service = build_perfmonitor_service()
 
     <span class="k">def</span><span class="w"> </span><span class="nf">export_cell_history</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or return it as a data frame.</span>
 
@@ -3188,7 +3192,7 @@ service = build_perfmonitor_service()
             <span class="k">return</span> <span class="p">{}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
-            <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Cell history data available as &#39;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
             <span class="p">)</span>
@@ -3287,7 +3291,7 @@ service = build_perfmonitor_service()
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_perfreports</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;process&quot;</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">start_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from cells to a Python script.</span>
@@ -3311,9 +3315,9 @@ service = build_perfmonitor_service()
         <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">start_recording</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(),</span> <span class="n">output_path</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">stop_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
@@ -3331,7 +3335,7 @@ service = build_perfmonitor_service()
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">stop_recording</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">output_path</span>
 
     <span class="nd">@contextmanager</span>
@@ -5066,7 +5070,9 @@ service = build_perfmonitor_service()
 <span class="normal">717</span>
 <span class="normal">718</span>
 <span class="normal">719</span>
-<span class="normal">720</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorService</span><span class="p">:</span>
+<span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorService</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;High-level performance monitoring service.</span>
 
 <span class="sd">    This service wires together monitoring, visualization, reporting,</span>
@@ -5441,7 +5447,8 @@ service = build_perfmonitor_service()
     <span class="k">def</span><span class="w"> </span><span class="nf">export_perfdata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or return it as data frames.</span>
 
@@ -5486,7 +5493,7 @@ service = build_perfmonitor_service()
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">cell_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span>
             <span class="p">)</span>
-            <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="n">EXTENSION_INFO_MESSAGES</span><span class="p">[</span>
                     <span class="n">ExtensionInfoCode</span><span class="o">.</span><span class="n">PERFORMANCE_DATA_AVAILABLE</span>
@@ -5521,7 +5528,8 @@ service = build_perfmonitor_service()
 
     <span class="k">def</span><span class="w"> </span><span class="nf">export_cell_history</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or return it as a data frame.</span>
 
@@ -5551,7 +5559,7 @@ service = build_perfmonitor_service()
             <span class="k">return</span> <span class="p">{}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
-            <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Cell history data available as &#39;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
             <span class="p">)</span>
@@ -5650,7 +5658,7 @@ service = build_perfmonitor_service()
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_perfreports</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;process&quot;</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">start_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from cells to a Python script.</span>
@@ -5674,9 +5682,9 @@ service = build_perfmonitor_service()
         <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">start_recording</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(),</span> <span class="n">output_path</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">stop_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
@@ -5694,7 +5702,7 @@ service = build_perfmonitor_service()
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">stop_recording</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">output_path</span>
 
     <span class="nd">@contextmanager</span>
@@ -5757,7 +5765,7 @@ service = build_perfmonitor_service()
 
 
 <h2 id="jumper_extension.core.service.PerfmonitorService.export_perfdata" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">export_perfdata</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">export_perfdata</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -5930,10 +5938,12 @@ df = next(iter(frames.values()))
 <span class="normal">473</span>
 <span class="normal">474</span>
 <span class="normal">475</span>
-<span class="normal">476</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_perfdata</span><span class="p">(</span>
+<span class="normal">476</span>
+<span class="normal">477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_perfdata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Export performance data or return it as data frames.</span>
 
@@ -5978,7 +5988,7 @@ df = next(iter(frames.values()))
         <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
             <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">cell_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span>
         <span class="p">)</span>
-        <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
+        <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="n">EXTENSION_INFO_MESSAGES</span><span class="p">[</span>
                 <span class="n">ExtensionInfoCode</span><span class="o">.</span><span class="n">PERFORMANCE_DATA_AVAILABLE</span>
@@ -6078,8 +6088,7 @@ data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">478</span>
-<span class="normal">479</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">479</span>
 <span class="normal">480</span>
 <span class="normal">481</span>
 <span class="normal">482</span>
@@ -6101,7 +6110,8 @@ data.</p>
 <span class="normal">498</span>
 <span class="normal">499</span>
 <span class="normal">500</span>
-<span class="normal">501</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+<span class="normal">501</span>
+<span class="normal">502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load performance data from a file.</span>
 
 <span class="sd">    Args:</span>
@@ -6135,7 +6145,7 @@ data.</p>
 
 
 <h2 id="jumper_extension.core.service.PerfmonitorService.export_cell_history" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">export_cell_history</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">export_cell_history</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -6234,8 +6244,7 @@ df = next(iter(frames.values()))
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">503</span>
-<span class="normal">504</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">504</span>
 <span class="normal">505</span>
 <span class="normal">506</span>
 <span class="normal">507</span>
@@ -6270,9 +6279,12 @@ df = next(iter(frames.values()))
 <span class="normal">536</span>
 <span class="normal">537</span>
 <span class="normal">538</span>
-<span class="normal">539</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_cell_history</span><span class="p">(</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_cell_history</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Export cell history or return it as a data frame.</span>
 
@@ -6302,7 +6314,7 @@ df = next(iter(frames.values()))
         <span class="k">return</span> <span class="p">{}</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
-        <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
+        <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Cell history data available as &#39;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
         <span class="p">)</span>
@@ -6399,9 +6411,7 @@ df = next(iter(frames.values()))
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">541</span>
-<span class="normal">542</span>
-<span class="normal">543</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">543</span>
 <span class="normal">544</span>
 <span class="normal">545</span>
 <span class="normal">546</span>
@@ -6419,7 +6429,9 @@ df = next(iter(frames.values()))
 <span class="normal">558</span>
 <span class="normal">559</span>
 <span class="normal">560</span>
-<span class="normal">561</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load cell history from a file.</span>
 
 <span class="sd">    Args:</span>
@@ -7163,7 +7175,9 @@ service = build_perfmonitor_service()
 <span class="normal">717</span>
 <span class="normal">718</span>
 <span class="normal">719</span>
-<span class="normal">720</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorService</span><span class="p">:</span>
+<span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorService</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;High-level performance monitoring service.</span>
 
 <span class="sd">    This service wires together monitoring, visualization, reporting,</span>
@@ -7538,7 +7552,8 @@ service = build_perfmonitor_service()
     <span class="k">def</span><span class="w"> </span><span class="nf">export_perfdata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or return it as data frames.</span>
 
@@ -7583,7 +7598,7 @@ service = build_perfmonitor_service()
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">cell_history</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span>
             <span class="p">)</span>
-            <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">perfdata</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="n">EXTENSION_INFO_MESSAGES</span><span class="p">[</span>
                     <span class="n">ExtensionInfoCode</span><span class="o">.</span><span class="n">PERFORMANCE_DATA_AVAILABLE</span>
@@ -7618,7 +7633,8 @@ service = build_perfmonitor_service()
 
     <span class="k">def</span><span class="w"> </span><span class="nf">export_cell_history</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or return it as a data frame.</span>
 
@@ -7648,7 +7664,7 @@ service = build_perfmonitor_service()
             <span class="k">return</span> <span class="p">{}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
-            <span class="n">var_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
+            <span class="n">var_name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">export_vars</span><span class="o">.</span><span class="n">cell_history</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Cell history data available as &#39;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
             <span class="p">)</span>
@@ -7747,7 +7763,7 @@ service = build_perfmonitor_service()
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_perfreports</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;process&quot;</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">start_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from cells to a Python script.</span>
@@ -7771,9 +7787,9 @@ service = build_perfmonitor_service()
         <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">start_recording</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(),</span> <span class="n">output_path</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">stop_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
@@ -7791,7 +7807,7 @@ service = build_perfmonitor_service()
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">stop_recording</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">output_path</span>
 
     <span class="nd">@contextmanager</span>
@@ -8134,9 +8150,7 @@ timestamped directory is created.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">565</span>
 <span class="normal">566</span>
 <span class="normal">567</span>
 <span class="normal">568</span>
@@ -8163,7 +8177,9 @@ timestamped directory is created.</p>
 <span class="normal">589</span>
 <span class="normal">590</span>
 <span class="normal">591</span>
-<span class="normal">592</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Export the full monitoring session.</span>
 
 <span class="sd">    This uses :class:`SessionExporter` to write performance data</span>
@@ -8277,9 +8293,7 @@ cell history from the given directory or zip archive.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">594</span>
-<span class="normal">595</span>
-<span class="normal">596</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">596</span>
 <span class="normal">597</span>
 <span class="normal">598</span>
 <span class="normal">599</span>
@@ -8300,7 +8314,9 @@ cell history from the given directory or zip archive.</p>
 <span class="normal">614</span>
 <span class="normal">615</span>
 <span class="normal">616</span>
-<span class="normal">617</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Import a monitoring session from disk.</span>
 
 <span class="sd">    Uses :class:`SessionImporter` to attach performance data and</span>
@@ -8377,9 +8393,7 @@ level.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">619</span>
-<span class="normal">620</span>
-<span class="normal">621</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">621</span>
 <span class="normal">622</span>
 <span class="normal">623</span>
 <span class="normal">624</span>
@@ -8392,7 +8406,9 @@ level.</p>
 <span class="normal">631</span>
 <span class="normal">632</span>
 <span class="normal">633</span>
-<span class="normal">634</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Quickly start monitoring with per-cell reports enabled.</span>
 
 <span class="sd">    This convenience helper starts monitoring with a one-second</span>
@@ -8407,7 +8423,7 @@ level.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">enable_perfreports</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;process&quot;</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Fast setup complete! Ready for interactive analysis.&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8494,9 +8510,7 @@ level.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">636</span>
-<span class="normal">637</span>
-<span class="normal">638</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">638</span>
 <span class="normal">639</span>
 <span class="normal">640</span>
 <span class="normal">641</span>
@@ -8518,7 +8532,9 @@ level.</p>
 <span class="normal">657</span>
 <span class="normal">658</span>
 <span class="normal">659</span>
-<span class="normal">660</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">start_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">start_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Start recording code from cells to a Python script.</span>
 
 <span class="sd">    Args:</span>
@@ -8540,9 +8556,9 @@ level.</p>
     <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">start_recording</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">snapshot</span><span class="p">(),</span> <span class="n">output_path</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Started script recording to &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Started script recording (filename will be auto-generated)&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8604,9 +8620,7 @@ level.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">662</span>
-<span class="normal">663</span>
-<span class="normal">664</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">664</span>
 <span class="normal">665</span>
 <span class="normal">666</span>
 <span class="normal">667</span>
@@ -8621,7 +8635,9 @@ level.</p>
 <span class="normal">676</span>
 <span class="normal">677</span>
 <span class="normal">678</span>
-<span class="normal">679</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="normal">679</span>
+<span class="normal">680</span>
+<span class="normal">681</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop_script_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
 
 <span class="sd">    Returns:</span>
@@ -8637,7 +8653,7 @@ level.</p>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">script_writer</span><span class="o">.</span><span class="n">stop_recording</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Script saved to: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">output_path</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8704,9 +8720,7 @@ enclosed code is tracked like any other cell.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">681</span>
-<span class="normal">682</span>
-<span class="normal">683</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">683</span>
 <span class="normal">684</span>
 <span class="normal">685</span>
 <span class="normal">686</span>
@@ -8731,7 +8745,9 @@ enclosed code is tracked like any other cell.</p>
 <span class="normal">705</span>
 <span class="normal">706</span>
 <span class="normal">707</span>
-<span class="normal">708</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@contextmanager</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@contextmanager</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">monitored</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Iterator[PerfmonitorService]&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager for monitoring a code block.</span>
 
