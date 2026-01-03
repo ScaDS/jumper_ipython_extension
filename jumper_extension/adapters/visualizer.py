@@ -1,7 +1,7 @@
 import logging
 import pickle
 import re
-from typing import List, runtime_checkable, Protocol
+from typing import List, runtime_checkable, Protocol, Optional, Tuple
 
 import matplotlib.pyplot as plt
 from IPython.display import display
@@ -37,6 +37,9 @@ class PerformanceVisualizerProtocol(Protocol):
         metric_subsets=("cpu", "mem", "io"),
         cell_range=None,
         show_idle=False,
+        level=None,
+        save_jpeg=None,
+        pickle_file=None,
     ) -> None: ...
 
 
@@ -206,6 +209,51 @@ class PerformanceVisualizer:
                 },
             },
         }
+
+    def _resolve_metric_subsets(
+        self,
+        metrics: Optional[List[str]]
+    ) -> Tuple[str, ...]:
+        """Map user-specified metrics or subsets to visualizer subset keys."""
+        if not metrics:
+            return ("cpu", "mem", "io")
+
+        resolved: List[str] = []
+        metric_list = (
+            [metrics]
+            if isinstance(metrics, str)
+            else list(metrics)
+        )
+        for metric in metric_list:
+            if not metric:
+                continue
+            metric_key = str(metric).strip()
+            if metric_key in self.subsets:
+                resolved.append(metric_key)
+                continue
+            found_subset = next(
+                (
+                    subset
+                    for subset, cfg in self.subsets.items()
+                    if metric_key in cfg
+                ),
+                None,
+            )
+            if found_subset:
+                resolved.append(found_subset)
+            else:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_METRIC_SUBSET
+                    ].format(
+                        subset=metric_key,
+                        supported_subsets=", ".join(self.subsets.keys()),
+                    )
+                )
+
+        # Remove duplicates while preserving order; fall back to defaults
+        deduped = tuple(dict.fromkeys(resolved))
+        return deduped or ("cpu", "mem", "io")
 
     def _compress_time_axis(self, perfdata, cell_range):
         """Compress time axis by removing idle periods between cells"""
@@ -593,6 +641,7 @@ class PerformanceVisualizer:
 
         # If level is specified, plot directly without widgets
         if level is not None:
+            metric_subsets = self._resolve_metric_subsets(metric_subsets)
             return self._plot_direct(metric_subsets, cell_range, show_idle,
                                      level, save_jpeg, pickle_file)
 

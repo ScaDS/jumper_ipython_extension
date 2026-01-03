@@ -13,6 +13,7 @@ class ArgParsers:
     """Configuration for command-line argument parsers."""
     perfreport: argparse.ArgumentParser
     auto_perfreports: argparse.ArgumentParser
+    perfmonitor_plot: argparse.ArgumentParser
     export_perfdata: argparse.ArgumentParser
     export_cell_history: argparse.ArgumentParser
     import_perfdata: argparse.ArgumentParser
@@ -39,6 +40,37 @@ def build_perfreport_parser() -> argparse.ArgumentParser:
         "--text",
         action="store_true",
         help="Show report in text format"
+    )
+    return parser
+
+def build_perfmonitor_plot_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--metrics",
+        type=str,
+        help="Comma-separated list of metrics to plot directly"
+    )
+    parser.add_argument(
+        "--cell",
+        type=str,
+        help="Cell index or range (e.g., 5, 2:8, :5)"
+    )
+    parser.add_argument(
+        "--level",
+        choices=get_available_levels(),
+        help="Performance level for direct plotting",
+    )
+    parser.add_argument(
+        "--save-jpeg",
+        dest="save_jpeg",
+        type=str,
+        help="Save plot to a JPEG file"
+    )
+    parser.add_argument(
+        "--pickle",
+        dest="pickle_file",
+        type=str,
+        help="Serialize plot data to a pickle file"
     )
     return parser
 
