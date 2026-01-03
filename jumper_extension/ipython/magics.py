@@ -5,7 +5,6 @@ from IPython.core.magic import Magics, line_magic, magics_class
 from jumper_extension.ipython.utilities import is_pure_line_magic_cell, get_called_line_magics
 from jumper_extension.core.service import PerfmonitorMagicAdapter
 
-
 logger = logging.getLogger("extension")
 
 
