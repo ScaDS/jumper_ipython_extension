@@ -244,13 +244,15 @@ class PerfmonitorService:
     def export_perfdata(
         self,
         file: Optional[str] = None,
-        level: Optional[str] = None
+        level: Optional[str] = None,
+        name: Optional[str] = None
     ) -> Optional[Dict[str, pd.DataFrame]]:
         """Export performance data to file or return as DataFrame.
 
         Args:
             file: File path for export or None to return DataFrame
             level: Monitoring level or None for default
+            name: Custom variable name for returned DataFrame
 
         Returns:
             Dictionary with DataFrame if file is None, empty dict otherwise
@@ -270,7 +272,7 @@ class PerfmonitorService:
             df = self.monitor.data.view(
                 level=level, cell_history=self.cell_history
             )
-            var_name = self.settings.export_vars.perfdata
+            var_name = name or self.settings.export_vars.perfdata
             logger.info(
                 EXTENSION_INFO_MESSAGES[
                     ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE
@@ -299,12 +301,14 @@ class PerfmonitorService:
 
     def export_cell_history(
         self,
-        file: Optional[str] = None
+        file: Optional[str] = None,
+        name: Optional[str] = None
     ) -> Optional[Dict[str, pd.DataFrame]]:
         """Export cell history to file or return as DataFrame.
 
         Args:
             file: File path for export or None to return DataFrame
+            name: Custom variable name for returned DataFrame
 
         Returns:
             Dictionary with DataFrame if file is None, empty dict otherwise
@@ -314,7 +318,7 @@ class PerfmonitorService:
             return {}
         else:
             df = self.cell_history.view()
-            var_name = self.settings.export_vars.cell_history
+            var_name = name or self.settings.export_vars.cell_history
             logger.info(
                 f"[JUmPER]: Cell history data available as '{var_name}'"
             )
@@ -501,7 +505,8 @@ class PerfmonitorMagicAdapter:
         args = parse_arguments(self.parsers.export_perfdata, line)
         return self.service.export_perfdata(
             file=args.file if args else None,
-            level=args.level if args else None
+            level=args.level if args else None,
+            name=args.name if args else None
         )
 
     def perfmonitor_load_perfdata(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:
@@ -515,7 +520,8 @@ class PerfmonitorMagicAdapter:
         """Export cell history or push as DataFrame."""
         args = parse_arguments(self.parsers.export_cell_history, line)
         return self.service.export_cell_history(
-            file=args.file if args else None
+            file=args.file if args else None,
+            name=args.name if args else None
         )
 
     def perfmonitor_load_cell_history(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:
@@ -542,10 +548,10 @@ class PerfmonitorMagicAdapter:
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
             "perfmonitor_enable_perfreports [--level LEVEL] [--interval INTERVAL] [--text] -- enable auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
-            "perfmonitor_export_perfdata [--file FILE] [--level LEVEL] -- export CSV;"
-            " without --file pushes DataFrame 'perfdata_df'",
-            "perfmonitor_export_cell_history [--file FILE] -- export history to JSON/CSV;"
-            " without --file pushes DataFrame 'cell_history_df'",
+            "perfmonitor_export_perfdata [--file FILE] [--level LEVEL] [--name NAME] -- export CSV;"
+            " without --file pushes DataFrame (default 'perfdata_df')",
+            "perfmonitor_export_cell_history [--file FILE] [--name NAME] -- export history to JSON/CSV;"
+            " without --file pushes DataFrame (default 'cell_history_df')",
             "export_session [target|target.zip] -- export full session",
             "import_session <dir-or-zip> -- import full session for offline analysis",
         ]
