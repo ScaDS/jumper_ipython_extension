@@ -9,7 +9,7 @@ from ipywidgets import widgets, Layout
 
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.adapters.monitor import PerformanceMonitor, UnavailablePerformanceMonitor, \
-    PerformanceMonitorProtocol
+    MonitorProtocol
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES, ExtensionInfoCode, EXTENSION_INFO_MESSAGES,
@@ -29,9 +29,9 @@ def is_ipympl_backend():
 
 
 @runtime_checkable
-class PerformanceVisualizerProtocol(Protocol):
+class VisualizerProtocol(Protocol):
     """Structural protocol for visualizers used by the service."""
-    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+    def attach(self, monitor: MonitorProtocol) -> None: ...
     def plot(
         self,
         metric_subsets=("cpu", "mem", "io"),
@@ -62,7 +62,7 @@ class PerformanceVisualizer:
 
     def attach(
         self,
-        monitor: PerformanceMonitorProtocol,
+        monitor: MonitorProtocol,
     ):
         """Attach started PerformanceMonitor."""
         self.monitor = monitor
@@ -808,13 +808,13 @@ class PerformanceVisualizer:
 
 class UnavailableVisualizer:
     """
-    A stub that type-checks against PerformanceVisualizerProtocol but
+    A stub that type-checks against VisualizerProtocol but
     only logs that visualization is unavailable.
     """
     def __init__(self, reason: str = "Plotting not available."):
         self._reason = reason
 
-    def attach(self, monitor: PerformanceMonitorProtocol) -> None: ...
+    def attach(self, monitor: MonitorProtocol) -> None: ...
 
     def plot(
         self,
@@ -988,7 +988,7 @@ def build_performance_visualizer(
     cell_history: CellHistory,
     plots_disabled: bool = False,
     plots_disabled_reason: str = "Plotting not available.",
-) -> PerformanceVisualizerProtocol:
+) -> VisualizerProtocol:
     """
     Build PerformanceVisualizer object.
     Allows building a visualizer that degrades to a no-op when plots are disabled.

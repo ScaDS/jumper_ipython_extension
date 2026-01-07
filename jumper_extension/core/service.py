@@ -35,10 +35,10 @@ from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
-from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, PerformanceMonitor, OfflinePerformanceMonitor
+from jumper_extension.adapters.monitor import MonitorProtocol, PerformanceMonitor, OfflinePerformanceMonitor
 from jumper_extension.adapters.session import SessionExporter, SessionImporter
 from jumper_extension.adapters.visualizer import build_performance_visualizer, \
-    PerformanceVisualizerProtocol
+    VisualizerProtocol
 from jumper_extension.adapters.reporter import PerformanceReporter, build_performance_reporter
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.utilities import get_available_levels
@@ -66,8 +66,8 @@ class PerfmonitorService:
     def __init__(
         self,
         settings: Settings,
-        monitor: PerformanceMonitorProtocol,
-        visualizer: PerformanceVisualizerProtocol,
+        monitor: MonitorProtocol,
+        visualizer: VisualizerProtocol,
         reporter: PerformanceReporter,
         cell_history: CellHistory,
         script_writer: NotebookScriptWriter,

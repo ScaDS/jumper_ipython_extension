@@ -32,7 +32,7 @@ from jumper_extension.utilities import (
 logger = logging.getLogger("extension")
 
 @runtime_checkable
-class PerformanceMonitorProtocol(Protocol):
+class MonitorProtocol(Protocol):
     # required readable attributes
     interval: float
     data: "PerformanceData"
@@ -59,7 +59,7 @@ class GpuBackend:
 
     name = "gpu-base"
 
-    def __init__(self, monitor: Optional["PerformanceMonitor"] = None):
+    def __init__(self, monitor: Optional[MonitorProtocol] = None):
         self._monitor = monitor
 
     def setup(self) -> None:
@@ -872,7 +872,7 @@ class UnavailablePerformanceMonitor:
 
 
 class OfflinePerformanceMonitor:
-    """Offline monitor that satisfies PerformanceMonitorProtocol.
+    """Offline monitor that satisfies MonitorProtocol.
 
     It holds static data frames plus metadata from a manifest; does not collect live data.
     """
