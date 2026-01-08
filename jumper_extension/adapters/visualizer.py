@@ -606,11 +606,14 @@ class PerformanceVisualizer:
         save_jpeg=None,
         pickle_file=None,
     ):
-        if self.monitor.num_gpus:
-            metric_subsets += (
-                "gpu",
-                "gpu_all",
-            )
+        metrics_missing = not metric_subsets
+        if metrics_missing:
+            metric_subsets = ("cpu", "mem", "io")
+            if self.monitor.num_gpus:
+                metric_subsets += (
+                    "gpu",
+                    "gpu_all",
+                )
 
         """Plot performance metrics with interactive widgets for
         configuration."""
