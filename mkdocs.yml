@@ -15,7 +15,6 @@ nav:
       - Installation: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
   - How-to Guides:
-      - Stub: guides/index.md
       - Session Transfer: guides/session-transfer.md
       - Python Script Export: guides/script-export.md
       - Plot Export: guides/plot-export.md
