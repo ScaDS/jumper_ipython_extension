@@ -3,7 +3,15 @@ import os
 import threading
 import time
 import unittest.mock
-from typing import Protocol, Optional, runtime_checkable, Dict
+from typing import (
+    Protocol,
+    Optional,
+    runtime_checkable,
+    Dict,
+    Iterable,
+    Callable,
+    Any,
+)
 
 import psutil
 
@@ -23,48 +31,8 @@ from jumper_extension.utilities import (
 
 logger = logging.getLogger("extension")
 
-# NVIDIA GPU monitoring setup
-PYNVML_AVAILABLE = False
-try:
-    import pynvml
-
-    pynvml.nvmlInit()
-    PYNVML_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.PYNVML_NOT_AVAILABLE]
-    )
-except Exception:
-    logger.warning(
-        EXTENSION_ERROR_MESSAGES[
-            ExtensionErrorCode.NVIDIA_DRIVERS_NOT_AVAILABLE
-        ]
-    )
-
-# AMD GPU monitoring setup
-ADLX_AVAILABLE = False
-try:
-    from ADLXPybind import (
-        ADLX,
-        ADLXHelper,
-        ADLX_RESULT,
-    )
-
-    adlx_helper = ADLXHelper()
-    if adlx_helper.Initialize() == ADLX_RESULT.ADLX_OK:
-        ADLX_AVAILABLE = True
-        adlx_system = adlx_helper.GetSystemServices()
-except ImportError:
-    logger.warning(
-        EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.ADLX_NOT_AVAILABLE]
-    )
-except Exception:
-    logger.warning(
-        EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.AMD_DRIVERS_NOT_AVAILABLE]
-    )
-
 @runtime_checkable
-class PerformanceMonitorProtocol(Protocol):
+class MonitorProtocol(Protocol):
     # required readable attributes
     interval: float
     data: "PerformanceData"
@@ -84,6 +52,565 @@ class PerformanceMonitorProtocol(Protocol):
     running: bool
     def start(self, interval: float = 1.0) -> None: ...
     def stop(self) -> None: ...
+
+
+class GpuBackend:
+    """A pluggable backend that provides GPU discovery and metric collection."""
+
+    name = "gpu-base"
+
+    def __init__(self, monitor: Optional[MonitorProtocol] = None):
+        self._monitor = monitor
+
+    def setup(self) -> None:
+        """Initialize backend and attach any discovered handles to the monitor."""
+        return None
+
+    def shutdown(self) -> None:
+        """Clean up resources if needed."""
+        return None
+
+    def _iter_handles(self) -> Iterable[object]:
+        return []
+
+    def _collect_system(self, handle: object) -> tuple[float, float, float]:
+        raise NotImplementedError
+
+    def _collect_process(self, handle: object) -> tuple[float, float, float]:
+        raise NotImplementedError
+
+    def _collect_other(
+        self, handle: object, level: str
+    ) -> tuple[float, float, float]:
+        raise NotImplementedError
+
+    def collect(self, level: str = "process"):
+        """Collect metrics for the given level.
+
+        Returns: (gpu_util, gpu_band, gpu_mem)
+        """
+        gpu_util, gpu_band, gpu_mem = [], [], []
+
+        for handle in self._iter_handles():
+            if level == "system":
+                util, band, mem = self._collect_system(handle)
+            elif level == "process":
+                util, band, mem = self._collect_process(handle)
+            else:  # user or slurm
+                util, band, mem = self._collect_other(handle, level)
+            gpu_util.append(util)
+            gpu_band.append(band)
+            gpu_mem.append(mem)
+
+        return gpu_util, gpu_band, gpu_mem
+
+
+class NullGpuBackend(GpuBackend):
+    """A no-op backend used when no GPU backend is available."""
+
+    name = "gpu-disabled"
+
+    def _iter_handles(self):
+        return []
+
+
+class NvmlGpuBackend(GpuBackend):
+    """NVIDIA NVML backend (uses pynvml)."""
+
+    name = "nvidia-nvml"
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        super().__init__(monitor)
+        self._pynvml = None
+
+    def _iter_handles(self):
+        return self._monitor.nvidia_gpu_handles
+
+    def _get_util_rates(self, handle):
+        if self._pynvml is None:
+            class DefaultUtilRates:
+                gpu = 0.0
+                memory = 0.0
+
+            return DefaultUtilRates()
+        try:
+            return self._pynvml.nvmlDeviceGetUtilizationRates(handle)
+        except self._pynvml.NVMLError:
+            # If permission denied or other error, use default values
+            class DefaultUtilRates:
+                gpu = 0.0
+                memory = 0.0
+
+            return DefaultUtilRates()
+
+    def setup(self) -> None:
+        # Logic is intentionally kept identical to the previous implementation.
+        try:
+            import pynvml
+
+            pynvml.nvmlInit()
+            self._pynvml = pynvml
+            globals()["pynvml"] = pynvml
+            ngpus = self._pynvml.nvmlDeviceGetCount()
+            self._monitor.nvidia_gpu_handles = [
+                self._pynvml.nvmlDeviceGetHandleByIndex(i)
+                for i in range(ngpus)
+            ]
+            if self._monitor.nvidia_gpu_handles:
+                handle = self._monitor.nvidia_gpu_handles[0]
+                gpu_mem = round(
+                    self._pynvml.nvmlDeviceGetMemoryInfo(handle).total
+                    / (1024**3),
+                    2,
+                )
+                if self._monitor.gpu_memory == 0:
+                    self._monitor.gpu_memory = gpu_mem
+                name = self._pynvml.nvmlDeviceGetName(handle)
+                gpu_name = name.decode() if isinstance(name, bytes) else name
+                if not self._monitor.gpu_name:
+                    self._monitor.gpu_name = gpu_name
+                else:
+                    self._monitor.gpu_name += f", {gpu_name}"
+        except ImportError:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.PYNVML_NOT_AVAILABLE
+                ]
+            )
+            self._monitor.nvidia_gpu_handles = []
+        except Exception:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.NVIDIA_DRIVERS_NOT_AVAILABLE
+                ]
+            )
+            self._monitor.nvidia_gpu_handles = []
+
+    def _collect_system(self, handle):
+        util_rates = self._get_util_rates(handle)
+        memory_info = self._pynvml.nvmlDeviceGetMemoryInfo(handle)
+        return util_rates.gpu, 0.0, memory_info.used / (1024**3)
+
+    def _collect_process(self, handle):
+        util_rates = self._get_util_rates(handle)
+        pids = self._monitor.process_pids
+        process_mem = (
+            sum(
+                p.usedGpuMemory
+                for p in self._pynvml.nvmlDeviceGetComputeRunningProcesses(
+                    handle
+                )
+                if p.pid in pids and p.usedGpuMemory
+            )
+            / (1024**3)
+        )
+        return util_rates.gpu if process_mem > 0 else 0.0, 0.0, process_mem
+
+    def _collect_other(self, handle, level: str):
+        util_rates = self._get_util_rates(handle)
+        filtered_gpu_processes, all_processes = (
+            self._monitor._get_filtered_processes(level, "nvidia_gpu", handle)
+        )
+        filtered_mem = (
+            sum(
+                p.usedGpuMemory
+                for p in filtered_gpu_processes
+                if p.usedGpuMemory
+            )
+            / (1024**3)
+        )
+        filtered_util = (
+            (
+                util_rates.gpu
+                * len(filtered_gpu_processes)
+                / max(len(all_processes), 1)
+            )
+            if filtered_gpu_processes
+            else 0.0
+        )
+        return filtered_util, 0.0, filtered_mem
+
+    def shutdown(self) -> None:
+        return None
+
+
+class AdlxGpuBackend(GpuBackend):
+    """AMD ADLX backend (uses ADLXPybind)."""
+
+    name = "amd-adlx"
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        super().__init__(monitor)
+        self._adlx_helper = None
+        self._adlx_system = None
+
+    def _iter_handles(self):
+        return self._monitor.amd_gpu_handles
+
+    def setup(self) -> None:
+        # Logic is intentionally kept identical to the previous implementation.
+        try:
+            from ADLXPybind import ADLXHelper, ADLX_RESULT
+
+            self._adlx_helper = ADLXHelper()
+            if self._adlx_helper.Initialize() != ADLX_RESULT.ADLX_OK:
+                self._monitor.amd_gpu_handles = []
+                return
+            self._adlx_system = self._adlx_helper.GetSystemServices()
+            gpus_list = self._adlx_system.GetGPUs()
+            num_amd_gpus = gpus_list.Size()
+            self._monitor.amd_gpu_handles = [
+                gpus_list.At(i) for i in range(num_amd_gpus)
+            ]
+            if self._monitor.amd_gpu_handles:
+                gpu = self._monitor.amd_gpu_handles[0]
+                # Get memory info
+                gpu_mem_info = gpu.TotalVRAM()
+                gpu_mem = round(gpu_mem_info / (1024**3), 2)
+                if self._monitor.gpu_memory == 0:
+                    self._monitor.gpu_memory = gpu_mem
+                # Get GPU name
+                gpu_name = gpu.Name()
+                if not self._monitor.gpu_name:
+                    self._monitor.gpu_name = gpu_name
+                else:
+                    self._monitor.gpu_name += f", {gpu_name}"
+        except ImportError:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.ADLX_NOT_AVAILABLE
+                ]
+            )
+            self._monitor.amd_gpu_handles = []
+        except Exception:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.AMD_DRIVERS_NOT_AVAILABLE
+                ]
+            )
+            self._monitor.amd_gpu_handles = []
+
+    def _collect_system(self, handle):
+        try:
+            if self._adlx_system is None:
+                return 0.0, 0.0, 0.0
+            # Get performance metrics interface
+            perf_monitoring = (
+                self._adlx_system.GetPerformanceMonitoringServices()
+            )
+
+            # Get current metrics
+            current_metrics = perf_monitoring.GetCurrentPerformanceMetrics(
+                handle
+            )
+
+            # Get GPU utilization
+            util = current_metrics.GPUUsage()
+
+            # Get memory info
+            mem_info = current_metrics.GPUVRAMUsage()
+
+            # AMD ADLX doesn't provide memory bandwidth easily
+            return util, 0.0, mem_info / 1024.0
+        except Exception:
+            # If we can't get metrics, return zeros
+            return 0.0, 0.0, 0.0
+
+    def _collect_process(self, handle):
+        # AMD ADLX doesn't provide per-process metrics easily
+        return 0.0, 0.0, 0.0
+
+    def _collect_other(self, handle, level: str):
+        # AMD ADLX doesn't provide per-user metrics easily
+        return 0.0, 0.0, 0.0
+
+    def shutdown(self) -> None:
+        return None
+
+
+class ProcessBackend:
+    """Backend for process enumeration and filtering."""
+
+    name = "process-base"
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        self._m = monitor
+
+    def setup(self) -> None:
+        return None
+
+    def get_process_pids(self) -> set[int]:
+        raise NotImplementedError
+
+    def filter_process(self, proc: psutil.Process, mode: str) -> bool:
+        raise NotImplementedError
+
+    def get_filtered_processes(
+        self,
+        level: str = "user",
+        mode: str = "cpu",
+        handle: Optional[object] = None,
+    ):
+        raise NotImplementedError
+
+    def safe_proc_call(
+        self,
+        proc,
+        proc_func: Callable[[psutil.Process], Any],
+        default=0,
+    ):
+        raise NotImplementedError
+
+
+class PsutilProcessBackend(ProcessBackend):
+    """Process backend implemented via psutil."""
+
+    name = "process-psutil"
+
+    def get_process_pids(self) -> set[int]:
+        """Get current process PID and all its children PIDs."""
+        pids = {self._m.pid}
+        try:
+            pids.update(
+                child.pid for child in self._m.process.children(recursive=True)
+            )
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+        return pids
+
+    def filter_process(self, proc: psutil.Process, mode: str) -> bool:
+        """Check if process matches the filtering mode."""
+        try:
+            if mode == "user":
+                return proc.uids().real == self._m.uid
+            elif mode == "slurm":
+                if not is_slurm_available():
+                    return False
+                return proc.environ().get("SLURM_JOB_ID") == str(
+                    self._m.slurm_job
+                )
+        except (psutil.AccessDenied, psutil.NoSuchProcess):
+            pass
+        return False
+
+    def get_filtered_processes(
+        self,
+        level: str = "user",
+        mode: str = "cpu",
+        handle: Optional[object] = None,
+    ):
+        """Get filtered processes for CPU or GPU monitoring."""
+        if mode == "cpu":
+            return [
+                proc
+                for proc in psutil.process_iter(["pid", "uids"])
+                if self.safe_proc_call(
+                    proc, lambda p: self.filter_process(p, level), False
+                )
+            ]
+        elif mode == "nvidia_gpu":
+            all_procs = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+            filtered = [
+                p
+                for p in all_procs
+                if self.safe_proc_call(
+                    p.pid,
+                    lambda proc: self.filter_process(proc, level),
+                    False,
+                )
+            ]
+            return filtered, all_procs
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
+
+    def safe_proc_call(
+        self,
+        proc,
+        proc_func: Callable[[psutil.Process], Any],
+        default=0,
+    ):
+        """Safely call a process method and return default on error."""
+        try:
+            if not isinstance(proc, psutil.Process):
+                # proc might be a pid. Moved Process creation here to catch
+                # exceptions at the same place
+                proc = psutil.Process(proc)
+            result = proc_func(proc)
+            return result if result is not None else default
+        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+            return default
+        except TypeError:
+            # in test case, where psutil is a mock
+            if isinstance(psutil.Process, unittest.mock.MagicMock):
+                return default
+
+
+class CpuBackend:
+    """Backend for CPU metrics."""
+
+    name = "cpu-base"
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        self._m = monitor
+
+    def setup(self) -> None:
+        return None
+
+    def collect(self, level: str = "process") -> list[float]:
+        raise NotImplementedError
+
+
+class PsutilCpuBackend(CpuBackend):
+    """CPU backend implemented via psutil."""
+
+    name = "cpu-psutil"
+
+    def collect(self, level: str = "process") -> list[float]:
+        self._m._validate_level(level)
+        if level == "system":
+            # just return the whole system here
+            cpu_util_per_core = psutil.cpu_percent(percpu=True)
+            return cpu_util_per_core
+        elif level == "process":
+            # get process pids
+            pids = self._m.process_pids
+            cpu_total = sum(
+                self._m._process_backend.safe_proc_call(
+                    pid, lambda p: p.cpu_percent(interval=0.1)
+                )
+                for pid in pids
+            )
+            return [cpu_total / self._m.num_cpus] * self._m.num_cpus
+        else:  # user or slurm
+            cpu_total = sum(
+                self._m._process_backend.safe_proc_call(
+                    proc, lambda p: p.cpu_percent()
+                )
+                for proc in self._m._process_backend.get_filtered_processes(
+                    level, "cpu"
+                )
+            )
+            return [cpu_total / self._m.num_cpus] * self._m.num_cpus
+
+
+class MemoryBackend:
+    """Backend for memory metrics."""
+
+    name = "memory-base"
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        self._m = monitor
+
+    def setup(self) -> None:
+        return None
+
+    def collect(self, level: str = "process") -> float:
+        raise NotImplementedError
+
+
+class PsutilMemoryBackend(MemoryBackend):
+    """Memory backend implemented via psutil."""
+
+    name = "memory-psutil"
+
+    def collect(self, level: str = "process") -> float:
+        self._m._validate_level(level)
+        if level == "system":
+            return (
+                psutil.virtual_memory().total
+                - psutil.virtual_memory().available
+            ) / (1024**3)
+        elif level == "process":
+            pids = self._m.process_pids
+            memory_total = sum(
+                self._m._process_backend.safe_proc_call(
+                    pid, lambda p: p.memory_full_info().uss
+                )
+                for pid in pids
+            )
+            return memory_total / (1024**3)
+        else:  # user or slurm
+            memory_total = sum(
+                self._m._process_backend.safe_proc_call(
+                    proc, lambda p: p.memory_full_info().uss, 0
+                )
+                for proc in self._m._process_backend.get_filtered_processes(
+                    level, "cpu"
+                )
+            )
+            return memory_total / (1024**3)
+
+
+class IoBackend:
+    """Backend for I/O metrics."""
+
+    name = "io-base"
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        self._m = monitor
+
+    def setup(self) -> None:
+        return None
+
+    def collect(self, level: str = "process") -> list[int]:
+        raise NotImplementedError
+
+
+class PsutilIoBackend(IoBackend):
+    """I/O backend implemented via psutil."""
+
+    name = "io-psutil"
+
+    def collect(self, level: str = "process") -> list[int]:
+        self._m._validate_level(level)
+        totals = [0, 0, 0, 0]
+        if level == "process":
+            pids = self._m.process_pids
+            for pid in pids:
+                io_data = self._m._process_backend.safe_proc_call(
+                    pid, lambda p: p.io_counters()
+                )
+                if io_data:
+                    totals[0] += io_data.read_count
+                    totals[1] += io_data.write_count
+                    totals[2] += io_data.read_bytes
+                    totals[3] += io_data.write_bytes
+        elif level == "system":
+            for proc in psutil.process_iter(["pid"]):
+                io_data = self._m._process_backend.safe_proc_call(
+                    proc, lambda p: p.io_counters()
+                )
+                if io_data:
+                    totals[0] += io_data.read_count
+                    totals[1] += io_data.write_count
+                    totals[2] += io_data.read_bytes
+                    totals[3] += io_data.write_bytes
+        else:  # user or slurm
+            for proc in self._m._process_backend.get_filtered_processes(
+                level, "cpu"
+            ):
+                io_data = self._m._process_backend.safe_proc_call(
+                    proc, lambda p: p.io_counters()
+                )
+                if io_data:
+                    totals[0] += io_data.read_count
+                    totals[1] += io_data.write_count
+                    totals[2] += io_data.read_bytes
+                    totals[3] += io_data.write_bytes
+        return totals
+
+
+class GpuBackendDiscovery:
+    """Selects GPU backends based on what's available at runtime."""
+
+    def __init__(self, monitor: "PerformanceMonitor"):
+        self._monitor = monitor
+
+    def discover(self):
+        return [
+            NvmlGpuBackend(self._monitor),
+            AdlxGpuBackend(self._monitor),
+        ]
 
 
 class PerformanceMonitor:
@@ -120,18 +647,28 @@ class PerformanceMonitor:
             for level in self.levels
         }
 
+        self._process_backend = PsutilProcessBackend(self)
+        self._cpu_backend = PsutilCpuBackend(self)
+        self._memory_backend = PsutilMemoryBackend(self)
+        self._io_backend = PsutilIoBackend(self)
+        for backend in (
+            self._process_backend,
+            self._cpu_backend,
+            self._memory_backend,
+            self._io_backend,
+        ):
+            backend.setup()
+
         self.nvidia_gpu_handles = []
         self.amd_gpu_handles = []
         self.gpu_memory = 0
         self.gpu_name = ""
-        if PYNVML_AVAILABLE:
-            self._setup_nvidia_gpu()
-        if ADLX_AVAILABLE:
-            self._setup_amd_gpu()
+        self._gpu_backends = GpuBackendDiscovery(self).discover()
+        for backend in self._gpu_backends:
+            backend.setup()
         self.num_gpus = len(self.nvidia_gpu_handles) + len(
             self.amd_gpu_handles
         )
-
         self.metrics = [
             "cpu",
             "memory",
@@ -151,61 +688,10 @@ class PerformanceMonitor:
         self.is_imported = False
         self.session_source = None
 
-    def _setup_nvidia_gpu(self):
-        try:
-            ngpus = pynvml.nvmlDeviceGetCount()
-            self.nvidia_gpu_handles = [
-                pynvml.nvmlDeviceGetHandleByIndex(i) for i in range(ngpus)
-            ]
-            if self.nvidia_gpu_handles:
-                handle = self.nvidia_gpu_handles[0]
-                gpu_mem = round(
-                    pynvml.nvmlDeviceGetMemoryInfo(handle).total / (1024**3), 2
-                )
-                if self.gpu_memory == 0:
-                    self.gpu_memory = gpu_mem
-                name = pynvml.nvmlDeviceGetName(handle)
-                gpu_name = name.decode() if isinstance(name, bytes) else name
-                if not self.gpu_name:
-                    self.gpu_name = gpu_name
-                else:
-                    self.gpu_name += f", {gpu_name}"
-        except Exception:
-            self.nvidia_gpu_handles = []
 
-    def _setup_amd_gpu(self):
-        try:
-            gpus_list = adlx_system.GetGPUs()
-            num_amd_gpus = gpus_list.Size()
-            self.amd_gpu_handles = [
-                gpus_list.At(i) for i in range(num_amd_gpus)
-            ]
-            if self.amd_gpu_handles:
-                gpu = self.amd_gpu_handles[0]
-                # Get memory info
-                gpu_mem_info = gpu.TotalVRAM()
-                gpu_mem = round(gpu_mem_info / (1024**3), 2)
-                if self.gpu_memory == 0:
-                    self.gpu_memory = gpu_mem
-                # Get GPU name
-                gpu_name = gpu.Name()
-                if not self.gpu_name:
-                    self.gpu_name = gpu_name
-                else:
-                    self.gpu_name += f", {gpu_name}"
-        except Exception:
-            self.amd_gpu_handles = []
 
     def _get_process_pids(self):
-        """Get current process PID and all its children PIDs"""
-        pids = {self.pid}
-        try:
-            pids.update(
-                child.pid for child in self.process.children(recursive=True)
-            )
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-        return pids
+        return self._process_backend.get_process_pids()
 
     def _validate_level(self, level):
         if level not in self.levels:
@@ -216,268 +702,42 @@ class PerformanceMonitor:
             )
 
     def _filter_process(self, proc, mode):
-        """Check if process matches the filtering mode"""
-        try:
-            if mode == "user":
-                return proc.uids().real == self.uid
-            elif mode == "slurm":
-                if not is_slurm_available():
-                    return False
-                return proc.environ().get("SLURM_JOB_ID") == str(
-                    self.slurm_job
-                )
-        except (psutil.AccessDenied, psutil.NoSuchProcess):
-            pass
-        return False
+        return self._process_backend.filter_process(proc, mode)
 
     def _get_filtered_processes(self, level="user", mode="cpu", handle=None):
-        """Get filtered processes for CPU or GPU monitoring"""
-        if mode == "cpu":
-            return [
-                proc
-                for proc in psutil.process_iter(["pid", "uids"])
-                if self._safe_proc_call(
-                    proc, lambda p: self._filter_process(p, level), False
-                )
-            ]
-        elif mode == "nvidia_gpu":
-            all_procs = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
-            filtered = [
-                p
-                for p in all_procs
-                if self._safe_proc_call(
-                    p.pid,
-                    lambda proc: self._filter_process(proc, level),
-                    False,
-                )
-            ]
-            return filtered, all_procs
-        else:
-            raise ValueError(f"Unknown mode: {mode}")
+        return self._process_backend.get_filtered_processes(
+            level, mode, handle
+        )
 
     def _safe_proc_call(self, proc, proc_func, default=0):
-        """Safely call a process method and return default on error"""
-        try:
-            if not isinstance(proc, psutil.Process):
-                # proc might be a pid. Moved Process creation here to catch
-                # exceptions at the same place
-                proc = psutil.Process(proc)
-            result = proc_func(proc)
-            return result if result is not None else default
-        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
-            return default
-        except TypeError:
-            # in test case, where psutil is a mock
-            if isinstance(psutil.Process, unittest.mock.MagicMock):
-                return default
+        return self._process_backend.safe_proc_call(proc, proc_func, default)
 
     def _collect_cpu(self, level="process"):
-        self._validate_level(level)
-        if level == "system":
-            # just return the whole system here
-            cpu_util_per_core = psutil.cpu_percent(percpu=True)
-            return cpu_util_per_core
-            # return [cpu_util_per_core[i] for i in self.cpu_handles]
-        elif level == "process":
-            # get process pids
-            pids = self.process_pids
-            cpu_total = sum(
-                self._safe_proc_call(
-                    pid, lambda p: p.cpu_percent(interval=0.1)
-                )
-                for pid in pids
-            )
-            return [cpu_total / self.num_cpus] * self.num_cpus
-        else:  # user or slurm
-            cpu_total = sum(
-                self._safe_proc_call(proc, lambda p: p.cpu_percent())
-                for proc in self._get_filtered_processes(level, "cpu")
-            )
-            return [cpu_total / self.num_cpus] * self.num_cpus
+        return self._cpu_backend.collect(level)
 
     def _collect_memory(self, level="process"):
-        self._validate_level(level)
-        if level == "system":
-            return (
-                psutil.virtual_memory().total
-                - psutil.virtual_memory().available
-            ) / (1024**3)
-        elif level == "process":
-            pids = self.process_pids
-            memory_total = sum(
-                self._safe_proc_call(pid, lambda p: p.memory_full_info().uss)
-                for pid in pids
-            )
-            return memory_total / (1024**3)
-        else:  # user or slurm
-            memory_total = sum(
-                self._safe_proc_call(
-                    proc, lambda p: p.memory_full_info().uss, 0
-                )
-                for proc in self._get_filtered_processes(level, "cpu")
-            )
-            return memory_total / (1024**3)
+        return self._memory_backend.collect(level)
 
     def _collect_io(self, level="process"):
-        self._validate_level(level)
-        if level == "process":
-            pids = self.process_pids
-            totals = [0, 0, 0, 0]
-            for pid in pids:
-                io_data = self._safe_proc_call(pid, lambda p: p.io_counters())
-                if io_data:
-                    totals[0] += io_data.read_count
-                    totals[1] += io_data.write_count
-                    totals[2] += io_data.read_bytes
-                    totals[3] += io_data.write_bytes
-        elif level == "system":
-            totals = [0, 0, 0, 0]
-            for proc in psutil.process_iter(["pid"]):
-                io_data = self._safe_proc_call(proc, lambda p: p.io_counters())
-                if io_data:
-                    totals[0] += io_data.read_count
-                    totals[1] += io_data.write_count
-                    totals[2] += io_data.read_bytes
-                    totals[3] += io_data.write_bytes
-        else:  # user or slurm
-            totals = [0, 0, 0, 0]
-            for proc in self._get_filtered_processes(level, "cpu"):
-                io_data = self._safe_proc_call(proc, lambda p: p.io_counters())
-                if io_data:
-                    totals[0] += io_data.read_count
-                    totals[1] += io_data.write_count
-                    totals[2] += io_data.read_bytes
-                    totals[3] += io_data.write_bytes
-        return totals
+        return self._io_backend.collect(level)
+
+
 
     def _collect_gpu(self, level="process"):
-        if not (PYNVML_AVAILABLE or ADLX_AVAILABLE) or self.num_gpus == 0:
+        if self.num_gpus == 0:
             return [], [], []
 
         self._validate_level(level)
         gpu_util, gpu_band, gpu_mem = [], [], []
 
-        # Collect NVIDIA GPU metrics
-        if PYNVML_AVAILABLE and self.nvidia_gpu_handles:
-            nvidia_util, nvidia_band, nvidia_mem = self._collect_nvidia_gpu(
-                level
-            )
-            gpu_util.extend(nvidia_util)
-            gpu_band.extend(nvidia_band)
-            gpu_mem.extend(nvidia_mem)
-
-        # Collect AMD GPU metrics
-        if ADLX_AVAILABLE and self.amd_gpu_handles:
-            amd_util, amd_band, amd_mem = self._collect_amd_gpu(level)
-            gpu_util.extend(amd_util)
-            gpu_band.extend(amd_band)
-            gpu_mem.extend(amd_mem)
+        for backend in self._gpu_backends:
+            b_util, b_band, b_mem = backend.collect(level)
+            gpu_util.extend(b_util)
+            gpu_band.extend(b_band)
+            gpu_mem.extend(b_mem)
 
         return gpu_util, gpu_band, gpu_mem
 
-    def _collect_nvidia_gpu(self, level="process"):
-        """Collect NVIDIA GPU metrics"""
-        gpu_util, gpu_band, gpu_mem = [], [], []
-
-        for handle in self.nvidia_gpu_handles:
-            try:
-                util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
-            except pynvml.NVMLError:
-                # If permission denied or other error, use default values
-                class DefaultUtilRates:
-                    gpu = 0.0
-                    memory = 0.0
-                util_rates = DefaultUtilRates()
-
-            if level == "system":
-                memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                gpu_util.append(util_rates.gpu)
-                gpu_band.append(util_rates.memory)
-                gpu_mem.append(memory_info.used / (1024**3))
-            elif level == "process":
-                pids = self.process_pids
-                process_mem = sum(
-                    p.usedGpuMemory
-                    for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
-                        handle
-                    )
-                    if p.pid in pids and p.usedGpuMemory
-                ) / (1024**3)
-                gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
-                gpu_band.append(0.0)
-                gpu_mem.append(process_mem)
-            else:  # user or slurm
-                filtered_gpu_processes, all_processes = (
-                    self._get_filtered_processes(level, "nvidia_gpu", handle)
-                )
-                filtered_mem = sum(
-                    p.usedGpuMemory
-                    for p in filtered_gpu_processes
-                    if p.usedGpuMemory
-                ) / (1024**3)
-                filtered_util = (
-                    (
-                        util_rates.gpu
-                        * len(filtered_gpu_processes)
-                        / max(len(all_processes), 1)
-                    )
-                    if filtered_gpu_processes
-                    else 0.0
-                )
-                gpu_util.append(filtered_util)
-                gpu_band.append(0.0)
-                gpu_mem.append(filtered_mem)
-
-        return gpu_util, gpu_band, gpu_mem
-
-    def _collect_amd_gpu(self, level="process"):
-        """Collect AMD GPU metrics"""
-        gpu_util, gpu_band, gpu_mem = [], [], []
-
-        for gpu_handle in self.amd_gpu_handles:
-            try:
-                # Get performance metrics interface
-                perf_monitoring = (
-                    adlx_system.GetPerformanceMonitoringServices()
-                )
-
-                # Get current metrics
-                current_metrics = perf_monitoring.GetCurrentPerformanceMetrics(
-                    gpu_handle
-                )
-
-                # Get GPU utilization
-                util = current_metrics.GPUUsage()
-
-                # Get memory info
-                mem_info = current_metrics.GPUVRAMUsage()
-
-                if level == "system":
-                    gpu_util.append(util)
-                    gpu_band.append(
-                        0.0
-                    )  # AMD ADLX doesn't provide memory bandwidth easily
-                    # Convert VRAM usage from MB to GB
-                    gpu_mem.append(mem_info / 1024.0)
-                elif level == "process":
-                    # AMD ADLX doesn't provide per-process metrics easily
-                    # For now, we'll report 0 for process-level
-                    gpu_util.append(0.0)
-                    gpu_band.append(0.0)
-                    gpu_mem.append(0.0)
-                else:  # user or slurm
-                    # AMD ADLX doesn't provide per-user metrics easily
-                    # For now, we'll report 0 for user/slurm level
-                    gpu_util.append(0.0)
-                    gpu_band.append(0.0)
-                    gpu_mem.append(0.0)
-            except Exception:
-                # If we can't get metrics, append zeros
-                gpu_util.append(0.0)
-                gpu_band.append(0.0)
-                gpu_mem.append(0.0)
-
-        return gpu_util, gpu_band, gpu_mem
 
     def _collect_metrics(self):
         time_mark = time.perf_counter()
@@ -612,7 +872,7 @@ class UnavailablePerformanceMonitor:
 
 
 class OfflinePerformanceMonitor:
-    """Offline monitor that satisfies PerformanceMonitorProtocol.
+    """Offline monitor that satisfies MonitorProtocol.
 
     It holds static data frames plus metadata from a manifest; does not collect live data.
     """
