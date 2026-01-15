@@ -1,6 +1,6 @@
 import logging
 
-from jumper_extension.adapters.monitor import PerformanceMonitorProtocol, UnavailablePerformanceMonitor
+from jumper_extension.adapters.monitor import MonitorProtocol, UnavailablePerformanceMonitor
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES, EXTENSION_INFO_MESSAGES, ExtensionInfoCode,
@@ -22,7 +22,7 @@ class ReportBuilder:
     """Base class for report builders"""
     def __init__(
         self,
-        monitor: PerformanceMonitorProtocol,
+        monitor: MonitorProtocol,
         cell_history: CellHistory,
         analyzer: PerformanceAnalyzer,
     ):
@@ -160,7 +160,7 @@ class ReportBuilder:
 class ReportPrinter(ReportBuilder):
     def __init__(
         self,
-        monitor: PerformanceMonitorProtocol,
+        monitor: MonitorProtocol,
         cell_history: CellHistory,
         analyzer: PerformanceAnalyzer,
     ):
@@ -240,7 +240,7 @@ class ReportDisplayerProtocol(Protocol):
 class ReportDisplayer(ReportBuilder):
     def __init__(
         self,
-        monitor: PerformanceMonitorProtocol,
+        monitor: MonitorProtocol,
         cell_history: CellHistory,
         analyzer: PerformanceAnalyzer,
         templates_dir=None
@@ -328,7 +328,7 @@ class PerformanceReporter:
 
     def attach(
         self,
-        monitor: PerformanceMonitorProtocol,
+        monitor: MonitorProtocol,
     ):
         """Attach started PerformanceMonitor"""
         # Attach to printer

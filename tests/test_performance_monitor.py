@@ -57,8 +57,6 @@ def test_cpu_only_and_slurm(mock_cpu_only):
         "builtins.open", create=True
     ) as mock_file, patch("os.getuid", return_value=1000), patch.dict(
         os.environ, {"SLURM_JOB_ID": "12345"}
-    ), patch(
-        "jumper_extension.adapters.monitor.PYNVML_AVAILABLE", False
     ):
         mock_file.return_value.__enter__.return_value.read.return_value = (
             b"8589934592"
@@ -71,7 +69,7 @@ def test_cpu_only_and_slurm(mock_cpu_only):
 
 def test_gpu_failures():
     """Test GPU setup failure scenarios"""
-    with patch("jumper_extension.adapters.monitor.PYNVML_AVAILABLE", True), patch(
+    with patch("pynvml.nvmlInit"), patch(
         "pynvml.nvmlDeviceGetCount", side_effect=Exception("GPU error")
     ), patch("psutil.Process") as mock_proc:
         mock_proc.return_value.cpu_affinity.return_value = [0, 1]
