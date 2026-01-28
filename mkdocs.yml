@@ -28,6 +28,7 @@ nav:
       - Adapters: internals/adapters.md
       - Core: internals/core.md
       - IPython: internals/ipython.md
+      - Monitor: internals/monitor.md
 
 markdown_extensions:
   - pymdownx.superfences
