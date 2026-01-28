@@ -3,7 +3,7 @@ import os
 import time
 from unittest.mock import Mock, patch
 
-from jumper_extension.adapters.monitor import PerformanceMonitor
+from jumper_extension.monitor.common import PerformanceMonitor
 
 
 # Save the original isinstance before patching

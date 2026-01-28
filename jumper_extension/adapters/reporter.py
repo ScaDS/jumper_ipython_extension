@@ -1,6 +1,6 @@
 import logging
 
-from jumper_extension.adapters.monitor import MonitorProtocol, UnavailablePerformanceMonitor
+from jumper_extension.monitor.common import MonitorProtocol, UnavailablePerformanceMonitor
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES, EXTENSION_INFO_MESSAGES, ExtensionInfoCode,
