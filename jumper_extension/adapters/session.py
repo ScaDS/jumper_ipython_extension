@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from jumper_extension.adapters.monitor import OfflinePerformanceMonitor
+from jumper_extension.monitor.common import OfflinePerformanceMonitor
 from jumper_extension.core.messages import (
     ExtensionInfoCode,
     EXTENSION_INFO_MESSAGES,

@@ -8,7 +8,7 @@ from IPython.display import display
 from ipywidgets import widgets, Layout
 
 from jumper_extension.adapters.cell_history import CellHistory
-from jumper_extension.adapters.monitor import PerformanceMonitor, UnavailablePerformanceMonitor, \
+from jumper_extension.monitor.common import UnavailablePerformanceMonitor, \
     MonitorProtocol
 from jumper_extension.core.messages import (
     ExtensionErrorCode,

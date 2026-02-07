@@ -1,15 +1,6 @@
-import argparse
 import logging
 from contextlib import contextmanager
-from typing import Optional, Tuple, Union, List, Dict, Iterator
-import os
-import sys
-import time
-import json
-import zipfile
-import tempfile
-import shutil
-from datetime import datetime
+from typing import Optional, Tuple, List, Dict, Iterator
 
 import pandas as pd
 
@@ -35,7 +26,7 @@ from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
-from jumper_extension.adapters.monitor import MonitorProtocol, PerformanceMonitor, OfflinePerformanceMonitor
+from jumper_extension.monitor.common import MonitorProtocol, PerformanceMonitor
 from jumper_extension.adapters.session import SessionExporter, SessionImporter
 from jumper_extension.adapters.visualizer import build_performance_visualizer, \
     VisualizerProtocol
