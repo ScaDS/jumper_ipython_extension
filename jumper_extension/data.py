@@ -51,7 +51,7 @@ class PerformanceData:
         ] + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
 
         if self.num_gpus > 0:
-            gpu_metrics = ["util", "band", "mem"]
+            gpu_metrics = ["util", "band", "mem", "power"]
             columns.extend(
                 [
                     f"gpu_{metric}_{stat}"
@@ -87,6 +87,7 @@ class PerformanceData:
         gpu_util,
         gpu_band,
         gpu_mem,
+        gpu_power,
         io_counters,
     ):
         self._validate_level(level)
@@ -118,7 +119,7 @@ class PerformanceData:
         }
 
         if self.num_gpus > 0:
-            gpu_data = {"util": gpu_util, "band": gpu_band, "mem": gpu_mem}
+            gpu_data = {"util": gpu_util, "band": gpu_band, "mem": gpu_mem, "power": gpu_power}
             for metric, values in gpu_data.items():
                 row_data.update(
                     {

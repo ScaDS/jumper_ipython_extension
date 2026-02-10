@@ -82,7 +82,7 @@ class PerformanceMonitor:
         ]
 
         if self.num_gpus:
-            self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem"])
+            self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem", "gpu_power"])
 
         self.data = PerformanceData(
             self.num_cpus, self.num_system_cpus, self.num_gpus
@@ -262,19 +262,22 @@ class PerformanceMonitor:
 
     def _collect_gpu(self, level="process"):
         if not PYNVML_AVAILABLE or not self.gpu_handles:
-            return [], [], []
+            return [], [], [], []
 
         self._validate_level(level)
-        gpu_util, gpu_band, gpu_mem = [], [], []
+        gpu_util, gpu_band, gpu_mem, gpu_power = [], [], [], []
 
         for handle in self.gpu_handles:
             util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
+            power_mw = pynvml.nvmlDeviceGetPowerUsage(handle)
+            power_w = power_mw / 1000
 
             if level == "system":
                 memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
                 gpu_util.append(util_rates.gpu)
                 gpu_band.append(util_rates.memory)
                 gpu_mem.append(memory_info.used / (1024**3))
+                gpu_power.append(power_w)
             elif level == "process":
                 pids = self.process_pids
                 process_mem = sum(
@@ -287,6 +290,7 @@ class PerformanceMonitor:
                 gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
                 gpu_band.append(0.0)
                 gpu_mem.append(process_mem)
+                gpu_power.append(power_w if process_mem > 0 else 0.0)
             else:  # user or slurm
                 filtered_gpu_processes, all_processes = (
                     self._get_filtered_processes(level, "gpu", handle)
@@ -306,8 +310,9 @@ class PerformanceMonitor:
                 gpu_util.append(filtered_util)
                 gpu_band.append(0.0)
                 gpu_mem.append(filtered_mem)
+                gpu_power.append(power_w if filtered_gpu_processes else 0.0)
 
-        return gpu_util, gpu_band, gpu_mem
+        return gpu_util, gpu_band, gpu_mem, gpu_power
 
     def _collect_metrics(self):
         time_mark = time.perf_counter()

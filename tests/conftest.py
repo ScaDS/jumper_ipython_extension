@@ -79,6 +79,8 @@ def mock_cpu_gpu(mock_cpu_only):
     ) as mock_mem, patch(
         "pynvml.nvmlDeviceGetUtilizationRates"
     ) as mock_util, patch(
+        "pynvml.nvmlDeviceGetPowerUsage", return_value=150000
+    ), patch(
         "pynvml.nvmlDeviceGetTemperature", return_value=65
     ), patch(
         "pynvml.nvmlDeviceGetComputeRunningProcesses", return_value=[]

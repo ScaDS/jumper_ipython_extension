@@ -89,6 +89,13 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                     "ylim": (0, monitor.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
+                "gpu_power": {
+                    "type": "multi_series",
+                    "prefix": "gpu_power_",
+                    "title": "GPU Power Usage (W) - Across GPUs",
+                    "ylim": None,
+                    "label": "GPU Power (All GPUs)",
+                },
             },
             "cpu": {
                 "cpu_summary": {
@@ -144,6 +151,20 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                     ),
                     "ylim": (0, monitor.gpu_memory),
                     "label": "GPU Memory Summary",
+                },
+                "gpu_power_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "gpu_power_min",
+                        "gpu_power_avg",
+                        "gpu_power_max",
+                    ],
+                    "title": (
+                        "GPU Power Usage (W) - "
+                        f"{self.monitor.num_gpus} GPUs"
+                    ),
+                    "ylim": None,
+                    "label": "GPU Power Summary",
                 },
             },
             "mem": {
@@ -1120,6 +1141,13 @@ class DiskPerformanceVisualizer(PerformanceVisualizer):
                     "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
+                "gpu_power": {
+                    "type": "multi_series",
+                    "prefix": "gpu_power_",
+                    "title": "GPU Power Usage (W) - Across GPUs",
+                    "ylim": None,
+                    "label": "GPU Power (All GPUs)",
+                },
             },
             "cpu": {
                 "cpu_summary": {
@@ -1163,6 +1191,17 @@ class DiskPerformanceVisualizer(PerformanceVisualizer):
                     "title": f"GPU Memory Usage (GB) - {self.monitor.num_gpus} GPUs",
                     "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory Summary",
+                },
+                "gpu_power_summary": {
+                    "type": "summary_series",
+                    "columns": [
+                        "gpu_power_min",
+                        "gpu_power_avg",
+                        "gpu_power_max",
+                    ],
+                    "title": f"GPU Power Usage (W) - {self.monitor.num_gpus} GPUs",
+                    "ylim": None,
+                    "label": "GPU Power Summary",
                 },
             },
             "mem": {
