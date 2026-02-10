@@ -91,9 +91,20 @@ class PerformanceMonitor:
     def _setup_gpu(self):
         try:
             ngpus = pynvml.nvmlDeviceGetCount()
-            self.gpu_handles = [
+            all_handles = [
                 pynvml.nvmlDeviceGetHandleByIndex(i) for i in range(ngpus)
             ]
+            self.gpu_handles = []
+            for handle in all_handles:
+                try:
+                    pynvml.nvmlDeviceGetUtilizationRates(handle)
+                    pynvml.nvmlDeviceGetPowerUsage(handle)
+                    pynvml.nvmlDeviceGetMemoryInfo(handle)
+                    self.gpu_handles.append(handle)
+                except Exception:
+                    logger.warning(
+                        f"GPU {all_handles.index(handle)} is not accessible, skipping."
+                    )
             if self.gpu_handles:
                 handle = self.gpu_handles[0]
                 self.gpu_memory = round(
