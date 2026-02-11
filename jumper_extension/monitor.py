@@ -279,49 +279,55 @@ class PerformanceMonitor:
         gpu_util, gpu_band, gpu_mem, gpu_power = [], [], [], []
 
         for handle in self.gpu_handles:
-            util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
-            power_mw = pynvml.nvmlDeviceGetPowerUsage(handle)
-            power_w = power_mw / 1000
+            try:
+                util_rates = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                power_mw = pynvml.nvmlDeviceGetPowerUsage(handle)
+                power_w = power_mw / 1000
 
-            if level == "system":
-                memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                gpu_util.append(util_rates.gpu)
-                gpu_band.append(util_rates.memory)
-                gpu_mem.append(memory_info.used / (1024**3))
-                gpu_power.append(power_w)
-            elif level == "process":
-                pids = self.process_pids
-                process_mem = sum(
-                    p.usedGpuMemory
-                    for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
-                        handle
+                if level == "system":
+                    memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                    gpu_util.append(util_rates.gpu)
+                    gpu_band.append(util_rates.memory)
+                    gpu_mem.append(memory_info.used / (1024**3))
+                    gpu_power.append(power_w)
+                elif level == "process":
+                    pids = self.process_pids
+                    process_mem = sum(
+                        p.usedGpuMemory
+                        for p in pynvml.nvmlDeviceGetComputeRunningProcesses(
+                            handle
+                        )
+                        if p.pid in pids
+                    ) / (1024**3)
+                    gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
+                    gpu_band.append(0.0)
+                    gpu_mem.append(process_mem)
+                    gpu_power.append(power_w if process_mem > 0 else 0.0)
+                else:  # user or slurm
+                    filtered_gpu_processes, all_processes = (
+                        self._get_filtered_processes(level, "gpu", handle)
                     )
-                    if p.pid in pids
-                ) / (1024**3)
-                gpu_util.append(util_rates.gpu if process_mem > 0 else 0.0)
-                gpu_band.append(0.0)
-                gpu_mem.append(process_mem)
-                gpu_power.append(power_w if process_mem > 0 else 0.0)
-            else:  # user or slurm
-                filtered_gpu_processes, all_processes = (
-                    self._get_filtered_processes(level, "gpu", handle)
-                )
-                filtered_mem = sum(
-                    p.usedGpuMemory for p in filtered_gpu_processes
-                ) / (1024**3)
-                filtered_util = (
-                    (
-                        util_rates.gpu
-                        * len(filtered_gpu_processes)
-                        / max(len(all_processes), 1)
+                    filtered_mem = sum(
+                        p.usedGpuMemory for p in filtered_gpu_processes
+                    ) / (1024**3)
+                    filtered_util = (
+                        (
+                            util_rates.gpu
+                            * len(filtered_gpu_processes)
+                            / max(len(all_processes), 1)
+                        )
+                        if filtered_gpu_processes
+                        else 0.0
                     )
-                    if filtered_gpu_processes
-                    else 0.0
-                )
-                gpu_util.append(filtered_util)
+                    gpu_util.append(filtered_util)
+                    gpu_band.append(0.0)
+                    gpu_mem.append(filtered_mem)
+                    gpu_power.append(power_w if filtered_gpu_processes else 0.0)
+            except Exception:
+                gpu_util.append(0.0)
                 gpu_band.append(0.0)
-                gpu_mem.append(filtered_mem)
-                gpu_power.append(power_w if filtered_gpu_processes else 0.0)
+                gpu_mem.append(0.0)
+                gpu_power.append(0.0)
 
         return gpu_util, gpu_band, gpu_mem, gpu_power
 
