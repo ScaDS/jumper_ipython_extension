@@ -31,13 +31,8 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 	+ [Performance Monitoring Levels](#performance-monitoring-levels)
 	+ [Collected Metrics](#collected-metrics)
 * [Available Commands](#available-commands)
-* [Contribution and Citing](#contribution-and-citing)
 * [Full Documentation](#full-documentation)
-
-## Full Documentation
-
-- Online (latest): https://scads.github.io/jumper_ipython_extension/latest/
-- Local sources: `docs/` (serve locally with `mkdocs serve`)
+* [Contribution and Citing](#contribution-and-citing)
 
 ## Installation
 
@@ -223,6 +218,13 @@ The extension supports four different levels of metric collection, each providin
 **GPU Support Details:**
 - **NVIDIA GPUs**: Full support for all monitoring levels (process, user, system, slurm) including per-process GPU memory tracking
 - **AMD GPUs**: System-level monitoring supported; per-process and per-user metrics are limited by AMD ADLX API capabilities
+
+
+## Full Documentation
+
+- Online (latest): https://scads.github.io/jumper_ipython_extension/latest/
+- Local sources: `docs/` (serve locally with `mkdocs serve`)
+
 
 ## Available Commands
 
