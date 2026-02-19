@@ -32,6 +32,12 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 	+ [Collected Metrics](#collected-metrics)
 * [Available Commands](#available-commands)
 * [Contribution and Citing](#contribution-and-citing)
+* [Full Documentation](#full-documentation)
+
+## Full Documentation
+
+- Online (latest): https://scads.github.io/jumper_ipython_extension/latest/
+- Local sources: `docs/` (serve locally with `mkdocs serve`)
 
 ## Installation
 
