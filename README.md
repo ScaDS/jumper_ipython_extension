@@ -171,6 +171,22 @@ Notes:
    ```
    Export performance measurements for entire notebook and cell execution history with timestamps, allowing you to project measurements onto specific cells.
 
+### Monitoring Right in Your Code
+Run the monitor around any code block and save its performance profile to CSV/JSON.
+
+```python
+from jumper_extension.core.service import build_perfmonitor_service
+
+service = build_perfmonitor_service()
+service.start_monitoring(1.0)
+
+with service.monitored():
+    your_foo()
+
+service.export_perfdata(file="your_foo_perf.csv")
+service.stop_monitoring()
+```
+
 ## Metrics Collection
 
 ### Performance Monitoring Levels
