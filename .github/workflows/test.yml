@@ -14,17 +14,19 @@ jobs:
       with:
         python-version: "3.11"
         cache: 'pip'
-    
+
+    - name: Pin setuptools (workaround for pkg_resources removal)
+      run: python -m pip install -U pip "setuptools<82"
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
         pip install -e .[test]
-    
+
     - name: Run tests with coverage
       run: |
         pytest --cov=jumper_extension --cov-report=xml tests/
-    
+
     - name: Generate coverage badge
-      run: |
-        python -m pip install --upgrade --force-reinstall "setuptools>=79,<83" coverage-badge
-        coverage-badge -o coverage.svg
+      uses: tj-actions/coverage-badge-py@v2
+      with:
+        output: coverage.svg
