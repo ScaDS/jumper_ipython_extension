@@ -442,7 +442,6 @@ class PerformanceVisualizer(BaliVisualizationMixin):
         """Draw BALI segments as colored rectangles with click selection."""
         if not show_bali:
             return
-
         segments = self._load_bali_segments()
         if not segments:
             return
@@ -511,6 +510,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 hatch=hatch,
                 zorder=0.5,
             )
+
             
             # Explicitly set edge color to ensure matplotlib state doesn't interfere
             rect.set_edgecolor(edgecolor)
@@ -522,6 +522,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 "output_len": s.get("output_len", "n/a"),
                 "tokens_per_sec": f"{tps:.2f}" if tps else "NaN",
                 "duration": f"{s.get('duration', 0):.2f}",
+                "duration_text_gen": f"{s.get('duration_text_gen', 0):.2f}",
                 "is_error": is_error,
                 "error_message": s.get("error_message", ""),
             }
@@ -583,7 +584,8 @@ class PerformanceVisualizer(BaliVisualizationMixin):
 - Input len: {info['input_len']}
 - Output len: {info['output_len']}
 - Tokens/sec: {info['tokens_per_sec']}
-- Duration (s): {info['duration']}"""
+- Duration (s): {info['duration']}
+- Duration Text gen (s): {info['duration_text_gen']}"""
                                 )
 
                     ax.figure.canvas.draw_idle()

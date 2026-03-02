@@ -23,6 +23,7 @@ class BaliAdapter:
                 "start_time",
                 "end_time",
                 "duration",
+                "duration_text_gen",
                 "tokens_per_sec",
                 "is_error",
                 "error_message",
@@ -54,6 +55,7 @@ class BaliAdapter:
 
         df = self._segments_df
         df = df[df["start_time"].notna() & df["end_time"].notna()]
+        df.to_csv("bali_test_df.csv")
         return df.to_dict(orient="records")
 
     def get_tokens_per_sec_range(
@@ -118,7 +120,9 @@ class BaliAdapter:
                         {
                             "start_time": start,
                             "end_time": start + duration,
+                            "start_text_gen": seg["start_text_gen"],
                             "duration": duration,
+                            "duration_text_gen":seg["duration_text_gen"],
                             "tokens_per_sec": seg["tokens_per_sec"],
                             "framework": seg["framework"],
                             "iteration": seg["iteration"],

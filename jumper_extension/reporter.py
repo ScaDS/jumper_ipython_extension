@@ -104,6 +104,11 @@ class PerformanceReporter:
                 "gpu_mem_avg",
                 f"{self.monitor.gpu_memory:.2f}",
             ),
+            (
+                "GPU Power (W)",
+                "gpu_power_avg",
+                "-",
+            ),
         ]
 
         print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")

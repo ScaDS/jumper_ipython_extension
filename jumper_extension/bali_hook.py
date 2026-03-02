@@ -46,16 +46,23 @@ class BaliResultsParser:
             framework_data = benchmark_data[framework]
 
             for iteration_key, iteration_data in framework_data.items():
-                start_time = iteration_data.get("start_time")
-                end_time = iteration_data.get("end_time")
+                start_time = iteration_data.get("start_timestamp")
+                end_time = iteration_data.get("end_timestamp")
+                tokenize_time = iteration_data.get("tokenize_timestamp") 
 
                 segments.append(
                     {
                         "start_time": start_time,
                         "end_time": end_time,
+                        "start_text_gen": tokenize_time,
                         "duration": (
                             (end_time - start_time)
                             if (start_time and end_time)
+                            else None
+                        ),
+                        "duration_text_gen": (
+                            (end_time - tokenize_time)
+                            if (end_time and tokenize_time)
                             else None
                         ),
                         "tokens_per_sec": iteration_data.get("token_per_sec"),
@@ -75,7 +82,9 @@ class BaliResultsParser:
                 {
                     "start_time": None,
                     "end_time": None,
+                    "start_text_gen":None,
                     "duration": None,
+                    "duration_text_gen": None,
                     "tokens_per_sec": None,
                     "framework": "unknown",
                     "iteration": "0",
@@ -141,7 +150,6 @@ class BaliResultsParser:
                     segments.extend(
                         self.extract_error_segments(error_data, config_data)
                     )
-
         return sorted(
             [s for s in segments if s["start_time"]],
             key=lambda x: x["start_time"],
