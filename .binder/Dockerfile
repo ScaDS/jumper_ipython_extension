@@ -30,9 +30,6 @@ RUN pip3 install --upgrade pip setuptools wheel
 # Install JupyterLab and notebook
 RUN pip install --no-cache-dir jupyterlab notebook
 
-# Install IRkernel for R and register the R kernel system-wide
-RUN R -e "install.packages('IRkernel', repos='https://cloud.r-project.org'); IRkernel::installspec(user=FALSE)"
-
 # Create jovyan user with UID 1000 (Binder requirement)
 RUN adduser --disabled-password \
     --gecos "Default user" \
