@@ -31,6 +31,7 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 	+ [Performance Monitoring Levels](#performance-monitoring-levels)
 	+ [Collected Metrics](#collected-metrics)
 * [Available Commands](#available-commands)
+* [Full Documentation](#full-documentation)
 * [Contribution and Citing](#contribution-and-citing)
 
 ## Installation
@@ -171,6 +172,22 @@ Notes:
    ```
    Export performance measurements for entire notebook and cell execution history with timestamps, allowing you to project measurements onto specific cells.
 
+### Monitoring Right in Your Code
+Run the monitor around any code block and save its performance profile to CSV/JSON.
+
+```python
+from jumper_extension.core.service import build_perfmonitor_service
+
+service = build_perfmonitor_service()
+service.start_monitoring(1.0)
+
+with service.monitored():
+    your_foo()
+
+service.export_perfdata(file="your_foo_perf.csv")
+service.stop_monitoring()
+```
+
 ## Metrics Collection
 
 ### Performance Monitoring Levels
@@ -201,6 +218,13 @@ The extension supports four different levels of metric collection, each providin
 **GPU Support Details:**
 - **NVIDIA GPUs**: Full support for all monitoring levels (process, user, system, slurm) including per-process GPU memory tracking
 - **AMD GPUs**: System-level monitoring supported; per-process and per-user metrics are limited by AMD ADLX API capabilities
+
+
+## Full Documentation
+
+- Online (latest): https://scads.github.io/jumper_ipython_extension/latest/
+- Local sources: `docs/` (serve locally with `mkdocs serve`)
+
 
 ## Available Commands
 

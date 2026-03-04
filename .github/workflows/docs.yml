@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -40,6 +41,16 @@ jobs:
           publish_branch: gh-pages
           publish_dir: ./site
           destination_dir: ${{ github.event_name == 'push' && '' || format('pr-{0}', github.event.pull_request.number) }}
+          keep_files: true
+
+      - name: Publish latest (main)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./site
+          destination_dir: latest
           keep_files: true
 
       - name: Comment preview URL on PR
