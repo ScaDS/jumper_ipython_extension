@@ -44,6 +44,7 @@ def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
     assert len(df) > 0
     assert "cpu_util_avg" in df.columns
     assert "gpu_util_avg" in df.columns
+    assert "gpu_power_avg" in df.columns
 
     # Test data export
     filename = f"{temp_dir}/test.csv"

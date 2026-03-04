@@ -38,6 +38,16 @@ class NvmlGpuBackend(GpuBackend):
 
             return DefaultUtilRates()
 
+    def _get_power(self, handle):
+        """Return GPU power draw in Watts."""
+        if self._pynvml is None:
+            return 0.0
+        try:
+            # nvmlDeviceGetPowerUsage returns milliwatts
+            return self._pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0
+        except self._pynvml.NVMLError:
+            return 0.0
+
     def setup(self) -> None:
         # Logic is intentionally kept identical to the previous implementation.
         try:
@@ -84,7 +94,8 @@ class NvmlGpuBackend(GpuBackend):
     def _collect_system(self, handle):
         util_rates = self._get_util_rates(handle)
         memory_info = self._pynvml.nvmlDeviceGetMemoryInfo(handle)
-        return util_rates.gpu, 0.0, memory_info.used / (1024**3)
+        power = self._get_power(handle)
+        return util_rates.gpu, 0.0, memory_info.used / (1024**3), power
 
     def _collect_process(self, handle):
         util_rates = self._get_util_rates(handle)
@@ -99,7 +110,8 @@ class NvmlGpuBackend(GpuBackend):
                 )
                 / (1024**3)
         )
-        return util_rates.gpu if process_mem > 0 else 0.0, 0.0, process_mem
+        power = self._get_power(handle)
+        return util_rates.gpu if process_mem > 0 else 0.0, 0.0, process_mem, power if process_mem > 0 else 0.0
 
     def _collect_other(self, handle, level: str):
         util_rates = self._get_util_rates(handle)
@@ -123,7 +135,17 @@ class NvmlGpuBackend(GpuBackend):
             if filtered_gpu_processes
             else 0.0
         )
-        return filtered_util, 0.0, filtered_mem
+        power = self._get_power(handle)
+        filtered_power = (
+            (
+                    power
+                    * len(filtered_gpu_processes)
+                    / max(len(all_processes), 1)
+            )
+            if filtered_gpu_processes
+            else 0.0
+        )
+        return filtered_util, 0.0, filtered_mem, filtered_power
 
     def shutdown(self) -> None:
         return None

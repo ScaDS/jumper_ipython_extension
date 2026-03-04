@@ -29,6 +29,7 @@ def test_performance_data(temp_dir):
         [],
         [],
         [],
+        [],
         [100, 50, 1024, 512],
     )
     assert len(data.data["system"]) == 1
@@ -52,6 +53,7 @@ def test_performance_data_gpu():
         [75.0],
         [20.0],
         [60.0],
+        [150.0],
         [100, 50, 1024, 512],
     )
     data.add_sample(
@@ -62,13 +64,14 @@ def test_performance_data_gpu():
         [80.0],
         [25.0],
         [65.0],
+        [160.0],
         [200, 60, 2048, 1024],
     )
 
     df = data.view("system")
     assert len(df) == 2 and all(
         col in df.columns
-        for col in ["gpu_util_avg", "gpu_band_avg", "gpu_mem_avg"]
+        for col in ["gpu_util_avg", "gpu_band_avg", "gpu_mem_avg", "gpu_power_avg"]
     )
     assert len(data.view("system", slice_=(0, 0))) == 1
 
@@ -79,13 +82,14 @@ def test_performance_data_multi_level():
 
     # Add data to different levels
     data.add_sample(
-        "user", 1234567890, [10.0, 15.0], 1.0, [], [], [], [50, 25, 512, 256]
+        "user", 1234567890, [10.0, 15.0], 1.0, [], [], [], [], [50, 25, 512, 256]
     )
     data.add_sample(
         "process",
         1234567890,
         [20.0, 25.0],
         2.0,
+        [],
         [],
         [],
         [],
@@ -96,6 +100,7 @@ def test_performance_data_multi_level():
         1234567890,
         [30.0, 35.0, 35.0, 30.0],
         3.0,
+        [],
         [],
         [],
         [],

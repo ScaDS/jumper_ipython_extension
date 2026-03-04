@@ -68,7 +68,7 @@ class AdlxGpuBackend(GpuBackend):
     def _collect_system(self, handle):
         try:
             if self._adlx_system is None:
-                return 0.0, 0.0, 0.0
+                return 0.0, 0.0, 0.0, 0.0
             # Get performance metrics interface
             perf_monitoring = (
                 self._adlx_system.GetPerformanceMonitoringServices()
@@ -85,19 +85,25 @@ class AdlxGpuBackend(GpuBackend):
             # Get memory info
             mem_info = current_metrics.GPUVRAMUsage()
 
+            # Get GPU power in Watts
+            try:
+                power = current_metrics.GPUPower()
+            except Exception:
+                power = 0.0
+
             # AMD ADLX doesn't provide memory bandwidth easily
-            return util, 0.0, mem_info / 1024.0
+            return util, 0.0, mem_info / 1024.0, power
         except Exception:
             # If we can't get metrics, return zeros
-            return 0.0, 0.0, 0.0
+            return 0.0, 0.0, 0.0, 0.0
 
     def _collect_process(self, handle):
         # AMD ADLX doesn't provide per-process metrics easily
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0
 
     def _collect_other(self, handle, level: str):
         # AMD ADLX doesn't provide per-user metrics easily
-        return 0.0, 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0
 
     def shutdown(self) -> None:
         return None

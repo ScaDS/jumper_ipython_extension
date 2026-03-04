@@ -24,36 +24,37 @@ class GpuBackend:
     def _iter_handles(self) -> Iterable[object]:
         return []
 
-    def _collect_system(self, handle: object) -> tuple[float, float, float]:
+    def _collect_system(self, handle: object) -> tuple[float, float, float, float]:
         raise NotImplementedError
 
-    def _collect_process(self, handle: object) -> tuple[float, float, float]:
+    def _collect_process(self, handle: object) -> tuple[float, float, float, float]:
         raise NotImplementedError
 
     def _collect_other(
             self, handle: object, level: str
-    ) -> tuple[float, float, float]:
+    ) -> tuple[float, float, float, float]:
         raise NotImplementedError
 
     def collect(self, level: str = "process"):
         """Collect metrics for the given level.
 
-        Returns: (gpu_util, gpu_band, gpu_mem)
+        Returns: (gpu_util, gpu_band, gpu_mem, gpu_power)
         """
-        gpu_util, gpu_band, gpu_mem = [], [], []
+        gpu_util, gpu_band, gpu_mem, gpu_power = [], [], [], []
 
         for handle in self._iter_handles():
             if level == "system":
-                util, band, mem = self._collect_system(handle)
+                util, band, mem, power = self._collect_system(handle)
             elif level == "process":
-                util, band, mem = self._collect_process(handle)
+                util, band, mem, power = self._collect_process(handle)
             else:  # user or slurm
-                util, band, mem = self._collect_other(handle, level)
+                util, band, mem, power = self._collect_other(handle, level)
             gpu_util.append(util)
             gpu_band.append(band)
             gpu_mem.append(mem)
+            gpu_power.append(power)
 
-        return gpu_util, gpu_band, gpu_mem
+        return gpu_util, gpu_band, gpu_mem, gpu_power
 
 
 class NullGpuBackend(GpuBackend):
