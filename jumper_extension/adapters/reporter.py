@@ -218,6 +218,11 @@ class ReportPrinter(ReportBuilder):
                 "gpu_mem_avg",
                 f"{self.monitor.gpu_memory:.2f}",
             ),
+            (
+                "GPU Power (W)",
+                "gpu_power_avg",
+                "-",
+            ),
         ]
 
         print(f"{'Metric':<25} {'AVG':<8} {'MIN':<8} {'MAX':<8} {'TOTAL':<8}")
@@ -268,6 +273,7 @@ class ReportDisplayer(ReportBuilder):
             ("Memory (GB)", "memory", f"{self.monitor.memory_limits[level]:.2f}" if hasattr(self.monitor, "memory_limits") else "-"),
             (f"GPU Util (Across {getattr(self.monitor, 'num_gpus', 0)} GPUs)", "gpu_util_avg", "-"),
             ("GPU Memory (GB)", "gpu_mem_avg", f"{getattr(self.monitor, 'gpu_memory', 0.0):.2f}"),
+            ("GPU Power (W)", "gpu_power_avg", "-"),
         ]
         metrics_rows = []
         for name, col, total in metrics_spec:
