@@ -1,7 +1,17 @@
 import os
+import logging
+from typing import Optional, Dict, Callable, List
+
 import json
 import pandas as pd
 import psutil
+
+from jumper_extension.core.messages import (
+    ExtensionErrorCode,
+    EXTENSION_ERROR_MESSAGES,
+)
+
+logger = logging.getLogger("extension")
 
 
 def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
@@ -93,11 +103,63 @@ def detect_memory_limit(level, uid, slurm_job):
 
     return system_mem
 
+
+def load_dataframe_from_file(
+    filename: str,
+    readers: Dict[str, Callable],
+    required_columns: List[str],
+    entity_name: str = "data",
+) -> Optional[pd.DataFrame]:
+    """Load a DataFrame from CSV or JSON file with validation.
+
+    Args:
+        filename: Path to the file to load
+        readers: Dict mapping format (e.g., 'csv', 'json') to reader functions
+        required_columns: List of column names that must be present
+        entity_name: Human-readable name for logging (e.g., 'performance data')
+
+    Returns:
+        DataFrame if successful, None otherwise
+    """
+    if not filename:
+        return None
+
+    _, ext = os.path.splitext(filename)
+    file_format = ext.lower().lstrip(".")
+
+    try:
+        reader = readers.get(file_format)
+        if reader is None:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.UNSUPPORTED_FORMAT
+                ].format(
+                    format=file_format or "",
+                    supported_formats=", ".join(readers.keys()),
+                )
+            )
+            return None
+        df = reader(filename)
+    except Exception as e:
+        logger.warning(f"[JUmPER]: Failed to load {entity_name}: {e}")
+        return None
+
+    # Validate required columns
+    missing = [col for col in required_columns if col not in df.columns]
+    if missing:
+        logger.warning(
+            f"[JUmPER]: Cannot load {entity_name}. "
+            f"Missing required columns: {', '.join(missing)}"
+        )
+        return None
+
+    return df
+
 def save_perfdata_to_disk(pid, data):
     """Save performance data to disk by PID and level"""
     perfdata_dir = f"perfdata_results/{pid}"
     os.makedirs(perfdata_dir, exist_ok=True)
-    
+
     for level in data.levels:
         df = data.view(level=level)
         if not df.empty:
@@ -109,7 +171,7 @@ def save_cell_history_to_disk(pid, cell_history):
     """Save cell history to disk by PID"""
     perfdata_dir = f"perfdata_results/{pid}"
     os.makedirs(perfdata_dir, exist_ok=True)
-    
+
     filepath = os.path.join(perfdata_dir, "cell_history.json")
     with open(filepath, "w") as f:
         json.dump(cell_history.data.to_dict("records"), f, indent=2)
@@ -119,14 +181,14 @@ def load_perfdata_from_disk(pid, levels):
     """Load performance data from disk by PID"""
     perfdata_dir = f"perfdata_results/{pid}"
     perfdata_by_level = {}
-    
+
     for level in levels:
         filepath = os.path.join(perfdata_dir, f"perfdata_{level}.csv")
         if os.path.exists(filepath):
             perfdata_by_level[level] = pd.read_csv(filepath)
         else:
             perfdata_by_level[level] = pd.DataFrame()
-    
+
     return perfdata_by_level
 
 
@@ -144,7 +206,7 @@ def save_monitor_metadata_to_disk(pid, monitor):
     """Save monitor metadata to disk"""
     perfdata_dir = f"perfdata_results/{pid}"
     os.makedirs(perfdata_dir, exist_ok=True)
-    
+
     metadata = {
         "num_cpus": monitor.num_cpus,
         "num_system_cpus": monitor.num_system_cpus,
@@ -153,7 +215,7 @@ def save_monitor_metadata_to_disk(pid, monitor):
         "start_time": monitor.start_time,
         "memory_limits": monitor.memory_limits,
     }
-    
+
     filepath = os.path.join(perfdata_dir, "monitor_metadata.json")
     with open(filepath, "w") as f:
         json.dump(metadata, f, indent=2)

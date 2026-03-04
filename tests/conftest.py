@@ -1,8 +1,20 @@
 import tempfile
+import os
 from unittest.mock import Mock, patch
 
 import pytest
 from IPython.testing.globalipapp import get_ipython
+
+# Ensure logging goes to a writable temp directory for the entire test session
+if "JUMPER_LOG_DIR" not in os.environ:
+    _log_dir = tempfile.mkdtemp(prefix="jumper_test_logs_")
+    os.environ["JUMPER_LOG_DIR"] = _log_dir
+
+
+def _noop_gpu_setup(self) -> None:
+    self._handles = []
+    self.gpu_memory = 0.0
+    self.gpu_name = ""
 
 
 @pytest.fixture
@@ -30,19 +42,16 @@ def temp_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
 
-
 @pytest.fixture
-def mock_cpu_only():
-    """Mock system with 1 CPU (4 cores) and no GPU"""
+def mock_cpu_base():
+    """Mock system with 1 CPU (4 cores)."""
     with patch("psutil.cpu_count", return_value=4), patch(
         "psutil.cpu_percent", return_value=[25.0, 30.0, 20.0, 35.0]
     ), patch("psutil.virtual_memory") as mock_mem, patch(
         "psutil.Process"
     ) as mock_proc, patch(
         "psutil.disk_io_counters"
-    ) as mock_disk, patch(
-        "jumper_extension.monitor.PYNVML_AVAILABLE", False
-    ):
+    ) as mock_disk:
         mock_mem.return_value.total = 8 * 1024**3
         mock_mem.return_value.available = 4 * 1024**3
         mock_proc.return_value.cpu_affinity.return_value = [0, 1, 2, 3]
@@ -66,11 +75,24 @@ def mock_cpu_only():
 
 
 @pytest.fixture
-def mock_cpu_gpu(mock_cpu_only):
-    """Mock system with 1 CPU (4 cores) and 1 GPU"""
-    with patch("jumper_extension.monitor.PYNVML_AVAILABLE", True), patch(
-        "pynvml.nvmlInit"
-    ), patch("pynvml.nvmlDeviceGetCount", return_value=1), patch(
+def mock_cpu_only(mock_cpu_base):
+    """Mock system with 1 CPU (4 cores) and no GPU."""
+    with patch(
+        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuBackend.setup",
+        _noop_gpu_setup,
+    ), patch(
+        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuBackend.setup",
+        _noop_gpu_setup,
+    ):
+        yield
+
+
+@pytest.fixture
+def mock_cpu_gpu(mock_cpu_base):
+    """Mock system with 1 CPU (4 cores) and 1 GPU."""
+    with patch("pynvml.nvmlInit"), patch(
+        "pynvml.nvmlDeviceGetCount", return_value=1
+    ), patch(
         "pynvml.nvmlDeviceGetHandleByIndex", return_value=Mock()
     ), patch(
         "pynvml.nvmlDeviceGetName", return_value=b"NVIDIA GeForce RTX 3080"
@@ -84,6 +106,9 @@ def mock_cpu_gpu(mock_cpu_only):
         "pynvml.nvmlDeviceGetTemperature", return_value=65
     ), patch(
         "pynvml.nvmlDeviceGetComputeRunningProcesses", return_value=[]
+    ), patch(
+        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuBackend.setup",
+        _noop_gpu_setup,
     ):
         mock_mem.return_value = Mock(
             total=10 * 1024**3, used=2 * 1024**3, free=8 * 1024**3

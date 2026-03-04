@@ -1,0 +1,205 @@
+:root {
+  --bg: #ffffff;
+  --text: #111827;         /* near black */
+  --muted: #4b5563;        /* gray-600 */
+  --accent: #1f2937;       /* neutral accent for tags outline dots */
+  --tag-icon-size: 25px;  /* default icon size for tag widgets */
+  --max-content-width: 720px;
+}
+
+/* Normalize box sizing to avoid width overflow/layout overlap */
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--text);
+}
+
+.jr-divider {
+  border: 0;
+  border-top: 1px solid #9ca3af;
+  margin: 0 0 8px 0;
+  max-width: var(--max-content-width, 720px);
+  width: 100%;
+}
+
+.jr-container {
+  background: var(--bg);
+  padding: 12px 4px 4px 4px;
+  position: relative; /* allow absolute children like taglist */
+}
+
+/* Common content width to align header subtitle with table right edge */
+.jr-content {
+  max-width: var(--max-content-width); /* matches .jr-table-wrap */
+  width: 100%;
+  margin: 0; /* keep left-aligned within container */
+}
+
+.jr-header {
+  display: flex;
+  flex-direction: row; /* title left, meta right */
+  flex-wrap: wrap;     /* allow header to grow in height on small widths */
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-right: 0;
+  position: relative;
+}
+
+.jr-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.jr-title {
+  font-weight: 650;
+  letter-spacing: 0.3px;
+  color: var(--text);
+}
+
+.jr-subtitle {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end; /* move subtitle to top-right */
+  text-align: right;
+}
+
+.jr-tags {
+  margin-top: 4px;
+  align-self: flex-end;
+}
+
+.jr-kv { display: inline-flex; gap: 6px; align-items: baseline; }
+.jr-k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.jr-v { color: var(--text); font-variant-numeric: tabular-nums; }
+.jr-sep { opacity: 0.35; }
+
+.jr-section-title {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin: 12px 0 8px;
+}
+
+.jr-tags .jr-section-title { display: none; }
+
+.jr-taglist {
+  /* Keep tag row in normal document flow and avoid overlapping table */
+  position: static !important;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: visible;
+  gap: 8px;
+  margin: 8px 0 1px 0 !important;
+  width: 100%;             /* span same width as header/table */
+  padding-left: 0 !important;
+  padding-right: 12px;
+  padding-bottom: 1px !important;
+  z-index: 0;               /* sit below subsequent content if stacked */
+}
+
+.jr-tag {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1px 10px !important; /* enough room for dot and text */
+  color: var(--text);
+  line-height: 1.2;
+  min-height: 28px;
+}
+/* Remove the colored dot before each tag; only SVG + name remain */
+.jr-tag::before { content: none; display: none; }
+.jr-tag-icon { opacity: 0.9; }
+.jr-tag-name { font-size: 13px; letter-spacing: 0.02em; }
+
+.jr-tag--small { padding: 4px 8px; }
+.jr-tag--small .jr-tag-name { font-size: 12px; }
+
+/* Tag theme classes: set color via CSS custom property */
+.jr-tag--cpu-bound      { --tag-color: #ef4444; } /* red */
+.jr-tag--memory-bound   { --tag-color: #3b82f6; } /* blue */
+.jr-tag--gpu-util-bound { --tag-color: #8b5cf6; } /* violet */
+.jr-tag--gpu-memory-bound { --tag-color: #14b8a6; } /* teal */
+.jr-tag--normal         { --tag-color: #22c55e; } /* green */
+.jr-tag--unknown        { --tag-color: #9ca3af; } /* gray */
+.jr-tag--gpu-allocated-but-not-used { --tag-color: #9ca3af; } /* gray */
+
+/* Icon placeholder: allows inlining SVG later via --tag-icon variable */
+.jr-tag-icon {
+  display: inline-flex;
+  width: var(--tag-icon-size, 20px);
+  height: var(--tag-icon-size, 20px);
+  align-items: center;
+  justify-content: center;
+}
+/* Render masked icon only when there is no inline SVG inside */
+.jr-tag-icon:empty::before {
+  content: "";
+  display: block;
+  width: var(--tag-icon-size, 20px);
+  height: var(--tag-icon-size, 20px);
+  /* If --tag-icon is provided as a URL to an SVG, mask it; otherwise stays empty */
+  background-color: currentColor;
+  -webkit-mask: var(--tag-icon) no-repeat center / contain;
+  mask: var(--tag-icon) no-repeat center / contain;
+}
+/* Ensure any inline SVG scales nicely inside the placeholder */
+.jr-tag-icon svg { display: block; width: var(--tag-icon-size, 20px); height: var(--tag-icon-size, 20px); }
+
+/* Ensure the metrics section starts on its own line in normal flow */
+.jr-metrics { display: block; clear: both; }
+
+/* Metrics table (left-aligned, constrained) */
+.jr-table-wrap {
+  max-width: 720px;
+  background: var(--bg);
+  margin-top: 4px;
+  position: relative; /* ensure it sits above tag row if ever stacked */
+  z-index: 1;
+}
+
+.jr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.jr-table thead th {
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 8px;
+}
+
+.jr-table tbody td {
+  padding: 8px 8px;
+}
+
+.jr-col-metric {
+  color: var(--text);
+  font-weight: 500;
+}

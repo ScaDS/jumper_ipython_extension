@@ -4,30 +4,42 @@ import logging.config
 import os
 import time
 import warnings
+from typing import List, Optional
 
 import pandas as pd
-from itables import show
+from itables import show, options
 
-from .extension_messages import (
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
+from jumper_extension.utilities import load_dataframe_from_file
 
 logger = logging.getLogger("extension")
 
 
 class CellHistory:
     def __init__(self):
-        self.data = pd.DataFrame(
-            columns=["index", "raw_cell", "start_time", "end_time", "duration"]
-        )
+        self._columns = [
+            "cell_index",
+            "raw_cell",
+            "start_time",
+            "end_time",
+            "duration",
+        ]
+        self.data = pd.DataFrame(columns=self._columns)
+        self.file_readers = {
+            "json": pd.read_json,
+            "csv": pd.read_csv,
+        }
         self.current_cell = None
 
-    def start_cell(self, raw_cell):
+    def start_cell(self, raw_cell: str, cell_magics: List[str]):
         self.current_cell = {
-            "index": len(self.data),
+            "cell_index": len(self.data),
+            "cell_magics": cell_magics,
             "raw_cell": raw_cell,
             "start_time": time.perf_counter(),
             "end_time": None,
@@ -56,7 +68,7 @@ class CellHistory:
     def print(self):
         for _, cell in self.data.iterrows():
             print(
-                f"Cell #{int(cell['index'])} - Duration: "
+                f"Cell #{int(cell['cell_index'])} - Duration: "
                 f"{cell['duration']:.2f}s"
             )
             print("-" * 40)
@@ -75,7 +87,7 @@ class CellHistory:
             duration = row["end_time"] - row["start_time"]
             data.append(
                 {
-                    "Cell index": row["index"],
+                    "Cell index": row["cell_index"],
                     "Duration (s)": f"{duration:.2f}",
                     "Start Time": row["start_time"],
                     "End Time": row["end_time"],
@@ -84,14 +96,18 @@ class CellHistory:
             )
 
         df = pd.DataFrame(data)
-        show(
-            df,
-            layout={"topStart": "search", "topEnd": None},
-            columnDefs=[
-                {"targets": [4], "className": "dt-left"}
-            ],  # 4 - "Code" index
-            escape=False,
-        )
+
+        # To avoid warnings about a non-documented 'escape' option in a notebook
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=SyntaxWarning, module="itables\\.typing")
+            show(
+                df,
+                layout={"topStart": "search", "topEnd": None},
+                columnDefs=[
+                    {"targets": [4], "className": "dt-left"}
+                ],  # 4 - "Code" index
+                escape=False,
+            )
 
     def export(self, filename="cell_history.json"):
         if self.data.empty:
@@ -103,6 +119,11 @@ class CellHistory:
         # Determine format from filename extension
         _, ext = os.path.splitext(filename)
         format = ext.lower().lstrip(".")
+        
+        # Default to csv if no extension provided
+        if not format:
+            format = "csv"
+            filename += ".csv"
 
         if format == "json":
             with open(filename, "w") as f:
@@ -112,7 +133,7 @@ class CellHistory:
         else:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.UNSUPPORTED_EXPORT_FORMAT
+                    ExtensionErrorCode.UNSUPPORTED_FORMAT
                 ].format(
                     format=format,
                     supported_formats=", ".join(["json", "csv"]),
@@ -124,6 +145,19 @@ class CellHistory:
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
                 filename=filename
             )
+        )
+
+    def load(self, filename: str) -> Optional[pd.DataFrame]:
+        """Load cell history from CSV or JSON file.
+
+        Returns:
+            DataFrame if successful, None otherwise
+        """
+        return load_dataframe_from_file(
+            filename,
+            self.file_readers,
+            self._columns,
+            entity_name="cell history",
         )
 
     def __len__(self):

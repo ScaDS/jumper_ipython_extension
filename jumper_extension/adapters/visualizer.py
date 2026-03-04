@@ -1,6 +1,7 @@
 import logging
+import pickle
 import re
-from typing import List
+from typing import List, runtime_checkable, Protocol, Optional, Tuple
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,18 +10,17 @@ from matplotlib.cm import ScalarMappable
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
-from .extension_messages import (
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.monitor.common import UnavailablePerformanceMonitor, \
+    MonitorProtocol
+from jumper_extension.core.messages import (
     ExtensionErrorCode,
-    EXTENSION_ERROR_MESSAGES,
+    EXTENSION_ERROR_MESSAGES, ExtensionInfoCode, EXTENSION_INFO_MESSAGES,
 )
-from .utilities import (
-    filter_perfdata, 
-    get_available_levels,
-    load_perfdata_from_disk,
-    load_monitor_metadata_from_disk
-)
-from .logo import logo_image, jumper_colors
-from .bali_adapter import BaliVisualizationMixin
+from jumper_extension.utilities import filter_perfdata, get_available_levels
+from jumper_extension.logo import logo_image, jumper_colors
+
+from jumper_extension.bali_adapter import BaliVisualizationMixin
 
 logger = logging.getLogger("extension")
 
@@ -33,6 +33,21 @@ def is_ipympl_backend():
     return ("ipympl" in backend) or ("widget" in backend)
 
 
+@runtime_checkable
+class VisualizerProtocol(Protocol):
+    """Structural protocol for visualizers used by the service."""
+    def attach(self, monitor: MonitorProtocol) -> None: ...
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+        level=None,
+        save_jpeg=None,
+        pickle_file=None,
+    ) -> None: ...
+
+
 class PerformanceVisualizer(BaliVisualizationMixin):
     """Visualizes performance metrics collected by PerformanceMonitor.
 
@@ -40,11 +55,26 @@ class PerformanceVisualizer(BaliVisualizationMixin):
     'slurm' (if available)
     """
 
-    def __init__(self, monitor, cell_history, min_duration=None, bali_adapter=None):
-        self.monitor = monitor
+    def __init__(self, cell_history: CellHistory,bali_adapter=None):
+        self.monitor = UnavailablePerformanceMonitor(
+            reason="Monitor has not been started yet."
+        )
         self.cell_history = cell_history
         self.figsize = (5, 3)
-        self.min_duration = min_duration
+        self.min_duration = None
+        self._io_window = None
+        self.subsets = {}
+
+        # Initialize BALI functionality via mixin
+        super().__init__(bali_adapter=bali_adapter)
+
+    def attach(
+        self,
+        monitor: MonitorProtocol,
+    ):
+        """Attach started PerformanceMonitor."""
+        self.monitor = monitor
+        self.min_duration = self.monitor.interval
         # Smooth IO with ~1s rolling window based on sampling interval
         try:
             self._io_window = max(
@@ -52,10 +82,13 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             )
         except Exception:
             self._io_window = 1
+        self._build_subsets()
 
-        # Initialize BALI functionality via mixin
-        super().__init__(bali_adapter=bali_adapter)
 
+
+    def _build_subsets(self):
+        """Build a dictionary of metric subsets based on the provided
+        configuration"""
         # Compressed metrics configuration (dict-based entries for clarity)
         self.subsets = {
             "cpu_all": {
@@ -86,7 +119,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                     "type": "multi_series",
                     "prefix": "gpu_mem_",
                     "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
                 "gpu_power": {
@@ -149,7 +182,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                         "GPU Memory Usage (GB) - "
                         f"{self.monitor.num_gpus} GPUs"
                     ),
-                    "ylim": (0, monitor.gpu_memory),
+                    "ylim": (0, self.monitor.gpu_memory),
                     "label": "GPU Memory Summary",
                 },
                 "gpu_power_summary": {
@@ -208,6 +241,51 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             },
         }
 
+    def _resolve_metric_subsets(
+        self,
+        metrics: Optional[List[str]]
+    ) -> Tuple[str, ...]:
+        """Map user-specified metrics or subsets to visualizer subset keys."""
+        if not metrics:
+            return ("cpu", "mem", "io")
+
+        resolved: List[str] = []
+        metric_list = (
+            [metrics]
+            if isinstance(metrics, str)
+            else list(metrics)
+        )
+        for metric in metric_list:
+            if not metric:
+                continue
+            metric_key = str(metric).strip()
+            if metric_key in self.subsets:
+                resolved.append(metric_key)
+                continue
+            found_subset = next(
+                (
+                    subset
+                    for subset, cfg in self.subsets.items()
+                    if metric_key in cfg
+                ),
+                None,
+            )
+            if found_subset:
+                resolved.append(found_subset)
+            else:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_METRIC_SUBSET
+                    ].format(
+                        subset=metric_key,
+                        supported_subsets=", ".join(self.subsets.keys()),
+                    )
+                )
+
+        # Remove duplicates while preserving order; fall back to defaults
+        deduped = tuple(dict.fromkeys(resolved))
+        return deduped or ("cpu", "mem", "io")
+
     def _compress_time_axis(self, perfdata, cell_range):
         """Compress time axis by removing idle periods between cells"""
         if perfdata.empty:
@@ -237,7 +315,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 )
                 cell_boundaries.append(
                     {
-                        "index": cell["index"],
+                        "cell_index": cell["cell_index"],
                         "start_time": current_time,
                         "end_time": current_time + cell_duration,
                         "duration": cell_duration,
@@ -246,6 +324,119 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 current_time += cell_duration
 
         return compressed_perfdata, cell_boundaries
+
+    def _plot_direct(self, metric_subsets, cell_range, show_idle, level, save_jpeg=None, pickle_file=None):
+        """Plot metrics directly with matplotlib without widgets"""
+        start_idx, end_idx = cell_range
+        filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+
+        # Get performance data for the specified level
+        perfdata = filter_perfdata(
+            filtered_cells,
+            self.monitor.data.view(level=level),
+            not show_idle,
+        )
+
+        if perfdata.empty:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.NO_PERFORMANCE_DATA
+                ]
+            )
+            return
+
+        # Process time data
+        if not show_idle:
+            processed_data, self._compressed_cell_boundaries = (
+                self._compress_time_axis(perfdata, cell_range)
+            )
+        else:
+            processed_data = perfdata.copy()
+            processed_data["time"] -= self.monitor.start_time
+
+        # Get metrics for subsets
+        metrics = []
+        for subset in metric_subsets:
+            if subset in self.subsets:
+                for metric_key in self.subsets[subset].keys():
+                    metrics.append(metric_key)
+            else:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_METRIC_SUBSET
+                    ].format(
+                        subset=subset,
+                        supported_subsets=", ".join(self.subsets.keys()),
+                    )
+                )
+
+        if not metrics:
+            logger.warning("No valid metrics found to plot")
+            return
+
+        # Create subplots
+        n_metrics = len(metrics)
+        fig, axes = plt.subplots(n_metrics, 1, figsize=(10, 3 * n_metrics),
+                                constrained_layout=True)
+        if n_metrics == 1:
+            axes = [axes]
+
+        # Plot each metric
+        for i, metric in enumerate(metrics):
+            self._plot_metric(
+                processed_data, metric, cell_range, show_idle, axes[i], level
+            )
+
+        # Handle JPEG saving
+        if save_jpeg:
+            if not save_jpeg.endswith('.jpg') and not save_jpeg.endswith('.jpeg'):
+                save_jpeg += '.jpg'
+            fig.savefig(save_jpeg, format='jpeg', dpi=300, bbox_inches='tight')
+            print(f"Plot saved as JPEG: {save_jpeg}")
+
+        # Handle pickle serialization
+        if pickle_file:
+            if not pickle_file.endswith('.pkl'):
+                pickle_file += '.pkl'
+
+            # Create plot data dictionary
+            plot_data = {
+                'figure': fig,
+                'axes': axes,
+                'metrics': metrics,
+                'processed_data': processed_data,
+                'cell_range': cell_range,
+                'level': level,
+                'show_idle': show_idle,
+                'metric_subsets': metric_subsets
+            }
+
+            # Save to pickle file
+            with open(pickle_file, 'wb') as f:
+                pickle.dump(plot_data, f)
+
+            # Print reload code
+            print(f"Plot objects serialized to: {pickle_file}")
+            print("\n# Python code to reload and display the plot:")
+            print(f"import pickle")
+            print(f"import matplotlib.pyplot as plt")
+            print(f"")
+            print(f"# Load the pickled plot data")
+            print(f"with open('{pickle_file}', 'rb') as f:")
+            print(f"    plot_data = pickle.load(f)")
+            print(f"")
+            print(f"# Extract the figure and display")
+            print(f"fig = plot_data['figure']")
+            print(f"plt.show()")
+            print(f"")
+            print(f"# Access other data:")
+            print(f"# axes = plot_data['axes']")
+            print(f"# metrics = plot_data['metrics']")
+            print(f"# processed_data = plot_data['processed_data']")
+            print(f"# cell_range = plot_data['cell_range']")
+            print(f"# level = plot_data['level']")
+
+        plt.show()
 
     def _plot_metric(
         self,
@@ -395,7 +586,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                     height,
                     facecolor=color,
                     alpha=alpha,
-                    edgecolor="gray",
+                    edgecolor="black",
                     linestyle="--",
                     linewidth=1,
                     zorder=0,
@@ -420,20 +611,25 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 draw_cell_rect(
                     cell["start_time"],
                     cell["duration"],
-                    int(cell["index"]),
+                    int(cell["cell_index"]),
                     0.4,
                 )
         else:
             filtered_cells = self.cell_history.view()
-            cells = (
-                filtered_cells.iloc[cell_range[0] : cell_range[1] + 1]
-                if cell_range
-                else filtered_cells
-            )
+            if cell_range:
+                try:
+                    mask = (filtered_cells["cell_index"] >= cell_range[0]) & (
+                        filtered_cells["cell_index"] <= cell_range[1]
+                    )
+                    cells = filtered_cells[mask]
+                except Exception:
+                    cells = filtered_cells
+            else:
+                cells = filtered_cells
             for idx, cell in cells.iterrows():
                 start_time = cell["start_time"] - self.monitor.start_time
                 draw_cell_rect(
-                    start_time, cell["duration"], int(cell["index"]), 0.5
+                    start_time, cell["duration"], int(cell["cell_index"]), 0.5
                 )
 
     def _draw_bali_segments(
@@ -497,7 +693,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 edgecolor = "gray"
                 alpha = 0.75
                 is_error_segment = False
-            
+
             rect = plt.Rectangle(
                 (start, y_min),
                 dur,
@@ -511,7 +707,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 zorder=0.5,
             )
 
-            
+
             # Explicitly set edge color to ensure matplotlib state doesn't interfere
             rect.set_edgecolor(edgecolor)
             rect._bali_info = {
@@ -562,7 +758,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                         with ax._bali_selection_output:
                             ax._bali_selection_output.clear_output(wait=True)
                             info = patch._bali_info
-                            
+
                             if info.get("is_error", False):
                                 print("Failed segment")
                                 print(
@@ -600,12 +796,18 @@ class PerformanceVisualizer(BaliVisualizationMixin):
         metric_subsets=("cpu", "mem", "io"),
         cell_range=None,
         show_idle=False,
+        level=None,
+        save_jpeg=None,
+        pickle_file=None,
     ):
-        if self.monitor.num_gpus:
-            metric_subsets += (
-                "gpu",
-                "gpu_all",
-            )
+        metrics_missing = not metric_subsets
+        if metrics_missing:
+            metric_subsets = ("cpu", "mem", "io")
+            if self.monitor.num_gpus:
+                metric_subsets += (
+                    "gpu",
+                    "gpu_all",
+                )
 
         """Plot performance metrics with interactive widgets for
         configuration."""
@@ -617,19 +819,28 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             return
 
         # Default to all cells if no range specified
-        min_cell_idx, max_cell_idx = int(valid_cells.iloc[0]["index"]), int(
-            valid_cells.iloc[-1]["index"]
-        )
+        try:
+            min_cell_idx = int(valid_cells["cell_index"].min())
+            max_cell_idx = int(valid_cells["cell_index"].max())
+        except Exception:
+            min_cell_idx, max_cell_idx = 0, len(valid_cells) - 1
         if cell_range is None:
             cell_start_index = 0
             for cell_idx in range(len(valid_cells) - 1, -1, -1):
                 if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
                     cell_start_index = cell_idx
                     break
-            cell_range = (
-                int(valid_cells.iloc[cell_start_index]["index"]),
-                int(valid_cells.iloc[-1]["index"]),
-            )
+            start = int(valid_cells.iloc[cell_start_index]["cell_index"])
+            end = int(valid_cells["cell_index"].max())
+            if start > end:
+                start, end = end, start
+            cell_range = (start, end)
+
+        # If level is specified, plot directly without widgets
+        if level is not None:
+            metric_subsets = self._resolve_metric_subsets(metric_subsets)
+            return self._plot_direct(metric_subsets, cell_range, show_idle,
+                                     level, save_jpeg, pickle_file)
 
         # Create interactive widgets
         style = {"description_width": "initial"}
@@ -639,8 +850,18 @@ class PerformanceVisualizer(BaliVisualizationMixin):
         show_bali_checkbox = widgets.Checkbox(
             value=False, description="Show BALI segments"
         )
+        # Sanitize slider value within bounds and ordered
+        try:
+            s0, s1 = cell_range
+            if s0 > s1:
+                s0, s1 = s1, s0
+            s0 = max(min_cell_idx, min(s0, max_cell_idx))
+            s1 = max(min_cell_idx, min(s1, max_cell_idx))
+            slider_value = (s0, s1)
+        except Exception:
+            slider_value = (min_cell_idx, max_cell_idx)
         cell_range_slider = widgets.IntRangeSlider(
-            value=cell_range,
+            value=slider_value,
             min=min_cell_idx,
             max=max_cell_idx,
             step=1,
@@ -685,7 +906,14 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 show_bali_checkbox.value,
             )
             start_idx, end_idx = current_cell_range
-            filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+            cells_all = self.cell_history.view()
+            try:
+                mask = (cells_all["cell_index"] >= start_idx) & (
+                    cells_all["cell_index"] <= end_idx
+                )
+                filtered_cells = cells_all[mask]
+            except Exception:
+                filtered_cells = cells_all
             # Store all level data for subplot access
             perfdata_by_level = {}
             for available_level in get_available_levels():
@@ -732,7 +960,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 reference_perfdata = perfdata_by_level.get(primary_level)
                 self._compressed_bali_segments = (
                     self.bali_adapter.compress_segments(
-                        bali_segments, current_cell_range, reference_perfdata, 
+                        bali_segments, current_cell_range, reference_perfdata,
                         self.cell_history
                     )
                     if reference_perfdata is not None
@@ -802,6 +1030,30 @@ class PerformanceVisualizer(BaliVisualizationMixin):
 
         display(widgets.VBox([config_widgets, plot_output]))
         update_plots()
+
+
+class UnavailableVisualizer:
+    """
+    A stub that type-checks against VisualizerProtocol but
+    only logs that visualization is unavailable.
+    """
+    def __init__(self, reason: str = "Plotting not available."):
+        self._reason = reason
+
+    def attach(self, monitor: MonitorProtocol) -> None: ...
+
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+    ) -> None:
+        logger.info(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.PLOTS_NOT_AVAILABLE].format(
+                reason=self._reason
+            )
+        )
+
 
 
 class InteractivePlotWrapper:
@@ -942,7 +1194,7 @@ class InteractivePlotWrapper:
                     # Redraw all plot panels
                     for panel in self.plot_panels:
                         panel["update_plot"]()
-            
+
             self.vmin_widget.observe(on_vmin_vmax_change)
             self.vmax_widget.observe(on_vmin_vmax_change)
             ui_components.append(self.bali_colorbar_container)
@@ -1071,16 +1323,30 @@ class InteractivePlotWrapper:
             panel["update_plot"]()
 
 
+def build_performance_visualizer(
+    cell_history: CellHistory,
+    plots_disabled: bool = False,
+    plots_disabled_reason: str = "Plotting not available.",
+) -> VisualizerProtocol:
+    """
+    Build PerformanceVisualizer object.
+    Allows building a visualizer that degrades to a no-op when plots are disabled.
+    """
+    if plots_disabled:
+        return UnavailableVisualizer(reason=plots_disabled_reason)
+    return PerformanceVisualizer(cell_history)
+
+
 class DiskPerformanceVisualizer(PerformanceVisualizer):
     """Performance visualizer that loads data from disk instead of memory"""
-    
+
     def __init__(self, pid, cell_history, bali_adapter=None):
         self.pid = pid
         self.cell_history = cell_history
         self.figsize = (5, 3)
         self.min_duration = 1.0
         self._io_window = 1
-        
+
         # Load monitor metadata from disk
         metadata = load_monitor_metadata_from_disk(pid)
         if metadata is None:
@@ -1090,7 +1356,7 @@ class DiskPerformanceVisualizer(PerformanceVisualizer):
                 "gpu_memory": 30.0, "start_time": 0,
                 "memory_limits": {level: 100.0 for level in get_available_levels()}
             }
-        
+
         # Create monitor object with loaded metadata
         class MockMonitor:
             def __init__(self, pid, metadata):
@@ -1101,15 +1367,15 @@ class DiskPerformanceVisualizer(PerformanceVisualizer):
                 self.gpu_memory = metadata["gpu_memory"]
                 self.start_time = metadata["start_time"]
                 self.memory_limits = metadata["memory_limits"]
-        
+
         self.monitor = MockMonitor(pid, metadata)
-        
+
         # Initialize BALI functionality
         BaliVisualizationMixin.__init__(self, bali_adapter=bali_adapter)
-        
+
         # Load perfdata from disk
         self.perfdata_by_level = load_perfdata_from_disk(pid, get_available_levels())
-        
+
         # Initialize subsets (copy from parent class)
         self.subsets = {
             "cpu_all": {
@@ -1259,15 +1525,15 @@ class DiskPerformanceVisualizer(PerformanceVisualizer):
         """Modified plot method that uses pre-loaded disk data"""
         # Use the parent class plot method but override data access
         original_data_view = getattr(self.monitor, 'data', None)
-        
+
         # Create a mock data object
         class MockData:
             def view(self, level):
                 return self.perfdata_by_level.get(level, pd.DataFrame())
-        
+
         mock_data = MockData()
         mock_data.perfdata_by_level = self.perfdata_by_level
         self.monitor.data = mock_data
-        
+
         # Call parent plot method
         super().plot(metric_subsets, cell_range, show_idle)

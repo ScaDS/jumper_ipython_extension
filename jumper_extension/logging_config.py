@@ -1,11 +1,16 @@
 import logging
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-LOGGING_DIR = PROJECT_ROOT / "logs_jumper"
+# Use JUMPER_LOG_DIR environment variable, defaulting to home directory
+BASE_LOGGING_DIR = Path(os.environ.get("JUMPER_LOG_DIR", Path.home()))
+# Create a timestamped subdirectory for this session
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+LOGGING_DIR = BASE_LOGGING_DIR / f"jumper_logs_{timestamp}"
 os.makedirs(LOGGING_DIR, exist_ok=True)
 
 

@@ -3,7 +3,7 @@
 [![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
 
 <p align="center">
-<img width="450" src="doc/JUmPER01.png"/>
+<img width="450" src="docs/img/JUmPER01.png"/>
 </p>
 
 # JUmPER: Jupyter meets Performance
@@ -22,6 +22,8 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 # Table of Content
 
 * [Installation](#installation)
+* [Configuration](#configuration)
+	+ [Environment Variables](#environment-variables)
 * [Quick Start](#quick-start)
 	+ [Load the Extension](#load-the-extension)
 	+ [Basic Usage](#basic-usage)
@@ -42,6 +44,28 @@ or install it from source:
 ```bash
 pip install .
 ```
+
+**Optional GPU Support:**
+
+For NVIDIA GPU monitoring:
+```bash
+pip install pynvml
+```
+
+For AMD GPU monitoring:
+```bash
+pip install ADLXPybind
+```
+
+Both GPU libraries can be installed simultaneously to monitor mixed GPU systems.
+
+## Configuration
+
+### Environment Variables
+
+- **`JUMPER_LOG_DIR`**: Directory where JUmPER stores log files (info.log, debug.log, error.log)
+  - Default: User's home directory
+  - Example: `export JUMPER_LOG_DIR=/path/to/logs`
 
 ## Quick Start
 
@@ -94,7 +118,37 @@ pip install .
 
    Opens an interactive plot with widgets to explore performance metrics over time, filter by cell ranges, and select different monitoring levels.
 
-![](doc/plot_out.png)
+![](docs/img/plot_out.png)
+
+### Direct plotting mode and exports
+
+You can also run `%perfmonitor_plot` in a direct (non-widget) mode and save or export results.
+
+- **Plot specific metrics (no ipywidgets):**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary,memory
+  ```
+
+- **Choose monitoring level and cell range:**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary --level user --cell 2:5
+  ```
+
+- **Save the plot as JPEG:**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary,memory --save-jpeg performance_analysis.jpg
+  ```
+
+- **Export plot data to a pickle file (to reload later with full interactivity):**
+  ```python
+  %perfmonitor_plot --metrics cpu_summary --level user --pickle analysis_data.pkl
+  ```
+  The command prints a small Python snippet showing how to load the pickle and display the plot in a separate session.
+
+Notes:
+- `--metrics` accepts a comma-separated list of metric keys (e.g., `cpu_summary`, `memory`, `io_read`, `io_write`, `io_read_count`, `io_write_count`, `gpu_util_summary`, `gpu_band_summary`, `gpu_mem_summary`).
+- `--level` supports the same levels as reports: `process` (default), `user`, `system`, and `slurm` (if available).
+- `--cell` supports formats like `5`, `2:8`, `:5`, `3:`. Negative indices are supported (e.g., `-3:-1`).
 
 
 
@@ -142,23 +196,27 @@ The extension supports four different levels of metric collection, each providin
 | `gpu_mem` | GPU memory usage in GB across GPUs |
 | `io_write_mb` | Total data written in MB |
 
-*Note: GPU metrics require NVIDIA GPUs with pynvml library. Memory limits are automatically detected from SLURM cgroups when available.*
+*Note: GPU metrics support both NVIDIA GPUs (via pynvml library) and AMD GPUs (via ADLXPybind library). Both GPU types can be monitored simultaneously. Memory limits are automatically detected from SLURM cgroups when available.*
+
+**GPU Support Details:**
+- **NVIDIA GPUs**: Full support for all monitoring levels (process, user, system, slurm) including per-process GPU memory tracking
+- **AMD GPUs**: System-level monitoring supported; per-process and per-user metrics are limited by AMD ADLX API capabilities
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
+| `%perfmonitor_fast_setup` | Fast setup of JUmPER. Starts monitor (1.0s interval), enables perfreports (--level process) and interactive plots (ipympl) |
 | `%perfmonitor_help` | Show all available commands with examples |
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
 | `%perfmonitor_stop` | Stop monitoring |
 | `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
-| `%perfmonitor_plot` | Interactive plot with widgets for exploring performance data |
+| `%perfmonitor_plot [--metrics LIST] [--cell RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE]` | Interactive plot with widgets; direct plotting of selected metrics; optional export to JPEG or pickle |
 | `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
-| `%perfmonitor_export_perfdata [filename] [--level LEVEL]` |Export performance data to CSV |
-| `%perfmonitor_perfdata_to_dataframe [df_name] [--level LEVEL]` |Export performance data to Pandas dataframe |
+| `%perfmonitor_export_perfdata [--file filename] [--level LEVEL]` | Export performance data to dataframe. Export performance data to CSV if `--file` is set. |
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |
 
 ## Contribution and Citing:

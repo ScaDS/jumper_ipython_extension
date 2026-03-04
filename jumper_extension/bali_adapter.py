@@ -2,7 +2,7 @@ import pandas as pd
 from typing import List, Dict, Tuple, Any
 from itables import show
 
-from .bali_hook import BaliResultsParser
+from jumper_extension.bali_hook import BaliResultsParser
 
 
 class BaliAdapter:

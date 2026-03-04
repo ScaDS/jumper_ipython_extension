@@ -3,7 +3,7 @@ import os
 import time
 from unittest.mock import Mock, patch
 
-from jumper_extension.monitor import PerformanceMonitor
+from jumper_extension.monitor.common import PerformanceMonitor
 
 
 # Save the original isinstance before patching
@@ -21,15 +21,16 @@ def is_mock_instance(obj, cls):
 def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
     """Test monitor initialization, GPU support, lifecycle, and data collection"""
     # Test basic initialization with GPU
-    monitor = PerformanceMonitor(interval=0.1)
+    monitor = PerformanceMonitor()
+    monitor.start(0.1)
     assert monitor.interval == 0.1
-    assert not monitor.running
+    assert monitor.running
     assert monitor.num_gpus == 1
     assert "gpu_util" in monitor.metrics
     assert monitor.gpu_name == "NVIDIA GeForce RTX 3080"
 
     # Test start/stop lifecycle
-    monitor.start()
+    # already started above
     assert monitor.running
     monitor.start()  # Test already running case
 
@@ -56,21 +57,19 @@ def test_cpu_only_and_slurm(mock_cpu_only):
         "builtins.open", create=True
     ) as mock_file, patch("os.getuid", return_value=1000), patch.dict(
         os.environ, {"SLURM_JOB_ID": "12345"}
-    ), patch(
-        "jumper_extension.monitor.PYNVML_AVAILABLE", False
     ):
         mock_file.return_value.__enter__.return_value.read.return_value = (
             b"8589934592"
         )
         monitor = PerformanceMonitor()
         assert monitor.num_gpus == 0
-        assert monitor.memory == 8.0
+        assert monitor.memory_limits["slurm"] == 8.0
         assert "gpu_util" not in monitor.metrics
 
 
 def test_gpu_failures():
     """Test GPU setup failure scenarios"""
-    with patch("jumper_extension.monitor.PYNVML_AVAILABLE", True), patch(
+    with patch("pynvml.nvmlInit"), patch(
         "pynvml.nvmlDeviceGetCount", side_effect=Exception("GPU error")
     ), patch("psutil.Process") as mock_proc:
         mock_proc.return_value.cpu_affinity.return_value = [0, 1]
