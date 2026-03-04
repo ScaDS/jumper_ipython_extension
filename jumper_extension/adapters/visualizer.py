@@ -905,6 +905,8 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 show_idle_checkbox.value,
                 show_bali_checkbox.value,
             )
+            # Invalidate cache so segments are loaded once per render cycle
+            self._invalidate_bali_cache()
             start_idx, end_idx = current_cell_range
             cells_all = self.cell_history.view()
             try:

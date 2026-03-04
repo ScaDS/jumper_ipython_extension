@@ -55,7 +55,6 @@ class BaliAdapter:
 
         df = self._segments_df
         df = df[df["start_time"].notna() & df["end_time"].notna()]
-        df.to_csv("bali_test_df.csv")
         return df.to_dict(orient="records")
 
     def get_tokens_per_sec_range(
@@ -149,10 +148,17 @@ class BaliVisualizationMixin:
         super().__init__(*args, **kwargs)
         self.bali_adapter = bali_adapter or BaliAdapter()
         self._compressed_bali_segments = []
+        self._cached_bali_segments = None
 
     def _load_bali_segments(self) -> List[Dict]:
-        """Load BALI segments from disk."""
-        return self.bali_adapter.get_segments_for_visualization(self.monitor.pid)
+        """Load BALI segments, using cache if available."""
+        if self._cached_bali_segments is None:
+            self._cached_bali_segments = self.bali_adapter.get_segments_for_visualization(self.monitor.pid)
+        return self._cached_bali_segments
+
+    def _invalidate_bali_cache(self):
+        """Invalidate cached BALI segments so the next load fetches from disk."""
+        self._cached_bali_segments = None
 
 
 class BaliMagicsMixin:
