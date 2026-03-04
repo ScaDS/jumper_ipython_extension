@@ -70,6 +70,9 @@ Both GPU libraries can be installed simultaneously to monitor mixed GPU systems.
 
 ## Quick Start
 
+Try it yourself:
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
+
 ### Load the Extension
 
 ```python

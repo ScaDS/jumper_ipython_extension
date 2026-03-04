@@ -52,9 +52,6 @@ ENV PATH="${HOME}/.local/bin:${PATH}"
 RUN pip install --no-cache-dir \
     "git+https://github.com/ScaDS/jumper_ipython_extension.git@main"
 
-# Register the wrapper kernel spec for jovyan (user-level, avoids /usr permissions)
-RUN python3 -m jumper_wrapper_kernel.install install
-
 # Expose Jupyter Notebook port
 EXPOSE 8888
 

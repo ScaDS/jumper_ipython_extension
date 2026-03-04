@@ -23,3 +23,7 @@ This guide will walk through recording cells to a Python script and running that
         allow="fullscreen" 
         style="aspect-ratio: 16 / 12; border: 0; min-height: 480px">
     </iframe>
+
+## Try it yourself:
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fwrite_script.ipynb)
