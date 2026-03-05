@@ -111,7 +111,8 @@ class BaliAdapter:
             offset_start = cell_start - segments[0]["start_time"]
 
             # TODO: add timer offset based on absolute time stamps
-            timer_offset = 6
+            timer_offset = (segments[0]["start_timestamp_absolute"] -
+                            cell["wallclock_start_time"])
 
             for i, seg in enumerate(segments):
                 seg_id = (i, cell["cell_index"])
