@@ -43,6 +43,8 @@ def _write_fake_session(dir_path: Path):
             "start_time": 1.0,
             "end_time": 2.0,
             "duration": 1.0,
+            "wallclock_start_time": 1700000000.0,
+            "wallclock_end_time": 1700000001.0,
         }
     ])
     ch.to_csv(dir_path / "cell_history.csv", index=False)
@@ -70,6 +72,8 @@ def _write_fake_session(dir_path: Path):
             "interval": 1.0,
             "start_time": 1.0,
             "stop_time": 2.0,
+            "wallclock_start_time": 1700000000.0,
+            "wallclock_stop_time": 1700000002.0,
             "num_cpus": 1,
             "num_system_cpus": 1,
             "num_gpus": 0,

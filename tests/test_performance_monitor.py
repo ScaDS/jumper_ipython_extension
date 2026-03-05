@@ -28,6 +28,8 @@ def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
     assert monitor.num_gpus == 1
     assert "gpu_util" in monitor.metrics
     assert monitor.gpu_name == "NVIDIA GeForce RTX 3080"
+    assert monitor.wallclock_start_time is not None
+    assert isinstance(monitor.wallclock_start_time, float)
 
     # Test start/stop lifecycle
     # already started above
@@ -38,6 +40,8 @@ def test_comprehensive_monitor_functionality(mock_cpu_gpu, temp_dir):
     time.sleep(0.2)
     monitor.stop()
     assert not monitor.running
+    assert monitor.wallclock_stop_time is not None
+    assert monitor.wallclock_stop_time >= monitor.wallclock_start_time
 
     # Verify data collection
     df = monitor.data.view("system")

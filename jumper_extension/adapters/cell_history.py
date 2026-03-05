@@ -28,6 +28,8 @@ class CellHistory:
             "start_time",
             "end_time",
             "duration",
+            "wallclock_start_time",
+            "wallclock_end_time",
         ]
         self.data = pd.DataFrame(columns=self._columns)
         self.file_readers = {
@@ -44,6 +46,8 @@ class CellHistory:
             "start_time": time.perf_counter(),
             "end_time": None,
             "duration": None,
+            "wallclock_start_time": time.time(),
+            "wallclock_end_time": None,
         }
 
     def end_cell(self, result):
@@ -52,6 +56,7 @@ class CellHistory:
             self.current_cell["duration"] = (
                 self.current_cell["end_time"] - self.current_cell["start_time"]
             )
+            self.current_cell["wallclock_end_time"] = time.time()
 
             new_row = pd.DataFrame([self.current_cell])
             with warnings.catch_warnings():

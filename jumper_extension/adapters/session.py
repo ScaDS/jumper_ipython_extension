@@ -126,6 +126,8 @@ class SessionExporter:
                 "interval": getattr(self.monitor, "interval", 1.0),
                 "start_time": getattr(self.monitor, "start_time", None),
                 "stop_time": getattr(self.monitor, "stop_time", None),
+                "wallclock_start_time": getattr(self.monitor, "wallclock_start_time", None),
+                "wallclock_stop_time": getattr(self.monitor, "wallclock_stop_time", None),
                 "num_cpus": getattr(self.monitor, "num_cpus", 0),
                 "num_system_cpus": getattr(self.monitor, "num_system_cpus", 0),
                 "num_gpus": getattr(self.monitor, "num_gpus", 0),

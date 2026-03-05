@@ -29,6 +29,8 @@ class MonitorProtocol(Protocol):
     interval: float
     data: "PerformanceData"
     start_time: Optional[float]
+    wallclock_start_time: Optional[float]
+    wallclock_stop_time: Optional[float]
     num_cpus: int
     num_system_cpus: int
     num_gpus: int
@@ -52,6 +54,8 @@ class PerformanceMonitor:
         self.running = False
         self.start_time = None
         self.stop_time = None
+        self.wallclock_start_time = None
+        self.wallclock_stop_time = None
         self.monitor_thread = None
         self.process = psutil.Process()
         self.n_measurements = 0
@@ -214,6 +218,7 @@ class PerformanceMonitor:
             return
         self.interval = interval
         self.start_time = time.perf_counter()
+        self.wallclock_start_time = time.time()
         self.running = True
         self.monitor_thread = threading.Thread(
             target=self._collect_data, daemon=True
@@ -231,6 +236,7 @@ class PerformanceMonitor:
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2.0)
         self.stop_time = time.perf_counter()
+        self.wallclock_stop_time = time.time()
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STOPPED].format(
                 seconds=self.stop_time - self.start_time
@@ -260,6 +266,8 @@ class UnavailablePerformanceMonitor:
     interval: float
     data: "PerformanceData"
     start_time: Optional[float]
+    wallclock_start_time: Optional[float]
+    wallclock_stop_time: Optional[float]
     num_cpus: int
     num_system_cpus: int
     num_gpus: int
@@ -321,6 +329,8 @@ class OfflinePerformanceMonitor:
         self.running = False
         self.start_time = monitor_info.get("start_time")
         self.stop_time = monitor_info.get("stop_time")
+        self.wallclock_start_time = monitor_info.get("wallclock_start_time")
+        self.wallclock_stop_time = monitor_info.get("wallclock_stop_time")
 
         # Hardware/context
         self.num_cpus = int(monitor_info.get("num_cpus", 0) or 0)
