@@ -128,9 +128,6 @@ class BaliAdapter:
                 overlap_start = max(seg_start, cell_start)
                 overlap_end = min(seg_end, cell_end)
 
-                logger.info(f"Segment {seg_id}: {seg}")
-                logger.info(f"{seg_start, cell_start, seg["start_time"]}")
-
                 compressed.append(
                     {
                         "start_time": seg_start - cell_start + timer_offset,
