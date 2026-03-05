@@ -562,6 +562,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             ax.set_ylim(ylim)
         if not show_bali:
             self._draw_cell_boundaries(ax, cell_range, show_idle)
+
         self._draw_bali_segments(ax, show_bali, show_idle, cell_range, custom_vmin_vmax)
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
@@ -763,25 +764,25 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                                 print("Failed segment")
                                 print(
                                     f"""BALI segment selected:
-- Model: {info['model']}
-- Framework: {info['framework']}
-- Batch size: {info['batch_size']}
-- Input len: {info['input_len']}
-- Output len: {info['output_len']}
-- Error: {info['error_message']}
-- Duration (s): {info['duration']}"""
+                                        - Model: {info['model']}
+                                        - Framework: {info['framework']}
+                                        - Batch size: {info['batch_size']}
+                                        - Input len: {info['input_len']}
+                                        - Output len: {info['output_len']}
+                                        - Error: {info['error_message']}
+                                        - Duration (s): {info['duration']}"""
                                 )
                             else:
                                 print(
                                     f"""BALI segment selected:
-- Model: {info['model']}
-- Framework: {info['framework']}
-- Batch size: {info['batch_size']}
-- Input len: {info['input_len']}
-- Output len: {info['output_len']}
-- Tokens/sec: {info['tokens_per_sec']}
-- Duration (s): {info['duration']}
-- Duration Text gen (s): {info['duration_text_gen']}"""
+                                        - Model: {info['model']}
+                                        - Framework: {info['framework']}
+                                        - Batch size: {info['batch_size']}
+                                        - Input len: {info['input_len']}
+                                        - Output len: {info['output_len']}
+                                        - Tokens/sec: {info['tokens_per_sec']}
+                                        - Duration (s): {info['duration']}
+                                        - Duration Text gen (s): {info['duration_text_gen']}"""
                                 )
 
                     ax.figure.canvas.draw_idle()
