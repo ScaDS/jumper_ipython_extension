@@ -381,6 +381,8 @@ def test_load_cell_history_csv(ipython, tmp_path):
             "start_time": 1.0,
             "end_time": 2.0,
             "duration": 1.0,
+            "wallclock_start_time": 1700000000.0,
+            "wallclock_end_time": 1700000001.0,
         }
     ])
     csv_path = os.path.join(tmp_path, "cell_history.csv")
