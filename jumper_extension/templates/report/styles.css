@@ -1,23 +1,23 @@
-:root {
+/* All variables and resets are scoped to the container to avoid leaking
+   into VS Code / JupyterLab dark-theme styles */
+.jr-container {
   --bg: #ffffff;
   --text: #111827;         /* near black */
   --muted: #4b5563;        /* gray-600 */
   --accent: #1f2937;       /* neutral accent for tags outline dots */
   --tag-icon-size: 25px;  /* default icon size for tag widgets */
   --max-content-width: 720px;
-}
 
-/* Normalize box sizing to avoid width overflow/layout overlap */
-html { box-sizing: border-box; }
-*, *::before, *::after { box-sizing: inherit; }
+  /* Scoped box-sizing reset */
+  box-sizing: border-box;
 
-html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
   font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   color: var(--text);
 }
+.jr-container *, .jr-container *::before, .jr-container *::after { box-sizing: border-box; }
 
 .jr-divider {
   border: 0;
