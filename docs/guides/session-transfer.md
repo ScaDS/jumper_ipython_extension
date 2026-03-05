@@ -23,3 +23,7 @@ This guide will show how to export a monitoring session and import it on another
         allow="fullscreen"
         style="aspect-ratio: 16 / 12; border: 0; min-height: 480px">
     </iframe>
+
+## Try it yourself:
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fexport_session.ipynb)

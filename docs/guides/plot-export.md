@@ -27,3 +27,7 @@ This guide will cover saving plots or visualizer state and restoring it later fo
         border: 0;
         min-height: 480px">
     </iframe>
+
+## Try it yourself:
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fperfmonitor_pickle_plot.ipynb)
