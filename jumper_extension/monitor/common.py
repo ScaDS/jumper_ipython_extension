@@ -330,6 +330,7 @@ class OfflinePerformanceMonitor:
         self.gpu_name = monitor_info.get("gpu_name", "") or ""
         self.cpu_handles = monitor_info.get("cpu_handles", []) or []
         self.memory_limits = monitor_info.get("memory_limits", {}) or {}
+        self.bali_pid_directory = os.getpid()
 
         # Performance data container
         self.data = PerformanceData(

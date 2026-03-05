@@ -1143,7 +1143,7 @@ class InteractivePlotWrapper:
             return
 
         segments = self.bali_adapter.get_segments_for_visualization(
-            self.monitor.pid
+            self.monitor.bali_pid_directory
         )
         if not segments:
             return
