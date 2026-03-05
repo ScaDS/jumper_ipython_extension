@@ -108,6 +108,7 @@ class BaliResultsParser:
                 segments.append({
                     "start_time": start_time,
                     "end_time": end_time,
+                    "start_text_gen": None,
                     "duration": error_info.get("duration"),
                     "tokens_per_sec": None,  # No tokens for failed segments
                     "framework": framework,
