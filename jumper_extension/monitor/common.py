@@ -74,6 +74,7 @@ class PerformanceMonitor:
             self.num_cpus = len(psutil.cpu_percent(percpu=True))
         self.num_system_cpus = len(psutil.cpu_percent(percpu=True))
         self.pid = os.getpid()
+        self.bali_pid_directory = self.pid
         self.uid = os.getuid()
         self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
         self.levels = get_available_levels()
