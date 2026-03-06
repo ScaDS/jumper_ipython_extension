@@ -3,7 +3,9 @@ import json
 import glob
 from typing import List, Dict, Tuple
 import matplotlib as mpl
+import logging
 
+logger = logging.getLogger("extension")
 
 class BaliResultsParser:
     def __init__(self, base_search_path: str = "."):
@@ -11,6 +13,10 @@ class BaliResultsParser:
         self.colormap = mpl.colors.LinearSegmentedColormap.from_list(
             "blue_to_orange",
             ['#51829B','#9BB0C1','#F6995C']
+        )
+        self.colormap_energy = mpl.colors.LinearSegmentedColormap.from_list(
+            "yellow_to_red",
+            ['#EADFB4','#F6995C','#874C62']
         )
 
     def _find_bali_directories(self, pid: int) -> List[str]:
@@ -49,12 +55,13 @@ class BaliResultsParser:
                 start_time = iteration_data.get("start_timestamp")
                 end_time = iteration_data.get("end_timestamp")
                 tokenize_time = iteration_data.get("tokenize_timestamp") 
-
+                
                 segments.append(
                     {
                         "start_time": start_time,
                         "end_time": end_time,
                         "start_text_gen": tokenize_time,
+                        "start_timestamp_absolute":iteration_data.get("start_timestamp_absolute"),
                         "duration": (
                             (end_time - start_time)
                             if (start_time and end_time)
@@ -69,6 +76,7 @@ class BaliResultsParser:
                         "framework": framework,
                         "iteration": iteration_key,
                         "model": config_data.get("model_name"),
+                        "num_samples": config_data.get("num_samples"),
                         "batch_size": config_data.get("batch_size"),
                         "input_len": config_data.get("input_len"),
                         "output_len": config_data.get("output_len"),
@@ -128,6 +136,7 @@ class BaliResultsParser:
             return []
 
         segments = []
+        logger.info(f"\nBALI result_dirs to plot:{result_dirs}")
         for directory in result_dirs:
             for config_path in glob.glob(
                 os.path.join(directory, "*/*/*/*/*/config.json")
@@ -161,6 +170,12 @@ class BaliResultsParser:
     ) -> Tuple[float, float]:
         values = [s["tokens_per_sec"] for s in segments if s["tokens_per_sec"]]
         return (min(values), max(values)) if values else (0.0, 100.0)
+    
+    def get_energy_efficiency_range(
+            self, segments: List[Dict]
+    ) -> Tuple[float, float]:
+        values = [s["token_per_joule_full_segment"] for s in segments if s["token_per_joule_full_segment"]]
+        return (min(values), max(values)) if values else (0.0, 100.0)
 
     def get_color_for_tokens_per_sec(
         self, tokens_per_sec: float, vmin: float, vmax: float
@@ -173,3 +188,14 @@ class BaliResultsParser:
             0.0, min(1.0, (tokens_per_sec - vmin) / (vmax - vmin))
         )
         return self.colormap(normalized)
+    
+    def get_color_for_energy_efficiency(
+        self, tokens_per_sec: float, vmin: float, vmax: float
+    ) -> Tuple[float, float, float, float]:
+         
+        if vmax == vmin:
+            return self.colormap(0.5)
+        normalized = max(
+            0.0, min(1.0, (tokens_per_sec - vmin) / (vmax - vmin))
+        )
+        return self.colormap_energy(normalized)

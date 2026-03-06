@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import List, Dict, Tuple, Any
+import numpy as np
 from itables import show
 import logging
 from jumper_extension.bali_hook import BaliResultsParser
@@ -22,8 +23,10 @@ class BaliAdapter:
                 "batch_size",
                 "input_len",
                 "output_len",
+                "num_samples",
                 "iteration",
                 "start_time",
+                "start_timestamp_absolute",
                 "end_time",
                 "duration",
                 "duration_text_gen",
@@ -47,7 +50,7 @@ class BaliAdapter:
         # Build DataFrame directly from segments and align to canonical column order
         df = pd.DataFrame(segments)
         self._segments_df = df.reindex(columns=self._segments_df.columns)
-
+        
         return len(self._segments_df)
 
     def get_segments_for_visualization(self, pid: int) -> List[Dict]:
@@ -66,6 +69,12 @@ class BaliAdapter:
     ) -> Tuple[float, float]:
         """Get the min/max tokens per second range for coloring."""
         return self.parser.get_tokens_per_sec_range(segments)
+    
+    def get_energy_efficiency_range(
+           self, segments: List[Dict]
+    ) -> Tuple[float, float]: 
+        """Get the min/max tokens per second range for coloring."""
+        return self.parser.get_energy_efficiency_range(segments)
 
     def get_color_for_tokens_per_sec(
             self, tokens_per_sec: float, vmin: float, vmax: float
@@ -74,10 +83,51 @@ class BaliAdapter:
         return self.parser.get_color_for_tokens_per_sec(
             tokens_per_sec, vmin, vmax
         )
+    def get_color_for_energy_efficiency(self, tokens_per_sec: float, vmin: float, vmax: float
+    ) -> Tuple[float, float, float, float]:
+        return self.parser.get_color_for_energy_efficiency(
+            tokens_per_sec, vmin, vmax
+        )
 
     def get_colormap(self):
         """Get the colormap used for visualization."""
         return self.parser.colormap
+    
+    def get_energy_colormap(self):
+        return self.parser.colormap_energy
+
+    def add_llm_performance_info(self,segment:Dict,perfdata,cell_data):
+        logger.info("Time before normalization: {}".format(perfdata["time"].tolist()))
+        logger.info(f"Cell start time: {cell_data['start_time']}")
+        
+        #copy df to avoid modifying original
+        perfdata = perfdata.copy()
+        #normalize perf time to runtime seconds
+        perfdata["time"] = perfdata["time"] - cell_data["start_time"]
+        logger.info(f"times and segment data for power{perfdata['time'],segment}")
+
+        #get all relevant power measurements for the segment
+        full_segment_values = perfdata[(perfdata["time"] >= segment["start_time"]) & (perfdata["time"] <= segment["end_time"])]
+        text_gen_segment_values = perfdata[(perfdata["time"] >= segment["start_text_gen"]) & (perfdata["time"] <= segment["end_time"])]
+
+        times = np.array(full_segment_values["time"], dtype=float)
+        times_gen = np.array(text_gen_segment_values["time"], dtype=float)
+        total_energy = np.trapz(full_segment_values["gpu_power_avg"], times)
+        text_gen_energy = np.trapz(text_gen_segment_values["gpu_power_avg"], times_gen)
+
+        logger.info(f"\n gpu_values: {full_segment_values['gpu_power_avg'].tolist()}")
+        logger.info(f"times for gpu values: {times}")
+
+        return {
+            "total_energy": total_energy,
+            "text_gen_energy": text_gen_energy,
+            "total_tokens": segment["total_tokens"],
+            "energy_per_token_text_gen": text_gen_energy / segment["total_tokens"],
+            "token_per_joule_text_gen": segment["total_tokens"] / text_gen_energy,
+            "energy_per_token_full_segment": total_energy / segment["total_tokens"],
+            "token_per_joule_full_segment": segment["total_tokens"] / total_energy
+        }
+
 
     def compress_segments(
             self,
@@ -106,13 +156,14 @@ class BaliAdapter:
 
             cell_start, cell_end = cell["start_time"], cell["end_time"]
             cell_duration = cell_end - cell_start
-
+            logger.info(f"BALI Segments:{segments}")
             # time base - align segment to cell start
             offset_start = cell_start - segments[0]["start_time"]
 
             # TODO: add timer offset based on absolute time stamps
             timer_offset = (segments[0]["start_timestamp_absolute"] -
                             cell["wallclock_start_time"])
+            logger.info(f"Timer Offset: {timer_offset}s")
 
             for i, seg in enumerate(segments):
                 seg_id = (i, cell["cell_index"])
@@ -129,24 +180,34 @@ class BaliAdapter:
                 overlap_start = max(seg_start, cell_start)
                 overlap_end = min(seg_end, cell_end)
 
+                total_tokens = (seg["input_len"] + seg["output_len"]) * seg["num_samples"]
+
                 compressed.append(
                     {
                         "start_time": seg_start - cell_start + timer_offset,
                         "end_time": seg_start + seg["duration"] - cell_start + timer_offset,
-                        "start_text_gen": seg["start_text_gen"] + offset_start + timer_offset,
+                        "start_text_gen": seg["start_text_gen"]- cell_start + offset_start + timer_offset,
                         "duration": seg["duration"],
+                        "total_tokens":total_tokens,
                         "duration_text_gen": seg["duration_text_gen"],
                         "tokens_per_sec": seg["tokens_per_sec"],
+                        "segment_throughput": total_tokens/seg["duration"],
+                        "text_gen_throughput": total_tokens/seg["duration_text_gen"],
                         "framework": seg["framework"],
                         "iteration": seg["iteration"],
+                        "num_samples": seg["num_samples"],
                         "model": seg.get("model"),
                         "batch_size": seg.get("batch_size"),
                         "input_len": seg.get("input_len"),
                         "output_len": seg.get("output_len"),
                     }
                 )
+                llm_perf_data = self.add_llm_performance_info(compressed[-1], perfdata, cell)
+                compressed[-1].update(llm_perf_data)
+
                 processed.add(seg_id)
             current_time += cell_duration
+
         logger.info(f"{compressed}")
         return compressed
 

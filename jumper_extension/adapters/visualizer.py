@@ -563,7 +563,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
         if not show_bali:
             self._draw_cell_boundaries(ax, cell_range, show_idle)
 
-        self._draw_bali_segments(ax, show_bali, show_idle, cell_range, custom_vmin_vmax)
+        self._draw_bali_segments(ax, show_bali, show_idle, cell_range, custom_vmin_vmax, metric)
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
         """Draw cell boundaries as colored rectangles with cell indices"""
@@ -634,7 +634,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 )
 
     def _draw_bali_segments(
-        self, ax, show_bali=False, show_idle=True, cell_range=None, custom_vmin_vmax=None
+        self, ax, show_bali=False, show_idle=True, cell_range=None, custom_vmin_vmax=None, metric=None
     ):
         """Draw BALI segments as colored rectangles with click selection."""
         if not show_bali:
@@ -660,7 +660,10 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             vmin, vmax = custom_vmin_vmax
         else:
             vmin, vmax = self.bali_adapter.get_tokens_per_sec_range(segments)
-
+        
+        #TODO: no hardcoded vmin and max
+        vmin_e, vmax_e = 0,30 #self.bali_adapter.get_energy_efficiency_range(draw_segments)
+        
         # Clean up previous event handlers
         if hasattr(ax, "_bali_click"):
             ax.figure.canvas.mpl_disconnect(ax._bali_click)
@@ -670,7 +673,16 @@ class PerformanceVisualizer(BaliVisualizationMixin):
 
         # Draw segments
         for s in draw_segments:
-            start, dur, tps, is_error = (
+            if metric == "gpu_power_summary":
+                start, dur, tps, is_error = (
+                s["start_time"],
+                s["duration"],
+                s["token_per_joule_full_segment"],
+                s.get("is_error", False),
+            )
+            
+            else:
+                start, dur, tps, is_error = (
                 s["start_time"],
                 s["duration"],
                 s["tokens_per_sec"],
@@ -687,9 +699,14 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                 is_error_segment = True
             else:
                 # Normal segments: colored based on tokens/sec
-                color = self.bali_adapter.get_color_for_tokens_per_sec(
-                    tps, vmin, vmax
-                )
+                if metric == "gpu_power_summary":
+                    color = self.bali_adapter.get_color_for_energy_efficiency(
+                        tps, vmin_e, vmax_e
+                    )
+                else:
+                    color = self.bali_adapter.get_color_for_tokens_per_sec(
+                        tps, vmin, vmax
+                    )
                 hatch = None
                 edgecolor = "gray"
                 alpha = 0.75
@@ -712,16 +729,20 @@ class PerformanceVisualizer(BaliVisualizationMixin):
             # Explicitly set edge color to ensure matplotlib state doesn't interfere
             rect.set_edgecolor(edgecolor)
             rect._bali_info = {
-                "model": s.get("model", "n/a"),
-                "framework": s.get("framework", "n/a"),
-                "batch_size": s.get("batch_size", "n/a"),
-                "input_len": s.get("input_len", "n/a"),
-                "output_len": s.get("output_len", "n/a"),
-                "tokens_per_sec": f"{tps:.2f}" if tps else "NaN",
-                "duration": f"{s.get('duration', 0):.2f}",
-                "duration_text_gen": f"{s.get('duration_text_gen', 0):.2f}",
-                "is_error": is_error,
-                "error_message": s.get("error_message", ""),
+                "Model": s.get("model", "n/a"),
+                "Framework": s.get("framework", "n/a"),
+                "Batch Size": s.get("batch_size", "n/a"),
+                "Input Length": s.get("input_len", "n/a"),
+                "Output Length": s.get("output_len", "n/a"),
+                "Output Tokens per Second": f"{tps:.2f}" if tps else "NaN",
+                "Segment Throughput (Tok/s)": s.get("segment_throughput","n/a"),
+                "Text Generation Throughput (Tok/s)": s.get("text_gen_throughput","n/a"),
+                "Segment Energy Efficiency (Tok/J)": s.get("token_per_joule_full_segment","n/a"),
+                "Text Generation Energy Efficiency": s.get("token_per_joule_text_gen","n/a"),
+                "Duration": f"{s.get('duration', 0):.2f}",
+                "Duration Text generation": f"{s.get('duration_text_gen', 0):.2f}",
+                "Error": is_error,
+                "Error Message": s.get("error_message", "") if is_error else None,
             }
             # Store original style for restoration after selection
             rect._original_style = {
@@ -759,31 +780,7 @@ class PerformanceVisualizer(BaliVisualizationMixin):
                         with ax._bali_selection_output:
                             ax._bali_selection_output.clear_output(wait=True)
                             info = patch._bali_info
-
-                            if info.get("is_error", False):
-                                print("Failed segment")
-                                print(
-                                    f"""BALI segment selected:
-                                        - Model: {info['model']}
-                                        - Framework: {info['framework']}
-                                        - Batch size: {info['batch_size']}
-                                        - Input len: {info['input_len']}
-                                        - Output len: {info['output_len']}
-                                        - Error: {info['error_message']}
-                                        - Duration (s): {info['duration']}"""
-                                )
-                            else:
-                                print(
-                                    f"""BALI segment selected:
-                                        - Model: {info['model']}
-                                        - Framework: {info['framework']}
-                                        - Batch size: {info['batch_size']}
-                                        - Input len: {info['input_len']}
-                                        - Output len: {info['output_len']}
-                                        - Tokens/sec: {info['tokens_per_sec']}
-                                        - Duration (s): {info['duration']}
-                                        - Duration Text gen (s): {info['duration_text_gen']}"""
-                                )
+                            display(pd.DataFrame([info]).T.rename(columns={0: "Value"}))
 
                     ax.figure.canvas.draw_idle()
                     return
@@ -1142,10 +1139,12 @@ class InteractivePlotWrapper:
             or not self.bali_adapter
         ):
             return
-
+        
         segments = self.bali_adapter.get_segments_for_visualization(
-            self.monitor.bali_pid_directory
+        self.monitor.bali_pid_directory
         )
+        vmin_e,vmax_e = 0,30
+
         if not segments:
             return
 
@@ -1159,6 +1158,7 @@ class InteractivePlotWrapper:
                 self.vmin_widget.value = vmin
                 self.vmax_widget.value = vmax
                 self.custom_vmin_vmax = (vmin, vmax)
+        
 
         with self.bali_colorbar_output:
             self.bali_colorbar_output.clear_output(wait=True)
@@ -1176,9 +1176,24 @@ class InteractivePlotWrapper:
                 cax=fig.add_axes([0.1, 0.3, 0.8, 0.4]),
                 orientation="horizontal",
             )
-            cbar.set_label("Tokens/Second", fontsize=12)
+            cbar.set_label("Output Tokens/Second", fontsize=12)
             cbar.ax.tick_params(labelsize=10)
             cbar.ax.set_facecolor("none")
+            
+            sm_energy = ScalarMappable(
+                norm=Normalize(vmin=vmin_e, vmax=vmax_e),
+                cmap=self.bali_adapter.get_energy_colormap(),
+            )
+            sm_energy.set_array([])
+            cbar_e = fig.colorbar(
+                sm_energy,
+                cax=fig.add_axes([0.1, -0.8, 0.8, 0.4]),
+                orientation="horizontal",
+            )
+            cbar_e.set_label("Energy efficiency (Tok/Joule)", fontsize=12)
+            cbar_e.ax.tick_params(labelsize=10)
+            cbar_e.ax.set_facecolor("none")
+
             fig.patch.set_facecolor("none")
             plt.close(fig)
             display(fig)
@@ -1253,6 +1268,7 @@ class InteractivePlotWrapper:
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
+
             # Always clear the output and redraw the figure to ensure
             # in-place updates
             output.clear_output(wait=True)
@@ -1261,6 +1277,7 @@ class InteractivePlotWrapper:
                 ax.clear()
                 # Provide a sink for BALI selection details
                 ax._bali_selection_output = selection_output
+                self._create_bali_colorbar()
                 if df is not None and not df.empty:
                     self.plot_callback(
                         df,
