@@ -966,7 +966,8 @@ def build_perfmonitor_service(
         plots_disabled: bool = False,
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
-        display_disabled_reason: str = "Display not available."
+        display_disabled_reason: str = "Display not available.",
+        visualizer_backend: str = "matplotlib",
 ) -> PerfmonitorService:
     """Build a new :class:`PerfmonitorService` instance.
 
@@ -980,6 +981,8 @@ def build_perfmonitor_service(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
+        visualizer_backend: Visualizer backend to use. Supported values:
+            ``"matplotlib"`` (default) and ``"plotly"``.
 
     Returns:
         PerfmonitorService: A fully initialized service instance.
@@ -995,6 +998,7 @@ def build_perfmonitor_service(
         cell_history,
         plots_disabled=plots_disabled,
         plots_disabled_reason=plots_disabled_reason,
+        backend=visualizer_backend,
     )
     reporter = build_performance_reporter(
         cell_history,
@@ -1017,7 +1021,8 @@ def build_perfmonitor_magic_adapter(
         plots_disabled: bool = False,
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
-        display_disabled_reason: str = "Display not available."
+        display_disabled_reason: str = "Display not available.",
+        visualizer_backend: str = "matplotlib",
 ) -> PerfmonitorMagicAdapter:
     """Build a new :class:`PerfmonitorMagicAdapter` instance.
 
@@ -1032,6 +1037,8 @@ def build_perfmonitor_magic_adapter(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
+        visualizer_backend: Visualizer backend to use. Supported values:
+            ``"matplotlib"`` (default) and ``"plotly"``.
 
     Returns:
         PerfmonitorMagicAdapter: Adapter instance wrapping the service.
@@ -1047,6 +1054,7 @@ def build_perfmonitor_magic_adapter(
         plots_disabled_reason=plots_disabled_reason,
         display_disabled=display_disabled,
         display_disabled_reason=display_disabled_reason,
+        visualizer_backend=visualizer_backend,
     )
 
     parsers = ArgParsers(

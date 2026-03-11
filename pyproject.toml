@@ -12,6 +12,8 @@ requires-python = ">=3.8"
 dependencies = [
     "ipython",
     "matplotlib",
+    "plotly",
+    "kaleido",
     "pandas",
     "numpy",
     "ipympl",

@@ -6,6 +6,8 @@ from typing import List, runtime_checkable, Protocol, Optional, Tuple
 import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.monitor.common import UnavailablePerformanceMonitor, \
@@ -294,41 +296,19 @@ class PerformanceVisualizer:
 
         return compressed_perfdata, cell_boundaries
 
-    def _plot_direct(self, metric_subsets, cell_range, show_idle, level, save_jpeg=None, pickle_file=None):
-        """Plot metrics directly with matplotlib without widgets"""
-        start_idx, end_idx = cell_range
-        filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
-        
-        # Get performance data for the specified level
-        perfdata = filter_perfdata(
-            filtered_cells,
-            self.monitor.data.view(level=level),
-            not show_idle,
-        )
-        
-        if perfdata.empty:
-            logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.NO_PERFORMANCE_DATA
-                ]
-            )
-            return
-        
-        # Process time data
-        if not show_idle:
-            processed_data, self._compressed_cell_boundaries = (
-                self._compress_time_axis(perfdata, cell_range)
-            )
-        else:
-            processed_data = perfdata.copy()
-            processed_data["time"] -= self.monitor.start_time
-        
-        # Get metrics for subsets
+    def _collect_metric_options(self, metric_subsets):
         metrics = []
+        labeled_options = []
         for subset in metric_subsets:
             if subset in self.subsets:
-                for metric_key in self.subsets[subset].keys():
+                for metric_key, cfg in self.subsets[subset].items():
                     metrics.append(metric_key)
+                    label = (
+                        cfg.get("label")
+                        if isinstance(cfg, dict)
+                        else metric_key
+                    )
+                    labeled_options.append((label or metric_key, metric_key))
             else:
                 logger.warning(
                     EXTENSION_ERROR_MESSAGES[
@@ -338,74 +318,130 @@ class PerformanceVisualizer:
                         supported_subsets=", ".join(self.subsets.keys()),
                     )
                 )
-        
+        return metrics, labeled_options
+
+    def _prepare_processed_data_for_level(self, cell_range, show_idle, level):
+        start_idx, end_idx = cell_range
+        filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
+        perfdata = filter_perfdata(
+            filtered_cells,
+            self.monitor.data.view(level=level),
+            not show_idle,
+        )
+
+        if perfdata.empty:
+            return None
+
+        if not show_idle:
+            processed_data, self._compressed_cell_boundaries = (
+                self._compress_time_axis(perfdata, cell_range)
+            )
+        else:
+            processed_data = perfdata.copy()
+            processed_data["time"] -= self.monitor.start_time
+        return processed_data
+
+    def _prepare_processed_data_for_interactive(
+        self,
+        current_cell_range,
+        current_show_idle,
+    ):
+        start_idx, end_idx = current_cell_range
+        cells_all = self.cell_history.view()
+        try:
+            mask = (cells_all["cell_index"] >= start_idx) & (
+                cells_all["cell_index"] <= end_idx
+            )
+            filtered_cells = cells_all[mask]
+        except Exception:
+            filtered_cells = cells_all
+
+        perfdata_by_level = {}
+        for available_level in get_available_levels():
+            perfdata_by_level[available_level] = filter_perfdata(
+                filtered_cells,
+                self.monitor.data.view(level=available_level),
+                not current_show_idle,
+            )
+
+        if all(df.empty for df in perfdata_by_level.values()):
+            return None
+
+        processed_perfdata = {}
+        for level_key, perfdata in perfdata_by_level.items():
+            if not perfdata.empty:
+                if not current_show_idle:
+                    processed_data, self._compressed_cell_boundaries = (
+                        self._compress_time_axis(perfdata, current_cell_range)
+                    )
+                    processed_perfdata[level_key] = processed_data
+                else:
+                    processed_data = perfdata.copy()
+                    processed_data["time"] -= self.monitor.start_time
+                    processed_perfdata[level_key] = processed_data
+            else:
+                processed_perfdata[level_key] = perfdata
+
+        return processed_perfdata
+
+    def _create_interactive_wrapper(
+        self,
+        metrics,
+        labeled_options,
+        processed_perfdata,
+        current_cell_range,
+        current_show_idle,
+    ):
+        raise NotImplementedError
+
+    def _render_direct_plot(
+        self,
+        processed_data,
+        metrics,
+        cell_range,
+        show_idle,
+        level,
+        save_jpeg=None,
+        pickle_file=None,
+        metric_subsets=None,
+    ):
+        raise NotImplementedError
+
+    def _plot_direct(
+        self,
+        metric_subsets,
+        cell_range,
+        show_idle,
+        level,
+        save_jpeg=None,
+        pickle_file=None,
+    ):
+        processed_data = self._prepare_processed_data_for_level(
+            cell_range, show_idle, level
+        )
+        if processed_data is None:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[
+                    ExtensionErrorCode.NO_PERFORMANCE_DATA
+                ]
+            )
+            return
+
+        metrics, _ = self._collect_metric_options(metric_subsets)
         if not metrics:
             logger.warning("No valid metrics found to plot")
             return
-        
-        # Create subplots
-        n_metrics = len(metrics)
-        fig, axes = plt.subplots(n_metrics, 1, figsize=(10, 3 * n_metrics), 
-                                constrained_layout=True)
-        if n_metrics == 1:
-            axes = [axes]
-        
-        # Plot each metric
-        for i, metric in enumerate(metrics):
-            self._plot_metric(
-                processed_data, metric, cell_range, show_idle, axes[i], level
-            )
-        
-        # Handle JPEG saving
-        if save_jpeg:
-            if not save_jpeg.endswith('.jpg') and not save_jpeg.endswith('.jpeg'):
-                save_jpeg += '.jpg'
-            fig.savefig(save_jpeg, format='jpeg', dpi=300, bbox_inches='tight')
-            print(f"Plot saved as JPEG: {save_jpeg}")
-        
-        # Handle pickle serialization
-        if pickle_file:
-            if not pickle_file.endswith('.pkl'):
-                pickle_file += '.pkl'
-            
-            # Create plot data dictionary
-            plot_data = {
-                'figure': fig,
-                'axes': axes,
-                'metrics': metrics,
-                'processed_data': processed_data,
-                'cell_range': cell_range,
-                'level': level,
-                'show_idle': show_idle,
-                'metric_subsets': metric_subsets
-            }
-            
-            # Save to pickle file
-            with open(pickle_file, 'wb') as f:
-                pickle.dump(plot_data, f)
-            
-            # Print reload code
-            print(f"Plot objects serialized to: {pickle_file}")
-            print("\n# Python code to reload and display the plot:")
-            print(f"import pickle")
-            print(f"import matplotlib.pyplot as plt")
-            print(f"")
-            print(f"# Load the pickled plot data")
-            print(f"with open('{pickle_file}', 'rb') as f:")
-            print(f"    plot_data = pickle.load(f)")
-            print(f"")
-            print(f"# Extract the figure and display")
-            print(f"fig = plot_data['figure']")
-            print(f"plt.show()")
-            print(f"")
-            print(f"# Access other data:")
-            print(f"# axes = plot_data['axes']")
-            print(f"# metrics = plot_data['metrics']")
-            print(f"# processed_data = plot_data['processed_data']")
-            print(f"# cell_range = plot_data['cell_range']")
-            print(f"# level = plot_data['level']")
-        
-        plt.show()
+
+        self._render_direct_plot(
+            processed_data=processed_data,
+            metrics=metrics,
+            cell_range=cell_range,
+            show_idle=show_idle,
+            level=level,
+            save_jpeg=save_jpeg,
+            pickle_file=pickle_file,
+            metric_subsets=metric_subsets,
+        )
 
     def _plot_metric(
         self,
@@ -696,8 +732,6 @@ class PerformanceVisualizer:
             layout=box_layout,
         )
         plot_output = widgets.Output()
-
-        # Store the plot wrapper instance for persistent updates
         plot_wrapper = None
 
         def update_plots():
@@ -706,25 +740,10 @@ class PerformanceVisualizer:
                 cell_range_slider.value,
                 show_idle_checkbox.value,
             )
-            start_idx, end_idx = current_cell_range
-            cells_all = self.cell_history.view()
-            try:
-                mask = (cells_all["cell_index"] >= start_idx) & (
-                    cells_all["cell_index"] <= end_idx
-                )
-                filtered_cells = cells_all[mask]
-            except Exception:
-                filtered_cells = cells_all
-            # Store all level data for subplot access
-            perfdata_by_level = {}
-            for available_level in get_available_levels():
-                perfdata_by_level[available_level] = filter_perfdata(
-                    filtered_cells,
-                    self.monitor.data.view(level=available_level),
-                    not current_show_idle,
-                )
-
-            if all(df.empty for df in perfdata_by_level.values()):
+            processed_perfdata = self._prepare_processed_data_for_interactive(
+                current_cell_range, current_show_idle
+            )
+            if processed_perfdata is None:
                 with plot_output:
                     plot_output.clear_output()
                     logger.warning(
@@ -732,81 +751,138 @@ class PerformanceVisualizer:
                             ExtensionErrorCode.NO_PERFORMANCE_DATA
                         ]
                     )
-                    # Clear plot wrapper when no data
                     plot_wrapper = None
                 return
 
-            # Handle time compression or show idle for all levels
-            processed_perfdata = {}
-            for level_key, perfdata in perfdata_by_level.items():
-                if not perfdata.empty:
-                    if not current_show_idle:
-                        processed_data, self._compressed_cell_boundaries = (
-                            self._compress_time_axis(
-                                perfdata, current_cell_range
-                            )
-                        )
-                        processed_perfdata[level_key] = processed_data
-                    else:
-                        processed_data = perfdata.copy()
-                        processed_data["time"] -= self.monitor.start_time
-                        processed_perfdata[level_key] = processed_data
-                else:
-                    processed_perfdata[level_key] = perfdata
-
-            # Get metrics for subsets and build labeled dropdown options
-            metrics = []
-            labeled_options = []
-            for subset in metric_subsets:
-                if subset in self.subsets:
-                    for metric_key, cfg in self.subsets[subset].items():
-                        metrics.append(metric_key)
-                        label = (
-                            cfg.get("label")
-                            if isinstance(cfg, dict)
-                            else metric_key
-                        )
-                        labeled_options.append(
-                            (label or metric_key, metric_key)
-                        )
-                else:
-                    logger.warning(
-                        EXTENSION_ERROR_MESSAGES[
-                            ExtensionErrorCode.INVALID_METRIC_SUBSET
-                        ].format(
-                            subset=subset,
-                            supported_subsets=", ".join(self.subsets.keys()),
-                        )
-                    )
+            metrics, labeled_options = self._collect_metric_options(
+                metric_subsets
+            )
+            if not metrics:
+                with plot_output:
+                    plot_output.clear_output()
+                    logger.warning("No valid metrics found to plot")
+                    plot_wrapper = None
+                return
 
             with plot_output:
                 if plot_wrapper is None:
-                    # Create new plot wrapper only if it doesn't exist
                     plot_output.clear_output()
-                    plot_wrapper = InteractivePlotWrapper(
-                        self._plot_metric,
+                    plot_wrapper = self._create_interactive_wrapper(
                         metrics,
                         labeled_options,
                         processed_perfdata,
                         current_cell_range,
                         current_show_idle,
-                        self.figsize,
                     )
                     plot_wrapper.display_ui()
                 else:
-                    # Update existing plot wrapper with new data
                     plot_wrapper.update_data(
                         processed_perfdata,
                         current_cell_range,
                         current_show_idle,
                     )
 
-        # Set up observers and display
         for widget in [show_idle_checkbox, cell_range_slider]:
             widget.observe(lambda change: update_plots(), names="value")
 
         display(widgets.VBox([config_widgets, plot_output]))
         update_plots()
+
+
+class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
+    """Matplotlib backend visualizer."""
+
+    def _create_interactive_wrapper(
+        self,
+        metrics,
+        labeled_options,
+        processed_perfdata,
+        current_cell_range,
+        current_show_idle,
+    ):
+        return InteractivePlotWrapper(
+            self._plot_metric,
+            metrics,
+            labeled_options,
+            processed_perfdata,
+            current_cell_range,
+            current_show_idle,
+            self.figsize,
+        )
+
+    def _render_direct_plot(
+        self,
+        processed_data,
+        metrics,
+        cell_range,
+        show_idle,
+        level,
+        save_jpeg=None,
+        pickle_file=None,
+        metric_subsets=None,
+    ):
+        n_metrics = len(metrics)
+        fig, axes = plt.subplots(
+            n_metrics,
+            1,
+            figsize=(10, 3 * n_metrics),
+            constrained_layout=True,
+        )
+        if n_metrics == 1:
+            axes = [axes]
+
+        for i, metric in enumerate(metrics):
+            self._plot_metric(
+                processed_data, metric, cell_range, show_idle, axes[i], level
+            )
+
+        if save_jpeg:
+            if not save_jpeg.endswith(".jpg") and not save_jpeg.endswith(
+                ".jpeg"
+            ):
+                save_jpeg += ".jpg"
+            fig.savefig(
+                save_jpeg, format="jpeg", dpi=300, bbox_inches="tight"
+            )
+            print(f"Plot saved as JPEG: {save_jpeg}")
+
+        if pickle_file:
+            if not pickle_file.endswith(".pkl"):
+                pickle_file += ".pkl"
+            plot_data = {
+                "figure": fig,
+                "axes": axes,
+                "metrics": metrics,
+                "processed_data": processed_data,
+                "cell_range": cell_range,
+                "level": level,
+                "show_idle": show_idle,
+                "metric_subsets": metric_subsets,
+            }
+            with open(pickle_file, "wb") as f:
+                pickle.dump(plot_data, f)
+
+            print(f"Plot objects serialized to: {pickle_file}")
+            print("\n# Python code to reload and display the plot:")
+            print("import pickle")
+            print("import matplotlib.pyplot as plt")
+            print("")
+            print(f"# Load the pickled plot data")
+            print(f"with open('{pickle_file}', 'rb') as f:")
+            print("    plot_data = pickle.load(f)")
+            print("")
+            print("# Extract the figure and display")
+            print("fig = plot_data['figure']")
+            print("plt.show()")
+            print("")
+            print("# Access other data:")
+            print("# axes = plot_data['axes']")
+            print("# metrics = plot_data['metrics']")
+            print("# processed_data = plot_data['processed_data']")
+            print("# cell_range = plot_data['cell_range']")
+            print("# level = plot_data['level']")
+
+        plt.show()
 
 
 class UnavailableVisualizer:
@@ -987,15 +1063,558 @@ class InteractivePlotWrapper:
             panel["update_plot"]()
 
 
+class PlotlyPerformanceVisualizer(PerformanceVisualizer):
+    """Plotly-based visualizer compatible with VisualizerProtocol."""
+
+    def _build_metric_plot(self, df, metric, show_idle=False, level="process"):
+        config = next(
+            (
+                subset[metric]
+                for subset in self.subsets.values()
+                if metric in subset
+            ),
+            None,
+        )
+        if not config or not isinstance(config, dict):
+            return None
+
+        traces = []
+        y_values = []
+        plot_type = config.get("type")
+        title = config.get("title", "")
+        ylim = config.get("ylim")
+
+        if plot_type == "single_series":
+            column = config.get("column")
+            if not column or column not in df.columns:
+                return None
+
+            series = df[column]
+            if metric in (
+                "io_read",
+                "io_write",
+                "io_read_count",
+                "io_write_count",
+            ):
+                diffs = df[column].astype(float).diff().clip(lower=0)
+                if metric in ("io_read", "io_write"):
+                    diffs = diffs / (1024**2)
+                series = diffs.fillna(0.0)
+                if self._io_window and self._io_window > 1:
+                    series = series.rolling(
+                        window=self._io_window, min_periods=1
+                    ).mean()
+
+            trace = go.Scatter(
+                x=df["time"].tolist(),
+                y=series.tolist(),
+                mode="lines",
+                line=dict(color="blue", width=2),
+                name=config.get("label", column),
+            )
+            traces.append(trace)
+            y_values.extend(series.tolist())
+            if metric == "memory" and ylim is None:
+                ylim = (0, self.monitor.memory_limits[level])
+
+        elif plot_type == "summary_series":
+            columns = config.get("columns", [])
+            if level == "system":
+                title = re.sub(
+                    r"\d+", str(self.monitor.num_system_cpus), title
+                )
+            line_styles = ["dot", "solid", "dash"]
+            alpha_vals = [0.35, 1.0, 0.35]
+            labels = ["Min", "Average", "Max"]
+
+            for i, col in enumerate(columns):
+                if col not in df.columns:
+                    continue
+                y_series = df[col]
+                trace = go.Scatter(
+                    x=df["time"].tolist(),
+                    y=y_series.tolist(),
+                    mode="lines",
+                    line=dict(
+                        color="blue",
+                        dash=line_styles[i % len(line_styles)],
+                        width=2,
+                    ),
+                    opacity=alpha_vals[i % len(alpha_vals)],
+                    name=labels[i % len(labels)],
+                )
+                traces.append(trace)
+                y_values.extend(y_series.tolist())
+
+        elif plot_type == "multi_series":
+            prefix = config.get("prefix", "")
+            series_cols = [
+                col
+                for col in df.columns
+                if prefix
+                and col.startswith(prefix)
+                and not col.endswith("avg")
+            ]
+            avg_column = f"{prefix}avg" if prefix else None
+            if (
+                avg_column is None or avg_column not in df.columns
+            ) and not series_cols:
+                return None
+
+            for col in series_cols:
+                y_series = df[col]
+                traces.append(
+                    go.Scatter(
+                        x=df["time"].tolist(),
+                        y=y_series.tolist(),
+                        mode="lines",
+                        line=dict(width=1),
+                        opacity=0.5,
+                        name=col,
+                    )
+                )
+                y_values.extend(y_series.tolist())
+
+            if avg_column in df.columns:
+                avg_series = df[avg_column]
+                traces.append(
+                    go.Scatter(
+                        x=df["time"].tolist(),
+                        y=avg_series.tolist(),
+                        mode="lines",
+                        line=dict(color="blue", width=2),
+                        name="Mean",
+                    )
+                )
+                y_values.extend(avg_series.tolist())
+        else:
+            return None
+
+        clean_values = []
+        for value in y_values:
+            try:
+                val = float(value)
+            except (TypeError, ValueError):
+                continue
+            if val != val:
+                continue
+            if val == float("inf") or val == float("-inf"):
+                continue
+            clean_values.append(val)
+
+        if ylim is None:
+            if clean_values:
+                y_min = min(clean_values)
+                y_max = max(clean_values)
+                if y_min == y_max:
+                    pad = abs(y_min) * 0.05 or 1.0
+                else:
+                    pad = (y_max - y_min) * 0.05
+                ylim = (y_min - pad, y_max + pad)
+            else:
+                ylim = (0, 1)
+
+        title = title + (" (No Idle)" if not show_idle else "")
+        return {"traces": traces, "title": title, "ylim": ylim}
+
+    def _get_plotly_cell_boundaries(self, cell_range=None, show_idle=False):
+        min_duration = self.min_duration or 0
+        boundaries = []
+
+        if not show_idle and hasattr(self, "_compressed_cell_boundaries"):
+            for cell in self._compressed_cell_boundaries:
+                duration = cell.get("duration", 0)
+                if duration < min_duration:
+                    continue
+                boundaries.append(
+                    {
+                        "start_time": float(cell["start_time"]),
+                        "duration": float(duration),
+                        "cell_index": int(cell["cell_index"]),
+                    }
+                )
+            return boundaries
+
+        filtered_cells = self.cell_history.view()
+        if cell_range:
+            try:
+                mask = (filtered_cells["cell_index"] >= cell_range[0]) & (
+                    filtered_cells["cell_index"] <= cell_range[1]
+                )
+                filtered_cells = filtered_cells[mask]
+            except Exception:
+                pass
+
+        monitor_start = self.monitor.start_time or 0.0
+        for _, cell in filtered_cells.iterrows():
+            try:
+                duration = float(cell["duration"])
+                if duration < min_duration:
+                    continue
+                boundaries.append(
+                    {
+                        "start_time": float(cell["start_time"]) - monitor_start,
+                        "duration": duration,
+                        "cell_index": int(cell["cell_index"]),
+                    }
+                )
+            except Exception:
+                continue
+        return boundaries
+
+    def _draw_cell_boundaries_plotly(
+        self,
+        fig,
+        row,
+        ylim,
+        cell_range=None,
+        show_idle=False,
+    ):
+        y_min, y_max = ylim
+        height = (y_max - y_min) or 1.0
+        axis_suffix = "" if row == 1 else str(row)
+        xref = f"x{axis_suffix}"
+        yref = f"y{axis_suffix}"
+
+        for cell in self._get_plotly_cell_boundaries(cell_range, show_idle):
+            start_time = cell["start_time"]
+            duration = cell["duration"]
+            cell_num = cell["cell_index"]
+            color = jumper_colors[cell_num % len(jumper_colors)]
+            fig.add_shape(
+                type="rect",
+                x0=start_time,
+                x1=start_time + duration,
+                y0=y_min,
+                y1=y_max,
+                xref=xref,
+                yref=yref,
+                fillcolor=color,
+                opacity=0.4,
+                line=dict(color="black", dash="dash", width=1),
+                layer="below",
+            )
+            fig.add_annotation(
+                x=start_time + duration / 2,
+                y=y_max - height * 0.1,
+                xref=xref,
+                yref=yref,
+                text=f"#{cell_num}",
+                showarrow=False,
+                font=dict(size=10),
+                bgcolor="rgba(255,255,255,0.8)",
+            )
+
+    def _build_single_metric_figure(
+        self,
+        df,
+        metric,
+        cell_range=None,
+        show_idle=False,
+        level="process",
+    ):
+        metric_plot = self._build_metric_plot(
+            df, metric, show_idle=show_idle, level=level
+        )
+        if not metric_plot:
+            return None
+
+        fig = go.Figure()
+        for trace in metric_plot["traces"]:
+            fig.add_trace(trace)
+
+        fig.update_layout(
+            title=metric_plot["title"],
+            xaxis_title="Time (seconds)",
+            template="plotly_white",
+            legend=dict(orientation="h"),
+            margin=dict(l=40, r=15, t=45, b=35),
+            height=max(260, int(self.figsize[1] * 190)),
+            width=max(440, int(self.figsize[0] * 220)),
+        )
+        fig.update_xaxes(showgrid=True)
+        fig.update_yaxes(showgrid=True, range=list(metric_plot["ylim"]))
+        self._draw_cell_boundaries_plotly(
+            fig,
+            row=1,
+            ylim=metric_plot["ylim"],
+            cell_range=cell_range,
+            show_idle=show_idle,
+        )
+        return fig
+
+    def _render_direct_plot(
+        self,
+        processed_data,
+        metrics,
+        cell_range,
+        show_idle,
+        level,
+        save_jpeg=None,
+        pickle_file=None,
+        metric_subsets=None,
+    ):
+        prepared = []
+        for metric in metrics:
+            metric_plot = self._build_metric_plot(
+                processed_data, metric, show_idle=show_idle, level=level
+            )
+            if metric_plot:
+                prepared.append((metric, metric_plot))
+
+        if not prepared:
+            logger.warning("No valid metrics found to plot")
+            return
+
+        fig = make_subplots(
+            rows=len(prepared),
+            cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.08,
+            subplot_titles=[item[1]["title"] for item in prepared],
+        )
+
+        for row, (metric, metric_plot) in enumerate(prepared, start=1):
+            for trace in metric_plot["traces"]:
+                fig.add_trace(trace, row=row, col=1)
+            fig.update_yaxes(
+                range=list(metric_plot["ylim"]),
+                showgrid=True,
+                row=row,
+                col=1,
+            )
+            fig.update_xaxes(showgrid=True, row=row, col=1)
+            self._draw_cell_boundaries_plotly(
+                fig,
+                row=row,
+                ylim=metric_plot["ylim"],
+                cell_range=cell_range,
+                show_idle=show_idle,
+            )
+
+        fig.update_xaxes(
+            title_text="Time (seconds)",
+            row=len(prepared),
+            col=1,
+        )
+        fig.update_layout(
+            template="plotly_white",
+            showlegend=True,
+            height=max(300, 330 * len(prepared)),
+            margin=dict(l=40, r=20, t=40, b=35),
+        )
+
+        if save_jpeg:
+            if not save_jpeg.endswith(".jpg") and not save_jpeg.endswith(
+                ".jpeg"
+            ):
+                save_jpeg += ".jpg"
+            fig.write_image(save_jpeg, format="jpeg", scale=2)
+            print(f"Plot saved as JPEG: {save_jpeg}")
+
+        if pickle_file:
+            if not pickle_file.endswith(".pkl"):
+                pickle_file += ".pkl"
+            plot_data = {
+                "figure_dict": fig.to_dict(),
+                "metrics": [item[0] for item in prepared],
+                "processed_data": processed_data,
+                "cell_range": cell_range,
+                "level": level,
+                "show_idle": show_idle,
+                "metric_subsets": metric_subsets,
+            }
+            with open(pickle_file, "wb") as f:
+                pickle.dump(plot_data, f)
+
+            print(f"Plot objects serialized to: {pickle_file}")
+            print("\n# Python code to reload and display the plot:")
+            print("import pickle")
+            print("import plotly.graph_objects as go")
+            print("")
+            print(f"with open('{pickle_file}', 'rb') as f:")
+            print("    plot_data = pickle.load(f)")
+            print("")
+            print("fig = go.Figure(plot_data['figure_dict'])")
+            print("fig.show()")
+
+        display(fig)
+
+    def _create_interactive_wrapper(
+        self,
+        metrics,
+        labeled_options,
+        processed_perfdata,
+        current_cell_range,
+        current_show_idle,
+    ):
+        return InteractivePlotlyWrapper(
+            self._build_single_metric_figure,
+            metrics,
+            labeled_options,
+            processed_perfdata,
+            current_cell_range,
+            current_show_idle,
+        )
+
+
+class InteractivePlotlyWrapper:
+    """Interactive plotter with dropdown selection for Plotly figures."""
+
+    def __init__(
+        self,
+        plot_callback,
+        metrics: List[str],
+        labeled_options,
+        perfdata_by_level,
+        cell_range=None,
+        show_idle=False,
+    ):
+        self.plot_callback = plot_callback
+        self.perfdata_by_level = perfdata_by_level
+        self.metrics = metrics
+        self.labeled_options = labeled_options
+        self.cell_range = cell_range
+        self.show_idle = show_idle
+        self.shown_metrics = set()
+        self.panel_count = 0
+        self.max_panels = len(metrics) * 4
+        self.plot_panels = []
+
+        self.output_container = widgets.HBox(
+            layout=Layout(
+                display="flex",
+                flex_flow="row wrap",
+                align_items="center",
+                justify_content="space-between",
+                width="100%",
+            )
+        )
+        self.add_panel_button = widgets.Button(
+            description="Add Plot Panel",
+            layout=Layout(margin="0 auto 20px auto"),
+        )
+        self.add_panel_button.on_click(self._on_add_panel_clicked)
+
+    def display_ui(self):
+        display(widgets.VBox([self.add_panel_button, self.output_container]))
+        self._on_add_panel_clicked(None)
+
+    def _on_add_panel_clicked(self, _):
+        if self.panel_count >= self.max_panels:
+            self.add_panel_button.disabled = True
+            self.output_container.children += (
+                widgets.HTML("<b>All panels have been added.</b>"),
+            )
+            return
+
+        self.output_container.children += (
+            widgets.HBox(
+                [
+                    self._create_dropdown_plot_panel(),
+                    self._create_dropdown_plot_panel(),
+                ]
+            ),
+        )
+        self.panel_count += 2
+        if self.panel_count >= self.max_panels:
+            self.add_panel_button.disabled = True
+
+    def _create_dropdown_plot_panel(self):
+        metric_value = self._get_next_metric()
+        metric_dropdown = widgets.Dropdown(
+            options=self.labeled_options,
+            value=metric_value,
+            description="Metric:",
+        )
+        level_dropdown = widgets.Dropdown(
+            options=get_available_levels(),
+            value="process",
+            description="Level:",
+        )
+        output = widgets.Output()
+
+        def update_plot():
+            metric = metric_dropdown.value
+            level = level_dropdown.value
+            df = self.perfdata_by_level.get(level)
+            output.clear_output(wait=True)
+            with output:
+                if metric is None or df is None or df.empty:
+                    display(
+                        widgets.HTML(
+                            "<i>No data for selected metric and level.</i>"
+                        )
+                    )
+                    return
+                fig = self.plot_callback(
+                    df,
+                    metric,
+                    self.cell_range,
+                    self.show_idle,
+                    level,
+                )
+                if fig is not None:
+                    display(fig)
+
+        def on_dropdown_change(change):
+            if change["type"] == "change" and change["name"] == "value":
+                update_plot()
+
+        metric_dropdown.observe(on_dropdown_change)
+        level_dropdown.observe(on_dropdown_change)
+
+        panel_data = {
+            "metric_dropdown": metric_dropdown,
+            "level_dropdown": level_dropdown,
+            "output": output,
+            "update_plot": update_plot,
+        }
+        self.plot_panels.append(panel_data)
+
+        update_plot()
+        return widgets.VBox(
+            [widgets.HBox([metric_dropdown, level_dropdown]), output]
+        )
+
+    def _get_next_metric(self):
+        for metric in self.metrics:
+            if metric not in self.shown_metrics:
+                self.shown_metrics.add(metric)
+                return metric
+        return None
+
+    def update_data(self, perfdata_by_level, cell_range, show_idle):
+        self.perfdata_by_level = perfdata_by_level
+        self.cell_range = cell_range
+        self.show_idle = show_idle
+        for panel in self.plot_panels:
+            panel["output"].clear_output(wait=True)
+            panel["update_plot"]()
+
+
 def build_performance_visualizer(
     cell_history: CellHistory,
     plots_disabled: bool = False,
     plots_disabled_reason: str = "Plotting not available.",
+    backend: str = "matplotlib",
 ) -> VisualizerProtocol:
     """
-    Build PerformanceVisualizer object.
-    Allows building a visualizer that degrades to a no-op when plots are disabled.
+    Build visualizer object with selected backend.
+
+    Supported backends:
+    - matplotlib (default)
+    - plotly
     """
     if plots_disabled:
         return UnavailableVisualizer(reason=plots_disabled_reason)
-    return PerformanceVisualizer(cell_history)
+
+    backend_name = (backend or "matplotlib").strip().lower()
+    if backend_name == "plotly":
+        return PlotlyPerformanceVisualizer(cell_history)
+    if backend_name != "matplotlib":
+        logger.warning(
+            f"Unknown visualizer backend '{backend}'. "
+            "Falling back to matplotlib."
+        )
+    return MatplotlibPerformanceVisualizer(cell_history)
