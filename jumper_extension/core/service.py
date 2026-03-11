@@ -246,6 +246,7 @@ class PerfmonitorService:
         level: Optional[str] = None,
         save_jpeg: Optional[str] = None,
         pickle_file: Optional[str] = None,
+        backend: Optional[str] = None,
     ) -> None:
         """Open an interactive performance plot.
 
@@ -277,6 +278,28 @@ class PerfmonitorService:
                     source=self.monitor.session_source
                 )
             )
+
+        selected_backend = (
+            (backend or self.settings.visualizer_backend) or "matplotlib"
+        )
+        selected_backend = selected_backend.strip().lower()
+        if backend:
+            self.settings.visualizer_backend = selected_backend
+
+        current_backend = (
+            "plotly"
+            if self.visualizer.__class__.__name__
+            == "PlotlyPerformanceVisualizer"
+            else "matplotlib"
+        )
+        if selected_backend != current_backend:
+            self.visualizer = build_performance_visualizer(
+                self.cell_history,
+                plots_disabled=False,
+                plots_disabled_reason="Plotting not available.",
+                backend=selected_backend,
+            )
+            self.visualizer.attach(self.monitor)
 
         effective_level = level
 
@@ -784,6 +807,7 @@ class PerfmonitorMagicAdapter:
             level=args.level,
             save_jpeg=args.save_jpeg,
             pickle_file=args.pickle_file,
+            backend=args.backend,
         )
 
     def perfmonitor_enable_perfreports(self, line: str):
@@ -992,6 +1016,11 @@ def build_perfmonitor_service(
         >>> service = build_perfmonitor_service()
     """
     settings = Settings()
+    settings.visualizer_backend = (
+        visualizer_backend.strip().lower()
+        if visualizer_backend
+        else "matplotlib"
+    )
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
     visualizer = build_performance_visualizer(

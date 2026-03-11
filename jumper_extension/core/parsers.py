@@ -72,6 +72,11 @@ def build_perfmonitor_plot_parser() -> argparse.ArgumentParser:
         type=str,
         help="Serialize plot data to a pickle file"
     )
+    parser.add_argument(
+        "--backend",
+        choices=["matplotlib", "plotly"],
+        help="Visualizer backend for this plot command",
+    )
     return parser
 
 def build_auto_perfreports_parser() -> argparse.ArgumentParser:
