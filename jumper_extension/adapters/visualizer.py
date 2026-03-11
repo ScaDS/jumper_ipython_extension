@@ -443,196 +443,6 @@ class PerformanceVisualizer:
             metric_subsets=metric_subsets,
         )
 
-    def _plot_metric(
-        self,
-        df,
-        metric,
-        cell_range=None,
-        show_idle=False,
-        ax: plt.Axes = None,
-        level="process",
-    ):
-        """Plot a single metric using its configuration"""
-        config = next(
-            (
-                subset[metric]
-                for subset in self.subsets.values()
-                if metric in subset
-            ),
-            None,
-        )
-        if not config:
-            return
-
-        # Parse dict-based config format
-        if not isinstance(config, dict):
-            return
-
-        plot_type = config.get("type")
-        if plot_type == "single_series":
-            column = config.get("column")
-            title = config.get("title", "")
-            ylim = config.get("ylim")
-            # Set dynamic memory limit for memory metric
-            if metric == "memory" and ylim is None:
-                ylim = (0, self.monitor.memory_limits[level])
-            if not column or column not in df.columns:
-                return
-        elif plot_type == "multi_series":
-            prefix = config.get("prefix", "")
-            title = config.get("title", "")
-            ylim = config.get("ylim")
-            series_cols = [
-                col
-                for col in df.columns
-                if prefix
-                and col.startswith(prefix)
-                and not col.endswith("avg")
-            ]
-            # Derive average column name from prefix
-            avg_column = f"{prefix}avg" if prefix else None
-            if (
-                avg_column is None or avg_column not in df.columns
-            ) and not series_cols:
-                return
-        elif plot_type == "summary_series":
-            columns = config.get("columns", [])
-            title = config.get("title", "")
-            ylim = config.get("ylim")
-            if level == "system":
-                title = re.sub(
-                    r"\d+", str(self.monitor.num_system_cpus), title
-                )
-            available_cols = [col for col in columns if col in df.columns]
-            if not available_cols:
-                return
-        else:
-            return
-
-        if ax is None:
-            fig, ax = plt.subplots(figsize=self.figsize)
-
-        # Plot based on type
-        if plot_type == "single_series":
-            series = df[column]
-            # For IO metrics, compute simple diffs from cumulative counters
-            if metric in (
-                "io_read",
-                "io_write",
-                "io_read_count",
-                "io_write_count",
-            ):
-                diffs = df[column].astype(float).diff().clip(lower=0)
-                if metric in ("io_read", "io_write"):
-                    diffs = diffs / (1024**2)  # bytes -> MB
-                series = diffs.fillna(0.0)
-                if self._io_window > 1:
-                    series = series.rolling(
-                        window=self._io_window, min_periods=1
-                    ).mean()
-
-            ax.plot(df["time"], series, color="blue", linewidth=2)
-        elif plot_type == "summary_series":
-            line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
-            for i, (col, label) in enumerate(
-                zip(columns, ["Min", "Average", "Max"])
-            ):
-                if col in df.columns:
-                    ax.plot(
-                        df["time"],
-                        df[col],
-                        color="blue",
-                        linestyle=line_styles[i % len(line_styles)],
-                        linewidth=2,
-                        alpha=alpha_vals[i % len(alpha_vals)],
-                        label=label,
-                    )
-            ax.legend()
-        elif plot_type == "multi_series":
-            for col in series_cols:
-                ax.plot(df["time"], df[col], "-", alpha=0.5, label=col)
-            if avg_column in df.columns:
-                ax.plot(
-                    df["time"], df[avg_column], "b-", linewidth=2, label="Mean"
-                )
-            ax.legend()
-
-        # Apply settings
-        ax.set_title(title + (" (No Idle)" if not show_idle else ""))
-        ax.set_xlabel("Time (seconds)")
-        ax.grid(True)
-        if ylim:
-            ax.set_ylim(ylim)
-        self._draw_cell_boundaries(ax, cell_range, show_idle)
-
-    def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
-        """Draw cell boundaries as colored rectangles with cell indices"""
-        colors = jumper_colors
-        y_min, y_max = ax.get_ylim()
-        x_max, height = ax.get_xlim()[1], y_max - y_min
-        min_duration = self.min_duration or 0
-
-        def draw_cell_rect(start_time, duration, cell_num, alpha):
-            if (
-                duration < min_duration
-                or start_time > x_max
-                or start_time + duration < 0
-            ):
-                return
-            color = colors[cell_num % len(colors)]
-            ax.add_patch(
-                plt.Rectangle(
-                    (start_time, y_min),
-                    duration,
-                    height,
-                    facecolor=color,
-                    alpha=alpha,
-                    edgecolor="black",
-                    linestyle="--",
-                    linewidth=1,
-                    zorder=0,
-                )
-            )
-            ax.text(
-                start_time + duration / 2,
-                y_max - height * 0.1,
-                f"#{cell_num}",
-                ha="center",
-                va="center",
-                fontsize=10,
-                fontweight="bold",
-                zorder=1,
-                bbox=dict(
-                    boxstyle="round,pad=0.3", facecolor="white", alpha=0.8
-                ),
-            )
-
-        if not show_idle and hasattr(self, "_compressed_cell_boundaries"):
-            for cell in self._compressed_cell_boundaries:
-                draw_cell_rect(
-                    cell["start_time"],
-                    cell["duration"],
-                    int(cell["cell_index"]),
-                    0.4,
-                )
-        else:
-            filtered_cells = self.cell_history.view()
-            if cell_range:
-                try:
-                    mask = (filtered_cells["cell_index"] >= cell_range[0]) & (
-                        filtered_cells["cell_index"] <= cell_range[1]
-                    )
-                    cells = filtered_cells[mask]
-                except Exception:
-                    cells = filtered_cells
-            else:
-                cells = filtered_cells
-            for idx, cell in cells.iterrows():
-                start_time = cell["start_time"] - self.monitor.start_time
-                draw_cell_rect(
-                    start_time, cell["duration"], int(cell["cell_index"]), 0.5
-                )
-
     def plot(
         self,
         metric_subsets=("cpu", "mem", "io"),
@@ -791,6 +601,186 @@ class PerformanceVisualizer:
 
 class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
     """Matplotlib backend visualizer."""
+
+    def _plot_metric(
+        self,
+        df,
+        metric,
+        cell_range=None,
+        show_idle=False,
+        ax: plt.Axes = None,
+        level="process",
+    ):
+        """Plot a single metric using its configuration."""
+        config = next(
+            (
+                subset[metric]
+                for subset in self.subsets.values()
+                if metric in subset
+            ),
+            None,
+        )
+        if not config or not isinstance(config, dict):
+            return
+
+        plot_type = config.get("type")
+        if plot_type == "single_series":
+            column = config.get("column")
+            title = config.get("title", "")
+            ylim = config.get("ylim")
+            if metric == "memory" and ylim is None:
+                ylim = (0, self.monitor.memory_limits[level])
+            if not column or column not in df.columns:
+                return
+        elif plot_type == "multi_series":
+            prefix = config.get("prefix", "")
+            title = config.get("title", "")
+            ylim = config.get("ylim")
+            series_cols = [
+                col
+                for col in df.columns
+                if prefix
+                and col.startswith(prefix)
+                and not col.endswith("avg")
+            ]
+            avg_column = f"{prefix}avg" if prefix else None
+            if (
+                avg_column is None or avg_column not in df.columns
+            ) and not series_cols:
+                return
+        elif plot_type == "summary_series":
+            columns = config.get("columns", [])
+            title = config.get("title", "")
+            ylim = config.get("ylim")
+            if level == "system":
+                title = re.sub(
+                    r"\d+", str(self.monitor.num_system_cpus), title
+                )
+            available_cols = [col for col in columns if col in df.columns]
+            if not available_cols:
+                return
+        else:
+            return
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=self.figsize)
+
+        if plot_type == "single_series":
+            series = df[column]
+            if metric in (
+                "io_read",
+                "io_write",
+                "io_read_count",
+                "io_write_count",
+            ):
+                diffs = df[column].astype(float).diff().clip(lower=0)
+                if metric in ("io_read", "io_write"):
+                    diffs = diffs / (1024**2)
+                series = diffs.fillna(0.0)
+                if self._io_window > 1:
+                    series = series.rolling(
+                        window=self._io_window, min_periods=1
+                    ).mean()
+            ax.plot(df["time"], series, color="blue", linewidth=2)
+        elif plot_type == "summary_series":
+            line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
+            for i, (col, label) in enumerate(
+                zip(columns, ["Min", "Average", "Max"])
+            ):
+                if col in df.columns:
+                    ax.plot(
+                        df["time"],
+                        df[col],
+                        color="blue",
+                        linestyle=line_styles[i % len(line_styles)],
+                        linewidth=2,
+                        alpha=alpha_vals[i % len(alpha_vals)],
+                        label=label,
+                    )
+            ax.legend()
+        elif plot_type == "multi_series":
+            for col in series_cols:
+                ax.plot(df["time"], df[col], "-", alpha=0.5, label=col)
+            if avg_column in df.columns:
+                ax.plot(
+                    df["time"], df[avg_column], "b-", linewidth=2, label="Mean"
+                )
+            ax.legend()
+
+        ax.set_title(title + (" (No Idle)" if not show_idle else ""))
+        ax.set_xlabel("Time (seconds)")
+        ax.grid(True)
+        if ylim:
+            ax.set_ylim(ylim)
+        self._draw_cell_boundaries(ax, cell_range, show_idle)
+
+    def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
+        """Draw cell boundaries as colored rectangles with cell indices."""
+        colors = jumper_colors
+        y_min, y_max = ax.get_ylim()
+        x_max, height = ax.get_xlim()[1], y_max - y_min
+        min_duration = self.min_duration or 0
+
+        def draw_cell_rect(start_time, duration, cell_num, alpha):
+            if (
+                duration < min_duration
+                or start_time > x_max
+                or start_time + duration < 0
+            ):
+                return
+            color = colors[cell_num % len(colors)]
+            ax.add_patch(
+                plt.Rectangle(
+                    (start_time, y_min),
+                    duration,
+                    height,
+                    facecolor=color,
+                    alpha=alpha,
+                    edgecolor="black",
+                    linestyle="--",
+                    linewidth=1,
+                    zorder=0,
+                )
+            )
+            ax.text(
+                start_time + duration / 2,
+                y_max - height * 0.1,
+                f"#{cell_num}",
+                ha="center",
+                va="center",
+                fontsize=10,
+                fontweight="bold",
+                zorder=1,
+                bbox=dict(
+                    boxstyle="round,pad=0.3", facecolor="white", alpha=0.8
+                ),
+            )
+
+        if not show_idle and hasattr(self, "_compressed_cell_boundaries"):
+            for cell in self._compressed_cell_boundaries:
+                draw_cell_rect(
+                    cell["start_time"],
+                    cell["duration"],
+                    int(cell["cell_index"]),
+                    0.4,
+                )
+        else:
+            filtered_cells = self.cell_history.view()
+            if cell_range:
+                try:
+                    mask = (filtered_cells["cell_index"] >= cell_range[0]) & (
+                        filtered_cells["cell_index"] <= cell_range[1]
+                    )
+                    cells = filtered_cells[mask]
+                except Exception:
+                    cells = filtered_cells
+            else:
+                cells = filtered_cells
+            for _, cell in cells.iterrows():
+                start_time = cell["start_time"] - self.monitor.start_time
+                draw_cell_rect(
+                    start_time, cell["duration"], int(cell["cell_index"]), 0.5
+                )
 
     def _create_interactive_wrapper(
         self,
