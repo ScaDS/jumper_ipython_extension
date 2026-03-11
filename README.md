@@ -1,6 +1,7 @@
 [![Unit Tests](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml)
 [![Formatting](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml)
 [![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
+[![Documentation](https://img.shields.io/badge/docs-extension-blue?logo=github)](https://scads.github.io/jumper_ipython_extension/latest/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
 
 <p align="center">
