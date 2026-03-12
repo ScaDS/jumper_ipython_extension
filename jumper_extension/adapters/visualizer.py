@@ -1318,9 +1318,11 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             xaxis_title="Time (seconds)",
             template="plotly_white",
             legend=dict(orientation="h"),
-            margin=dict(l=40, r=15, t=45, b=35),
-            height=max(260, int(self.figsize[1] * 190)),
-            width=max(440, int(self.figsize[0] * 220)),
+            margin=dict(l=24, r=8, t=45, b=35),
+            # Keep width container-driven, but use a compact height close to
+            # former matplotlib proportions.
+            height=max(220, int(self.figsize[1] * 105)),
+            autosize=True,
         )
         fig.update_xaxes(showgrid=True)
         fig.update_yaxes(showgrid=True, range=list(metric_plot["ylim"]))
@@ -1390,8 +1392,11 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         fig.update_layout(
             template="plotly_white",
             showlegend=True,
-            height=max(300, 330 * len(prepared)),
-            margin=dict(l=40, r=20, t=40, b=35),
+            # Roughly match legacy matplotlib subplot density while staying
+            # responsive in width.
+            height=max(260, int(270 * len(prepared))),
+            margin=dict(l=24, r=8, t=40, b=35),
+            autosize=True,
         )
 
         if save_jpeg:
@@ -1428,7 +1433,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             print("fig = go.Figure(plot_data['figure_dict'])")
             print("fig.show()")
 
-        display(fig)
+        fig.show(config={"responsive": True})
 
     def _create_interactive_wrapper(
         self,
@@ -1478,6 +1483,7 @@ class InteractivePlotlyWrapper:
                 align_items="center",
                 justify_content="space-between",
                 width="100%",
+                min_width="0",
             )
         )
         self.add_panel_button = widgets.Button(
@@ -1503,7 +1509,7 @@ class InteractivePlotlyWrapper:
                 [
                     self._create_dropdown_plot_panel(),
                     self._create_dropdown_plot_panel(),
-                ]
+                ],
             ),
         )
         self.panel_count += 2
@@ -1522,7 +1528,9 @@ class InteractivePlotlyWrapper:
             value="process",
             description="Level:",
         )
-        output = widgets.Output()
+        output = widgets.Output(
+            layout=Layout(width="100%", min_width="0")
+        )
 
         def update_plot():
             metric = metric_dropdown.value
@@ -1545,7 +1553,7 @@ class InteractivePlotlyWrapper:
                     level,
                 )
                 if fig is not None:
-                    display(fig)
+                    fig.show(config={"responsive": True})
 
         def on_dropdown_change(change):
             if change["type"] == "change" and change["name"] == "value":
@@ -1564,7 +1572,8 @@ class InteractivePlotlyWrapper:
 
         update_plot()
         return widgets.VBox(
-            [widgets.HBox([metric_dropdown, level_dropdown]), output]
+            [widgets.HBox([metric_dropdown, level_dropdown]), output],
+            layout=Layout(flex="1 1 0", min_width="0", padding="0 12px"),
         )
 
     def _get_next_metric(self):
