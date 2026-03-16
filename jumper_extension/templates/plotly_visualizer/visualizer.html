@@ -1,0 +1,174 @@
+<style>
+{{ styles | safe }}
+</style>
+
+<div id="{{ container_id }}" class="jpv-container">
+  <div class="jpv-toolbar">
+    <span class="jpv-logo">
+      <img src="{{ logo_src }}" alt="JUmPER">
+    </span>
+    <span class="jpv-title">Performance Metrics</span>
+    <label class="jpv-ctrl-label">
+      <input type="checkbox" id="{{ container_id }}-show-idle"
+             {{ 'checked' if initial_show_idle else '' }}>
+      Show idle periods
+    </label>
+    <button class="jpv-add-btn" id="{{ container_id }}-add-btn">+ Add Panel</button>
+  </div>
+  <div class="jpv-panels-wrap" id="{{ container_id }}-panels"></div>
+</div>
+
+<script>
+(function () {
+  /* ── constants embedded from Python ─────────────────────────────────── */
+  var CID   = {{ container_id | tojson }};
+  var FIGS  = {{ figures_json | safe }};
+  var OPTS  = {{ labeled_options_json | safe }};  /* [[label, value], ...] */
+  var LEVS  = {{ levels_json | safe }};           /* [level, ...]          */
+  var MAX   = {{ max_panels }};
+
+  /* ── state ──────────────────────────────────────────────────────────── */
+  var panelCount  = 0;
+  var usedMetrics = [];
+
+  /* ── helpers ────────────────────────────────────────────────────────── */
+  function nextMetric() {
+    for (var i = 0; i < OPTS.length; i++) {
+      if (usedMetrics.indexOf(OPTS[i][1]) < 0) {
+        usedMetrics.push(OPTS[i][1]);
+        return OPTS[i][1];
+      }
+    }
+    return OPTS.length ? OPTS[0][1] : null;
+  }
+
+  function showIdleKey() {
+    var cb = document.getElementById(CID + '-show-idle');
+    return (cb && cb.checked) ? 'true' : 'false';
+  }
+
+  function renderPlot(plotDiv, metric, level) {
+    var key   = showIdleKey();
+    var entry = FIGS[metric] && FIGS[metric][level] && FIGS[metric][level][key];
+    plotDiv.innerHTML = '';
+    if (!entry) {
+      plotDiv.innerHTML = '<p class="jpv-no-data">No data for selected metric and level.</p>';
+      return;
+    }
+    if (window.Plotly) {
+      Plotly.newPlot(plotDiv, entry.data, entry.layout,
+                     { responsive: true, displayModeBar: true });
+    } else {
+      plotDiv.innerHTML = '<p class="jpv-no-data">Plotly.js not loaded yet – please re-run the cell.</p>';
+    }
+  }
+
+  /* ── panel creation ─────────────────────────────────────────────────── */
+  function createPanel() {
+    if (panelCount >= MAX) return;
+
+    var metric = nextMetric();
+    var level  = (LEVS.indexOf('process') >= 0) ? 'process' : LEVS[0];
+    var pid    = CID + '-panel-' + panelCount;
+
+    /* Build metric <select> */
+    var metricOptions = OPTS.map(function (o) {
+      return '<option value="' + o[1] + '"' + (o[1] === metric ? ' selected' : '') + '>'
+             + o[0] + '</option>';
+    }).join('');
+
+    /* Build level <select> */
+    var levelOptions = LEVS.map(function (l) {
+      return '<option value="' + l + '"' + (l === level ? ' selected' : '') + '>'
+             + l + '</option>';
+    }).join('');
+
+    var panel = document.createElement('div');
+    panel.className = 'jpv-panel';
+    panel.dataset.panelId = pid;
+    panel.innerHTML =
+      '<div class="jpv-ctrl-row">' +
+      '  <label>Metric:' +
+      '    <select class="jpv-metric-sel" id="' + pid + '-metric">' + metricOptions + '</select>' +
+      '  </label>' +
+      '  <label>Level:' +
+      '    <select class="jpv-level-sel" id="' + pid + '-level">' + levelOptions + '</select>' +
+      '  </label>' +
+      '</div>' +
+      '<div class="jpv-plot-area" id="' + pid + '-plot"></div>';
+
+    return panel;
+  }
+
+  function attachPanelEvents(panel) {
+    var pid       = panel.dataset.panelId;
+    var metricSel = document.getElementById(pid + '-metric');
+    var levelSel  = document.getElementById(pid + '-level');
+    var plotDiv   = document.getElementById(pid + '-plot');
+    function update() { renderPlot(plotDiv, metricSel.value, levelSel.value); }
+    metricSel.addEventListener('change', update);
+    levelSel.addEventListener('change', update);
+    update();
+  }
+
+  /* Add two panels side-by-side in a row */
+  function addPanelRow() {
+    var wrap = document.getElementById(CID + '-panels');
+    var row  = document.createElement('div');
+    row.className = 'jpv-panel-row';
+
+    var added = 0;
+    for (var i = 0; i < 2 && panelCount < MAX; i++) {
+      var panel = createPanel();
+      if (panel) {
+        row.appendChild(panel);
+        panelCount++;
+        added++;
+      }
+    }
+    if (added > 0) wrap.appendChild(row);
+    /* Attach events after DOM insertion so getElementById finds the nodes */
+    row.querySelectorAll('.jpv-panel').forEach(attachPanelEvents);
+
+    if (panelCount >= MAX) {
+      document.getElementById(CID + '-add-btn').disabled = true;
+      var notice = document.createElement('p');
+      notice.className = 'jpv-max-notice';
+      notice.textContent = 'All panels have been added.';
+      wrap.appendChild(notice);
+    }
+  }
+
+  /* ── show-idle toggle: re-render all existing panels ────────────────── */
+  function refreshAllPanels() {
+    document.getElementById(CID + '-panels')
+      .querySelectorAll('.jpv-panel').forEach(function (panel) {
+        var pid       = panel.dataset.panelId;
+        var metricSel = document.getElementById(pid + '-metric');
+        var levelSel  = document.getElementById(pid + '-level');
+        var plotDiv   = document.getElementById(pid + '-plot');
+        if (metricSel && levelSel && plotDiv) {
+          renderPlot(plotDiv, metricSel.value, levelSel.value);
+        }
+      });
+  }
+
+  /* ── init ───────────────────────────────────────────────────────────── */
+  function init() {
+    document.getElementById(CID + '-add-btn')
+      .addEventListener('click', addPanelRow);
+
+    document.getElementById(CID + '-show-idle')
+      .addEventListener('change', refreshAllPanels);
+
+    /* Render initial two panels */
+    addPanelRow();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>

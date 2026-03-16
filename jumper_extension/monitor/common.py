@@ -7,6 +7,8 @@ from typing import Dict, Optional, Protocol, runtime_checkable
 import pandas as pd
 import psutil
 
+import yappi
+
 from jumper_extension.adapters.data import PerformanceData
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -222,6 +224,8 @@ class PerformanceMonitor:
         self.monitor_thread = threading.Thread(
             target=self._collect_data, daemon=True
         )
+        yappi.set_clock_type("wall")
+        yappi.start(profile_threads=True)
         self.monitor_thread.start()
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STARTED].format(
@@ -234,6 +238,10 @@ class PerformanceMonitor:
         self.running = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2.0)
+            yappi.stop()
+            stats = yappi.get_func_stats()
+            stats.sort("ttot")
+            stats.save("wall-profile.callgrind", type="callgrind")
         self.stop_time = time.perf_counter()
         self.wallclock_stop_time = time.time()
         logger.info(

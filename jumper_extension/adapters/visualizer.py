@@ -1,11 +1,15 @@
+import json
 import logging
 import pickle
 import re
+import uuid
+from pathlib import Path
 from typing import List, runtime_checkable, Protocol, Optional, Tuple
 
 import matplotlib.pyplot as plt
-from IPython.display import display
+from IPython.display import display, HTML
 from ipywidgets import widgets, Layout
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -1435,6 +1439,52 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
 
         fig.show(config={"responsive": True})
 
+    def _precompute_figures_for_wrapper(
+        self,
+        metrics,
+        perfdata_no_idle,
+        perfdata_with_idle,
+        cell_range,
+    ):
+        """Pre-compute all metric × level × show_idle figure dicts for the HTML wrapper.
+
+        The no-idle variant must be prepared first so that
+        ``self._compressed_cell_boundaries`` is already set when the no-idle
+        figures are built.  The with-idle figures are built second; they do not
+        read ``_compressed_cell_boundaries`` (guarded by the ``show_idle``
+        flag inside ``_get_plotly_cell_boundaries``).
+        """
+        figures = {}  # {metric: {level: {'true': dict|None, 'false': dict|None}}}
+        all_levels = set(
+            list(perfdata_no_idle or {}) + list(perfdata_with_idle or {})
+        )
+
+        for metric in metrics:
+            figures[metric] = {}
+            for level in all_levels:
+                figures[metric][level] = {}
+                variants = {
+                    "false": (perfdata_no_idle or {}).get(level),
+                    "true":  (perfdata_with_idle or {}).get(level),
+                }
+                for key, df in variants.items():
+                    if df is None or df.empty:
+                        figures[metric][level][key] = None
+                        continue
+                    try:
+                        fig = self._build_single_metric_figure(
+                            df, metric, cell_range,
+                            show_idle=(key == "true"),
+                            level=level,
+                        )
+                        figures[metric][level][key] = (
+                            json.loads(fig.to_json()) if fig is not None else None
+                        )
+                    except Exception:
+                        figures[metric][level][key] = None
+
+        return figures
+
     def _create_interactive_wrapper(
         self,
         metrics,
@@ -1443,6 +1493,26 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         current_cell_range,
         current_show_idle,
     ):
+        # processed_perfdata was prepared for current_show_idle; we need the
+        # opposite variant as well so the HTML toggle works without Python.
+        alt_show_idle = not current_show_idle
+        processed_alt = self._prepare_processed_data_for_interactive(
+            current_cell_range, alt_show_idle
+        )
+
+        if current_show_idle:
+            perfdata_with_idle = processed_perfdata
+            perfdata_no_idle   = processed_alt
+        else:
+            perfdata_no_idle   = processed_perfdata
+            perfdata_with_idle = processed_alt
+
+        precomputed = self._precompute_figures_for_wrapper(
+            metrics,
+            perfdata_no_idle,
+            perfdata_with_idle,
+            current_cell_range,
+        )
         return InteractivePlotlyWrapper(
             self._build_single_metric_figure,
             metrics,
@@ -1450,11 +1520,91 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             processed_perfdata,
             current_cell_range,
             current_show_idle,
+            _precomputed_figures=precomputed,
         )
+
+    def plot(
+        self,
+        metric_subsets=("cpu", "mem", "io"),
+        cell_range=None,
+        show_idle=False,
+        level=None,
+        save_jpeg=None,
+        pickle_file=None,
+    ):
+        """Plot performance metrics using a pure HTML/JS interactive output."""
+        metrics_missing = not metric_subsets
+        if metrics_missing:
+            metric_subsets = ("cpu", "mem", "io")
+            if self.monitor.num_gpus:
+                metric_subsets += ("gpu", "gpu_all")
+
+        valid_cells = self.cell_history.view()
+        if len(valid_cells) == 0:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_CELL_HISTORY]
+            )
+            return
+
+        if cell_range is None:
+            cell_start_index = 0
+            for cell_idx in range(len(valid_cells) - 1, -1, -1):
+                if valid_cells.iloc[cell_idx]["duration"] > self.min_duration:
+                    cell_start_index = cell_idx
+                    break
+            start = int(valid_cells.iloc[cell_start_index]["cell_index"])
+            end   = int(valid_cells["cell_index"].max())
+            if start > end:
+                start, end = end, start
+            cell_range = (start, end)
+
+        # When a specific level is requested, fall back to the direct (non-interactive)
+        # plot path which supports save_jpeg and pickle_file.
+        if level is not None:
+            metric_subsets = self._resolve_metric_subsets(metric_subsets)
+            return self._plot_direct(
+                metric_subsets, cell_range, show_idle, level, save_jpeg, pickle_file
+            )
+
+        metric_subsets = self._resolve_metric_subsets(metric_subsets)
+        metrics, labeled_options = self._collect_metric_options(metric_subsets)
+        if not metrics:
+            logger.warning("No valid metrics found to plot")
+            return
+
+        # Pre-compute data for the requested show_idle value first (sets
+        # _compressed_cell_boundaries as a side-effect).
+        processed_perfdata = self._prepare_processed_data_for_interactive(
+            cell_range, show_idle
+        )
+        if processed_perfdata is None:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_PERFORMANCE_DATA]
+            )
+            return
+
+        wrapper = self._create_interactive_wrapper(
+            metrics,
+            labeled_options,
+            processed_perfdata,
+            cell_range,
+            show_idle,
+        )
+        wrapper.display_ui()
 
 
 class InteractivePlotlyWrapper:
-    """Interactive plotter with dropdown selection for Plotly figures."""
+    """Interactive plotter that renders controls and figures via pure HTML/JS.
+
+    All metric × level × show-idle combinations are pre-computed server-side
+    and embedded as Plotly JSON in a single self-contained HTML block.
+    The browser handles dropdown changes and the show-idle toggle without any
+    Python round-trips.
+    """
+
+    _TEMPLATES_DIR = (
+        Path(__file__).parent.parent / "templates" / "plotly_visualizer"
+    )
 
     def __init__(
         self,
@@ -1464,132 +1614,110 @@ class InteractivePlotlyWrapper:
         perfdata_by_level,
         cell_range=None,
         show_idle=False,
+        _precomputed_figures=None,
     ):
-        self.plot_callback = plot_callback
+        self.plot_callback    = plot_callback
         self.perfdata_by_level = perfdata_by_level
-        self.metrics = metrics
-        self.labeled_options = labeled_options
-        self.cell_range = cell_range
-        self.show_idle = show_idle
-        self.shown_metrics = set()
-        self.panel_count = 0
-        self.max_panels = len(metrics) * 4
-        self.plot_panels = []
+        self.metrics          = metrics
+        self.labeled_options  = labeled_options
+        self.cell_range       = cell_range
+        self.show_idle        = show_idle
+        self.max_panels       = len(metrics) * 4
+        # Pre-computed figures supplied by PlotlyPerformanceVisualizer; if
+        # None we fall back to computing lazily from plot_callback.
+        self._precomputed_figures = _precomputed_figures
+        self._display_handle  = None
+        self._container_id    = f"jpv-{uuid.uuid4().hex[:8]}"
 
-        self.output_container = widgets.HBox(
-            layout=Layout(
-                display="flex",
-                flex_flow="row wrap",
-                align_items="center",
-                justify_content="space-between",
-                width="100%",
-                min_width="0",
-            )
-        )
-        self.add_panel_button = widgets.Button(
-            description="Add Plot Panel",
-            layout=Layout(margin="0 auto 20px auto"),
-        )
-        self.add_panel_button.on_click(self._on_add_panel_clicked)
+    # ------------------------------------------------------------------ #
+    # Public API (kept stable with the old ipywidgets implementation)     #
+    # ------------------------------------------------------------------ #
 
     def display_ui(self):
-        display(widgets.VBox([self.add_panel_button, self.output_container]))
-        self._on_add_panel_clicked(None)
-
-    def _on_add_panel_clicked(self, _):
-        if self.panel_count >= self.max_panels:
-            self.add_panel_button.disabled = True
-            self.output_container.children += (
-                widgets.HTML("<b>All panels have been added.</b>"),
-            )
-            return
-
-        self.output_container.children += (
-            widgets.HBox(
-                [
-                    self._create_dropdown_plot_panel(),
-                    self._create_dropdown_plot_panel(),
-                ],
-            ),
-        )
-        self.panel_count += 2
-        if self.panel_count >= self.max_panels:
-            self.add_panel_button.disabled = True
-
-    def _create_dropdown_plot_panel(self):
-        metric_value = self._get_next_metric()
-        metric_dropdown = widgets.Dropdown(
-            options=self.labeled_options,
-            value=metric_value,
-            description="Metric:",
-        )
-        level_dropdown = widgets.Dropdown(
-            options=get_available_levels(),
-            value="process",
-            description="Level:",
-        )
-        output = widgets.Output(
-            layout=Layout(width="100%", min_width="0")
-        )
-
-        def update_plot():
-            metric = metric_dropdown.value
-            level = level_dropdown.value
-            df = self.perfdata_by_level.get(level)
-            output.clear_output(wait=True)
-            with output:
-                if metric is None or df is None or df.empty:
-                    display(
-                        widgets.HTML(
-                            "<i>No data for selected metric and level.</i>"
-                        )
-                    )
-                    return
-                fig = self.plot_callback(
-                    df,
-                    metric,
-                    self.cell_range,
-                    self.show_idle,
-                    level,
-                )
-                if fig is not None:
-                    fig.show(config={"responsive": True})
-
-        def on_dropdown_change(change):
-            if change["type"] == "change" and change["name"] == "value":
-                update_plot()
-
-        metric_dropdown.observe(on_dropdown_change)
-        level_dropdown.observe(on_dropdown_change)
-
-        panel_data = {
-            "metric_dropdown": metric_dropdown,
-            "level_dropdown": level_dropdown,
-            "output": output,
-            "update_plot": update_plot,
-        }
-        self.plot_panels.append(panel_data)
-
-        update_plot()
-        return widgets.VBox(
-            [widgets.HBox([metric_dropdown, level_dropdown]), output],
-            layout=Layout(flex="1 1 0", min_width="0", padding="0 12px"),
-        )
-
-    def _get_next_metric(self):
-        for metric in self.metrics:
-            if metric not in self.shown_metrics:
-                self.shown_metrics.add(metric)
-                return metric
-        return None
+        html = self._render_html()
+        self._display_handle = display(HTML(html), display_id=True)
 
     def update_data(self, perfdata_by_level, cell_range, show_idle):
-        self.perfdata_by_level = perfdata_by_level
-        self.cell_range = cell_range
-        self.show_idle = show_idle
-        for panel in self.plot_panels:
-            panel["output"].clear_output(wait=True)
-            panel["update_plot"]()
+        self.perfdata_by_level    = perfdata_by_level
+        self.cell_range           = cell_range
+        self.show_idle            = show_idle
+        self._precomputed_figures = None  # stale; recompute on render
+        if self._display_handle is not None:
+            self._display_handle.update(HTML(self._render_html()))
+        else:
+            self.display_ui()
+
+    # ------------------------------------------------------------------ #
+    # Internals                                                           #
+    # ------------------------------------------------------------------ #
+
+    def _compute_figures_from_callback(self):
+        """Fallback: compute figures for the current show_idle state only.
+
+        Both show_idle variants are attempted but the 'false' variant relies
+        on ``_compressed_cell_boundaries`` being set correctly on the
+        visualizer instance.  When called from ``update_data`` this may not
+        hold, so only the current variant is guaranteed to be accurate.
+        """
+        result = {}
+        levels = list(self.perfdata_by_level.keys())
+        for _label, metric in self.labeled_options:
+            result[metric] = {}
+            for level in levels:
+                df = self.perfdata_by_level.get(level)
+                result[metric][level] = {}
+                for key in ("true", "false"):
+                    if df is None or df.empty:
+                        result[metric][level][key] = None
+                        continue
+                    try:
+                        fig = self.plot_callback(
+                            df,
+                            metric,
+                            self.cell_range,
+                            key == "true",
+                            level,
+                        )
+                        result[metric][level][key] = (
+                            json.loads(fig.to_json()) if fig is not None else None
+                        )
+                    except Exception:
+                        result[metric][level][key] = None
+        return result
+
+    def _render_html(self):
+        figures = (
+            self._precomputed_figures
+            if self._precomputed_figures is not None
+            else self._compute_figures_from_callback()
+        )
+
+        levels = get_available_levels()
+
+        env = Environment(
+            loader=FileSystemLoader(str(self._TEMPLATES_DIR)),
+            autoescape=False,
+        )
+        env.filters["tojson"] = json.dumps
+
+        template = env.get_template("visualizer.html")
+
+        try:
+            styles_path = self._TEMPLATES_DIR / "styles.css"
+            styles = styles_path.read_text(encoding="utf-8") if styles_path.exists() else ""
+        except Exception:
+            styles = ""
+
+        return template.render(
+            container_id=self._container_id,
+            styles=styles,
+            logo_src=logo_image,
+            initial_show_idle=self.show_idle,
+            figures_json=json.dumps(figures),
+            labeled_options_json=json.dumps(self.labeled_options),
+            levels_json=json.dumps(levels),
+            max_panels=self.max_panels,
+        )
 
 
 def build_performance_visualizer(
