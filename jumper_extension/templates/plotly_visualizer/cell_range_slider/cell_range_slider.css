@@ -42,23 +42,28 @@
   padding: 0;
 }
 
-/* Hide native track so only our custom track shows */
+/* Hide native track so only our custom track shows.
+   margin-top centres the 4 px track inside the 20 px input. */
 .jump-vis-dual-range input[type="range"]::-webkit-slider-runnable-track {
   background: transparent;
   height: 4px;
+  margin-top: 8px;   /* (20px input - 4px track) / 2 */
 }
 .jump-vis-dual-range input[type="range"]::-moz-range-track {
   background: transparent;
   height: 4px;
 }
 
-/* Thumb styling — pointer-events: all re-enables hit testing on the thumb only */
+/* Thumb styling — pointer-events: all re-enables hit testing on the thumb only.
+   margin-top centres the 14 px thumb on the 4 px native track:
+   (4px - 14px) / 2 = -5px  */
 .jump-vis-dual-range input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   pointer-events: all;
   width: 14px;
   height: 14px;
+  margin-top: -10px;
   border-radius: 50%;
   background: var(--slider-thumb);
   cursor: pointer;
