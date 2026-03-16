@@ -1689,7 +1689,7 @@ class InteractivePlotlyWrapper:
         # None we fall back to computing lazily from plot_callback.
         self._precomputed_figures = _precomputed_figures
         self._display_handle  = None
-        self._container_id    = f"jpv-{uuid.uuid4().hex[:8]}"
+        self._container_id    = f"jump-vis-{uuid.uuid4().hex[:8]}"
 
     # ------------------------------------------------------------------ #
     # Public API (kept stable with the old ipywidgets implementation)     #
@@ -1747,6 +1747,28 @@ class InteractivePlotlyWrapper:
                         result[metric][level][key] = None
         return result
 
+    # CSS and JS components are loaded in this order.
+    _CSS_COMPONENTS = [
+        "toolbar",
+        "show_idle_checkbox",
+        "cell_range_slider",
+        "add_panel_button",
+        "panel",
+    ]
+    _JS_COMPONENTS = [
+        "show_idle_checkbox",
+        "cell_range_slider",
+        "add_panel_button",
+        "panel",
+    ]
+
+    def _read_component_file(self, component: str, ext: str) -> str:
+        path = self._TEMPLATES_DIR / component / f"{component}.{ext}"
+        try:
+            return path.read_text(encoding="utf-8") if path.exists() else ""
+        except Exception:
+            return ""
+
     def _render_html(self):
         pre = (
             self._precomputed_figures
@@ -1754,65 +1776,103 @@ class InteractivePlotlyWrapper:
             else self._compute_figures_from_callback()
         )
 
-        # Separate the rich pre-computed structure from a plain fallback
+        # Unpack rich pre-computed structure or fall back to plain figures dict
         if isinstance(pre, dict) and "figures" in pre:
-            figures          = pre["figures"]
-            ylims            = pre.get("ylims", {})
-            boundaries_false = pre.get("boundaries_false", [])
-            boundaries_true  = pre.get("boundaries_true", [])
-            min_cell_index   = pre.get("min_cell_index", 0)
-            max_cell_index   = pre.get("max_cell_index", 0)
+            figures            = pre["figures"]
+            ylims              = pre.get("ylims", {})
+            boundaries_false   = pre.get("boundaries_false", [])
+            boundaries_true    = pre.get("boundaries_true", [])
+            min_cell_index     = pre.get("min_cell_index", 0)
+            max_cell_index     = pre.get("max_cell_index", 0)
             initial_cell_range = pre.get(
-                "initial_cell_range",
-                [min_cell_index, max_cell_index],
+                "initial_cell_range", [min_cell_index, max_cell_index]
             )
         else:
-            # Fallback: plain {metric: {level: {key: dict}}} from callback
-            figures          = pre
-            ylims            = {}
-            boundaries_false = []
-            boundaries_true  = []
-            min_cell_index   = 0
-            max_cell_index   = 0
+            figures            = pre
+            ylims              = {}
+            boundaries_false   = []
+            boundaries_true    = []
+            min_cell_index     = 0
+            max_cell_index     = 0
             initial_cell_range = [0, 0]
 
-        levels = get_available_levels()
+        levels  = get_available_levels()
+        init_lo = initial_cell_range[0] if initial_cell_range else min_cell_index
+        init_hi = (
+            initial_cell_range[1] if len(initial_cell_range) > 1 else max_cell_index
+        )
 
+        # ── 1. Collect component CSS ──────────────────────────────────────
+        css_parts = [
+            self._read_component_file(c, "css") for c in self._CSS_COMPONENTS
+        ]
+
+        # ── 2. Render HTML via Jinja2 (visualizer.html includes sub-templates)
         env = Environment(
             loader=FileSystemLoader(str(self._TEMPLATES_DIR)),
             autoescape=False,
         )
         env.filters["tojson"] = json.dumps
-
-        template = env.get_template("visualizer.html")
-
-        try:
-            styles_path = self._TEMPLATES_DIR / "styles.css"
-            styles = styles_path.read_text(encoding="utf-8") if styles_path.exists() else ""
-        except Exception:
-            styles = ""
-
-        init_lo = initial_cell_range[0] if initial_cell_range else min_cell_index
-        init_hi = initial_cell_range[1] if len(initial_cell_range) > 1 else max_cell_index
-
-        return template.render(
+        html_ctx = dict(
             container_id=self._container_id,
-            styles=styles,
             logo_src=logo_image,
             initial_show_idle=self.show_idle,
-            figures_json=json.dumps(figures),
-            ylims_json=json.dumps(ylims),
-            boundaries_false_json=json.dumps(boundaries_false),
-            boundaries_true_json=json.dumps(boundaries_true),
-            labeled_options_json=json.dumps(self.labeled_options),
-            levels_json=json.dumps(levels),
-            max_panels=self.max_panels,
             min_cell_index=min_cell_index,
             max_cell_index=max_cell_index,
-            initial_cell_range_json=json.dumps(initial_cell_range),
             init_lo=init_lo,
             init_hi=init_hi,
         )
+        body_html = env.get_template("visualizer.html").render(**html_ctx)
+
+        # ── 3. Collect component JS then main orchestration script ────────
+        js_parts = [
+            self._read_component_file(c, "js") for c in self._JS_COMPONENTS
+        ]
+        main_js_path = self._TEMPLATES_DIR / "main.js"
+        try:
+            js_parts.append(
+                main_js_path.read_text(encoding="utf-8")
+                if main_js_path.exists()
+                else ""
+            )
+        except Exception:
+            pass
+
+        # ── 4. Embedded Python data (must precede component + main JS) ────
+        data_js = "\n".join([
+            f"var CID      = {json.dumps(self._container_id)};",
+            f"var FIGS     = {json.dumps(figures)};",
+            f"var YLIMS    = {json.dumps(ylims)};",
+            f"var BND_F    = {json.dumps(boundaries_false)};",
+            f"var BND_T    = {json.dumps(boundaries_true)};",
+            f"var OPTS     = {json.dumps(self.labeled_options)};",
+            f"var LEVS     = {json.dumps(levels)};",
+            f"var MAX      = {self.max_panels};",
+            f"var MIN_CELL = {min_cell_index};",
+            f"var MAX_CELL = {max_cell_index};",
+            f"var INIT_RNG = {json.dumps(initial_cell_range)};",
+        ])
+
+        # ── 5. Plotly CDN loader (injected once per output block) ─────────
+        plotly_loader = (
+            "<script>\n"
+            "(function(){\n"
+            "  if(typeof window.Plotly!=='undefined')return;\n"
+            "  var s=document.createElement('script');\n"
+            "  s.src='https://cdn.plot.ly/plotly-2.35.2.min.js';\n"
+            "  s.charset='utf-8';\n"
+            "  document.head.appendChild(s);\n"
+            "})();\n"
+            "</script>"
+        )
+
+        # ── 6. Assemble final HTML ────────────────────────────────────────
+        return "\n".join([
+            plotly_loader,
+            "<style>\n" + "\n".join(css_parts) + "\n</style>",
+            body_html,
+            "<script>\n" + data_js + "\n\n" + "\n\n".join(js_parts) + "\n</script>",
+        ])
 
 
 def build_performance_visualizer(
