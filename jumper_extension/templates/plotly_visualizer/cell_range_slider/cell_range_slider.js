@@ -22,6 +22,30 @@ function getCellRange(cid, minCell, maxCell) {
 }
 
 /**
+ * Raises the z-index of the thumb that was most recently moved (or the one
+ * that needs to be accessible when both are at the same position).
+ * When lo has reached maxCell it must sit on top so the user can drag it back.
+ *
+ * @param {HTMLInputElement} rMin
+ * @param {HTMLInputElement} rMax
+ * @param {HTMLInputElement|null} active - the input that just fired an event
+ * @param {number} maxCell
+ */
+function _sliderSetZ(rMin, rMax, active, maxCell) {
+  /* If lo is pinned at the top, it must be reachable from above */
+  if (parseInt(rMin.value, 10) >= maxCell) {
+    rMin.style.zIndex = 5;
+    rMax.style.zIndex = 4;
+  } else if (active === rMin) {
+    rMin.style.zIndex = 5;
+    rMax.style.zIndex = 4;
+  } else {
+    rMax.style.zIndex = 5;
+    rMin.style.zIndex = 4;
+  }
+}
+
+/**
  * Syncs the filled-range track and the label text to the current thumb values.
  * Also prevents lo from exceeding hi by snapping the active thumb.
  *
@@ -73,15 +97,19 @@ function initCellRangeSlider(cid, minCell, maxCell, initRange, onRangeChange) {
   if (rMax && initRange && initRange.length >= 2) rMax.value = initRange[1];
 
   updateSliderUI(cid, minCell, maxCell);
+  /* Set initial z-index: rMax on top by default */
+  if (rMin && rMax) _sliderSetZ(rMin, rMax, null, maxCell);
 
   if (rMin) {
     rMin.addEventListener('input', function () {
+      _sliderSetZ(rMin, rMax, rMin, maxCell);
       updateSliderUI(cid, minCell, maxCell);
       onRangeChange();
     });
   }
   if (rMax) {
     rMax.addEventListener('input', function () {
+      _sliderSetZ(rMin, rMax, rMax, maxCell);
       updateSliderUI(cid, minCell, maxCell);
       onRangeChange();
     });

@@ -1,4 +1,4 @@
-Обь/**
+/**
  * panel.js
  * Panel creation, event wiring, boundary helpers, and Plotly rendering.
  */
