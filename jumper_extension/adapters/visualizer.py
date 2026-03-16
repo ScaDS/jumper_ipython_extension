@@ -1299,6 +1299,21 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                 bgcolor="rgba(255,255,255,0.8)",
             )
 
+    def _compute_cell_boundaries_json(self, cell_range, show_idle):
+        """Return cell boundary data as a list of plain dicts for JS consumption."""
+        result = []
+        for cell in self._get_plotly_cell_boundaries(cell_range, show_idle):
+            cell_num = int(cell["cell_index"])
+            result.append(
+                {
+                    "cell_index": cell_num,
+                    "x0": float(cell["start_time"]),
+                    "x1": float(cell["start_time"] + cell["duration"]),
+                    "color": jumper_colors[cell_num % len(jumper_colors)],
+                }
+            )
+        return result
+
     def _build_single_metric_figure(
         self,
         df,
@@ -1306,6 +1321,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         cell_range=None,
         show_idle=False,
         level="process",
+        include_boundaries=True,
     ):
         metric_plot = self._build_metric_plot(
             df, metric, show_idle=show_idle, level=level
@@ -1330,13 +1346,14 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         )
         fig.update_xaxes(showgrid=True)
         fig.update_yaxes(showgrid=True, range=list(metric_plot["ylim"]))
-        self._draw_cell_boundaries_plotly(
-            fig,
-            row=1,
-            ylim=metric_plot["ylim"],
-            cell_range=cell_range,
-            show_idle=show_idle,
-        )
+        if include_boundaries:
+            self._draw_cell_boundaries_plotly(
+                fig,
+                row=1,
+                ylim=metric_plot["ylim"],
+                cell_range=cell_range,
+                show_idle=show_idle,
+            )
         return fig
 
     def _render_direct_plot(
@@ -1444,46 +1461,76 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         metrics,
         perfdata_no_idle,
         perfdata_with_idle,
-        cell_range,
+        full_range,
     ):
-        """Pre-compute all metric × level × show_idle figure dicts for the HTML wrapper.
+        """Pre-compute all metric × level × show_idle figure dicts.
 
-        The no-idle variant must be prepared first so that
-        ``self._compressed_cell_boundaries`` is already set when the no-idle
-        figures are built.  The with-idle figures are built second; they do not
-        read ``_compressed_cell_boundaries`` (guarded by the ``show_idle``
-        flag inside ``_get_plotly_cell_boundaries``).
+        Builds figures without embedded cell boundaries (JS draws them from the
+        separately stored ``boundaries_false`` / ``boundaries_true`` lists).
+
+        ``perfdata_no_idle`` must already be prepared before this call so that
+        ``self._compressed_cell_boundaries`` is set to the correct full-range
+        boundaries.  The with-idle figures are built second; they never read
+        ``_compressed_cell_boundaries`` (gated on the ``show_idle`` flag inside
+        ``_get_plotly_cell_boundaries``).
         """
-        figures = {}  # {metric: {level: {'true': dict|None, 'false': dict|None}}}
+        figures = {}  # metric → level → key → dict|None
+        ylims   = {}  # metric → level → key → [ymin, ymax]
         all_levels = set(
             list(perfdata_no_idle or {}) + list(perfdata_with_idle or {})
         )
 
         for metric in metrics:
             figures[metric] = {}
+            ylims[metric]   = {}
             for level in all_levels:
                 figures[metric][level] = {}
-                variants = {
-                    "false": (perfdata_no_idle or {}).get(level),
-                    "true":  (perfdata_with_idle or {}).get(level),
-                }
-                for key, df in variants.items():
+                ylims[metric][level]   = {}
+                # Build no-idle first (so _compressed_cell_boundaries is used)
+                for key, df in [
+                    ("false", (perfdata_no_idle or {}).get(level)),
+                    ("true",  (perfdata_with_idle or {}).get(level)),
+                ]:
                     if df is None or df.empty:
                         figures[metric][level][key] = None
+                        ylims[metric][level][key]   = [0, 1]
                         continue
                     try:
                         fig = self._build_single_metric_figure(
-                            df, metric, cell_range,
+                            df, metric, full_range,
                             show_idle=(key == "true"),
                             level=level,
+                            include_boundaries=False,
                         )
-                        figures[metric][level][key] = (
-                            json.loads(fig.to_json()) if fig is not None else None
-                        )
+                        if fig is not None:
+                            fd = json.loads(fig.to_json())
+                            figures[metric][level][key] = fd
+                            try:
+                                ylims[metric][level][key] = (
+                                    fd["layout"]["yaxis"]["range"]
+                                )
+                            except (KeyError, TypeError):
+                                ylims[metric][level][key] = [0, 1]
+                        else:
+                            figures[metric][level][key] = None
+                            ylims[metric][level][key]   = [0, 1]
                     except Exception:
                         figures[metric][level][key] = None
+                        ylims[metric][level][key]   = [0, 1]
 
-        return figures
+        boundaries_false = self._compute_cell_boundaries_json(
+            full_range, show_idle=False
+        )
+        boundaries_true = self._compute_cell_boundaries_json(
+            full_range, show_idle=True
+        )
+
+        return {
+            "figures":          figures,
+            "ylims":            ylims,
+            "boundaries_false": boundaries_false,
+            "boundaries_true":  boundaries_true,
+        }
 
     def _create_interactive_wrapper(
         self,
@@ -1493,34 +1540,11 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         current_cell_range,
         current_show_idle,
     ):
-        # processed_perfdata was prepared for current_show_idle; we need the
-        # opposite variant as well so the HTML toggle works without Python.
-        alt_show_idle = not current_show_idle
-        processed_alt = self._prepare_processed_data_for_interactive(
-            current_cell_range, alt_show_idle
-        )
-
-        if current_show_idle:
-            perfdata_with_idle = processed_perfdata
-            perfdata_no_idle   = processed_alt
-        else:
-            perfdata_no_idle   = processed_perfdata
-            perfdata_with_idle = processed_alt
-
-        precomputed = self._precompute_figures_for_wrapper(
-            metrics,
-            perfdata_no_idle,
-            perfdata_with_idle,
-            current_cell_range,
-        )
-        return InteractivePlotlyWrapper(
-            self._build_single_metric_figure,
-            metrics,
-            labeled_options,
-            processed_perfdata,
-            current_cell_range,
-            current_show_idle,
-            _precomputed_figures=precomputed,
+        # Kept for compatibility with the parent class contract; the Plotly
+        # version delegates entirely to plot() and does not use this path.
+        raise NotImplementedError(
+            "_create_interactive_wrapper is not used by PlotlyPerformanceVisualizer; "
+            "see plot() override instead."
         )
 
     def plot(
@@ -1532,7 +1556,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         save_jpeg=None,
         pickle_file=None,
     ):
-        """Plot performance metrics using a pure HTML/JS interactive output."""
+        """Plot performance metrics using a self-contained pure HTML/JS output."""
         metrics_missing = not metric_subsets
         if metrics_missing:
             metric_subsets = ("cpu", "mem", "io")
@@ -1546,6 +1570,13 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             )
             return
 
+        try:
+            min_cell_idx = int(valid_cells["cell_index"].min())
+            max_cell_idx = int(valid_cells["cell_index"].max())
+        except Exception:
+            min_cell_idx, max_cell_idx = 0, len(valid_cells) - 1
+
+        # Determine the initial slider position (default: last significant cell)
         if cell_range is None:
             cell_start_index = 0
             for cell_idx in range(len(valid_cells) - 1, -1, -1):
@@ -1556,14 +1587,20 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             end   = int(valid_cells["cell_index"].max())
             if start > end:
                 start, end = end, start
-            cell_range = (start, end)
+            initial_cell_range = (start, end)
+        else:
+            initial_cell_range = (
+                max(min_cell_idx, min(cell_range[0], max_cell_idx)),
+                max(min_cell_idx, min(cell_range[1], max_cell_idx)),
+            )
 
-        # When a specific level is requested, fall back to the direct (non-interactive)
-        # plot path which supports save_jpeg and pickle_file.
+        # When a specific level is requested, use the direct (non-interactive)
+        # path which supports save_jpeg and pickle_file.
         if level is not None:
             metric_subsets = self._resolve_metric_subsets(metric_subsets)
             return self._plot_direct(
-                metric_subsets, cell_range, show_idle, level, save_jpeg, pickle_file
+                metric_subsets, initial_cell_range, show_idle, level,
+                save_jpeg, pickle_file,
             )
 
         metric_subsets = self._resolve_metric_subsets(metric_subsets)
@@ -1572,23 +1609,48 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             logger.warning("No valid metrics found to plot")
             return
 
-        # Pre-compute data for the requested show_idle value first (sets
-        # _compressed_cell_boundaries as a side-effect).
-        processed_perfdata = self._prepare_processed_data_for_interactive(
-            cell_range, show_idle
+        # Use the FULL cell range so the slider can range across all cells.
+        full_range = (min_cell_idx, max_cell_idx)
+
+        # Prepare no-idle data first — this sets _compressed_cell_boundaries
+        # for the full range, which is required before building no-idle figures
+        # and before calling _compute_cell_boundaries_json(show_idle=False).
+        processed_no_idle = self._prepare_processed_data_for_interactive(
+            full_range, False
         )
-        if processed_perfdata is None:
+        if processed_no_idle is None:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_PERFORMANCE_DATA]
             )
             return
 
-        wrapper = self._create_interactive_wrapper(
+        # Prepare with-idle data (does not modify _compressed_cell_boundaries)
+        processed_with_idle = self._prepare_processed_data_for_interactive(
+            full_range, True
+        )
+
+        precomputed = self._precompute_figures_for_wrapper(
+            metrics,
+            processed_no_idle,
+            processed_with_idle,
+            full_range,
+        )
+        precomputed["min_cell_index"]    = min_cell_idx
+        precomputed["max_cell_index"]    = max_cell_idx
+        precomputed["initial_cell_range"] = list(initial_cell_range)
+
+        perfdata_for_fallback = (
+            processed_no_idle if not show_idle else processed_with_idle
+        ) or {}
+
+        wrapper = InteractivePlotlyWrapper(
+            self._build_single_metric_figure,
             metrics,
             labeled_options,
-            processed_perfdata,
-            cell_range,
+            perfdata_for_fallback,
+            initial_cell_range,
             show_idle,
+            _precomputed_figures=precomputed,
         )
         wrapper.display_ui()
 
@@ -1686,11 +1748,33 @@ class InteractivePlotlyWrapper:
         return result
 
     def _render_html(self):
-        figures = (
+        pre = (
             self._precomputed_figures
             if self._precomputed_figures is not None
             else self._compute_figures_from_callback()
         )
+
+        # Separate the rich pre-computed structure from a plain fallback
+        if isinstance(pre, dict) and "figures" in pre:
+            figures          = pre["figures"]
+            ylims            = pre.get("ylims", {})
+            boundaries_false = pre.get("boundaries_false", [])
+            boundaries_true  = pre.get("boundaries_true", [])
+            min_cell_index   = pre.get("min_cell_index", 0)
+            max_cell_index   = pre.get("max_cell_index", 0)
+            initial_cell_range = pre.get(
+                "initial_cell_range",
+                [min_cell_index, max_cell_index],
+            )
+        else:
+            # Fallback: plain {metric: {level: {key: dict}}} from callback
+            figures          = pre
+            ylims            = {}
+            boundaries_false = []
+            boundaries_true  = []
+            min_cell_index   = 0
+            max_cell_index   = 0
+            initial_cell_range = [0, 0]
 
         levels = get_available_levels()
 
@@ -1708,15 +1792,26 @@ class InteractivePlotlyWrapper:
         except Exception:
             styles = ""
 
+        init_lo = initial_cell_range[0] if initial_cell_range else min_cell_index
+        init_hi = initial_cell_range[1] if len(initial_cell_range) > 1 else max_cell_index
+
         return template.render(
             container_id=self._container_id,
             styles=styles,
             logo_src=logo_image,
             initial_show_idle=self.show_idle,
             figures_json=json.dumps(figures),
+            ylims_json=json.dumps(ylims),
+            boundaries_false_json=json.dumps(boundaries_false),
+            boundaries_true_json=json.dumps(boundaries_true),
             labeled_options_json=json.dumps(self.labeled_options),
             levels_json=json.dumps(levels),
             max_panels=self.max_panels,
+            min_cell_index=min_cell_index,
+            max_cell_index=max_cell_index,
+            initial_cell_range_json=json.dumps(initial_cell_range),
+            init_lo=init_lo,
+            init_hi=init_hi,
         )
 
 

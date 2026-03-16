@@ -1,37 +1,89 @@
+<!-- Load Plotly.js once per output block (skipped if already present on the page). -->
+<script>
+(function() {
+  if (typeof window.Plotly !== 'undefined') return;
+  var s = document.createElement('script');
+  s.src = 'https://cdn.plot.ly/plotly-2.35.2.min.js';
+  s.charset = 'utf-8';
+  document.head.appendChild(s);
+})();
+</script>
+
 <style>
 {{ styles | safe }}
 </style>
 
 <div id="{{ container_id }}" class="jpv-container">
+
+  <!-- ── Toolbar ──────────────────────────────────────────────────────── -->
   <div class="jpv-toolbar">
+
     <span class="jpv-logo">
       <img src="{{ logo_src }}" alt="JUmPER">
     </span>
-    <span class="jpv-title">Performance Metrics</span>
+
+    <span class="jpv-config-label">Plot Configuration:</span>
+
+    <!-- Show idle checkbox -->
     <label class="jpv-ctrl-label">
       <input type="checkbox" id="{{ container_id }}-show-idle"
              {{ 'checked' if initial_show_idle else '' }}>
       Show idle periods
     </label>
+
+    <!-- Cell range dual-range slider -->
+    <div class="jpv-range-wrap">
+      <span class="jpv-range-label">
+        Cell range:&nbsp;<span class="jpv-range-label-value"
+                               id="{{ container_id }}-range-val">{{ init_lo }}–{{ init_hi }}</span>
+      </span>
+      <div class="jpv-dual-range" id="{{ container_id }}-dual-range">
+        <div class="jpv-dual-range-track">
+          <div class="jpv-dual-range-fill" id="{{ container_id }}-range-fill"></div>
+        </div>
+        <input type="range" id="{{ container_id }}-range-min"
+               min="{{ min_cell_index }}" max="{{ max_cell_index }}"
+               value="{{ init_lo }}" step="1">
+        <input type="range" id="{{ container_id }}-range-max"
+               min="{{ min_cell_index }}" max="{{ max_cell_index }}"
+               value="{{ init_hi }}" step="1">
+      </div>
+    </div>
+
+    <!-- Add Panel button -->
     <button class="jpv-add-btn" id="{{ container_id }}-add-btn">+ Add Panel</button>
-  </div>
+
+  </div><!-- /.jpv-toolbar -->
+
+  <!-- ── Panels ───────────────────────────────────────────────────────── -->
   <div class="jpv-panels-wrap" id="{{ container_id }}-panels"></div>
-</div>
+
+</div><!-- /.jpv-container -->
 
 <script>
 (function () {
-  /* ── constants embedded from Python ─────────────────────────────────── */
-  var CID   = {{ container_id | tojson }};
-  var FIGS  = {{ figures_json | safe }};
-  var OPTS  = {{ labeled_options_json | safe }};  /* [[label, value], ...] */
-  var LEVS  = {{ levels_json | safe }};           /* [level, ...]          */
-  var MAX   = {{ max_panels }};
+  /* ── embedded Python data ─────────────────────────────────────────── */
+  var CID      = {{ container_id | tojson }};
+  var FIGS     = {{ figures_json | safe }};          /* metric→level→key→plotly dict */
+  var YLIMS    = {{ ylims_json | safe }};            /* metric→level→key→[ymin,ymax] */
+  var BND_F    = {{ boundaries_false_json | safe }}; /* boundaries for show_idle=false */
+  var BND_T    = {{ boundaries_true_json | safe }};  /* boundaries for show_idle=true  */
+  var OPTS     = {{ labeled_options_json | safe }};  /* [[label, value], ...]           */
+  var LEVS     = {{ levels_json | safe }};           /* ['user','process','system',…]   */
+  var MAX      = {{ max_panels }};
+  var MIN_CELL = {{ min_cell_index }};
+  var MAX_CELL = {{ max_cell_index }};
+  var INIT_RNG = {{ initial_cell_range_json | safe }};
 
-  /* ── state ──────────────────────────────────────────────────────────── */
-  var panelCount  = 0;
-  var usedMetrics = [];
+  /* ── state ────────────────────────────────────────────────────────── */
+  var panelCount    = 0;
+  var usedMetrics   = [];
+  /* pid → { metricSel, levelSel, plotDiv } */
+  var panelRegistry = {};
 
-  /* ── helpers ────────────────────────────────────────────────────────── */
+  /* ── tiny helpers ─────────────────────────────────────────────────── */
+  function $id(id) { return document.getElementById(id); }
+
   function nextMetric() {
     for (var i = 0; i < OPTS.length; i++) {
       if (usedMetrics.indexOf(OPTS[i][1]) < 0) {
@@ -43,125 +95,257 @@
   }
 
   function showIdleKey() {
-    var cb = document.getElementById(CID + '-show-idle');
+    var cb = $id(CID + '-show-idle');
     return (cb && cb.checked) ? 'true' : 'false';
   }
 
-  function renderPlot(plotDiv, metric, level) {
-    var key   = showIdleKey();
-    var entry = FIGS[metric] && FIGS[metric][level] && FIGS[metric][level][key];
-    plotDiv.innerHTML = '';
-    if (!entry) {
-      plotDiv.innerHTML = '<p class="jpv-no-data">No data for selected metric and level.</p>';
+  function getCellRange() {
+    var rMin = $id(CID + '-range-min');
+    var rMax = $id(CID + '-range-max');
+    var lo   = rMin ? parseInt(rMin.value, 10) : MIN_CELL;
+    var hi   = rMax ? parseInt(rMax.value, 10) : MAX_CELL;
+    if (lo > hi) { var t = lo; lo = hi; hi = t; }
+    return [lo, hi];
+  }
+
+  /* ── boundary helpers ─────────────────────────────────────────────── */
+
+  /* Build Plotly shapes + annotations from pre-computed boundary data */
+  function buildBoundaryUpdates(idleKey, cellRange, ylim) {
+    var bnd    = (idleKey === 'true') ? BND_T : BND_F;
+    var shapes = [];
+    var annots = [];
+    var lo = cellRange[0], hi = cellRange[1];
+    var ymin = ylim[0], ymax = ylim[1];
+    var height = (ymax - ymin) || 1.0;
+
+    for (var i = 0; i < bnd.length; i++) {
+      var b = bnd[i];
+      if (b.cell_index < lo || b.cell_index > hi) continue;
+      shapes.push({
+        type: 'rect',
+        x0: b.x0, x1: b.x1,
+        y0: ymin, y1: ymax,
+        xref: 'x', yref: 'y',
+        fillcolor: b.color,
+        opacity: 0.4,
+        line: { color: 'black', dash: 'dash', width: 1 },
+        layer: 'below'
+      });
+      annots.push({
+        x: (b.x0 + b.x1) / 2,
+        y: ymax - height * 0.1,
+        xref: 'x', yref: 'y',
+        text: '#' + b.cell_index,
+        showarrow: false,
+        font: { size: 10 },
+        bgcolor: 'rgba(255,255,255,0.8)'
+      });
+    }
+    return { shapes: shapes, annotations: annots };
+  }
+
+  /* Compute a comfortable x-axis visible range for the selected cells */
+  function xRangeForCells(idleKey, cellRange) {
+    var bnd  = (idleKey === 'true') ? BND_T : BND_F;
+    var lo   = cellRange[0], hi = cellRange[1];
+    var xMin = Infinity, xMax = -Infinity;
+    for (var i = 0; i < bnd.length; i++) {
+      var b = bnd[i];
+      if (b.cell_index < lo || b.cell_index > hi) continue;
+      if (b.x0 < xMin) xMin = b.x0;
+      if (b.x1 > xMax) xMax = b.x1;
+    }
+    if (!isFinite(xMin)) return null;
+    var pad = (xMax - xMin) * 0.05 || 0.5;
+    return [xMin - pad, xMax + pad];
+  }
+
+  /* ── render a single panel ────────────────────────────────────────── */
+  function renderPlot(pid, metric, level) {
+    var plotDiv = $id(pid + '-plot');
+    if (!plotDiv) return;
+
+    var key     = showIdleKey();
+    var figData = FIGS[metric] && FIGS[metric][level] && FIGS[metric][level][key];
+
+    if (!figData) {
+      plotDiv.innerHTML =
+        '<p class="jpv-no-data">No data for selected metric and level.</p>';
       return;
     }
-    if (window.Plotly) {
-      Plotly.newPlot(plotDiv, entry.data, entry.layout,
+
+    var ylim = ((YLIMS[metric] || {})[level] || {})[key] || [0, 1];
+    var rng  = getCellRange();
+    var bnd  = buildBoundaryUpdates(key, rng, ylim);
+    var xRng = xRangeForCells(key, rng);
+
+    /* Clone layout to avoid mutating the shared stored object */
+    var layout = JSON.parse(JSON.stringify(figData.layout || {}));
+    layout.shapes      = bnd.shapes;
+    layout.annotations = bnd.annotations;
+    layout.autosize    = true;
+    if (xRng) {
+      layout.xaxis        = layout.xaxis || {};
+      layout.xaxis.range  = xRng;
+    }
+
+    function doPlot() {
+      Plotly.newPlot(plotDiv, figData.data || [], layout,
                      { responsive: true, displayModeBar: true });
+    }
+
+    if (typeof window.Plotly !== 'undefined') {
+      doPlot();
     } else {
-      plotDiv.innerHTML = '<p class="jpv-no-data">Plotly.js not loaded yet – please re-run the cell.</p>';
+      /* Plotly CDN script still loading — poll until available (max 10 s) */
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        if (typeof window.Plotly !== 'undefined') {
+          clearInterval(timer);
+          doPlot();
+        } else if (tries > 100) {
+          clearInterval(timer);
+          plotDiv.innerHTML =
+            '<p class="jpv-no-data">Plotly.js could not be loaded. '
+            + 'Check your network or try re-running the cell.</p>';
+        }
+      }, 100);
     }
   }
 
-  /* ── panel creation ─────────────────────────────────────────────────── */
-  function createPanel() {
-    if (panelCount >= MAX) return;
+  /* Re-render all panels (called on show-idle toggle or range change) */
+  function refreshAll() {
+    Object.keys(panelRegistry).forEach(function (pid) {
+      var p = panelRegistry[pid];
+      renderPlot(pid, p.metricSel.value, p.levelSel.value);
+    });
+  }
+
+  /* ── dual-range slider UI sync ────────────────────────────────────── */
+  function updateSliderUI() {
+    var rMin  = $id(CID + '-range-min');
+    var rMax  = $id(CID + '-range-max');
+    var fill  = $id(CID + '-range-fill');
+    var label = $id(CID + '-range-val');
+    if (!rMin || !rMax) return;
+
+    var lo = parseInt(rMin.value, 10);
+    var hi = parseInt(rMax.value, 10);
+
+    /* keep lo ≤ hi by snapping the active thumb */
+    if (lo > hi) {
+      if (document.activeElement === rMin) { rMin.value = hi; lo = hi; }
+      else                                  { rMax.value = lo; hi = lo; }
+    }
+
+    var total    = (MAX_CELL - MIN_CELL) || 1;
+    var leftPct  = ((lo - MIN_CELL) / total) * 100;
+    var rightPct = ((hi - MIN_CELL) / total) * 100;
+
+    if (fill) {
+      fill.style.left  = leftPct  + '%';
+      fill.style.width = (rightPct - leftPct) + '%';
+    }
+    if (label) { label.textContent = lo + '–' + hi; }
+  }
+
+  /* ── panel creation ───────────────────────────────────────────────── */
+  function createPanelElement() {
+    if (panelCount >= MAX) return null;
 
     var metric = nextMetric();
-    var level  = (LEVS.indexOf('process') >= 0) ? 'process' : LEVS[0];
+    var level  = (LEVS.indexOf('process') >= 0) ? 'process' : (LEVS[0] || 'process');
     var pid    = CID + '-panel-' + panelCount;
 
-    /* Build metric <select> */
-    var metricOptions = OPTS.map(function (o) {
+    var metricOpts = OPTS.map(function (o) {
       return '<option value="' + o[1] + '"' + (o[1] === metric ? ' selected' : '') + '>'
              + o[0] + '</option>';
     }).join('');
 
-    /* Build level <select> */
-    var levelOptions = LEVS.map(function (l) {
+    var levelOpts = LEVS.map(function (l) {
       return '<option value="' + l + '"' + (l === level ? ' selected' : '') + '>'
              + l + '</option>';
     }).join('');
 
-    var panel = document.createElement('div');
-    panel.className = 'jpv-panel';
-    panel.dataset.panelId = pid;
-    panel.innerHTML =
-      '<div class="jpv-ctrl-row">' +
-      '  <label>Metric:' +
-      '    <select class="jpv-metric-sel" id="' + pid + '-metric">' + metricOptions + '</select>' +
-      '  </label>' +
-      '  <label>Level:' +
-      '    <select class="jpv-level-sel" id="' + pid + '-level">' + levelOptions + '</select>' +
-      '  </label>' +
-      '</div>' +
-      '<div class="jpv-plot-area" id="' + pid + '-plot"></div>';
+    var div       = document.createElement('div');
+    div.className    = 'jpv-panel';
+    div.dataset.pid  = pid;
+    div.innerHTML    =
+      '<div class="jpv-ctrl-row">'
+      + '<label>Metric: <select class="jpv-metric-sel" id="' + pid + '-metric">'
+      + metricOpts + '</select></label>'
+      + '<label>Level: <select class="jpv-level-sel" id="' + pid + '-level">'
+      + levelOpts + '</select></label>'
+      + '</div>'
+      + '<div class="jpv-plot-area" id="' + pid + '-plot"></div>';
 
-    return panel;
+    return { el: div, pid: pid };
   }
 
-  function attachPanelEvents(panel) {
-    var pid       = panel.dataset.panelId;
-    var metricSel = document.getElementById(pid + '-metric');
-    var levelSel  = document.getElementById(pid + '-level');
-    var plotDiv   = document.getElementById(pid + '-plot');
-    function update() { renderPlot(plotDiv, metricSel.value, levelSel.value); }
-    metricSel.addEventListener('change', update);
-    levelSel.addEventListener('change', update);
-    update();
+  function attachPanelEvents(pid) {
+    var mSel = $id(pid + '-metric');
+    var lSel = $id(pid + '-level');
+    if (!mSel || !lSel) return;
+
+    panelRegistry[pid] = { metricSel: mSel, levelSel: lSel };
+    mSel.addEventListener('change', function () { renderPlot(pid, mSel.value, lSel.value); });
+    lSel.addEventListener('change', function () { renderPlot(pid, mSel.value, lSel.value); });
+    renderPlot(pid, mSel.value, lSel.value);
   }
 
-  /* Add two panels side-by-side in a row */
   function addPanelRow() {
-    var wrap = document.getElementById(CID + '-panels');
+    if (panelCount >= MAX) return;
+
+    var wrap = $id(CID + '-panels');
     var row  = document.createElement('div');
     row.className = 'jpv-panel-row';
 
-    var added = 0;
+    var pids = [];
     for (var i = 0; i < 2 && panelCount < MAX; i++) {
-      var panel = createPanel();
-      if (panel) {
-        row.appendChild(panel);
-        panelCount++;
-        added++;
-      }
+      var res = createPanelElement();
+      if (res) { row.appendChild(res.el); pids.push(res.pid); panelCount++; }
     }
-    if (added > 0) wrap.appendChild(row);
-    /* Attach events after DOM insertion so getElementById finds the nodes */
-    row.querySelectorAll('.jpv-panel').forEach(attachPanelEvents);
+
+    if (pids.length > 0) {
+      wrap.appendChild(row);
+      pids.forEach(attachPanelEvents);  /* DOM must be inserted first */
+    }
 
     if (panelCount >= MAX) {
-      document.getElementById(CID + '-add-btn').disabled = true;
-      var notice = document.createElement('p');
-      notice.className = 'jpv-max-notice';
-      notice.textContent = 'All panels have been added.';
-      wrap.appendChild(notice);
+      $id(CID + '-add-btn').disabled = true;
+      var n       = document.createElement('p');
+      n.className = 'jpv-max-notice';
+      n.textContent = 'All panels have been added.';
+      wrap.appendChild(n);
     }
   }
 
-  /* ── show-idle toggle: re-render all existing panels ────────────────── */
-  function refreshAllPanels() {
-    document.getElementById(CID + '-panels')
-      .querySelectorAll('.jpv-panel').forEach(function (panel) {
-        var pid       = panel.dataset.panelId;
-        var metricSel = document.getElementById(pid + '-metric');
-        var levelSel  = document.getElementById(pid + '-level');
-        var plotDiv   = document.getElementById(pid + '-plot');
-        if (metricSel && levelSel && plotDiv) {
-          renderPlot(plotDiv, metricSel.value, levelSel.value);
-        }
-      });
-  }
-
-  /* ── init ───────────────────────────────────────────────────────────── */
+  /* ── initialise ───────────────────────────────────────────────────── */
   function init() {
-    document.getElementById(CID + '-add-btn')
-      .addEventListener('click', addPanelRow);
+    /* Apply Python-computed initial slider values */
+    var rMin = $id(CID + '-range-min');
+    var rMax = $id(CID + '-range-max');
+    if (rMin && rMax && INIT_RNG && INIT_RNG.length >= 2) {
+      rMin.value = INIT_RNG[0];
+      rMax.value = INIT_RNG[1];
+    }
+    updateSliderUI();
 
-    document.getElementById(CID + '-show-idle')
-      .addEventListener('change', refreshAllPanels);
+    /* Slider input events */
+    if (rMin) rMin.addEventListener('input', function () { updateSliderUI(); refreshAll(); });
+    if (rMax) rMax.addEventListener('input', function () { updateSliderUI(); refreshAll(); });
 
-    /* Render initial two panels */
+    /* Show-idle toggle */
+    var showIdleCb = $id(CID + '-show-idle');
+    if (showIdleCb) showIdleCb.addEventListener('change', refreshAll);
+
+    /* Add-panel button */
+    var addBtn = $id(CID + '-add-btn');
+    if (addBtn) addBtn.addEventListener('click', addPanelRow);
+
+    /* Create initial two panels */
     addPanelRow();
   }
 
@@ -170,5 +354,6 @@
   } else {
     init();
   }
+
 })();
 </script>
