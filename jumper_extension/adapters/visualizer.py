@@ -1337,7 +1337,14 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             title=metric_plot["title"],
             xaxis_title="Time (seconds)",
             template="plotly_white",
-            legend=dict(orientation="h"),
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=0.99,
+                xanchor="center",
+                x=0.5,
+                bgcolor="rgba(255,255,255,0.8)",
+            ),
             margin=dict(l=24, r=8, t=45, b=35),
             # Keep width container-driven, but use a compact height close to
             # former matplotlib proportions.
@@ -1413,6 +1420,14 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         fig.update_layout(
             template="plotly_white",
             showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=0.99,
+                xanchor="center",
+                x=0.5,
+                bgcolor="rgba(255,255,255,0.8)",
+            ),
             # Roughly match legacy matplotlib subplot density while staying
             # responsive in width.
             height=max(260, int(270 * len(prepared))),
