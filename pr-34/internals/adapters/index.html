@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -6310,22 +6310,7 @@ Python round-trips.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>jumper_extension/adapters/visualizer.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1658</span>
-<span class="normal">1659</span>
-<span class="normal">1660</span>
-<span class="normal">1661</span>
-<span class="normal">1662</span>
-<span class="normal">1663</span>
-<span class="normal">1664</span>
-<span class="normal">1665</span>
-<span class="normal">1666</span>
-<span class="normal">1667</span>
-<span class="normal">1668</span>
-<span class="normal">1669</span>
-<span class="normal">1670</span>
-<span class="normal">1671</span>
-<span class="normal">1672</span>
-<span class="normal">1673</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1673</span>
 <span class="normal">1674</span>
 <span class="normal">1675</span>
 <span class="normal">1676</span>
@@ -6527,7 +6512,22 @@ Python round-trips.</p>
 <span class="normal">1872</span>
 <span class="normal">1873</span>
 <span class="normal">1874</span>
-<span class="normal">1875</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InteractivePlotlyWrapper</span><span class="p">:</span>
+<span class="normal">1875</span>
+<span class="normal">1876</span>
+<span class="normal">1877</span>
+<span class="normal">1878</span>
+<span class="normal">1879</span>
+<span class="normal">1880</span>
+<span class="normal">1881</span>
+<span class="normal">1882</span>
+<span class="normal">1883</span>
+<span class="normal">1884</span>
+<span class="normal">1885</span>
+<span class="normal">1886</span>
+<span class="normal">1887</span>
+<span class="normal">1888</span>
+<span class="normal">1889</span>
+<span class="normal">1890</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InteractivePlotlyWrapper</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Interactive plotter that renders controls and figures via pure HTML/JS.</span>
 
 <span class="sd">    All metric × level × show-idle combinations are pre-computed server-side</span>
@@ -9197,7 +9197,22 @@ Python round-trips.</p>
 <span class="normal">1652</span>
 <span class="normal">1653</span>
 <span class="normal">1654</span>
-<span class="normal">1655</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlotlyPerformanceVisualizer</span><span class="p">(</span><span class="n">PerformanceVisualizer</span><span class="p">):</span>
+<span class="normal">1655</span>
+<span class="normal">1656</span>
+<span class="normal">1657</span>
+<span class="normal">1658</span>
+<span class="normal">1659</span>
+<span class="normal">1660</span>
+<span class="normal">1661</span>
+<span class="normal">1662</span>
+<span class="normal">1663</span>
+<span class="normal">1664</span>
+<span class="normal">1665</span>
+<span class="normal">1666</span>
+<span class="normal">1667</span>
+<span class="normal">1668</span>
+<span class="normal">1669</span>
+<span class="normal">1670</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PlotlyPerformanceVisualizer</span><span class="p">(</span><span class="n">PerformanceVisualizer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plotly-based visualizer compatible with VisualizerProtocol.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_metric_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">show_idle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;process&quot;</span><span class="p">):</span>
@@ -9477,7 +9492,14 @@ Python round-trips.</p>
             <span class="n">title</span><span class="o">=</span><span class="n">metric_plot</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
             <span class="n">xaxis_title</span><span class="o">=</span><span class="s2">&quot;Time (seconds)&quot;</span><span class="p">,</span>
             <span class="n">template</span><span class="o">=</span><span class="s2">&quot;plotly_white&quot;</span><span class="p">,</span>
-            <span class="n">legend</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">),</span>
+            <span class="n">legend</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span>
+                <span class="n">yanchor</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+                <span class="n">y</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
+                <span class="n">xanchor</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                <span class="n">x</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;rgba(255,255,255,0.8)&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
             <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">35</span><span class="p">),</span>
             <span class="c1"># Keep width container-driven, but use a compact height close to</span>
             <span class="c1"># former matplotlib proportions.</span>
@@ -9553,6 +9575,14 @@ Python round-trips.</p>
         <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
             <span class="n">template</span><span class="o">=</span><span class="s2">&quot;plotly_white&quot;</span><span class="p">,</span>
             <span class="n">showlegend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">legend</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span>
+                <span class="n">yanchor</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+                <span class="n">y</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
+                <span class="n">xanchor</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+                <span class="n">x</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;rgba(255,255,255,0.8)&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
             <span class="c1"># Roughly match legacy matplotlib subplot density while staying</span>
             <span class="c1"># responsive in width.</span>
             <span class="n">height</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">260</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mi">270</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">prepared</span><span class="p">))),</span>
@@ -9825,22 +9855,7 @@ Python round-trips.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/adapters/visualizer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1550</span>
-<span class="normal">1551</span>
-<span class="normal">1552</span>
-<span class="normal">1553</span>
-<span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
-<span class="normal">1557</span>
-<span class="normal">1558</span>
-<span class="normal">1559</span>
-<span class="normal">1560</span>
-<span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
-<span class="normal">1565</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1565</span>
 <span class="normal">1566</span>
 <span class="normal">1567</span>
 <span class="normal">1568</span>
@@ -9930,7 +9945,22 @@ Python round-trips.</p>
 <span class="normal">1652</span>
 <span class="normal">1653</span>
 <span class="normal">1654</span>
-<span class="normal">1655</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
+<span class="normal">1655</span>
+<span class="normal">1656</span>
+<span class="normal">1657</span>
+<span class="normal">1658</span>
+<span class="normal">1659</span>
+<span class="normal">1660</span>
+<span class="normal">1661</span>
+<span class="normal">1662</span>
+<span class="normal">1663</span>
+<span class="normal">1664</span>
+<span class="normal">1665</span>
+<span class="normal">1666</span>
+<span class="normal">1667</span>
+<span class="normal">1668</span>
+<span class="normal">1669</span>
+<span class="normal">1670</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">metric_subsets</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;mem&quot;</span><span class="p">,</span> <span class="s2">&quot;io&quot;</span><span class="p">),</span>
     <span class="n">cell_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -10239,22 +10269,7 @@ only logs that visualization is unavailable.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/adapters/visualizer.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1878</span>
-<span class="normal">1879</span>
-<span class="normal">1880</span>
-<span class="normal">1881</span>
-<span class="normal">1882</span>
-<span class="normal">1883</span>
-<span class="normal">1884</span>
-<span class="normal">1885</span>
-<span class="normal">1886</span>
-<span class="normal">1887</span>
-<span class="normal">1888</span>
-<span class="normal">1889</span>
-<span class="normal">1890</span>
-<span class="normal">1891</span>
-<span class="normal">1892</span>
-<span class="normal">1893</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1893</span>
 <span class="normal">1894</span>
 <span class="normal">1895</span>
 <span class="normal">1896</span>
@@ -10263,7 +10278,22 @@ only logs that visualization is unavailable.</p>
 <span class="normal">1899</span>
 <span class="normal">1900</span>
 <span class="normal">1901</span>
-<span class="normal">1902</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_performance_visualizer</span><span class="p">(</span>
+<span class="normal">1902</span>
+<span class="normal">1903</span>
+<span class="normal">1904</span>
+<span class="normal">1905</span>
+<span class="normal">1906</span>
+<span class="normal">1907</span>
+<span class="normal">1908</span>
+<span class="normal">1909</span>
+<span class="normal">1910</span>
+<span class="normal">1911</span>
+<span class="normal">1912</span>
+<span class="normal">1913</span>
+<span class="normal">1914</span>
+<span class="normal">1915</span>
+<span class="normal">1916</span>
+<span class="normal">1917</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_performance_visualizer</span><span class="p">(</span>
     <span class="n">cell_history</span><span class="p">:</span> <span class="n">CellHistory</span><span class="p">,</span>
     <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
