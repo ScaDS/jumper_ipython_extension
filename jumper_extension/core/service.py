@@ -246,6 +246,7 @@ class PerfmonitorService:
         level: Optional[str] = None,
         save_jpeg: Optional[str] = None,
         pickle_file: Optional[str] = None,
+        backend: Optional[str] = None,
     ) -> None:
         """Open an interactive performance plot.
 
@@ -277,6 +278,28 @@ class PerfmonitorService:
                     source=self.monitor.session_source
                 )
             )
+
+        selected_backend = (
+            (backend or self.settings.visualizer_backend) or "matplotlib"
+        )
+        selected_backend = selected_backend.strip().lower()
+        if backend:
+            self.settings.visualizer_backend = selected_backend
+
+        current_backend = (
+            "plotly"
+            if self.visualizer.__class__.__name__
+            == "PlotlyPerformanceVisualizer"
+            else "matplotlib"
+        )
+        if selected_backend != current_backend:
+            self.visualizer = build_performance_visualizer(
+                self.cell_history,
+                plots_disabled=False,
+                plots_disabled_reason="Plotting not available.",
+                backend=selected_backend,
+            )
+            self.visualizer.attach(self.monitor)
 
         effective_level = level
 
@@ -784,6 +807,7 @@ class PerfmonitorMagicAdapter:
             level=args.level,
             save_jpeg=args.save_jpeg,
             pickle_file=args.pickle_file,
+            backend=args.backend,
         )
 
     def perfmonitor_enable_perfreports(self, line: str):
@@ -966,7 +990,8 @@ def build_perfmonitor_service(
         plots_disabled: bool = False,
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
-        display_disabled_reason: str = "Display not available."
+        display_disabled_reason: str = "Display not available.",
+        visualizer_backend: str = "matplotlib",
 ) -> PerfmonitorService:
     """Build a new :class:`PerfmonitorService` instance.
 
@@ -980,6 +1005,8 @@ def build_perfmonitor_service(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
+        visualizer_backend: Visualizer backend to use. Supported values:
+            ``"matplotlib"`` (default) and ``"plotly"``.
 
     Returns:
         PerfmonitorService: A fully initialized service instance.
@@ -989,12 +1016,18 @@ def build_perfmonitor_service(
         >>> service = build_perfmonitor_service()
     """
     settings = Settings()
+    settings.visualizer_backend = (
+        visualizer_backend.strip().lower()
+        if visualizer_backend
+        else "matplotlib"
+    )
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
     visualizer = build_performance_visualizer(
         cell_history,
         plots_disabled=plots_disabled,
         plots_disabled_reason=plots_disabled_reason,
+        backend=visualizer_backend,
     )
     reporter = build_performance_reporter(
         cell_history,
@@ -1017,7 +1050,8 @@ def build_perfmonitor_magic_adapter(
         plots_disabled: bool = False,
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
-        display_disabled_reason: str = "Display not available."
+        display_disabled_reason: str = "Display not available.",
+        visualizer_backend: str = "matplotlib",
 ) -> PerfmonitorMagicAdapter:
     """Build a new :class:`PerfmonitorMagicAdapter` instance.
 
@@ -1032,6 +1066,8 @@ def build_perfmonitor_magic_adapter(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
+        visualizer_backend: Visualizer backend to use. Supported values:
+            ``"matplotlib"`` (default) and ``"plotly"``.
 
     Returns:
         PerfmonitorMagicAdapter: Adapter instance wrapping the service.
@@ -1047,6 +1083,7 @@ def build_perfmonitor_magic_adapter(
         plots_disabled_reason=plots_disabled_reason,
         display_disabled=display_disabled,
         display_disabled_reason=display_disabled_reason,
+        visualizer_backend=visualizer_backend,
     )
 
     parsers = ArgParsers(
