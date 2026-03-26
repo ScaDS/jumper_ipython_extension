@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2095,6 +2095,17 @@ names used when exporting or loading data.</p>
               </div>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="jumper_extension.core.state.Settings.visualizer_backend">visualizer_backend</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Default backend used for plotting.</p>
+              </div>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -2132,7 +2143,9 @@ names used when exporting or loading data.</p>
 <span class="normal">91</span>
 <span class="normal">92</span>
 <span class="normal">93</span>
-<span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Top-level configuration container for the extension.</span>
 
@@ -2144,12 +2157,14 @@ names used when exporting or loading data.</p>
 <span class="sd">        monitoring: Settings for the monitoring loop.</span>
 <span class="sd">        export_vars: Names for exported data variables.</span>
 <span class="sd">        loaded_vars: Names for loaded data variables.</span>
+<span class="sd">        visualizer_backend: Default backend used for plotting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">perfreports</span><span class="p">:</span> <span class="n">PerfomanceReports</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">PerfomanceReports</span><span class="p">)</span>
     <span class="n">monitoring</span><span class="p">:</span> <span class="n">PerformanceMonitoring</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">PerformanceMonitoring</span><span class="p">)</span>
     <span class="n">export_vars</span><span class="p">:</span> <span class="n">ExportVars</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">ExportVars</span><span class="p">)</span>
     <span class="n">loaded_vars</span><span class="p">:</span> <span class="n">LoadedVars</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">LoadedVars</span><span class="p">)</span>
+    <span class="n">visualizer_backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;matplotlib&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Settings&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a deep copy of the current settings.</span>
@@ -2218,13 +2233,13 @@ names used when exporting or loading data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/state.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">88</span>
-<span class="normal">89</span>
-<span class="normal">90</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">90</span>
 <span class="normal">91</span>
 <span class="normal">92</span>
 <span class="normal">93</span>
-<span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Settings&quot;</span><span class="p">:</span>
+<span class="normal">94</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Settings&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a deep copy of the current settings.</span>
 
 <span class="sd">    Returns:</span>
@@ -2384,12 +2399,7 @@ names used when exporting or loading data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/parsers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
 <span class="normal">125</span>
@@ -2399,7 +2409,12 @@ names used when exporting or loading data.</p>
 <span class="normal">129</span>
 <span class="normal">130</span>
 <span class="normal">131</span>
-<span class="normal">132</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_export_session_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_export_session_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build parser for exporting a full session package.</span>
 
 <span class="sd">    Usage examples in magics:</span>
@@ -2437,15 +2452,15 @@ names used when exporting or loading data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/parsers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">139</span>
 <span class="normal">140</span>
 <span class="normal">141</span>
-<span class="normal">142</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_import_session_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_import_session_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build parser for importing a full session package from directory or zip.&quot;&quot;&quot;</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
@@ -2607,12 +2622,7 @@ names used when exporting or loading data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/parsers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
-<span class="normal">149</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">149</span>
 <span class="normal">150</span>
 <span class="normal">151</span>
 <span class="normal">152</span>
@@ -2625,7 +2635,12 @@ names used when exporting or loading data.</p>
 <span class="normal">159</span>
 <span class="normal">160</span>
 <span class="normal">161</span>
-<span class="normal">162</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_arguments</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">]:</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_arguments</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse common command line arguments for JUmPER commands.</span>
 
 <span class="sd">    Args:</span>
@@ -2736,12 +2751,7 @@ names used when exporting or loading data.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/parsers.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span>
@@ -2763,7 +2773,12 @@ names used when exporting or loading data.</p>
 <span class="normal">189</span>
 <span class="normal">190</span>
 <span class="normal">191</span>
-<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_cell_range</span><span class="p">(</span><span class="n">cell_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cell_history_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_cell_range</span><span class="p">(</span><span class="n">cell_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cell_history_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a cell range string into start and end indices.</span>
 
 <span class="sd">    Args:</span>
@@ -3117,7 +3132,7 @@ those messages.</p>
 
 
 <h2 id="jumper_extension.core.service.build_perfmonitor_service" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">build_perfmonitor_service</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Display not available.&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">build_perfmonitor_service</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Display not available.&#39;</span><span class="p">,</span> <span class="n">visualizer_backend</span><span class="o">=</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">)</span></code>
 
 </h2>
 
@@ -3206,6 +3221,23 @@ display is disabled.</p>
                   <code>&#39;Display not available.&#39;</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>visualizer_backend</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Visualizer backend to use. Supported values:
+<code>"matplotlib"</code> (default) and <code>"plotly"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;matplotlib&#39;</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3241,31 +3273,7 @@ display is disabled.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 965</span>
-<span class="normal"> 966</span>
-<span class="normal"> 967</span>
-<span class="normal"> 968</span>
-<span class="normal"> 969</span>
-<span class="normal"> 970</span>
-<span class="normal"> 971</span>
-<span class="normal"> 972</span>
-<span class="normal"> 973</span>
-<span class="normal"> 974</span>
-<span class="normal"> 975</span>
-<span class="normal"> 976</span>
-<span class="normal"> 977</span>
-<span class="normal"> 978</span>
-<span class="normal"> 979</span>
-<span class="normal"> 980</span>
-<span class="normal"> 981</span>
-<span class="normal"> 982</span>
-<span class="normal"> 983</span>
-<span class="normal"> 984</span>
-<span class="normal"> 985</span>
-<span class="normal"> 986</span>
-<span class="normal"> 987</span>
-<span class="normal"> 988</span>
-<span class="normal"> 989</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 989</span>
 <span class="normal"> 990</span>
 <span class="normal"> 991</span>
 <span class="normal"> 992</span>
@@ -3289,11 +3297,45 @@ display is disabled.</p>
 <span class="normal">1010</span>
 <span class="normal">1011</span>
 <span class="normal">1012</span>
-<span class="normal">1013</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_service</span><span class="p">(</span>
+<span class="normal">1013</span>
+<span class="normal">1014</span>
+<span class="normal">1015</span>
+<span class="normal">1016</span>
+<span class="normal">1017</span>
+<span class="normal">1018</span>
+<span class="normal">1019</span>
+<span class="normal">1020</span>
+<span class="normal">1021</span>
+<span class="normal">1022</span>
+<span class="normal">1023</span>
+<span class="normal">1024</span>
+<span class="normal">1025</span>
+<span class="normal">1026</span>
+<span class="normal">1027</span>
+<span class="normal">1028</span>
+<span class="normal">1029</span>
+<span class="normal">1030</span>
+<span class="normal">1031</span>
+<span class="normal">1032</span>
+<span class="normal">1033</span>
+<span class="normal">1034</span>
+<span class="normal">1035</span>
+<span class="normal">1036</span>
+<span class="normal">1037</span>
+<span class="normal">1038</span>
+<span class="normal">1039</span>
+<span class="normal">1040</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_service</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Display not available.&quot;</span>
+        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Display not available.&quot;</span><span class="p">,</span>
+        <span class="n">visualizer_backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PerfmonitorService</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a new :class:`PerfmonitorService` instance.</span>
 
@@ -3307,6 +3349,8 @@ display is disabled.</p>
 <span class="sd">        display_disabled: If ``True``, disable rich display for reports.</span>
 <span class="sd">        display_disabled_reason: Human-readable reason shown when rich</span>
 <span class="sd">            display is disabled.</span>
+<span class="sd">        visualizer_backend: Visualizer backend to use. Supported values:</span>
+<span class="sd">            ``&quot;matplotlib&quot;`` (default) and ``&quot;plotly&quot;``.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        PerfmonitorService: A fully initialized service instance.</span>
@@ -3316,12 +3360,18 @@ display is disabled.</p>
 <span class="sd">        &gt;&gt;&gt; service = build_perfmonitor_service()</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
+    <span class="n">settings</span><span class="o">.</span><span class="n">visualizer_backend</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">visualizer_backend</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">visualizer_backend</span>
+        <span class="k">else</span> <span class="s2">&quot;matplotlib&quot;</span>
+    <span class="p">)</span>
     <span class="n">monitor</span> <span class="o">=</span> <span class="n">PerformanceMonitor</span><span class="p">()</span>
     <span class="n">cell_history</span> <span class="o">=</span> <span class="n">CellHistory</span><span class="p">()</span>
     <span class="n">visualizer</span> <span class="o">=</span> <span class="n">build_performance_visualizer</span><span class="p">(</span>
         <span class="n">cell_history</span><span class="p">,</span>
         <span class="n">plots_disabled</span><span class="o">=</span><span class="n">plots_disabled</span><span class="p">,</span>
         <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="n">plots_disabled_reason</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">visualizer_backend</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">reporter</span> <span class="o">=</span> <span class="n">build_performance_reporter</span><span class="p">(</span>
         <span class="n">cell_history</span><span class="p">,</span>
@@ -3348,7 +3398,7 @@ display is disabled.</p>
 
 
 <h2 id="jumper_extension.core.service.build_perfmonitor_magic_adapter" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">build_perfmonitor_magic_adapter</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Display not available.&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">build_perfmonitor_magic_adapter</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Display not available.&#39;</span><span class="p">,</span> <span class="n">visualizer_backend</span><span class="o">=</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">)</span></code>
 
 </h2>
 
@@ -3438,6 +3488,23 @@ display is disabled.</p>
                   <code>&#39;Display not available.&#39;</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>visualizer_backend</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Visualizer backend to use. Supported values:
+<code>"matplotlib"</code> (default) and <code>"plotly"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;matplotlib&#39;</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3475,40 +3542,7 @@ display is disabled.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>jumper_extension/core/service.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1016</span>
-<span class="normal">1017</span>
-<span class="normal">1018</span>
-<span class="normal">1019</span>
-<span class="normal">1020</span>
-<span class="normal">1021</span>
-<span class="normal">1022</span>
-<span class="normal">1023</span>
-<span class="normal">1024</span>
-<span class="normal">1025</span>
-<span class="normal">1026</span>
-<span class="normal">1027</span>
-<span class="normal">1028</span>
-<span class="normal">1029</span>
-<span class="normal">1030</span>
-<span class="normal">1031</span>
-<span class="normal">1032</span>
-<span class="normal">1033</span>
-<span class="normal">1034</span>
-<span class="normal">1035</span>
-<span class="normal">1036</span>
-<span class="normal">1037</span>
-<span class="normal">1038</span>
-<span class="normal">1039</span>
-<span class="normal">1040</span>
-<span class="normal">1041</span>
-<span class="normal">1042</span>
-<span class="normal">1043</span>
-<span class="normal">1044</span>
-<span class="normal">1045</span>
-<span class="normal">1046</span>
-<span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1049</span>
 <span class="normal">1050</span>
 <span class="normal">1051</span>
 <span class="normal">1052</span>
@@ -3526,11 +3560,49 @@ display is disabled.</p>
 <span class="normal">1064</span>
 <span class="normal">1065</span>
 <span class="normal">1066</span>
-<span class="normal">1067</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_magic_adapter</span><span class="p">(</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span>
+<span class="normal">1070</span>
+<span class="normal">1071</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span>
+<span class="normal">1102</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_magic_adapter</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Display not available.&quot;</span>
+        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Display not available.&quot;</span><span class="p">,</span>
+        <span class="n">visualizer_backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PerfmonitorMagicAdapter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a new :class:`PerfmonitorMagicAdapter` instance.</span>
 
@@ -3545,6 +3617,8 @@ display is disabled.</p>
 <span class="sd">        display_disabled: If ``True``, disable rich display for reports.</span>
 <span class="sd">        display_disabled_reason: Human-readable reason shown when rich</span>
 <span class="sd">            display is disabled.</span>
+<span class="sd">        visualizer_backend: Visualizer backend to use. Supported values:</span>
+<span class="sd">            ``&quot;matplotlib&quot;`` (default) and ``&quot;plotly&quot;``.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        PerfmonitorMagicAdapter: Adapter instance wrapping the service.</span>
@@ -3560,6 +3634,7 @@ display is disabled.</p>
         <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="n">plots_disabled_reason</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="o">=</span><span class="n">display_disabled</span><span class="p">,</span>
         <span class="n">display_disabled_reason</span><span class="o">=</span><span class="n">display_disabled_reason</span><span class="p">,</span>
+        <span class="n">visualizer_backend</span><span class="o">=</span><span class="n">visualizer_backend</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">parsers</span> <span class="o">=</span> <span class="n">ArgParsers</span><span class="p">(</span>
