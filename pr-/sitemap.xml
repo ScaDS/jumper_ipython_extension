@@ -1,99 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/api/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/api/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/api/jupyter/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/api/jupyter/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/api/python/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/api/python/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/api/string/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/api/string/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/getting-started/installation/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/getting-started/installation/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/getting-started/quickstart/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/getting-started/quickstart/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/guides/plot-export/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/guides/plot-export/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/guides/script-export/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/guides/script-export/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/guides/session-transfer/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/guides/session-transfer/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/internals/adapters/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/internals/architecture/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/internals/architecture/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/internals/core/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/internals/core/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/internals/ipython/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/internals/ipython/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/internals/monitor/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/internals/monitor/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/api/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/api/install/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/install/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/api/kernel/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/kernel/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/api/utilities/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/utilities/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/getting-started/installation/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/getting-started/installation/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/getting-started/quickstart/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/getting-started/quickstart/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/guides/magic-commands/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/guides/magic-commands/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
     <url>
-         <loc>https://scads.github.io/jumper_ipython_extension/wrapper-kernel/guides/wrap-kernel/</loc>
+         <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/guides/wrap-kernel/</loc>
          <lastmod>2026-03-27</lastmod>
     </url>
 </urlset>
