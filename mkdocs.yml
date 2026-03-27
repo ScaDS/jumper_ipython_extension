@@ -8,6 +8,7 @@ docs_dir: docs
 theme:
   name: material
   logo: img/JUmPER01.svg
+  custom_dir: overrides
 
 nav:
   - Home: index.md
@@ -52,3 +53,9 @@ markdown_extensions:
 plugins:
   - search
   - mkdocstrings
+
+hooks:
+  - hooks/version_hook.py
+
+extra:
+  wrapper_version: "0.1.0"
