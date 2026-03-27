@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "jumper_wrapper_kernel"
 version = "0.1.0"
 description = "A Jupyter kernel that wraps other kernels with jumper-extension support"
-readme = {text = "Jumper Wrapper Kernel - A Jupyter kernel that wraps other kernels with jumper-extension support. See https://github.com/ScaDS/jumper_ipython_extension for full documentation.", content-type = "text/plain"}
+readme = {text = "Jumper Wrapper Kernel - A Jupyter kernel that wraps other kernels with jumper-extension support. See https://github.com/ScaDS/jumper_jupyter_performance for full documentation.", content-type = "text/plain"}
 license = {text = "MIT"}
 authors = [
     {name = "Jumper Wrapper Kernel Authors"}
@@ -46,8 +46,8 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ScaDS/jumper_ipython_extension"
-Repository = "https://github.com/ScaDS/jumper_ipython_extension"
+Homepage = "https://github.com/ScaDS/jumper_jupyter_performance"
+Repository = "https://github.com/ScaDS/jumper_jupyter_performance"
 
 [project.scripts]
 jumper-wrapper-kernel-install = "jumper_wrapper_kernel.install:main"

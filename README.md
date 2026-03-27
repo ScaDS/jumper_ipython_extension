@@ -1,8 +1,8 @@
-[![Unit Tests](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml)
-[![Formatting](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml)
-[![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
-[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=github)](https://scads.github.io/jumper_ipython_extension/latest/)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
+[![Unit Tests](https://github.com/ScaDS/jumper_jupyter_performance/actions/workflows/test.yml/badge.svg)](https://github.com/ScaDS/jumper_jupyter_performance/actions/workflows/test.yml)
+[![Formatting](https://github.com/ScaDS/jumper_jupyter_performance/actions/workflows/formatter.yml/badge.svg)](https://github.com/ScaDS/jumper_jupyter_performance/actions/workflows/formatter.yml)
+[![Static Analysis](https://github.com/ScaDS/jumper_jupyter_performance/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_jupyter_performance/actions/workflows/linter.yml)
+[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=github)](https://scads.github.io/jumper_jupyter_performance/latest/)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_jupyter_performance/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
 
 <p align="center">
 <img width="450" src="docs/img/JUmPER01.png"/>
@@ -74,7 +74,7 @@ Both GPU libraries can be installed simultaneously to monitor mixed GPU systems.
 ## Quick Start
 
 Try it yourself:
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_jupyter_performance/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
 
 ### Load the Extension
 
@@ -228,7 +228,7 @@ The extension supports four different levels of metric collection, each providin
 
 ## Full Documentation
 
-- Online (latest): https://scads.github.io/jumper_ipython_extension/latest/
+- Online (latest): https://scads.github.io/jumper_jupyter_performance/latest/
 - Local sources: `docs/` (serve locally with `mkdocs serve`)
 
 
@@ -298,12 +298,12 @@ y = np.dot(x, x.T)
 ### Wrapper Kernel Demos
 
 - **How to Wrap a Kernel: Basic R Kernel Example**\
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/main?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fnew_R_wrapping.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_jupyter_performance/main?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fnew_R_wrapping.ipynb)
 
 - **H2O-Wrapped Tutorial**\
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/main?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fh2o-wrapper-tutorial.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_jupyter_performance/main?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fh2o-wrapper-tutorial.ipynb)
 
-For full wrapper kernel documentation, see the [Wrapper Kernel docs](https://scads.github.io/jumper_ipython_extension/latest/wrapper-kernel/).
+For full wrapper kernel documentation, see the [Wrapper Kernel docs](https://scads.github.io/jumper_jupyter_performance/latest/wrapper-kernel/).
 
 
 ## Contribution and Citing:

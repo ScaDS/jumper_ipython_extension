@@ -38,8 +38,8 @@ python -m jumper_wrapper_kernel.install install --sys-prefix
 Clone the repository and install in editable mode:
 
 ```bash
-git clone https://github.com/ScaDS/jumper_ipython_extension.git
-cd jumper_ipython_extension/jumper_wrapper_kernel
+git clone https://github.com/ScaDS/jumper_jupyter_performance.git
+cd jumper_jupyter_performance/jumper_wrapper_kernel
 pip install -e .
 python -m jumper_wrapper_kernel.install install
 ```

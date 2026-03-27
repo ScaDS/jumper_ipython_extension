@@ -1,8 +1,8 @@
 site_name: JUmPER – Jupyter meets Performance
-site_url: https://scads.github.io/jumper_ipython_extension/
+site_url: https://scads.github.io/jumper_jupyter_performance/
 site_description: Performance monitoring for IPython and Jupyter notebooks
-repo_url: https://github.com/ScaDS/jumper_ipython_extension
-repo_name: ScaDS/jumper_ipython_extension
+repo_url: https://github.com/ScaDS/jumper_jupyter_performance
+repo_name: ScaDS/jumper_jupyter_performance
 
 docs_dir: docs
 

@@ -22,7 +22,7 @@ dependencies = [
     "ipywidgets",
     "jinja2",
 ]
-urls = {Homepage = "https://github.com/ScaDS/jumper_ipython_extension"}
+urls = {Homepage = "https://github.com/ScaDS/jumper_jupyter_performance"}
 
 [project.entry-points."IPython.extensions"]
 jumper_extension = "jumper_extension:load_ipython_extension"
