@@ -1,7 +1,7 @@
 [![Unit Tests](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/test.yml)
 [![Formatting](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/formatter.yml)
 [![Static Analysis](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml/badge.svg)](https://github.com/ScaDS/jumper_ipython_extension/actions/workflows/linter.yml)
-[![Documentation](https://img.shields.io/badge/docs-extension-blue?logo=github)](https://scads.github.io/jumper_ipython_extension/latest/)
+[![Documentation](https://img.shields.io/badge/docs-online-blue?logo=github)](https://scads.github.io/jumper_ipython_extension/latest/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fquick_start.ipynb)
 
 <p align="center">
@@ -10,15 +10,15 @@
 
 # JUmPER: Jupyter meets Performance
 
-JUmPER brings performance engineering to Jupyter. It consists of the two repositories:
+JUmPER brings performance engineering to Jupyter. This repository contains two packages:
 
-- JUmPER Ipython extension (this repository)
+- **JUmPER IPython Extension** (`jumper_extension/`) — Real-time performance monitoring in IPython environments and Jupyter notebooks. Gather performance data on CPU usage, memory consumption, GPU utilization, and I/O operations for individual cells and present it as text reports or interactive plots.
 
-This extension is for real-time performance monitoring in IPython environments and Jupyter notebooks. It allows you to gather performance data on CPU usage, memory consumption, GPU utilization, and I/O operations for individual cells and present it in the notebook/IPython session either as text report or as a plot.
+- **JUmPER Wrapper Kernel** (`jumper_wrapper_kernel/`) — A Jupyter kernel that wraps other kernels (Python, R, Julia, etc.) while providing jumper-extension performance monitoring. See the [Wrapper Kernel](#jumper-wrapper-kernel) section below.
 
-- Score-P Jupyter kernel Python (https://github.com/score-p/scorep_jupyter_kernel_python)
+Related project:
 
-The Score-P kernel allows you to instrument, and trace or profile your Python code in Jupyter using [Score-P](https://score-p.org/) for in-detail performance analysis tasks. The Score-P kernel and the IPython extension can be seamlessly integrated.
+- [Score-P Jupyter kernel Python](https://github.com/score-p/scorep_jupyter_kernel_python) — Instrument, trace, or profile your Python code in Jupyter using [Score-P](https://score-p.org/). The Score-P kernel and the IPython extension can be seamlessly integrated.
 
 
 # Table of Content
@@ -34,6 +34,7 @@ The Score-P kernel allows you to instrument, and trace or profile your Python co
 	+ [Collected Metrics](#collected-metrics)
 * [Available Commands](#available-commands)
 * [Full Documentation](#full-documentation)
+* [JUmPER Wrapper Kernel](#jumper-wrapper-kernel)
 * [Contribution and Citing](#contribution-and-citing)
 
 ## Installation
@@ -247,6 +248,63 @@ The extension supports four different levels of metric collection, each providin
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
 | `%perfmonitor_export_perfdata [--file filename] [--level LEVEL]` | Export performance data to dataframe. Export performance data to CSV if `--file` is set. |
 | `%perfmonitor_export_cell_history [filename]` | Export cell history to CSV/JSON |
+
+## JUmPER Wrapper Kernel
+
+The Jumper Wrapper Kernel is a Jupyter kernel that wraps other kernels while providing jumper-extension performance monitoring capabilities.
+
+### Installation
+
+```bash
+# Install the wrapper kernel (also installs jumper-extension as a dependency)
+pip install jumper_wrapper_kernel
+
+# Install the kernel spec
+python -m jumper_wrapper_kernel.install install
+```
+
+Or install from source:
+
+```bash
+pip install ./jumper_wrapper_kernel
+python -m jumper_wrapper_kernel.install install
+```
+
+### Usage
+
+1. Start Jupyter Notebook or JupyterLab
+2. Select **Jumper Wrapper Kernel** as your kernel
+3. Use the magic commands:
+
+```python
+# List available kernels
+%list_kernels
+
+# Wrap a kernel (e.g. Python, R, Julia)
+%wrap_kernel python3
+
+# Start performance monitoring (handled locally)
+%perfmonitor_start
+
+# Run code on the wrapped kernel
+import numpy as np
+x = np.random.rand(1000, 1000)
+y = np.dot(x, x.T)
+
+# View performance report (handled locally)
+%perfmonitor_perfreport
+```
+
+### Wrapper Kernel Demos
+
+- **How to Wrap a Kernel: Basic R Kernel Example**\
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/main?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fnew_R_wrapping.ipynb)
+
+- **H2O-Wrapped Tutorial**\
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ScaDS/jumper_ipython_extension/main?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fh2o-wrapper-tutorial.ipynb)
+
+For full wrapper kernel documentation, see the [Wrapper Kernel docs](https://scads.github.io/jumper_ipython_extension/latest/wrapper-kernel/).
+
 
 ## Contribution and Citing:
 PRs are welcome. Feel free to use the pre-commit hooks provided in .githooks
