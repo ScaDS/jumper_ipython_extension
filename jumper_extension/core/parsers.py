@@ -11,6 +11,7 @@ from jumper_extension.utilities import get_available_levels
 @dataclass
 class ArgParsers:
     """Configuration for command-line argument parsers."""
+    perfmonitor_start: argparse.ArgumentParser
     perfreport: argparse.ArgumentParser
     auto_perfreports: argparse.ArgumentParser
     perfmonitor_plot: argparse.ArgumentParser
@@ -20,6 +21,26 @@ class ArgParsers:
     import_cell_history: argparse.ArgumentParser
     export_session: argparse.ArgumentParser
     import_session: argparse.ArgumentParser
+
+
+def build_perfmonitor_start_parser() -> argparse.ArgumentParser:
+    """Build an ArgumentParser for the perfmonitor_start command."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "interval",
+        nargs="?",
+        type=float,
+        default=None,
+        help="Sampling interval in seconds (default: 1.0)",
+    )
+    parser.add_argument(
+        "--monitor",
+        type=str,
+        default="default",
+        choices=["default", "slurm_multinode"],
+        help="Monitor backend to use (default: default)",
+    )
+    return parser
 
 
 def build_perfreport_parser() -> argparse.ArgumentParser:

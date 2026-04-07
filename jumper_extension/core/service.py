@@ -8,6 +8,7 @@ from jumper_extension.adapters.script_writer import NotebookScriptWriter
 from jumper_extension.core.parsers import (
     parse_cell_range,
     parse_arguments,
+    build_perfmonitor_start_parser,
     build_perfreport_parser,
     build_auto_perfreports_parser,
     build_perfmonitor_plot_parser,
@@ -80,6 +81,23 @@ class PerfmonitorService:
         self.cell_history = cell_history
         self.script_writer = script_writer
         self._skip_report = False
+
+    @staticmethod
+    def _create_monitor(monitor_type: str = "default") -> MonitorProtocol:
+        """Create a monitor instance based on the requested type.
+
+        Args:
+            monitor_type: ``"default"`` for the standard single-node
+                monitor, ``"slurm_multinode"`` for the multi-node
+                SLURM monitor.
+
+        Returns:
+            A monitor satisfying :class:`MonitorProtocol`.
+        """
+        if monitor_type == "slurm_multinode":
+            from jumper_extension.monitor_slurm_multinode import SlurmMultinodeMonitor
+            return SlurmMultinodeMonitor()
+        return PerformanceMonitor()
 
     def on_pre_run_cell(
         self,
@@ -176,6 +194,7 @@ class PerfmonitorService:
     def start_monitoring(
         self,
         interval: Optional[float] = None,
+        monitor_type: str = "default",
     ) -> Optional[ExtensionErrorCode]:
         """Start performance monitoring.
 
@@ -187,6 +206,10 @@ class PerfmonitorService:
             interval: Sampling interval in seconds. If ``None``, the
                 value from ``settings.monitoring.default_interval`` is
                 used.
+            monitor_type: Monitor backend to use. ``"default"`` uses
+                the standard single-node :class:`PerformanceMonitor`.
+                ``"slurm_multinode"`` uses the multi-node SLURM
+                monitor that connects to all allocated nodes via SSH.
 
         Returns:
             Optional[ExtensionErrorCode]: An error code if monitoring
@@ -200,10 +223,16 @@ class PerfmonitorService:
             Start monitoring with a custom interval::
 
                 service.start_monitoring(interval=0.5)
+
+            Start multi-node SLURM monitoring::
+
+                service.start_monitoring(monitor_type="slurm_multinode")
         """
         # If an imported (offline) session is currently attached, swap to a live monitor
         if self.monitor.is_imported:
-            self.monitor = PerformanceMonitor()
+            self.monitor = self._create_monitor(monitor_type)
+        elif monitor_type != "default" and not self.monitor.running:
+            self.monitor = self._create_monitor(monitor_type)
 
         if self.monitor.running:
             logger.warning(
@@ -797,18 +826,13 @@ class PerfmonitorMagicAdapter:
 
     def perfmonitor_start(self, line: str):
         """Start performance monitoring with specified interval (default: 1 second)."""
-        interval = None
-        if line:
-            try:
-                interval = float(line)
-            except ValueError:
-                logger.warning(
-                    EXTENSION_ERROR_MESSAGES[
-                        ExtensionErrorCode.INVALID_INTERVAL_VALUE
-                    ].format(interval=line)
-                )
-                return
-        self.service.start_monitoring(interval)
+        args = parse_arguments(self.parsers.perfmonitor_start, line)
+        if args is None:
+            return
+        self.service.start_monitoring(
+            interval=args.interval,
+            monitor_type=args.monitor,
+        )
 
     def perfmonitor_stop(self, line: str):
         """Stop the active performance monitoring session."""
@@ -930,7 +954,7 @@ class PerfmonitorMagicAdapter:
             "perfmonitor_help -- show this comprehensive help",
             "perfmonitor_resources -- show available hardware resources",
             "show_cell_history -- show interactive table of cell execution history",
-            "perfmonitor_start [interval] -- start monitoring (default: 1 second)",
+            "perfmonitor_start [interval] [--monitor TYPE] -- start monitoring (default: 1s, monitor=default)",
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
@@ -956,6 +980,11 @@ class PerfmonitorMagicAdapter:
         available_levels = get_available_levels()
         if "slurm" in available_levels:
             print("  slurm   -- processes within current SLURM job (HPC environments)")
+
+        print("\nMonitor Types:")
+        print("  default           -- standard single-node monitoring (default)")
+        print("  slurm_multinode  -- multi-node SLURM monitoring via SSH")
+        print("                      (writes results to jumper_multinode.jsonl)")
 
         print("\nCell Range Formats:")
         print("  5       -- single cell (cell #5)")
@@ -1132,6 +1161,7 @@ def build_perfmonitor_magic_adapter(
     )
 
     parsers = ArgParsers(
+        perfmonitor_start=build_perfmonitor_start_parser(),
         perfreport=build_perfreport_parser(),
         auto_perfreports=build_auto_perfreports_parser(),
         perfmonitor_plot=build_perfmonitor_plot_parser(),
