@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Minimal example of using the multinode SLURM monitor to collect performance data
+Minimal example of using the multinode SLURM monitor with srun to collect performance data
 while running time.sleep on all selected nodes.
 
 This script demonstrates:
-1. Starting the multinode monitor
+1. Starting the multinode monitor using srun (no SSH passwords needed)
 2. Running a simple workload (time.sleep) on all nodes
 3. Collecting and analyzing performance data
 
 Usage:
     # Submit to SLURM
-    sbatch --nodes=2 --ntasks-per-node=1 --time=00:05:00 multinode_sleep_example.py
+    sbatch --nodes=2 --ntasks-per-node=1 --time=00:05:00 run_multinode_srun_example.sh
 
     # Or run directly if already in SLURM environment
-    python multinode_sleep_example.py
+    python multinode_srun_example.py
 """
 
 import time
@@ -40,12 +40,12 @@ def run_workload_on_all_nodes(duration_seconds=30):
     """
     Simulate a workload on all nodes by sleeping.
     
-    In a real scenario, this would be your actual computation.
     This function runs on the head node and represents the coordination
-    of work across all SLURM nodes.
+    of work across all SLURM nodes. The actual monitoring happens
+    on each node via srun-launched agents.
     """
     logger.info(f"Starting workload: sleeping for {duration_seconds} seconds")
-    logger.info("All nodes are being monitored during this period")
+    logger.info("All nodes are being monitored via srun during this period")
     
     # Simulate work with periodic progress updates
     start_time = time.time()
@@ -125,24 +125,27 @@ def analyze_performance_data(log_file="jumper_multinode.jsonl"):
 
 def main():
     """Main execution function."""
-    logger.info("=== Multinode SLURM Monitor Example ===")
+    logger.info("=== Multinode SLURM Monitor Example (srun-based) ===")
     
     # Check if we're in a SLURM environment
     if not os.environ.get('SLURM_JOB_ID'):
-        logger.warning("Not running in SLURM environment. This example works best with SLURM.")
-        logger.info("Continuing anyway for demonstration purposes...")
+        logger.warning("Not running in SLURM environment. This example requires SLURM.")
+        logger.info("This script uses srun to launch monitoring agents on SLURM nodes.")
+        return 1
+    
+    logger.info("Using srun for node communication (no SSH passwords required)")
     
     # Initialize the multinode monitor
-    log_file = "jumper_multinode_example.jsonl"
+    log_file = "jumper_multinode_srun_example.jsonl"
     monitor = SlurmMultinodeMonitor(log_path=log_file)
     
     try:
         # Start monitoring
-        logger.info("Starting multinode performance monitor...")
+        logger.info("Starting multinode performance monitor via srun...")
         monitor.start(interval=1.0)  # Sample every 1 second
         
         if not monitor.running:
-            logger.error("Failed to start monitor. Check SLURM environment and SSH connectivity.")
+            logger.error("Failed to start monitor. Check SLURM environment and srun availability.")
             return 1
         
         # Run the workload
