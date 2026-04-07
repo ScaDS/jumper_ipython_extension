@@ -803,6 +803,7 @@ class PerformanceVisualizer:
         metric_subsets=("cpu", "mem", "io"),
         cell_range=None,
         show_idle=False,
+        level=None,
         update_interval=2.0,
         window_seconds=120.0,
     ):
@@ -816,6 +817,8 @@ class PerformanceVisualizer:
             metric_subsets: Tuple of metric subset names to plot.
             cell_range: Ignored for live plotting.
             show_idle: Ignored for live plotting (always True).
+            level: Monitoring level (``"process"``, ``"user"``,
+                ``"system"``, or ``"slurm"``). Defaults to ``"process"``.
             update_interval: Seconds between refreshes (default 2.0).
             window_seconds: Width of the visible time window (default 120).
         """
@@ -834,21 +837,17 @@ class PerformanceVisualizer:
                 str(m).strip() for m in metric_subsets
             )
 
-        if not metric_subsets:
-            metric_subsets = ("cpu", "mem", "io")
-            if self.monitor.num_gpus:
-                metric_subsets += ("gpu", "gpu_all")
-
-        metric_subsets = self._resolve_metric_subsets(metric_subsets)
-        metrics_list, labeled_options = self._collect_metric_options(
-            metric_subsets
-        )
-        if not metrics_list:
-            logger.warning("No valid metrics found to plot")
-            return
-
+        # ---- Determine default metrics ------------------------------------ #
         if user_requested_keys is not None:
-            # Filter to only the exact metric keys the user specified
+            # User specified --metrics: resolve and filter
+            if not metric_subsets:
+                metric_subsets = ("cpu", "mem", "io")
+                if self.monitor.num_gpus:
+                    metric_subsets += ("gpu", "gpu_all")
+            metric_subsets = self._resolve_metric_subsets(metric_subsets)
+            metrics_list, labeled_options = self._collect_metric_options(
+                metric_subsets
+            )
             metrics_list = [
                 m for m in metrics_list if m in user_requested_keys
             ]
@@ -867,21 +866,24 @@ class PerformanceVisualizer:
                 return
             default_metrics = list(dict.fromkeys(metrics_list))
         else:
-            # No --metrics flag: default to first 2 unique metrics
-            default_metrics = []
-            seen = set()
-            for m in metrics_list:
-                if m not in seen:
-                    seen.add(m)
-                    default_metrics.append(m)
-                if len(default_metrics) >= 2:
-                    break
+            # No --metrics flag: always CPU + Memory; add GPU if available
+            default_metrics = ["cpu_summary", "memory"]
+            if self.monitor.num_gpus:
+                default_metrics += ["gpu_util_summary", "gpu_mem_summary"]
+            # Resolve subsets needed for these metrics
+            needed_subsets = ["cpu", "mem"]
+            if self.monitor.num_gpus:
+                needed_subsets.append("gpu")
+            metric_subsets = self._resolve_metric_subsets(needed_subsets)
+            _, labeled_options = self._collect_metric_options(metric_subsets)
 
         # Map metric keys → human-readable labels
         label_map = {val: lbl for lbl, val in labeled_options}
-        level = "process"
+        if level is None:
+            level = "process"
         session_id = str(uuid.uuid4())[:8]
         stop_event = threading.Event()
+        ncols = 2
 
         # -- Display header (static) --------------------------------------- #
         header_html = f"""
@@ -901,81 +903,96 @@ class PerformanceVisualizer:
 <p style="color:#666;font-size:0.9em">
   Panels: {', '.join(label_map.get(m, m) for m in default_metrics)}
   (level: {level}).
-  Interrupt the kernel or wait for the monitor to stop to end live updates.
 </p>
 """
         display(HTML(header_html))
 
-        # -- Create display handles for each panel ------------------------- #
-        panel_ids = []
-        for i, metric in enumerate(default_metrics):
-            did = f"jumper-live-panel-{session_id}-{i}"
-            panel_ids.append((did, metric))
-            display(
-                HTML(f"<p style='color:#888'>Initialising "
-                     f"{label_map.get(metric, metric)}…</p>"),
-                display_id=did,
-            )
+        # -- Single display handle for the whole grid ---------------------- #
+        grid_id = f"jumper-live-grid-{session_id}"
+        init_items = "".join(
+            f"<div style='padding:4px'>"
+            f"<p style='color:#888'>Initialising "
+            f"{label_map.get(m, m)}…</p></div>"
+            for m in default_metrics
+        )
+        display(
+            HTML(
+                f"<div style='display:grid;"
+                f"grid-template-columns:repeat({ncols},1fr);"
+                f"gap:8px'>{init_items}</div>"
+            ),
+            display_id=grid_id,
+        )
 
         # -- Background thread --------------------------------------------- #
+        def _render_grid():
+            """Build all panels and return a single HTML grid string."""
+            cells = []
+            for metric in default_metrics:
+                try:
+                    fig = self._build_live_figure(
+                        metric, level, window_seconds,
+                    )
+                    if fig is not None:
+                        html_frag = pio.to_html(
+                            fig,
+                            full_html=False,
+                            include_plotlyjs="cdn",
+                            config={"responsive": True,
+                                    "displayModeBar": True},
+                        )
+                    else:
+                        html_frag = (
+                            "<p style='color:#888;text-align:center'>"
+                            "Waiting for data…</p>"
+                        )
+                except Exception:
+                    logger.debug(
+                        "Live plot update error for %s", metric,
+                        exc_info=True,
+                    )
+                    html_frag = (
+                        "<p style='color:#888;text-align:center'>"
+                        "Waiting for data…</p>"
+                    )
+                cells.append(
+                    f"<div style='padding:4px'>{html_frag}</div>"
+                )
+            return (
+                f"<div style='display:grid;"
+                f"grid-template-columns:repeat({ncols},1fr);"
+                f"gap:8px'>{''.join(cells)}</div>"
+            )
+
         def _live_loop():
             try:
                 while not stop_event.is_set():
-                    for did, metric in panel_ids:
-                        if stop_event.is_set():
-                            break
-                        try:
-                            fig = self._build_live_figure(
-                                metric, level, window_seconds,
-                            )
-                            if fig is not None:
-                                html_frag = pio.to_html(
-                                    fig,
-                                    full_html=False,
-                                    include_plotlyjs="cdn",
-                                    config={"responsive": True,
-                                            "displayModeBar": True},
-                                )
-                            else:
-                                html_frag = (
-                                    "<p style='color:#888;text-align:center'>"
-                                    "Waiting for data…</p>"
-                                )
-                            display(
-                                HTML(html_frag),
-                                display_id=did,
-                                update=True,
-                            )
-                        except Exception:
-                            logger.debug(
-                                "Live plot update error for %s", metric,
-                                exc_info=True,
-                            )
+                    try:
+                        grid_html = _render_grid()
+                        display(
+                            HTML(grid_html),
+                            display_id=grid_id,
+                            update=True,
+                        )
+                    except Exception:
+                        logger.debug(
+                            "Live plot grid update error",
+                            exc_info=True,
+                        )
                     if not self.monitor.running:
                         break
                     stop_event.wait(update_interval)
             finally:
-                # Final status update
-                for did, metric in panel_ids:
-                    try:
-                        fig = self._build_live_figure(
-                            metric, level, window_seconds,
-                        )
-                        if fig is not None:
-                            html_frag = pio.to_html(
-                                fig,
-                                full_html=False,
-                                include_plotlyjs="cdn",
-                                config={"responsive": True,
-                                        "displayModeBar": True},
-                            )
-                            display(
-                                HTML(html_frag),
-                                display_id=did,
-                                update=True,
-                            )
-                    except Exception:
-                        pass
+                # Final render
+                try:
+                    grid_html = _render_grid()
+                    display(
+                        HTML(grid_html),
+                        display_id=grid_id,
+                        update=True,
+                    )
+                except Exception:
+                    pass
 
         thread = threading.Thread(target=_live_loop, daemon=True)
         thread.start()

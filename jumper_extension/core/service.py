@@ -343,6 +343,7 @@ class PerfmonitorService:
             self.visualizer.plot_live(
                 metric_subsets=metrics,
                 cell_range=cell_range,
+                level=effective_level,
                 update_interval=update_interval,
                 window_seconds=window_seconds,
             )
