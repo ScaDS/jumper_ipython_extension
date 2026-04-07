@@ -26,7 +26,7 @@ logger = logging.getLogger("extension")
 
 
 class _NodeConnection:
-    """Manages an SSH connection to a single remote node."""
+    """Manages an srun connection to a single remote node."""
 
     def __init__(self, hostname: str, python_executable: str):
         self.hostname = hostname
@@ -37,7 +37,7 @@ class _NodeConnection:
         self.info: Dict = {}
 
     def start(self, interval: float, levels: Optional[List[str]] = None) -> None:
-        """Launch the remote agent via SSH."""
+        """Launch the remote agent via srun."""
         levels_arg = ""
         if levels:
             levels_arg = f" --levels {','.join(levels)}"
@@ -48,18 +48,22 @@ class _NodeConnection:
             f" --interval {interval}{levels_arg}"
         )
 
-        ssh_cmd = [
-            "ssh",
-            "-o", "StrictHostKeyChecking=no",
-            "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "LogLevel=ERROR",
-            self.hostname,
-            agent_cmd,
+        # Use srun to launch the agent on the specific node
+        srun_cmd = [
+            "srun",
+            "--nodelist=" + self.hostname,
+            "--ntasks=1",
+            "--exclusive",
+            "--output=none",  # Suppress srun's own output
+            "--error=none",   # Suppress srun's error output
+            "--pty",         # Allocate a pseudo-terminal
+            "--quiet",       # Reduce srun verbosity
+            "bash", "-c", agent_cmd
         ]
 
-        logger.info(f"[JUmPER]: Connecting to {self.hostname} …")
+        logger.info(f"[JUmPER]: Launching agent on {self.hostname} via srun")
         self.process = subprocess.Popen(
-            ssh_cmd,
+            srun_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
