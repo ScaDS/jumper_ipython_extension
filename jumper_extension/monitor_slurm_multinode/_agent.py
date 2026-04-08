@@ -34,25 +34,76 @@ from jumper_extension.monitor.common import PerformanceMonitor
 
 def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
     hostname = socket.gethostname()
-    monitor = PerformanceMonitor()
+    
+    try:
+        # Temporarily redirect stdout and logging to prevent log messages from breaking JSON protocol
+        import io
+        import contextlib
+        import logging
+        
+        # Create a custom logger handler to capture log messages
+        log_capture = io.StringIO()
+        log_handler = logging.StreamHandler(log_capture)
+        log_handler.setLevel(logging.WARNING)
+        
+        # Get the root logger and add our capture handler
+        root_logger = logging.getLogger()
+        original_level = root_logger.level
+        root_logger.addHandler(log_handler)
+        root_logger.setLevel(logging.WARNING)
+        
+        # Capture stdout as well
+        temp_stdout = io.StringIO()
+        with contextlib.redirect_stdout(temp_stdout):
+            monitor = PerformanceMonitor()
+        
+        # Remove our temporary handler and restore logging
+        root_logger.removeHandler(log_handler)
+        root_logger.setLevel(original_level)
+        
+        # Check if any log messages were captured and write them to stderr
+        log_output = log_capture.getvalue()
+        if log_output:
+            sys.stderr.write(f"[Agent init logs] {log_output}")
+            sys.stderr.flush()
+        
+        # Check if any stdout was captured and write it to stderr
+        stdout_output = temp_stdout.getvalue()
+        if stdout_output:
+            sys.stderr.write(f"[Agent init stdout] {stdout_output}")
+            sys.stderr.flush()
 
-    if levels is None:
-        levels = monitor.levels
+        if levels is None:
+            levels = monitor.levels
 
-    # Emit "ready" handshake
-    ready_msg = {
-        "status": "ready",
-        "node": hostname,
-        "num_cpus": monitor.num_cpus,
-        "num_system_cpus": monitor.num_system_cpus,
-        "num_gpus": monitor.num_gpus,
-        "gpu_memory": monitor.gpu_memory,
-        "gpu_name": monitor.gpu_name,
-        "levels": levels,
-        "pid": os.getpid(),
-    }
-    sys.stdout.write(json.dumps(ready_msg) + "\n")
-    sys.stdout.flush()
+        # Emit "ready" handshake
+        ready_msg = {
+            "status": "ready",
+            "node": hostname,
+            "num_cpus": monitor.num_cpus,
+            "num_system_cpus": monitor.num_system_cpus,
+            "num_gpus": monitor.num_gpus,
+            "gpu_memory": monitor.gpu_memory,
+            "gpu_name": monitor.gpu_name,
+            "levels": levels,
+            "pid": os.getpid(),
+        }
+        sys.stdout.write(json.dumps(ready_msg) + "\n")
+        sys.stdout.flush()
+        
+    except Exception as e:
+        # If anything fails during initialization, send error message
+        error_msg = {
+            "status": "error",
+            "node": hostname,
+            "error": str(e),
+            "pid": os.getpid(),
+        }
+        sys.stderr.write(f"[Agent error] {e}\n")
+        sys.stderr.flush()
+        sys.stdout.write(json.dumps(error_msg) + "\n")
+        sys.stdout.flush()
+        return
 
     running = True
 
@@ -67,6 +118,10 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
     monitor.start_time = time.perf_counter()
     monitor.wallclock_start_time = time.time()
     monitor.running = True
+
+    # Debug: Let us know we're starting the main loop
+    sys.stderr.write(f"[Agent {hostname}] Starting main loop with interval {interval}s\n")
+    sys.stderr.flush()
 
     try:
         while running:
@@ -102,15 +157,23 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
                     },
                 }
                 sys.stdout.write(json.dumps(sample) + "\n")
+                sys.stderr.write(f"[Agent {hostname}] Sent sample for level {level}\n")
+                sys.stderr.flush()
             sys.stdout.flush()
 
             elapsed = time.perf_counter() - t0
             if elapsed < interval:
                 time.sleep(interval - elapsed)
     except BrokenPipeError:
-        pass
+        sys.stderr.write(f"[Agent {hostname}] Broken pipe - exiting\n")
+        sys.stderr.flush()
+    except Exception as e:
+        sys.stderr.write(f"[Agent {hostname}] Error in main loop: {e}\n")
+        sys.stderr.flush()
     finally:
         monitor.running = False
+        sys.stderr.write(f"[Agent {hostname}] Exiting main loop\n")
+        sys.stderr.flush()
 
 
 def main() -> None:

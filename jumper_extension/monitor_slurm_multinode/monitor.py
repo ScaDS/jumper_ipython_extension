@@ -53,21 +53,35 @@ class _NodeConnection:
             "srun",
             "--nodelist=" + self.hostname,
             "--ntasks=1",
-            "--exclusive",
-            "--output=none",  # Suppress srun's own output
-            "--error=none",   # Suppress srun's error output
-            "--pty",         # Allocate a pseudo-terminal
-            "--quiet",       # Reduce srun verbosity
+            "--unbuffered",
             "bash", "-c", agent_cmd
         ]
 
         logger.info(f"[JUmPER]: Launching agent on {self.hostname} via srun")
+        logger.debug(f"[JUmPER]: srun command: {' '.join(srun_cmd)}")
+        
         self.process = subprocess.Popen(
             srun_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
+        
+        # Check if the process started successfully
+        try:
+            # Wait a brief moment to see if process exits immediately
+            return_code = self.process.poll()
+            if return_code is not None:
+                # Process already exited, capture error output
+                stderr_output = self.process.stderr.read()
+                stdout_output = self.process.stdout.read()
+                logger.error(f"[JUmPER]: srun process on {self.hostname} exited immediately with code {return_code}")
+                if stderr_output:
+                    logger.error(f"[JUmPER]: srun stderr: {stderr_output}")
+                if stdout_output:
+                    logger.error(f"[JUmPER]: srun stdout: {stdout_output}")
+        except Exception as e:
+            logger.warning(f"[JUmPER]: Could not check srun process status on {self.hostname}: {e}")
 
     def stop(self) -> None:
         """Terminate the remote agent."""
@@ -187,23 +201,46 @@ class SlurmMultinodeMonitor:
 
         # Wait for "ready" handshake from each agent
         for hostname, conn in self._connections.items():
-            line = conn.read_line()
-            if line:
-                try:
-                    msg = json.loads(line)
-                    if msg.get("status") == "ready":
-                        conn.ready = True
-                        conn.info = msg
-                        self.node_info[hostname] = msg
-                        logger.info(
-                            f"[JUmPER]: Agent on {hostname} ready "
-                            f"(cpus={msg.get('num_cpus')}, "
-                            f"gpus={msg.get('num_gpus')})"
-                        )
-                except json.JSONDecodeError:
-                    logger.warning(
-                        f"[JUmPER]: Unexpected first line from {hostname}: {line}"
-                    )
+            ready_received = False
+            max_attempts = 10  # Prevent infinite loop
+            attempts = 0
+            
+            while not ready_received and attempts < max_attempts:
+                line = conn.read_line()
+                if line:
+                    try:
+                        msg = json.loads(line)
+                        if msg.get("status") == "ready":
+                            conn.ready = True
+                            conn.info = msg
+                            self.node_info[hostname] = msg
+                            logger.info(
+                                f"[JUmPER]: Agent on {hostname} ready "
+                                f"(cpus={msg.get('num_cpus')}, "
+                                f"gpus={msg.get('num_gpus')})"
+                            )
+                            ready_received = True
+                        elif msg.get("status") == "error":
+                            error = msg.get("error", "Unknown error")
+                            logger.error(
+                                f"[JUmPER]: Agent on {hostname} failed to initialize: {error}"
+                            )
+                            # Don't wait for ready message if agent failed
+                            break
+                        else:
+                            # Got JSON but not a ready/error message, continue reading
+                            logger.debug(f"[JUmPER]: Non-ready JSON from {hostname}: {line}")
+                    except json.JSONDecodeError:
+                        # Not JSON, likely a log message, ignore and continue
+                        logger.debug(f"[JUmPER]: Ignoring non-JSON line from {hostname}: {line}")
+                else:
+                    # No line received, wait a bit
+                    time.sleep(0.1)
+                
+                attempts += 1
+            
+            if not ready_received:
+                logger.warning(f"[JUmPER]: Failed to receive ready message from {hostname} after {max_attempts} attempts")
 
         # Aggregate hardware info from first responding node for Protocol
         self._aggregate_hardware_info()
@@ -294,15 +331,19 @@ class SlurmMultinodeMonitor:
 
     def _reader_loop(self, hostname: str, conn: _NodeConnection) -> None:
         """Continuously read JSON samples from a node's agent."""
+        line_count = 0
         while self.running:
             line = conn.read_line()
             if not line:
                 # Agent exited or SSH closed
                 if self.running:
                     logger.warning(
-                        f"[JUmPER]: Agent on {hostname} disconnected."
+                        f"[JUmPER]: Agent on {hostname} disconnected after {line_count} lines."
                     )
                 break
+
+            line_count += 1
+            logger.debug(f"[JUmPER]: Line {line_count} from {hostname}: {line}")
 
             try:
                 msg = json.loads(line)
@@ -314,6 +355,7 @@ class SlurmMultinodeMonitor:
 
             # Skip non-sample messages
             if "sample" not in msg:
+                logger.debug(f"[JUmPER]: Non-sample message from {hostname}: {msg}")
                 continue
 
             sample = msg["sample"]
