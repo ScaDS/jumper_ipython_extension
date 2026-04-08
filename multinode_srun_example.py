@@ -67,8 +67,13 @@ def analyze_performance_data(log_file="jumper_multinode.jsonl"):
     Args:
         log_file: Path to the JSONL file containing performance data
     """
+    logger.info(f"Looking for performance data in: {log_file}")
+    
     if not os.path.exists(log_file):
         logger.warning(f"No performance data file found: {log_file}")
+        # List files in current directory to help debug
+        current_files = [f for f in os.listdir('.') if f.endswith('.jsonl')]
+        logger.info(f"Available JSONL files: {current_files}")
         return
     
     logger.info(f"Analyzing performance data from {log_file}")
@@ -81,10 +86,8 @@ def analyze_performance_data(log_file="jumper_multinode.jsonl"):
         for line in f:
             try:
                 data = json.loads(line.strip())
-                if 'sample' in data:
+                if 'cpu_util' in data:
                     samples.append(data)
-                elif 'status' in data and data['status'] == 'ready':
-                    node_info[data['node']] = data
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse line: {e}")
     
@@ -93,26 +96,22 @@ def analyze_performance_data(log_file="jumper_multinode.jsonl"):
         return
     
     # Basic statistics
+    nodes = set(s.get('node', '') for s in samples)
     logger.info(f"Collected {len(samples)} performance samples")
-    logger.info(f"Monitored nodes: {list(node_info.keys())}")
-    
-    # Node information
-    for node, info in node_info.items():
-        logger.info(f"Node {node}: {info.get('num_cpus', 0)} CPUs, {info.get('num_gpus', 0)} GPUs")
+    logger.info(f"Monitored nodes: {list(nodes)}")
     
     # Performance metrics summary
     cpu_utils = []
     memory_usages = []
     
     for sample in samples:
-        sample_data = sample.get('sample', {})
-        if 'cpu_util' in sample_data and sample_data['cpu_util']:
+        if 'cpu_util' in sample and sample['cpu_util']:
             # Average CPU utilization across cores
-            avg_cpu = sum(sample_data['cpu_util']) / len(sample_data['cpu_util'])
+            avg_cpu = sum(sample['cpu_util']) / len(sample['cpu_util'])
             cpu_utils.append(avg_cpu)
         
-        if 'memory' in sample_data:
-            memory_usages.append(sample_data['memory'])
+        if 'memory' in sample:
+            memory_usages.append(sample['memory'])
     
     if cpu_utils:
         logger.info(f"Average CPU utilization: {sum(cpu_utils)/len(cpu_utils):.2f}")
@@ -161,6 +160,10 @@ def main():
         # Stop monitoring
         logger.info("Stopping monitor...")
         monitor.stop()
+        
+        # Wait a moment to ensure all data is written to file
+        logger.info("Waiting for data to be written...")
+        time.sleep(2.0)
         
         # Analyze collected data
         analyze_performance_data(log_file)
