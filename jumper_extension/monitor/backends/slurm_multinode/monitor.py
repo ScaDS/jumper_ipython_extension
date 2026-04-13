@@ -1,6 +1,6 @@
 """SLURM multi-node performance monitor.
 
-Orchestrates per-node monitoring agents over SSH, collects their
+Orchestrates per-node monitoring collectors over SSH, collects their
 streamed JSON samples, writes them to a log file, and exposes the
 same :class:`MonitorProtocol` surface as the default single-node
 :class:`PerformanceMonitor` so it can be plugged into the existing
@@ -18,8 +18,8 @@ import time
 from typing import Dict, List, Optional
 
 from jumper_extension.adapters.data import PerformanceData
-from jumper_extension.monitor_slurm_multinode._log_writer import MultinodeLogWriter
-from jumper_extension.monitor_slurm_multinode._node_discovery import get_slurm_nodes
+from jumper_extension.monitor.backends.slurm_multinode._log_writer import MultinodeLogWriter
+from jumper_extension.monitor.backends.slurm_multinode._node_discovery import get_slurm_nodes
 from jumper_extension.utilities import get_available_levels
 
 logger = logging.getLogger("extension")
@@ -37,27 +37,27 @@ class _NodeConnection:
         self.info: Dict = {}
 
     def start(self, interval: float, levels: Optional[List[str]] = None) -> None:
-        """Launch the remote agent via srun."""
+        """Launch the remote collector via srun."""
         levels_arg = ""
         if levels:
             levels_arg = f" --levels {','.join(levels)}"
 
-        agent_cmd = (
+        collector_cmd = (
             f"{self.python_executable} -m"
-            f" jumper_extension.monitor_slurm_multinode._agent"
+            f" jumper_extension.monitor.backends.slurm_multinode._collector"
             f" --interval {interval}{levels_arg}"
         )
 
-        # Use srun to launch the agent on the specific node
+        # Use srun to launch the collector on the specific node
         srun_cmd = [
             "srun",
             "--nodelist=" + self.hostname,
             "--ntasks=1",
             "--unbuffered",
-            "bash", "-c", agent_cmd
+            "bash", "-c", collector_cmd
         ]
 
-        logger.info(f"[JUmPER]: Launching agent on {self.hostname} via srun")
+        logger.info(f"[JUmPER]: Launching collector on {self.hostname} via srun")
         logger.debug(f"[JUmPER]: srun command: {' '.join(srun_cmd)}")
         
         self.process = subprocess.Popen(
@@ -84,7 +84,7 @@ class _NodeConnection:
             logger.warning(f"[JUmPER]: Could not check srun process status on {self.hostname}: {e}")
 
     def stop(self) -> None:
-        """Terminate the remote agent."""
+        """Terminate the remote collector."""
         if self.process and self.process.poll() is None:
             try:
                 self.process.terminate()
@@ -92,10 +92,10 @@ class _NodeConnection:
             except subprocess.TimeoutExpired:
                 self.process.kill()
                 self.process.wait(timeout=2)
-            logger.info(f"[JUmPER]: Agent on {self.hostname} stopped.")
+            logger.info(f"[JUmPER]: Collector on {self.hostname} stopped.")
 
     def read_line(self) -> Optional[str]:
-        """Read one line from the agent's stdout (blocking)."""
+        """Read one line from the collector's stdout (blocking)."""
         if self.process and self.process.stdout:
             try:
                 line = self.process.stdout.readline()
@@ -117,10 +117,10 @@ class SlurmMultinodeMonitor:
         monitor.stop()
 
     On ``start()`` it discovers the SLURM nodes, SSHes into each one,
-    launches the agent, and starts reader threads that feed samples
+    launches the collector, and starts reader threads that feed samples
     into a JSON-Lines log file.
 
-    The local (head) node is **also** monitored by launching an agent
+    The local (head) node is **also** monitored by launching a collector
     in-process.
 
     Attributes required by ``MonitorProtocol`` are provided by
@@ -158,11 +158,11 @@ class SlurmMultinodeMonitor:
         self._reader_threads: List[threading.Thread] = []
         self._log_writer = MultinodeLogWriter(log_path)
 
-        # Data container — initialised once we know hardware from agents
+        # Data container — initialised once we know hardware from collectors
         self.data: Optional[PerformanceData] = None
         self.levels = get_available_levels()
 
-        # Per-node metadata collected from agent "ready" messages
+        # Per-node metadata collected from collector "ready" messages
         self.node_info: Dict[str, Dict] = {}
 
     # ------------------------------------------------------------------
@@ -170,7 +170,7 @@ class SlurmMultinodeMonitor:
     # ------------------------------------------------------------------
 
     def start(self, interval: float = 1.0) -> None:
-        """Discover nodes, SSH into each, launch agents, start readers."""
+        """Discover nodes, SSH into each, launch collectors, start readers."""
         if self.running:
             logger.warning("[JUmPER]: Multinode monitor is already running.")
             return
@@ -193,13 +193,13 @@ class SlurmMultinodeMonitor:
         # Open log file
         self._log_writer.open()
 
-        # Launch agents on all nodes
+        # Launch collectors on all nodes
         for hostname in self._nodes:
             conn = _NodeConnection(hostname, self._python_executable)
             conn.start(interval, self.levels)
             self._connections[hostname] = conn
 
-        # Wait for "ready" handshake from each agent
+        # Wait for "ready" handshake from each collector
         for hostname, conn in self._connections.items():
             ready_received = False
             max_attempts = 10  # Prevent infinite loop
@@ -215,7 +215,7 @@ class SlurmMultinodeMonitor:
                             conn.info = msg
                             self.node_info[hostname] = msg
                             logger.info(
-                                f"[JUmPER]: Agent on {hostname} ready "
+                                f"[JUmPER]: Collector on {hostname} ready "
                                 f"(cpus={msg.get('num_cpus')}, "
                                 f"gpus={msg.get('num_gpus')})"
                             )
@@ -223,9 +223,9 @@ class SlurmMultinodeMonitor:
                         elif msg.get("status") == "error":
                             error = msg.get("error", "Unknown error")
                             logger.error(
-                                f"[JUmPER]: Agent on {hostname} failed to initialize: {error}"
+                                f"[JUmPER]: Collector on {hostname} failed to initialize: {error}"
                             )
-                            # Don't wait for ready message if agent failed
+                            # Don't wait for ready message if collector failed
                             break
                         else:
                             # Got JSON but not a ready/error message, continue reading
@@ -272,10 +272,10 @@ class SlurmMultinodeMonitor:
         )
 
     def stop(self) -> None:
-        """Stop all agents and close the log file."""
+        """Stop all collectors and close the log file."""
         self.running = False
 
-        # Terminate remote agents
+        # Terminate remote collectors
         for conn in self._connections.values():
             conn.stop()
 
@@ -330,15 +330,15 @@ class SlurmMultinodeMonitor:
         }
 
     def _reader_loop(self, hostname: str, conn: _NodeConnection) -> None:
-        """Continuously read JSON samples from a node's agent."""
+        """Continuously read JSON samples from a node's collector."""
         line_count = 0
         while self.running:
             line = conn.read_line()
             if not line:
-                # Agent exited or SSH closed
+                # Collector exited or SSH closed
                 if self.running:
                     logger.warning(
-                        f"[JUmPER]: Agent on {hostname} disconnected after {line_count} lines."
+                        f"[JUmPER]: Collector on {hostname} disconnected after {line_count} lines."
                     )
                 break
 

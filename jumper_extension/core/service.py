@@ -27,7 +27,8 @@ from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
-from jumper_extension.monitor.common import MonitorProtocol, PerformanceMonitor
+from jumper_extension.monitor.common import MonitorProtocol
+from jumper_extension.monitor.backends.thread import PerformanceMonitor
 from jumper_extension.adapters.session import SessionExporter, SessionImporter
 from jumper_extension.adapters.visualizer import build_performance_visualizer, \
     VisualizerProtocol
@@ -87,17 +88,25 @@ class PerfmonitorService:
         """Create a monitor instance based on the requested type.
 
         Args:
-            monitor_type: ``"default"`` for the standard single-node
-                monitor, ``"slurm_multinode"`` for the multi-node
-                SLURM monitor.
+            monitor_type: ``"default"`` for the subprocess-based
+                monitor (GIL-independent), ``"thread"`` for the
+                in-process threaded monitor, ``"slurm_multinode"``
+                for the multi-node SLURM monitor.
 
         Returns:
             A monitor satisfying :class:`MonitorProtocol`.
         """
+        if monitor_type == "thread":
+            return PerformanceMonitor()
+        if monitor_type == "native_c":
+            from jumper_extension.monitor.backends.native_c import CSubprocessPerformanceMonitor
+            return CSubprocessPerformanceMonitor()
         if monitor_type == "slurm_multinode":
-            from jumper_extension.monitor_slurm_multinode import SlurmMultinodeMonitor
+            from jumper_extension.monitor.backends.slurm_multinode import SlurmMultinodeMonitor
             return SlurmMultinodeMonitor()
-        return PerformanceMonitor()
+        # default: subprocess-based monitor (Python collector)
+        from jumper_extension.monitor.backends.subprocess_python import SubprocessPerformanceMonitor
+        return SubprocessPerformanceMonitor()
 
     def on_pre_run_cell(
         self,
@@ -228,10 +237,10 @@ class PerfmonitorService:
 
                 service.start_monitoring(monitor_type="slurm_multinode")
         """
-        # If an imported (offline) session is currently attached, swap to a live monitor
-        if self.monitor.is_imported:
-            self.monitor = self._create_monitor(monitor_type)
-        elif monitor_type != "default" and not self.monitor.running:
+        # If an imported (offline) session is currently attached, or the
+        # monitor has not been started yet, (re-)create via the factory so
+        # the requested monitor_type is honoured.
+        if not self.monitor.running:
             self.monitor = self._create_monitor(monitor_type)
 
         if self.monitor.running:

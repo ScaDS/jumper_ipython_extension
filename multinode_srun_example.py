@@ -26,7 +26,7 @@ from pathlib import Path
 # Add the jumper_extension to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from jumper_extension.monitor_slurm_multinode.monitor import SlurmMultinodeMonitor
+from jumper_extension.monitor.backends.slurm_multinode.monitor import SlurmMultinodeMonitor
 
 # Configure logging
 logging.basicConfig(
@@ -42,7 +42,7 @@ def run_workload_on_all_nodes(duration_seconds=30):
     
     This function runs on the head node and represents the coordination
     of work across all SLURM nodes. The actual monitoring happens
-    on each node via srun-launched agents.
+    on each node via srun-launched collectors.
     """
     logger.info(f"Starting workload: sleeping for {duration_seconds} seconds")
     logger.info("All nodes are being monitored via srun during this period")
@@ -129,7 +129,7 @@ def main():
     # Check if we're in a SLURM environment
     if not os.environ.get('SLURM_JOB_ID'):
         logger.warning("Not running in SLURM environment. This example requires SLURM.")
-        logger.info("This script uses srun to launch monitoring agents on SLURM nodes.")
+        logger.info("This script uses srun to launch monitoring collectors on SLURM nodes.")
         return 1
     
     logger.info("Using srun for node communication (no SSH passwords required)")

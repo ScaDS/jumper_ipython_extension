@@ -12,6 +12,17 @@ class PsutilProcessBackend(ProcessBackend):
 
     name = "process-psutil"
 
+    def setup(self) -> None:
+        self._process_cache: dict[int, psutil.Process] = {}
+
+    def _get_or_create_process(self, pid: int) -> psutil.Process:
+        """Return a cached Process object for *pid*, creating one if needed."""
+        proc = self._process_cache.get(pid)
+        if proc is None:
+            proc = psutil.Process(pid)
+            self._process_cache[pid] = proc
+        return proc
+
     def get_process_pids(self) -> set[int]:
         """Get current process PID and all its children PIDs."""
         pids = {self._m.pid}
@@ -21,6 +32,10 @@ class PsutilProcessBackend(ProcessBackend):
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
+        # prune cache: drop PIDs that are no longer alive
+        self._process_cache = {
+            p: obj for p, obj in self._process_cache.items() if p in pids
+        }
         return pids
 
     def filter_process(self, proc: psutil.Process, mode: str) -> bool:
@@ -81,9 +96,9 @@ class PsutilProcessBackend(ProcessBackend):
         """Safely call a process method and return default on error."""
         try:
             if not isinstance(proc, psutil.Process):
-                # proc might be a pid. Moved Process creation here to catch
-                # exceptions at the same place
-                proc = psutil.Process(proc)
+                # proc might be a pid — use cache so objects persist
+                # across ticks (needed for delta-based cpu_percent)
+                proc = self._get_or_create_process(proc)
             result = proc_func(proc)
             return result if result is not None else default
         except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
