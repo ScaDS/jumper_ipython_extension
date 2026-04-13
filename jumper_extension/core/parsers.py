@@ -37,8 +37,10 @@ def build_perfmonitor_start_parser() -> argparse.ArgumentParser:
         "--monitor",
         type=str,
         default="default",
-        choices=["default", "slurm_multinode"],
-        help="Monitor backend to use (default: default)",
+        choices=["default", "native_c", "thread", "slurm_multinode"],
+        help="Monitor backend to use (default: subprocess-based Python collector, "
+             "'native_c' for native C collector, "
+             "'thread' for in-process threaded monitor)",
     )
     return parser
 

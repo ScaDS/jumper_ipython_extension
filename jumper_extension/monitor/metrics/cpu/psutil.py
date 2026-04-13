@@ -19,7 +19,7 @@ class PsutilCpuBackend(CpuBackend):
             pids = self._m.process_pids
             cpu_total = sum(
                 self._m._process_backend.safe_proc_call(
-                    pid, lambda p: p.cpu_percent(interval=0.1)
+                    pid, lambda p: p.cpu_percent()
                 )
                 for pid in pids
             )

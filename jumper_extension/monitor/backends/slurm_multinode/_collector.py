@@ -1,6 +1,6 @@
-"""Remote monitoring agent that runs on each SLURM node.
+"""Remote monitoring collector that runs on each SLURM node.
 
-This module is executed as ``python -m jumper_extension.monitor_slurm_multinode._agent``
+This module is executed as ``python -m jumper_extension.monitor.backends.slurm_multinode._collector``
 on each remote node via SSH.  It instantiates the default
 :class:`PerformanceMonitor`, collects metrics at the requested interval,
 and writes one JSON object per sample to *stdout* (one line per object).
@@ -13,9 +13,9 @@ Protocol (stdout, one JSON line per sample)::
 
 A special ``{"status": "ready", "node": "<hostname>", ...}`` line is
 emitted once the monitor is initialised so the orchestrator knows the
-agent is alive.
+collector is alive.
 
-The agent stops gracefully when *stdin* is closed or when it receives
+The collector stops gracefully when *stdin* is closed or when it receives
 a SIGTERM / SIGINT.
 """
 
@@ -29,10 +29,10 @@ from typing import List, Optional
 
 # Make sure the package is importable even when invoked stand-alone on
 # the remote node.  The orchestrator ensures the correct PYTHONPATH.
-from jumper_extension.monitor.common import PerformanceMonitor
+from jumper_extension.monitor.backends.thread import PerformanceMonitor
 
 
-def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
+def _run_collector(interval: float, levels: Optional[List[str]] = None) -> None:
     hostname = socket.gethostname()
     
     try:
@@ -64,13 +64,13 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
         # Check if any log messages were captured and write them to stderr
         log_output = log_capture.getvalue()
         if log_output:
-            sys.stderr.write(f"[Agent init logs] {log_output}")
+            sys.stderr.write(f"[Collector init logs] {log_output}")
             sys.stderr.flush()
         
         # Check if any stdout was captured and write it to stderr
         stdout_output = temp_stdout.getvalue()
         if stdout_output:
-            sys.stderr.write(f"[Agent init stdout] {stdout_output}")
+            sys.stderr.write(f"[Collector init stdout] {stdout_output}")
             sys.stderr.flush()
 
         if levels is None:
@@ -99,7 +99,7 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
             "error": str(e),
             "pid": os.getpid(),
         }
-        sys.stderr.write(f"[Agent error] {e}\n")
+        sys.stderr.write(f"[Collector error] {e}\n")
         sys.stderr.flush()
         sys.stdout.write(json.dumps(error_msg) + "\n")
         sys.stdout.flush()
@@ -120,7 +120,7 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
     monitor.running = True
 
     # Debug: Let us know we're starting the main loop
-    sys.stderr.write(f"[Agent {hostname}] Starting main loop with interval {interval}s\n")
+    sys.stderr.write(f"[Collector {hostname}] Starting main loop with interval {interval}s\n")
     sys.stderr.flush()
 
     try:
@@ -157,7 +157,7 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
                     },
                 }
                 sys.stdout.write(json.dumps(sample) + "\n")
-                sys.stderr.write(f"[Agent {hostname}] Sent sample for level {level}\n")
+                sys.stderr.write(f"[Collector {hostname}] Sent sample for level {level}\n")
                 sys.stderr.flush()
             sys.stdout.flush()
 
@@ -165,14 +165,14 @@ def _run_agent(interval: float, levels: Optional[List[str]] = None) -> None:
             if elapsed < interval:
                 time.sleep(interval - elapsed)
     except BrokenPipeError:
-        sys.stderr.write(f"[Agent {hostname}] Broken pipe - exiting\n")
+        sys.stderr.write(f"[Collector {hostname}] Broken pipe - exiting\n")
         sys.stderr.flush()
     except Exception as e:
-        sys.stderr.write(f"[Agent {hostname}] Error in main loop: {e}\n")
+        sys.stderr.write(f"[Collector {hostname}] Error in main loop: {e}\n")
         sys.stderr.flush()
     finally:
         monitor.running = False
-        sys.stderr.write(f"[Agent {hostname}] Exiting main loop\n")
+        sys.stderr.write(f"[Collector {hostname}] Exiting main loop\n")
         sys.stderr.flush()
 
 
@@ -180,7 +180,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="JUmPER remote node monitoring agent"
+        description="JUmPER remote node monitoring collector"
     )
     parser.add_argument(
         "--interval",
@@ -196,7 +196,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     levels = args.levels.split(",") if args.levels else None
-    _run_agent(args.interval, levels)
+    _run_collector(args.interval, levels)
 
 
 if __name__ == "__main__":
