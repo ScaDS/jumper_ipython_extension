@@ -2,10 +2,8 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from jumper_extension.adapters.visualizer import (
-    MatplotlibPerformanceVisualizer,
-    PlotlyPerformanceVisualizer,
-)
+from jumper_extension.adapters.visualizer.backends.matplotlib import MatplotlibPerformanceVisualizer
+from jumper_extension.adapters.visualizer.backends.plotly import PlotlyPerformanceVisualizer
 from jumper_extension.ipython.magics import PerfmonitorMagics
 from jumper_extension.core.service import build_perfmonitor_magic_adapter
 from jumper_extension.ipython.extension import (
