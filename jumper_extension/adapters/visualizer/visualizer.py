@@ -4,10 +4,12 @@ import uuid
 import threading
 import time
 from collections import deque
+from pathlib import Path
 from typing import List, runtime_checkable, Protocol, Optional, Tuple
 
 import plotly.graph_objects as go
 from IPython.display import display, HTML
+from jinja2 import Environment, FileSystemLoader
 from ipywidgets import widgets, Layout
 
 from jumper_extension.adapters.cell_history import CellHistory
@@ -872,43 +874,41 @@ class PerformanceVisualizer:
         ncols = 2
 
         # -- Display header (static) --------------------------------------- #
-        header_html = f"""
-<div style="display:flex;align-items:center;justify-content:space-between;
-            flex-wrap:wrap;margin-bottom:8px">
-  <b>Live Performance Monitor</b>
-  <span>
-    <span id="jumper-status-{session_id}"
-          style="color:green;font-weight:bold">● Live</span>
-    <span style="color:#666;margin-left:8px">
-      window {window_seconds:.0f}s / update {update_interval}s
-    </span>
-  </span>
-  <img src="{logo_image}" alt="JUmPER"
-       style="height:auto;width:100px" onerror="this.style.display='none'">
-</div>
-<p style="color:#666;font-size:0.9em">
-  Panels: {', '.join(label_map.get(m, m) for m in default_metrics)}
-  (level: {level}).
-</p>
-"""
-        display(HTML(header_html))
+        template_dir = (
+            Path(__file__).parent.parent.parent
+            / "templates" / "visualizer" / "plotly"
+        )
+        env = Environment(
+            loader=FileSystemLoader(str(template_dir)),
+            autoescape=False,
+        )
+        header_css = (template_dir / "live_header" / "live_header.css").read_text(encoding="utf-8")
+        header_html = env.get_template("live_header/live_header.html").render(
+            session_id=session_id,
+            window_seconds=f"{window_seconds:.0f}",
+            update_interval=update_interval,
+            logo_src=logo_image,
+            panel_labels=", ".join(label_map.get(m, m) for m in default_metrics),
+            level=level,
+        )
+        display(HTML(f"<style>{header_css}</style>\n{header_html}"))
 
         # -- Single display handle for the whole grid ---------------------- #
         grid_id = f"jumper-live-grid-{session_id}"
-        init_items = "".join(
-            f"<div style='padding:4px'>"
-            f"<p style='color:#888'>Initialising "
-            f"{label_map.get(m, m)}…</p></div>"
+        grid_css = (template_dir / "live_grid" / "live_grid.css").read_text(encoding="utf-8")
+        placeholder_html = '<p class="jumper-live-placeholder">Waiting for data…</p>'
+
+        def _render_grid_html(cells):
+            return env.get_template("live_grid/live_grid.html").render(
+                ncols=ncols, cells=cells,
+            )
+
+        init_cells = [
+            f'<p class="jumper-live-initializing">Initialising {label_map.get(m, m)}…</p>'
             for m in default_metrics
-        )
-        display(
-            HTML(
-                f"<div style='display:grid;"
-                f"grid-template-columns:repeat({ncols},1fr);"
-                f"gap:8px'>{init_items}</div>"
-            ),
-            display_id=grid_id,
-        )
+        ]
+        display(HTML(f"<style>{grid_css}</style>"))
+        display(HTML(_render_grid_html(init_cells)), display_id=grid_id)
 
         # -- Background thread --------------------------------------------- #
         def _render_grid():
@@ -928,27 +928,15 @@ class PerformanceVisualizer:
                                     "displayModeBar": True},
                         )
                     else:
-                        html_frag = (
-                            "<p style='color:#888;text-align:center'>"
-                            "Waiting for data…</p>"
-                        )
+                        html_frag = placeholder_html
                 except Exception:
                     logger.debug(
                         "Live plot update error for %s", metric,
                         exc_info=True,
                     )
-                    html_frag = (
-                        "<p style='color:#888;text-align:center'>"
-                        "Waiting for data…</p>"
-                    )
-                cells.append(
-                    f"<div style='padding:4px'>{html_frag}</div>"
-                )
-            return (
-                f"<div style='display:grid;"
-                f"grid-template-columns:repeat({ncols},1fr);"
-                f"gap:8px'>{''.join(cells)}</div>"
-            )
+                    html_frag = placeholder_html
+                cells.append(html_frag)
+            return _render_grid_html(cells)
 
         def _live_loop():
             try:
