@@ -30,7 +30,7 @@ from jumper_extension.core.messages import (
 from jumper_extension.monitor.common import MonitorProtocol
 from jumper_extension.monitor.backends.thread import PerformanceMonitor
 from jumper_extension.adapters.session import SessionExporter, SessionImporter
-from jumper_extension.adapters.visualizer import build_performance_visualizer, \
+from jumper_extension.adapters.visualizer.visualizer import build_performance_visualizer, \
     VisualizerProtocol
 from jumper_extension.adapters.reporter import PerformanceReporter, build_performance_reporter
 from jumper_extension.adapters.cell_history import CellHistory
