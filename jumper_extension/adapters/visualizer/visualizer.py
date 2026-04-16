@@ -269,14 +269,14 @@ class PerformanceVisualizer:
             cell_mask = (perfdata["time"] >= cell["start_time"]) & (
                 perfdata["time"] <= cell["end_time"]
             )
-            cell_perfdata = perfdata[cell_mask]
+            cell_perfdata = perfdata.loc[cell_mask.values]
 
             if not cell_perfdata.empty:
                 original_start, cell_duration = (
                     cell["start_time"],
                     cell["end_time"] - cell["start_time"],
                 )
-                compressed_perfdata.loc[cell_mask, "time"] = current_time + (
+                compressed_perfdata.loc[cell_mask.values, "time"] = current_time + (
                     cell_perfdata["time"].values - original_start
                 )
                 cell_boundaries.append(

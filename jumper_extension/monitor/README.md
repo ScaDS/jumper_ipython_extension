@@ -53,7 +53,7 @@ protocol, so any backend can be swapped in transparently.
 
 ## Available monitors
 
-### 1. Thread monitor (`"thread"`)
+### 1. Thread monitor (`"thread"`) (*deprecated, measurement resolution depends on GIL, potentially enough for non-CPU bound applications*)
 
 ```python
 from jumper_extension.monitor.backends.thread import PerformanceMonitor
@@ -75,7 +75,7 @@ collection loop.  Results stream back to the parent over a pipe as
 JSON lines.  Because collection happens in a separate process, it is
 immune to GIL contention.
 
-### 3. Native C collector monitor (`"native_c"`) (*experimental*)
+### 3. Native C collector monitor (`"native_c"`) (*experimental, useful for very high resolution, e.g. > 10Hz*)
 
 ```python
 from jumper_extension.monitor.backends.native_c import CSubprocessPerformanceMonitor
