@@ -28,6 +28,8 @@ import sys
 import time
 from typing import List, Optional
 
+import psutil
+
 # SCHED_BATCH (Linux) — marks processes as throughput-oriented so the
 # scheduler deprioritises them for preemption.  Not available via the
 # stdlib, so we use ctypes to call sched_setscheduler(2) directly.
@@ -226,7 +228,18 @@ def _run_collector(
     try:
         while running:
             _t0 = time.perf_counter()
-            monitor.process_pids = monitor._get_process_pids()
+            try:
+                monitor.process_pids = monitor._get_process_pids()
+            except (psutil.NoSuchProcess, psutil.AccessDenied, ProcessLookupError):
+                # Target process (tree) vanished — skip this tick
+                _t1 = _t2 = _t3 = _t4 = time.perf_counter()
+                next_tick += interval
+                delay = next_tick - time.perf_counter()
+                if delay > 0:
+                    time.sleep(delay)
+                else:
+                    next_tick = time.perf_counter()
+                continue
             _t1 = time.perf_counter()
 
             # Lower the priority of the target PID tree so the
@@ -234,7 +247,17 @@ def _run_collector(
             _renice_target_pids(monitor.process_pids)
             _t2 = time.perf_counter()
 
-            metrics = monitor._collect_metrics()
+            try:
+                metrics = monitor._collect_metrics()
+            except (psutil.NoSuchProcess, psutil.AccessDenied, ProcessLookupError):
+                _t3 = _t4 = time.perf_counter()
+                next_tick += interval
+                delay = next_tick - time.perf_counter()
+                if delay > 0:
+                    time.sleep(delay)
+                else:
+                    next_tick = time.perf_counter()
+                continue
             _t3 = time.perf_counter()
 
             for level, data_tuple in zip(monitor.levels, metrics):
