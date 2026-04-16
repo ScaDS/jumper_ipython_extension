@@ -264,7 +264,20 @@ class SubprocessPerformanceMonitor:
                 )
 
     def _build_agent_cmd(self, interval: float) -> str:
-        """Return the shell command that launches the monitoring collector."""
+        """Return the shell command that launches the monitoring collector.
+
+        The collector process attempts to elevate its own scheduling
+        priority via ``os.nice(-10)`` at startup (see
+        :func:`~jumper_extension.monitor.backends.subprocess_python._collector._run_collector`).
+        This helps the monitor keep up with the requested sampling
+        frequency even when all CPU cores are fully saturated by compute
+        tasks.  If the current user lacks ``CAP_SYS_NICE`` the attempt
+        is silently ignored and the collector instead lowers the priority
+        of the target process tree (including the root) to nice +15
+        (which requires no special privileges), giving itself a relative
+        advantage.  Renicing the root ensures future children inherit
+        the lowered priority automatically.
+        """
         levels_arg = ""
         if self.levels:
             levels_arg = f" --levels {','.join(self.levels)}"

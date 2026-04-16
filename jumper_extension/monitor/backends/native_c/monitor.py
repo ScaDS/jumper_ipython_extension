@@ -33,7 +33,13 @@ class CSubprocessPerformanceMonitor(SubprocessPerformanceMonitor):
     _BINARY_NAME = "jumper_collector"
 
     def _build_agent_cmd(self, interval: float) -> str:
-        """Return the shell command that launches the C collector binary."""
+        """Return the shell command that launches the C collector binary.
+
+        Like the Python variant, the C collector elevates its own
+        scheduling priority via ``setpriority()`` at startup.  See
+        :meth:`SubprocessPerformanceMonitor._build_agent_cmd` for
+        rationale.
+        """
         binary = os.path.join(
             os.path.dirname(__file__), self._BINARY_NAME
         )

@@ -148,6 +148,8 @@ class PerformanceMonitor:
 
 
     def _collect_metrics(self):
+        # Snapshot all per-PID metrics once; backends read from the cache.
+        self._process_backend.snapshot_metrics()
         time_mark = time.perf_counter()
         return tuple(
             (
