@@ -87,10 +87,34 @@ def _cpu_burn(stop_event):
             s += i * i
 
 
+def _available_cpus():
+    """Return the number of CPUs available to this process.
+
+    Respects SLURM's ``SLURM_CPUS_PER_TASK`` / ``SLURM_CPUS_ON_NODE``,
+    cgroup limits (``os.sched_getaffinity``), and falls back to
+    ``os.cpu_count()`` only as a last resort.
+    """
+    # 1. SLURM environment (most reliable on shared HPC nodes)
+    for var in ("SLURM_CPUS_PER_TASK", "SLURM_CPUS_ON_NODE"):
+        val = os.environ.get(var)
+        if val is not None:
+            try:
+                return int(val)
+            except ValueError:
+                pass
+    # 2. cgroup / taskset affinity
+    try:
+        return len(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        pass
+    # 3. Fallback
+    return os.cpu_count() or 4
+
+
 def start_workload(n_workers=None):
-    """Spawn *n_workers* processes (default: all CPUs) doing busy work."""
+    """Spawn *n_workers* processes (default: available CPUs) doing busy work."""
     if n_workers is None:
-        n_workers = multiprocessing.cpu_count()
+        n_workers = _available_cpus()
     stop_event = multiprocessing.Event()
     workers = []
     for _ in range(n_workers):
@@ -137,15 +161,13 @@ def _count_level_pids(monitor):
     return counts
 
 
-def print_experiment_overview(monitor, n_workers):
-    """Print PID / process counts for each level."""
-    from jumper_extension.utilities import get_available_levels, is_slurm_available
-    proc = psutil.Process()
-    n_children = len(proc.children(recursive=True))
+def _snapshot_process_counts():
+    """Snapshot process counts right now (call while workload is running)."""
+    from jumper_extension.utilities import is_slurm_available
     uid = os.getuid()
+    proc = psutil.Process()
+    n_process_tree = 1 + len(proc.children(recursive=True))
 
-    # Count processes per level
-    n_process_tree = 1 + n_children  # root + children
     try:
         all_procs = list(psutil.process_iter(["pid", "uids"]))
         n_system = len(all_procs)
@@ -168,16 +190,30 @@ def print_experiment_overview(monitor, n_workers):
         except Exception:
             n_slurm = -1
 
+    return {
+        "process_tree": n_process_tree,
+        "user": n_user,
+        "uid": uid,
+        "system": n_system,
+        "slurm": n_slurm,
+    }
+
+
+def print_experiment_overview(monitor, n_workers, proc_counts):
+    """Print PID / process counts for each level."""
     print(f"\n{'─'*60}")
     print("Experiment overview")
     print(f"{'─'*60}")
-    print(f"  CPUs (logical):         {multiprocessing.cpu_count()}")
+    print(f"  CPUs (available):       {_available_cpus()}")
+    print(f"  CPUs (total on node):   {os.cpu_count()}")
     print(f"  Burn workers:           {n_workers}")
     print(f"  Active levels:          {getattr(monitor, 'levels', '?')}")
-    print(f"  Processes per level:")
-    print(f"    process (PID tree):   {n_process_tree}")
-    print(f"    user    (uid={uid}): {' ' * max(0, 4 - len(str(uid)))}{n_user}")
-    print(f"    system  (all):        {n_system}")
+    print(f"  Processes per level (during workload):")
+    uid = proc_counts.get("uid", "?")
+    print(f"    process (PID tree):   {proc_counts.get('process_tree', '?')}")
+    print(f"    user    (uid={uid}): {' ' * max(0, 4 - len(str(uid)))}{proc_counts.get('user', '?')}")
+    print(f"    system  (all):        {proc_counts.get('system', '?')}")
+    n_slurm = proc_counts.get("slurm")
     if n_slurm is not None:
         print(f"    slurm   (job={os.environ.get('SLURM_JOB_ID', '?')}): "
               f"{n_slurm}")
@@ -230,12 +266,17 @@ def run_single(backend_name, freq_hz, duration_sec):
     t_wall_start = time.perf_counter()
     try:
         workers, stop_event = start_workload()
+        print(f"({len(workers)} burn workers) ", end="", flush=True)
         time.sleep(0.5)
         monitor.start(interval=interval)
         t_setup_done = time.perf_counter()
 
         # --- measurement window ---
         t_start = time.perf_counter()
+
+        # Snapshot process counts while workload is running
+        proc_counts = _snapshot_process_counts()
+
         time.sleep(duration_sec)
         t_end = time.perf_counter()
 
@@ -319,6 +360,7 @@ def run_single(backend_name, freq_hz, duration_sec):
         "setup_time": setup_time,
         "teardown_time": teardown_time,
         "total_wall": total_wall,
+        "proc_counts": proc_counts,
         "df": df,
         "monitor": monitor,
     }
@@ -422,6 +464,7 @@ def main():
 
                 all_dfs.append(result["df"])
                 last_monitor = result.pop("monitor")
+                last_proc_counts = result.pop("proc_counts", {})
                 result.pop("df")
                 result["rep"] = rep
                 run_rows.append(result)
@@ -434,7 +477,8 @@ def main():
             if not overview_printed and last_monitor is not None:
                 print_experiment_overview(
                     last_monitor,
-                    multiprocessing.cpu_count(),
+                    _available_cpus(),
+                    last_proc_counts,
                 )
                 overview_printed = True
 
