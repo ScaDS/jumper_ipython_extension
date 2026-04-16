@@ -46,4 +46,4 @@ include = ["jumper_extension*"]
 
 [tool.setuptools.package-data]
 "jumper_extension.templates.report" = ["*.html", "*.css"]
-"jumper_extension.templates.plotly_visualizer" = ["**/*"]
+"jumper_extension.templates.visualizer.plotly" = ["**/*"]
