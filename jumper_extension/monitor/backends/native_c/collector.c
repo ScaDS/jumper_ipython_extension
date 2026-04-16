@@ -416,36 +416,36 @@ static int read_system_cpu_per_core(double *util_pct, int ncpus) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Memory (USS via /proc/<pid>/smaps_rollup)                          */
+/* Memory (RSS via /proc/<pid>/statm — fast, single-line read)        */
 /* ------------------------------------------------------------------ */
 
-static long read_pid_uss_kb(int pid) {
-    char path[64], buf[4096];
-    /* smaps_rollup is the fast path (Linux ≥4.14).
-       Falls back to Rss from /proc/<pid>/status. */
-    snprintf(path, sizeof(path), "/proc/%d/smaps_rollup", pid);
-    int n = read_file(path, buf, sizeof(buf));
-    if (n > 0) {
-        char *p = strstr(buf, "Private_Clean:");
-        long priv_clean = p ? strtol(p + 14, NULL, 10) : 0;
-        p = strstr(buf, "Private_Dirty:");
-        long priv_dirty = p ? strtol(p + 14, NULL, 10) : 0;
-        return priv_clean + priv_dirty; /* kB */
-    }
-    /* Fallback: RSS from /proc/<pid>/status */
-    snprintf(path, sizeof(path), "/proc/%d/status", pid);
-    if (read_file(path, buf, sizeof(buf)) > 0) {
-        char *p = strstr(buf, "\nVmRSS:");
-        if (p) return strtol(p + 7, NULL, 10);
-    }
+static long read_pid_rss_kb(int pid) {
+    char path[64], buf[128];
+    snprintf(path, sizeof(path), "/proc/%d/statm", pid);
+    if (read_file(path, buf, sizeof(buf)) < 0) return 0;
+    /* statm fields: size resident shared text lib data dt (in pages) */
+    long pages;
+    long dummy;
+    if (sscanf(buf, "%ld %ld", &dummy, &pages) != 2) return 0;
+    /* Convert pages to kB (page size is almost always 4 kB) */
+    return pages * (sysconf(_SC_PAGESIZE) / 1024);
+}
+
+/* Per-tick memory snapshot — read once, look up per level. */
+typedef struct { int pid; long rss_kb; } mem_snap_t;
+static mem_snap_t g_mem_snap[MAX_PIDS];
+static int        g_mem_snap_count = 0;
+
+static long find_mem_snap(int pid) {
+    for (int i = 0; i < g_mem_snap_count; i++)
+        if (g_mem_snap[i].pid == pid) return g_mem_snap[i].rss_kb;
     return 0;
 }
 
 static double compute_pid_set_memory_gb(int *pids, int npids) {
     long total_kb = 0;
-    for (int i = 0; i < npids; i++) {
-        total_kb += read_pid_uss_kb(pids[i]);
-    }
+    for (int i = 0; i < npids; i++)
+        total_kb += find_mem_snap(pids[i]);
     return (double)total_kb / (1024.0 * 1024.0);
 }
 
@@ -485,10 +485,46 @@ static io_counters_t read_pid_io(int pid) {
     return c;
 }
 
+/* Per-tick IO snapshot — read once, look up per level. */
+typedef struct { int pid; io_counters_t io; } io_snap_t;
+static io_snap_t g_io_snap[MAX_PIDS];
+static int       g_io_snap_count = 0;
+
+static io_counters_t find_io_snap(int pid) {
+    for (int i = 0; i < g_io_snap_count; i++)
+        if (g_io_snap[i].pid == pid) return g_io_snap[i].io;
+    return (io_counters_t){0, 0, 0, 0};
+}
+
+/* Read memory + IO for all unique PIDs once per tick.
+   Call after snapshot_cpu_ticks (same all_pids union). */
+static void snapshot_mem_io(int *all_pids, int n_all) {
+    g_mem_snap_count = 0;
+    g_io_snap_count  = 0;
+    for (int i = 0; i < n_all; i++) {
+        /* deduplicate */
+        int dup = 0;
+        for (int j = 0; j < g_mem_snap_count; j++) {
+            if (g_mem_snap[j].pid == all_pids[i]) { dup = 1; break; }
+        }
+        if (dup) continue;
+        if (g_mem_snap_count < MAX_PIDS) {
+            g_mem_snap[g_mem_snap_count].pid    = all_pids[i];
+            g_mem_snap[g_mem_snap_count].rss_kb = read_pid_rss_kb(all_pids[i]);
+            g_mem_snap_count++;
+        }
+        if (g_io_snap_count < MAX_PIDS) {
+            g_io_snap[g_io_snap_count].pid = all_pids[i];
+            g_io_snap[g_io_snap_count].io  = read_pid_io(all_pids[i]);
+            g_io_snap_count++;
+        }
+    }
+}
+
 static io_counters_t compute_pid_set_io(int *pids, int npids) {
     io_counters_t total = {0, 0, 0, 0};
     for (int i = 0; i < npids; i++) {
-        io_counters_t c = read_pid_io(pids[i]);
+        io_counters_t c = find_io_snap(pids[i]);
         total.read_count  += c.read_count;
         total.write_count += c.write_count;
         total.read_bytes  += c.read_bytes;
@@ -797,6 +833,7 @@ static void emit_samples(double perf_time, double dt) {
         renice_target_pids(all_pids, n_all);
 
         snapshot_cpu_ticks(all_pids, n_all);
+        snapshot_mem_io(all_pids, n_all);
     }
 
     double wallclock = wall_sec();
