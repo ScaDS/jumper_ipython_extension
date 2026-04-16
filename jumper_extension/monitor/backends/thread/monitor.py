@@ -247,13 +247,23 @@ class PerformanceMonitor:
             self.monitor_thread.join(timeout=2.0)
         self.stop_time = time.perf_counter()
         self.wallclock_stop_time = time.time()
+
+        # Recompute missed measurements from elapsed time vs actual samples
+        elapsed = self.stop_time - self.start_time
+        expected = int(elapsed / self.interval) if self.interval > 0 else 0
+        self.n_missed_measurements = max(0, expected - self.n_measurements)
+
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STOPPED].format(
-                seconds=self.stop_time - self.start_time
+                seconds=elapsed
             )
         )
-        logger.info(
-            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MISSED_MEASUREMENTS].format(
-                perc_missed_measurements=self.n_missed_measurements / self.n_measurements
+        if self.n_measurements > 0:
+            logger.info(
+                EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MISSED_MEASUREMENTS].format(
+                    perc_missed_measurements=(
+                        self.n_missed_measurements / expected
+                        if expected > 0 else 0
+                    )
+                )
             )
-        )
