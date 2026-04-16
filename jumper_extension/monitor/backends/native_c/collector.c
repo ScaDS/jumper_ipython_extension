@@ -56,6 +56,11 @@ static int   g_num_sys_cpus  = 0;      /* total online CPUs            */
 static long  g_clk_tck       = 0;      /* sysconf(_SC_CLK_TCK)         */
 static char  g_slurm_job_id[64] = ""; /* SLURM_JOB_ID for slurm level */
 
+/* Renice: lower target PID tree priority so the collector wins CPU time */
+#define RENICE_INCREMENT  19
+static int g_reniced_pids[MAX_PIDS];
+static int g_reniced_count = 0;
+
 /* Active levels (bitmap) */
 static int g_level_active[MAX_LEVELS];
 static const char *g_level_names[] = {
@@ -110,6 +115,45 @@ static int read_file(const char *path, char *buf, size_t bufsz) {
     buf[n] = '\0';
     fclose(f);
     return (int)n;
+}
+
+/* ------------------------------------------------------------------ */
+/* Target PID renice                                                  */
+/* ------------------------------------------------------------------ */
+
+/* Set nice of target PIDs to +RENICE_INCREMENT (skip our own PID).
+   The target root PID (IPython kernel) is included so that all future
+   children it spawns inherit the elevated nice value automatically.
+   Silently ignores EPERM / ESRCH.  Already-reniced PIDs are skipped. */
+static void renice_target_pids(int *pids, int npids) {
+    pid_t my_pid = getpid();
+    struct sched_param sp = { .sched_priority = 0 };
+    for (int i = 0; i < npids; i++) {
+        if (pids[i] == my_pid) continue;
+        /* check if already reniced */
+        int already = 0;
+        for (int j = 0; j < g_reniced_count; j++) {
+            if (g_reniced_pids[j] == pids[i]) { already = 1; break; }
+        }
+        if (already) continue;
+        if (setpriority(PRIO_PROCESS, pids[i], RENICE_INCREMENT) == 0) {
+            /* Also set SCHED_BATCH so CFS treats them as throughput-
+               oriented and avoids preempting the collector. */
+            sched_setscheduler(pids[i], SCHED_BATCH, &sp);
+            if (g_reniced_count < MAX_PIDS)
+                g_reniced_pids[g_reniced_count++] = pids[i];
+        }
+    }
+}
+
+/* Restore all reniced PIDs back to nice 0 / SCHED_OTHER. */
+static void restore_target_pids(void) {
+    struct sched_param sp = { .sched_priority = 0 };
+    for (int i = 0; i < g_reniced_count; i++) {
+        setpriority(PRIO_PROCESS, g_reniced_pids[i], 0);
+        sched_setscheduler(g_reniced_pids[i], SCHED_OTHER, &sp);
+    }
+    g_reniced_count = 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -747,6 +791,11 @@ static void emit_samples(double perf_time, double dt) {
             all_pids[n_all++] = pids_user[i];
         for (int i = 0; i < n_slurm && n_all < MAX_PIDS; i++)
             all_pids[n_all++] = pids_slurm[i];
+
+        /* Lower the priority of the target PID tree so the
+           collector (at nice 0) is scheduled preferentially. */
+        renice_target_pids(all_pids, n_all);
+
         snapshot_cpu_ticks(all_pids, n_all);
     }
 
@@ -876,6 +925,13 @@ int main(int argc, char **argv) {
         g_target_pid = getppid();
     }
 
+    /* Elevate scheduling priority so the collector is not starved when
+       all CPU cores are saturated by compute workloads.  A negative nice
+       value requires CAP_SYS_NICE or root; silently ignore EACCES. */
+    if (setpriority(PRIO_PROCESS, 0, -10) != 0 && errno != EACCES) {
+        /* non-permission error — just continue at default priority */
+    }
+
     g_clk_tck = sysconf(_SC_CLK_TCK);
     g_target_uid = getuid();
     /* Try to read the UID of the target process */
@@ -978,6 +1034,7 @@ int main(int argc, char **argv) {
         emit_samples(now, dt);
     }
 
+    restore_target_pids();
     nvml_shutdown();
     return 0;
 }
