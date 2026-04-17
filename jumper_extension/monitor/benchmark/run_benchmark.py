@@ -405,9 +405,11 @@ def remove_outliers(rows):
 # Sanity check
 # ---------------------------------------------------------------------------
 
-_SANITY_DURATION = 10  # seconds
+_SANITY_N_SAMPLES = 3  # collect this many samples at 1 Hz (≈3 s)
 
-# Base metrics that must be present and non-zero/NaN for a healthy run
+# Base metrics that must be present and non-zero/NaN for a healthy run.
+# The first sample is excluded from the zero-check because CPU utilisation
+# is always 0 on the very first tick (it's a delta metric).
 _REQUIRED_METRICS = [
     "time", "cpu_util_avg", "cpu_util_min", "cpu_util_max",
     "memory",
@@ -420,30 +422,33 @@ _GPU_METRICS = [
 ]
 
 
-def _sanity_check(backend_name, n_workers=None):
+def _sanity_check(backend_name):
     """Run a short sanity check for *backend_name*.
 
-    Starts the monitor under CPU load for a few seconds and verifies that
-    the collected data contains the expected columns with non-NaN,
-    non-zero values.  Returns True on success, False on failure (with
+    Starts the monitor (without CPU burn) for a few seconds and verifies
+    that the collected data contains the expected columns with non-NaN
+    values and that metrics like CPU, memory, and IO are actually being
+    retrieved.  Returns True on success, False on failure (with
     diagnostics printed).
     """
     freq_hz = 1
     interval = 1.0 / freq_hz
     monitor = BACKENDS[backend_name]()
 
-    workers, stop_event = start_workload(n_workers=n_workers)
-    try:
+    monitor.start(interval=interval)
+    # Poll until we have enough samples (first sample's CPU delta is
+    # meaningless, so we need _SANITY_N_SAMPLES + 1 total).
+    required = _SANITY_N_SAMPLES + 1
+    deadline = time.monotonic() + required * 3  # generous timeout
+    while time.monotonic() < deadline:
         time.sleep(0.5)
-        monitor.start(interval=interval)
-        time.sleep(_SANITY_DURATION)
-        monitor.stop()
-    finally:
-        stop_workload(workers, stop_event)
-        try:
-            os.nice(-os.nice(0))
-        except (OSError, PermissionError):
-            pass
+        n_collected = min(
+            len(monitor.data.data.get(level, pd.DataFrame()))
+            for level in getattr(monitor, "levels", ["process"])
+        ) if monitor.data else 0
+        if n_collected >= required:
+            break
+    monitor.stop()
 
     if monitor.data is None:
         print(f"    FAIL: monitor.data is None")
@@ -458,10 +463,15 @@ def _sanity_check(backend_name, n_workers=None):
             continue
 
         n_samples = len(df)
-        expected_min = max(1, int(_SANITY_DURATION * freq_hz * 0.5))
-        if n_samples < expected_min:
-            print(f"    WARN [{level}]: only {n_samples} samples "
-                  f"(expected ≥{expected_min})")
+        if n_samples < 2:
+            print(f"    FAIL [{level}]: only {n_samples} sample(s), "
+                  f"need ≥2 for delta metrics")
+            ok = False
+            continue
+
+        # For zero-checks, skip the first row (CPU delta is 0, IO rates
+        # are meaningless on the very first tick).
+        df_check = df.iloc[1:]
 
         # Check required base metrics
         for col in _REQUIRED_METRICS:
@@ -474,11 +484,12 @@ def _sanity_check(backend_name, n_workers=None):
                 print(f"    FAIL [{level}]: column '{col}' has "
                       f"{n_nan}/{n_samples} NaN values")
                 ok = False
-            # Skip zero-check for time (starts at ~0) and io (can be 0)
-            if col not in ("time",):
-                n_zero = (df[col] == 0).sum()
-                if n_zero == n_samples:
-                    print(f"    WARN [{level}]: column '{col}' is all zeros")
+            # All-zeros check (skip "time" — it legitimately starts near 0)
+            if col != "time" and len(df_check) > 0:
+                if (df_check[col] == 0).all():
+                    print(f"    FAIL [{level}]: column '{col}' is all zeros "
+                          f"(after skipping first sample)")
+                    ok = False
 
         # Check per-core CPU columns exist
         cpu_cols = [c for c in df.columns if c.startswith("cpu_util_")
@@ -504,32 +515,34 @@ def _sanity_check(backend_name, n_workers=None):
 
         if ok:
             metrics_summary = (
-                f"cpu_avg={df['cpu_util_avg'].mean():.1f}%, "
-                f"mem={df['memory'].mean():.1f}MB"
+                f"cpu_avg={df_check['cpu_util_avg'].mean():.1f}%, "
+                f"mem={df_check['memory'].mean():.1f}MB, "
+                f"io_r={df_check['io_read'].mean():.0f}, "
+                f"io_w={df_check['io_write'].mean():.0f}"
             )
             if has_gpu:
                 metrics_summary += (
-                    f", gpu_util={df['gpu_util_avg'].mean():.1f}%"
+                    f", gpu_util={df_check['gpu_util_avg'].mean():.1f}%"
                 )
             print(f"    OK   [{level}]: {n_samples} samples, {metrics_summary}")
 
     return ok
 
 
-def run_sanity_checks(backends, n_workers=None):
+def run_sanity_checks(backends):
     """Run sanity checks for all requested backends.
 
     Returns the list of backends that passed.
     """
     print(f"\n{'='*60}")
-    print(f"Sanity checks ({_SANITY_DURATION}s each)")
+    print(f"Sanity checks ({_SANITY_N_SAMPLES} samples @ 1 Hz, no CPU burn)")
     print(f"{'='*60}")
 
     passed = []
     for backend_name in backends:
         print(f"\n  {backend_name}:")
         try:
-            if _sanity_check(backend_name, n_workers=n_workers):
+            if _sanity_check(backend_name):
                 passed.append(backend_name)
             else:
                 print(f"  → {backend_name} FAILED sanity check, skipping.")
@@ -591,7 +604,7 @@ def main():
 
     # --- Sanity checks ---
     if not args.skip_sanity:
-        backends = run_sanity_checks(backends, n_workers=args.workers)
+        backends = run_sanity_checks(backends)
         if not backends:
             print("All backends failed sanity checks. Aborting.")
             sys.exit(1)
