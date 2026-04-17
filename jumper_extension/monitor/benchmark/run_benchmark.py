@@ -111,6 +111,22 @@ def _available_cpus():
     return os.cpu_count() or 4
 
 
+def _print_cpu_diagnostics():
+    """Print all CPU detection methods for debugging."""
+    print("\nCPU detection diagnostics:")
+    print(f"  SLURM_CPUS_PER_TASK:  {os.environ.get('SLURM_CPUS_PER_TASK', '<not set>')}")
+    print(f"  SLURM_CPUS_ON_NODE:   {os.environ.get('SLURM_CPUS_ON_NODE', '<not set>')}")
+    print(f"  SLURM_JOB_CPUS_PER_NODE: {os.environ.get('SLURM_JOB_CPUS_PER_NODE', '<not set>')}")
+    try:
+        aff = len(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        aff = '<unavailable>'
+    print(f"  os.sched_getaffinity: {aff}")
+    print(f"  os.cpu_count():       {os.cpu_count()}")
+    print(f"  → _available_cpus():  {_available_cpus()}")
+    print()
+
+
 def start_workload(n_workers=None):
     """Spawn *n_workers* processes (default: available CPUs) doing busy work."""
     if n_workers is None:
@@ -241,7 +257,7 @@ def _proc_in_slurm_job(proc, slurm_job_id):
 # Single benchmark run
 # ---------------------------------------------------------------------------
 
-def run_single(backend_name, freq_hz, duration_sec):
+def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
     """Run one benchmark: backend × frequency.
 
     Returns a dict with summary statistics and the raw DataFrame, or
@@ -265,7 +281,7 @@ def run_single(backend_name, freq_hz, duration_sec):
     stop_event = None
     t_wall_start = time.perf_counter()
     try:
-        workers, stop_event = start_workload()
+        workers, stop_event = start_workload(n_workers=n_workers)
         print(f"({len(workers)} burn workers) ", end="", flush=True)
         time.sleep(0.5)
         monitor.start(interval=interval)
@@ -402,7 +418,12 @@ def main():
     parser.add_argument("--frequencies", type=str, default=None,
                         help="Comma-separated list of frequencies in Hz "
                              "(default: 1,2,4,8,16)")
+    parser.add_argument("--workers", type=int, default=None,
+                        help="Number of CPU burn workers "
+                             "(default: auto-detect from SLURM / affinity)")
     args = parser.parse_args()
+
+    _print_cpu_diagnostics()
 
     results_dir = os.path.join(os.path.dirname(__file__), "results")
     os.makedirs(results_dir, exist_ok=True)
@@ -441,7 +462,8 @@ def main():
             for rep in range(1, n_repeats + 1):
                 print(f"    run {rep}/{n_repeats} …", end=" ", flush=True)
                 try:
-                    result = run_single(backend_name, freq, args.duration)
+                    result = run_single(backend_name, freq, args.duration,
+                                         n_workers=args.workers)
                 except Exception as exc:
                     print(f"FAILED: {exc}")
                     continue
