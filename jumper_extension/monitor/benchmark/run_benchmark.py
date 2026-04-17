@@ -402,6 +402,152 @@ def remove_outliers(rows):
 
 
 # ---------------------------------------------------------------------------
+# Sanity check
+# ---------------------------------------------------------------------------
+
+_SANITY_DURATION = 10  # seconds
+
+# Base metrics that must be present and non-zero/NaN for a healthy run
+_REQUIRED_METRICS = [
+    "time", "cpu_util_avg", "cpu_util_min", "cpu_util_max",
+    "memory",
+    "io_read", "io_write", "io_read_count", "io_write_count",
+]
+_GPU_METRICS = [
+    "gpu_util_avg", "gpu_util_min", "gpu_util_max",
+    "gpu_band_avg", "gpu_band_min", "gpu_band_max",
+    "gpu_mem_avg", "gpu_mem_min", "gpu_mem_max",
+]
+
+
+def _sanity_check(backend_name, n_workers=None):
+    """Run a short sanity check for *backend_name*.
+
+    Starts the monitor under CPU load for a few seconds and verifies that
+    the collected data contains the expected columns with non-NaN,
+    non-zero values.  Returns True on success, False on failure (with
+    diagnostics printed).
+    """
+    freq_hz = 1
+    interval = 1.0 / freq_hz
+    monitor = BACKENDS[backend_name]()
+
+    workers, stop_event = start_workload(n_workers=n_workers)
+    try:
+        time.sleep(0.5)
+        monitor.start(interval=interval)
+        time.sleep(_SANITY_DURATION)
+        monitor.stop()
+    finally:
+        stop_workload(workers, stop_event)
+        try:
+            os.nice(-os.nice(0))
+        except (OSError, PermissionError):
+            pass
+
+    if monitor.data is None:
+        print(f"    FAIL: monitor.data is None")
+        return False
+
+    ok = True
+    for level in getattr(monitor, "levels", ["process"]):
+        df = monitor.data.data.get(level, pd.DataFrame())
+        if df.empty:
+            print(f"    FAIL [{level}]: no samples collected")
+            ok = False
+            continue
+
+        n_samples = len(df)
+        expected_min = max(1, int(_SANITY_DURATION * freq_hz * 0.5))
+        if n_samples < expected_min:
+            print(f"    WARN [{level}]: only {n_samples} samples "
+                  f"(expected ≥{expected_min})")
+
+        # Check required base metrics
+        for col in _REQUIRED_METRICS:
+            if col not in df.columns:
+                print(f"    FAIL [{level}]: missing column '{col}'")
+                ok = False
+                continue
+            n_nan = df[col].isna().sum()
+            if n_nan > 0:
+                print(f"    FAIL [{level}]: column '{col}' has "
+                      f"{n_nan}/{n_samples} NaN values")
+                ok = False
+            # Skip zero-check for time (starts at ~0) and io (can be 0)
+            if col not in ("time",):
+                n_zero = (df[col] == 0).sum()
+                if n_zero == n_samples:
+                    print(f"    WARN [{level}]: column '{col}' is all zeros")
+
+        # Check per-core CPU columns exist
+        cpu_cols = [c for c in df.columns if c.startswith("cpu_util_")
+                    and c not in ("cpu_util_avg", "cpu_util_min", "cpu_util_max")]
+        if not cpu_cols:
+            print(f"    FAIL [{level}]: no per-core CPU columns found")
+            ok = False
+
+        # Check GPU metrics if GPU is available
+        has_gpu = getattr(monitor, "num_gpus", 0) > 0
+        if has_gpu:
+            for col in _GPU_METRICS:
+                if col not in df.columns:
+                    print(f"    FAIL [{level}]: GPU detected but missing "
+                          f"column '{col}'")
+                    ok = False
+                    continue
+                n_nan = df[col].isna().sum()
+                if n_nan > 0:
+                    print(f"    FAIL [{level}]: GPU column '{col}' has "
+                          f"{n_nan}/{n_samples} NaN values")
+                    ok = False
+
+        if ok:
+            metrics_summary = (
+                f"cpu_avg={df['cpu_util_avg'].mean():.1f}%, "
+                f"mem={df['memory'].mean():.1f}MB"
+            )
+            if has_gpu:
+                metrics_summary += (
+                    f", gpu_util={df['gpu_util_avg'].mean():.1f}%"
+                )
+            print(f"    OK   [{level}]: {n_samples} samples, {metrics_summary}")
+
+    return ok
+
+
+def run_sanity_checks(backends, n_workers=None):
+    """Run sanity checks for all requested backends.
+
+    Returns the list of backends that passed.
+    """
+    print(f"\n{'='*60}")
+    print(f"Sanity checks ({_SANITY_DURATION}s each)")
+    print(f"{'='*60}")
+
+    passed = []
+    for backend_name in backends:
+        print(f"\n  {backend_name}:")
+        try:
+            if _sanity_check(backend_name, n_workers=n_workers):
+                passed.append(backend_name)
+            else:
+                print(f"  → {backend_name} FAILED sanity check, skipping.")
+        except Exception as exc:
+            print(f"    FAIL: {exc}")
+            print(f"  → {backend_name} FAILED sanity check, skipping.")
+
+        # Cool down between checks
+        time.sleep(1.0)
+        psutil.process_iter.cache_clear()
+
+    print(f"\n  Passed: {len(passed)}/{len(backends)} "
+          f"({', '.join(passed) if passed else 'none'})")
+    print(f"{'='*60}\n")
+    return passed
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -421,6 +567,8 @@ def main():
     parser.add_argument("--workers", type=int, default=None,
                         help="Number of CPU burn workers "
                              "(default: auto-detect from SLURM / affinity)")
+    parser.add_argument("--skip-sanity", action="store_true",
+                        help="Skip the initial sanity checks")
     args = parser.parse_args()
 
     _print_cpu_diagnostics()
@@ -440,6 +588,15 @@ def main():
     n_repeats = args.repeats
     overview_printed = False
     agg_summaries = []
+
+    # --- Sanity checks ---
+    if not args.skip_sanity:
+        backends = run_sanity_checks(backends, n_workers=args.workers)
+        if not backends:
+            print("All backends failed sanity checks. Aborting.")
+            sys.exit(1)
+    else:
+        print("\n(Sanity checks skipped)\n")
 
     for backend_name in backends:
         if backend_name not in BACKENDS:
