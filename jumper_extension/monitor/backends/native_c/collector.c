@@ -533,6 +533,58 @@ static io_counters_t compute_pid_set_io(int *pids, int npids) {
     return total;
 }
 
+/* Read system-wide disk IO from /proc/diskstats.                     *
+ * Matches psutil.disk_io_counters() behaviour: sums all devices.     *
+ * Fields per line (kernel doc):                                      *
+ *   major minor name reads_completed _ sectors_read _ _ writes_completed _ sectors_written ... *
+ * We use: field 4 = reads_completed, field 8 = writes_completed,     *
+ *         field 6 = sectors_read, field 10 = sectors_written.        *
+ * Sector size is assumed 512 bytes (standard Linux ABI).             */
+static io_counters_t read_system_disk_io(void) {
+    io_counters_t total = {0, 0, 0, 0};
+    FILE *f = fopen("/proc/diskstats", "r");
+    if (!f) return total;
+    char line[512];
+    while (fgets(line, sizeof(line), f)) {
+        unsigned int major, minor;
+        char devname[128];
+        long f1, f2, f3, f4, f5, f6, f7, f8;
+        int n = sscanf(line,
+            " %u %u %127s %ld %ld %ld %ld %ld %ld %ld %ld",
+            &major, &minor, devname,
+            &f1, &f2, &f3, &f4,   /* reads_completed, reads_merged, sectors_read, time_reading */
+            &f5, &f6, &f7, &f8);  /* writes_completed, writes_merged, sectors_written, time_writing */
+        if (n < 11) continue;
+        /* Skip partitions: include only whole-disk devices.
+           Simple heuristic: skip if name ends with a digit preceded by
+           a letter (e.g. sda1, nvme0n1p1). Include sda, nvme0n1, etc. */
+        int len = (int)strlen(devname);
+        if (len > 0 && devname[len-1] >= '0' && devname[len-1] <= '9') {
+            /* Check if it looks like a partition number */
+            int j = len - 1;
+            while (j > 0 && devname[j] >= '0' && devname[j] <= '9') j--;
+            if (j > 0 && devname[j] == 'p' && j > 1) {
+                continue;  /* e.g. nvme0n1p1 */
+            }
+            if (j > 0 && ((devname[j] >= 'a' && devname[j] <= 'z') ||
+                          (devname[j] >= 'A' && devname[j] <= 'Z'))) {
+                /* Could be sda1 — only skip if the letter is not 'n'
+                   followed by a digit (nvme0n1 pattern) */
+                if (!(devname[j] == 'n' && j > 0 &&
+                      devname[j-1] >= '0' && devname[j-1] <= '9')) {
+                    continue;  /* e.g. sda1, vdb2 */
+                }
+            }
+        }
+        total.read_count  += f1;          /* reads_completed */
+        total.write_count += f5;          /* writes_completed */
+        total.read_bytes  += f3 * 512L;   /* sectors_read * 512 */
+        total.write_bytes += f7 * 512L;   /* sectors_written * 512 */
+    }
+    fclose(f);
+    return total;
+}
+
 /* ------------------------------------------------------------------ */
 /* GPU via NVML (dynamic loading)                                     */
 /* ------------------------------------------------------------------ */
@@ -854,7 +906,7 @@ static void emit_samples(double perf_time, double dt) {
             ncpus_out = g_num_sys_cpus;
             read_system_cpu_per_core(cpu_arr, ncpus_out);
             memory = system_memory_used_gb();
-            io = (io_counters_t){0, 0, 0, 0};
+            io = read_system_disk_io();
         } else if (lv == LEVEL_PROCESS) {
             pids_set = pids_proc; npids_set = n_proc;
             ncpus_out = g_num_cpus;

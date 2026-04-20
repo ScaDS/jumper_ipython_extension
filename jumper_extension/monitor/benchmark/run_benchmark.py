@@ -407,7 +407,7 @@ def remove_outliers(rows):
 
 _SANITY_N_SAMPLES = 3  # collect this many samples at 1 Hz (≈3 s)
 
-# Base metrics that must be present and non-zero/NaN for a healthy run.
+# Base metrics that must be present and have no NaN values.
 # The first sample is excluded from the zero-check because CPU utilisation
 # is always 0 on the very first tick (it's a delta metric).
 _REQUIRED_METRICS = [
@@ -415,6 +415,17 @@ _REQUIRED_METRICS = [
     "memory",
     "io_read", "io_write", "io_read_count", "io_write_count",
 ]
+# Columns where all-zeros is only acceptable at certain levels.
+# IO rates can be zero at process/user/slurm level when idle, but
+# system-level IO should always show some activity.
+_ZERO_CHECK_SKIP_LEVELS = {
+    "cpu_util_min": {"system"},  # system-level min can be 0 if some cores are idle
+    # io_read (read_bytes in /proc/<pid>/io) counts physical disk reads.
+    # Reads served from page cache register as 0.  Our sanity IO worker
+    # writes + fsyncs (→ io_write > 0) then reads back from cache
+    # (→ io_read may stay 0).  io_read_count (syscr) is always > 0.
+    "io_read": {"process", "user", "slurm"},
+}
 _GPU_METRICS = [
     "gpu_util_avg", "gpu_util_min", "gpu_util_max",
     "gpu_band_avg", "gpu_band_min", "gpu_band_max",
@@ -435,23 +446,72 @@ def _sanity_check(backend_name):
     interval = 1.0 / freq_hz
     monitor = BACKENDS[backend_name]()
 
+    import tempfile, threading
+
+    # Background thread that generates continuous IO so that
+    # io_read/io_write counters are non-zero at every level.
+    io_stop = threading.Event()
+    tmp_path = None
+
+    def _io_worker():
+        nonlocal tmp_path
+        f = tempfile.NamedTemporaryFile(delete=False, prefix="jumper_sanity_")
+        tmp_path = f.name
+        buf = b"x" * (64 * 1024)  # 64 KB chunks
+        while not io_stop.is_set():
+            f.write(buf)
+            f.flush()
+            os.fsync(f.fileno())
+            f.seek(0)
+            _ = f.read()
+            f.seek(0)
+            f.truncate()
+        f.close()
+
+    io_thread = threading.Thread(target=_io_worker, daemon=True)
+    io_thread.start()
+
     monitor.start(interval=interval)
-    # Poll until we have enough samples (first sample's CPU delta is
-    # meaningless, so we need _SANITY_N_SAMPLES + 1 total).
-    required = _SANITY_N_SAMPLES + 1
-    deadline = time.monotonic() + required * 3  # generous timeout
-    while time.monotonic() < deadline:
+    # Wait up to 10s, but stop early once we have enough samples.
+    required = _SANITY_N_SAMPLES + 1  # +1 because first sample's CPU delta is 0
+    hard_deadline = time.monotonic() + 10.0
+    enough = False
+    while time.monotonic() < hard_deadline:
         time.sleep(0.5)
-        n_collected = min(
-            len(monitor.data.data.get(level, pd.DataFrame()))
-            for level in getattr(monitor, "levels", ["process"])
-        ) if monitor.data else 0
-        if n_collected >= required:
-            break
+        if monitor.data is not None:
+            levels = getattr(monitor, "levels", ["process"])
+            counts = [
+                len(monitor.data.data.get(lv, pd.DataFrame()))
+                for lv in levels
+            ]
+            if counts and min(counts) >= required:
+                enough = True
+                break
     monitor.stop()
+
+    io_stop.set()
+    io_thread.join(timeout=2)
+    if tmp_path:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
     if monitor.data is None:
         print(f"    FAIL: monitor.data is None")
+        return False
+
+    if not enough:
+        # Print what we got so far for debugging
+        levels = getattr(monitor, "levels", ["process"])
+        for lv in levels:
+            df = monitor.data.data.get(lv, pd.DataFrame())
+            n = len(df)
+            print(f"    DEBUG [{lv}]: got {n}/{required} samples")
+            if not df.empty:
+                print(f"           columns: {list(df.columns[:10])}...")
+                print(f"           first row: {df.iloc[0].to_dict()}")
+        print(f"    FAIL: timed out waiting for {required} samples")
         return False
 
     ok = True
@@ -486,7 +546,8 @@ def _sanity_check(backend_name):
                 ok = False
             # All-zeros check (skip "time" — it legitimately starts near 0)
             if col != "time" and len(df_check) > 0:
-                if (df_check[col] == 0).all():
+                skip_levels = _ZERO_CHECK_SKIP_LEVELS.get(col, set())
+                if level not in skip_levels and (df_check[col] == 0).all():
                     print(f"    FAIL [{level}]: column '{col}' is all zeros "
                           f"(after skipping first sample)")
                     ok = False

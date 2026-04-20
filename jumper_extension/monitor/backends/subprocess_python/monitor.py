@@ -144,16 +144,37 @@ class SubprocessPerformanceMonitor:
         if self._reader_thread is not None:
             self._reader_thread.join(timeout=5.0)
 
-        # Surface any collector-side errors
-        if self._process and self._process.stderr:
+        # Ensure the process is fully dead before touching stderr
+        if self._process and self._process.poll() is None:
+            self._process.kill()
             try:
-                err = self._process.stderr.read()
+                self._process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+
+        # Surface any collector-side errors.
+        # Use communicate() with a timeout to avoid blocking forever
+        # on a full pipe buffer.
+        if self._process:
+            try:
+                _, err = self._process.communicate(timeout=3)
                 if err and err.strip():
                     logger.warning(
                         f"[JUmPER]: Collector stderr: {err.strip()}"
                     )
-            except (ValueError, OSError):
-                pass
+            except (subprocess.TimeoutExpired, ValueError, OSError):
+                # Last resort: just close the pipes
+                try:
+                    self._process.kill()
+                except OSError:
+                    pass
+                try:
+                    if self._process.stderr:
+                        self._process.stderr.close()
+                    if self._process.stdout:
+                        self._process.stdout.close()
+                except OSError:
+                    pass
 
         self.stop_time = time.perf_counter()
         self.wallclock_stop_time = time.time()
