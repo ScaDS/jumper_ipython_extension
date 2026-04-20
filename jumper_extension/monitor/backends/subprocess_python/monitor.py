@@ -11,9 +11,11 @@ Implements :class:`MonitorProtocol` so it can be used as a drop-in
 replacement everywhere the default monitor is accepted.
 """
 
+import atexit
 import json
 import logging
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -101,7 +103,10 @@ class SubprocessPerformanceMonitor:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            start_new_session=True,  # own process group for clean kill
         )
+        # Safety net: kill the collector if the parent exits without stop()
+        atexit.register(self._cleanup_at_exit)
 
         # Wait for the "ready" handshake
         if not self._wait_for_ready():
@@ -316,12 +321,44 @@ class SubprocessPerformanceMonitor:
             f"{levels_arg}"
         )
 
+    def _cleanup_at_exit(self) -> None:
+        """atexit handler — kill the collector if still alive."""
+        self._kill_process()
+
     def _kill_process(self) -> None:
         if self._process and self._process.poll() is None:
+            pgid = None
             try:
-                self._process.terminate()
+                pgid = os.getpgid(self._process.pid)
+            except OSError:
+                pass
+            # Kill the entire process group (shell + collector binary)
+            if pgid is not None and pgid != os.getpgid(0):
+                try:
+                    os.killpg(pgid, signal.SIGTERM)
+                except OSError:
+                    pass
+            else:
+                try:
+                    self._process.terminate()
+                except OSError:
+                    pass
+            try:
                 self._process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                self._process.kill()
-                self._process.wait(timeout=2)
+                # SIGTERM didn't work — escalate to SIGKILL
+                if pgid is not None and pgid != os.getpgid(0):
+                    try:
+                        os.killpg(pgid, signal.SIGKILL)
+                    except OSError:
+                        pass
+                else:
+                    try:
+                        self._process.kill()
+                    except OSError:
+                        pass
+                try:
+                    self._process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    pass
 
