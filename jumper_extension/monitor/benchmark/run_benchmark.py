@@ -655,7 +655,7 @@ def main():
         else list(BACKENDS.keys())
     )
     frequencies = (
-        [int(f) for f in args.frequencies.split(",")]
+        [float(f) for f in args.frequencies.split(",")]
         if args.frequencies else FREQUENCIES
     )
 
