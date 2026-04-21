@@ -46,7 +46,7 @@ def load_run_data(results_dir):
         # e.g. "native_c_10Hz" → backend="native_c", freq=10
         parts = fname.rsplit("_", 1)
         freq_str = parts[-1]  # "10Hz"
-        freq = int(freq_str.replace("Hz", ""))
+        freq = float(freq_str.replace("Hz", ""))
         backend = parts[0]
         df = pd.read_csv(path)
         runs[(backend, freq)] = df
@@ -343,7 +343,7 @@ def main():
     print(f"Loaded {len(runs)} runs from {args.results_dir}")
     print("Generating plots …")
 
-    plot_run_chart(runs, args.results_dir)
+    #plot_run_chart(runs, args.results_dir)
     plot_cumulative(runs, args.results_dir)
     plot_iat_histogram(runs, args.results_dir)
     plot_summary_table(args.results_dir)
