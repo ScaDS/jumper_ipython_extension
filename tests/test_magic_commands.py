@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import patch
 
 import pandas as pd
@@ -12,7 +13,7 @@ from jumper_extension.ipython.extension import (
 )
 
 
-def test_initialization_and_basic_operations(ipython, mock_cpu_only):
+def test_initialization_and_basic_operations(ipython, mock_cpu_only, caplog):
     """Test initialization, start/stop, and basic operations"""
     magics = PerfmonitorMagics(ipython, build_perfmonitor_magic_adapter())
     assert not magics.magic_adapter.service.monitor.running
@@ -26,9 +27,13 @@ def test_initialization_and_basic_operations(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
     magics.perfmonitor_start("")  # Already running
     magics.perfmonitor_stop("")
+    assert not magics.magic_adapter.service.monitor.running
 
     # Test invalid interval (no monitor running)
+    caplog.set_level(logging.WARNING, logger="extension")
     magics.perfmonitor_start("invalid")  # Invalid interval
+    assert "Invalid interval value: invalid" in caplog.text
+    assert not magics.magic_adapter.service.monitor.running
 
 
 def test_no_monitor_error_cases(ipython, mock_cpu_only):

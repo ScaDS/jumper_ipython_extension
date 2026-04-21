@@ -203,7 +203,7 @@ def parse_arguments(parser: argparse.ArgumentParser, line: str) -> Optional[argp
             if line
             else parser.parse_args([])
         )
-    except Exception:
+    except (SystemExit, Exception):
         args = None
     return args
 
