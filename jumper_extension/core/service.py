@@ -1,4 +1,5 @@
 import logging
+import shlex
 from contextlib import contextmanager
 from typing import Optional, Tuple, List, Dict, Iterator
 
@@ -835,6 +836,28 @@ class PerfmonitorMagicAdapter:
 
     def perfmonitor_start(self, line: str):
         """Start performance monitoring with specified interval (default: 1 second)."""
+        if line:
+            try:
+                tokens = shlex.split(line)
+            except ValueError:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[
+                        ExtensionErrorCode.INVALID_INTERVAL_VALUE
+                    ].format(interval=line)
+                )
+                return
+
+            if tokens and tokens[0] != "--monitor":
+                try:
+                    float(tokens[0])
+                except ValueError:
+                    logger.warning(
+                        EXTENSION_ERROR_MESSAGES[
+                            ExtensionErrorCode.INVALID_INTERVAL_VALUE
+                        ].format(interval=tokens[0])
+                    )
+                    return
+
         args = parse_arguments(self.parsers.perfmonitor_start, line)
         if args is None:
             return
