@@ -21,6 +21,7 @@ nav:
           - Session Transfer: guides/session-transfer.md
           - Python Script Export: guides/script-export.md
           - Plot Export: guides/plot-export.md
+          - Custom Monitors: guides/custom-monitor.md
       - Public API:
           - Overview: api/index.md
           - Jupyter API: api/jupyter.md
