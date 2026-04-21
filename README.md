@@ -86,10 +86,16 @@ Try it yourself:
 
 1. **Start monitoring**:
    ```python
-   %perfmonitor_start [interval]
+   %perfmonitor_start [interval] [--monitor TYPE] [--check-sanity]
    ```
 
    `interval` is an optional argument for configuring frequency of performance data gathering (in seconds), set to 1 by default. This command launches a performance monitoring daemon.
+
+   The `--monitor` option selects a backend (`default`, `native_c`, `thread`, `slurm_multinode`). The default backend is the native C collector (`native_c`); it is compiled on first use — you will see a `[JUmPER] Compiling native_c monitor binary...` message. If no C compiler is available or compilation fails, JUmPER automatically falls back to the `subprocess_python` monitor.
+
+   The optional `--check-sanity` flag runs a short validation of the selected backend (collecting a few samples, verifying expected metric columns are present, non-NaN, and non-zero) before real monitoring starts.
+
+   > **IMPORTANT.** `--check-sanity` was tailored for the `thread`, `subprocess_python` and `native_c` monitors. When used with any other monitor (e.g. `slurm_multinode`, or a custom monitor provided via the programmatic API) it is **expected to fail** because those backends populate a different set of per-level metric columns. A warning is printed in that case and the check still runs, but a failure does not necessarily indicate a broken monitor — only that the tailored check does not apply.
 
 2. **Run your code**
 
@@ -232,6 +238,16 @@ The following metric keys can be used with `--metrics` for both direct and live 
    %perfmonitor_export_cell_history my_cells.json
    ```
    Export performance measurements for entire notebook and cell execution history with timestamps, allowing you to project measurements onto specific cells.
+
+### Custom Monitors
+
+Any object implementing `MonitorProtocol`
+(`jumper_extension/monitor/common.py`) can be plugged in via the
+`monitor=` argument of `service.start_monitoring` — see
+[`jumper_extension/monitor/README.md`](jumper_extension/monitor/README.md)
+for a worked `SlurmMultinodeMonitor` example and the full
+[Custom Monitors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/custom-monitor/)
+for a step-by-step walkthrough.
 
 ### Monitoring Right in Your Code
 Run the monitor around any code block and save its performance profile to CSV/JSON.

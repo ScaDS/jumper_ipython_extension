@@ -42,6 +42,15 @@ def build_perfmonitor_start_parser() -> argparse.ArgumentParser:
              "'native_c' for native C collector, "
              "'thread' for in-process threaded monitor)",
     )
+    parser.add_argument(
+        "--check-sanity",
+        dest="check_sanity",
+        action="store_true",
+        help="Run a short sanity check of the selected monitor before "
+             "starting real monitoring. Tailored for thread, "
+             "subprocess_python and native_c monitors; other monitors "
+             "are expected to fail this check.",
+    )
     return parser
 
 

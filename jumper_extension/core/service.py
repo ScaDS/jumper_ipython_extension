@@ -88,10 +88,11 @@ class PerfmonitorService:
         """Create a monitor instance based on the requested type.
 
         Args:
-            monitor_type: ``"default"`` for the subprocess-based
-                monitor (GIL-independent), ``"thread"`` for the
-                in-process threaded monitor, ``"slurm_multinode"``
-                for the multi-node SLURM monitor.
+            monitor_type: ``"default"`` for the best available backend
+                (native_c if compiled and healthy, else subprocess
+                Python), ``"thread"`` for the in-process threaded
+                monitor, ``"slurm_multinode"`` for the multi-node
+                SLURM monitor.
 
         Returns:
             A monitor satisfying :class:`MonitorProtocol`.
@@ -104,8 +105,17 @@ class PerfmonitorService:
         if monitor_type == "slurm_multinode":
             from jumper_extension.monitor.backends.slurm_multinode import SlurmMultinodeMonitor
             return SlurmMultinodeMonitor()
-        # default: subprocess-based monitor (Python collector)
+        # default: try native_c first, fall back to subprocess Python
+        try:
+            from jumper_extension.monitor.backends.native_c.build import ensure_native_c
+            if ensure_native_c():
+                from jumper_extension.monitor.backends.native_c import CSubprocessPerformanceMonitor
+                logger.info("[JUmPER] Using native_c monitor (compiled C collector).")
+                return CSubprocessPerformanceMonitor()
+        except Exception:
+            pass
         from jumper_extension.monitor.backends.subprocess_python import SubprocessPerformanceMonitor
+        logger.info("[JUmPER] Using subprocess_python monitor (Python collector).")
         return SubprocessPerformanceMonitor()
 
     def on_pre_run_cell(
@@ -204,6 +214,8 @@ class PerfmonitorService:
         self,
         interval: Optional[float] = None,
         monitor_type: str = "default",
+        check_sanity: bool = False,
+        monitor: Optional[MonitorProtocol] = None,
     ) -> Optional[ExtensionErrorCode]:
         """Start performance monitoring.
 
@@ -238,10 +250,14 @@ class PerfmonitorService:
                 service.start_monitoring(monitor_type="slurm_multinode")
         """
         # If an imported (offline) session is currently attached, or the
-        # monitor has not been started yet, (re-)create via the factory so
-        # the requested monitor_type is honoured.
+        # monitor has not been started yet, install the requested monitor.
+        # A user-supplied instance takes precedence over the built-in
+        # factory so custom backends can be plugged in.
         if not self.monitor.running:
-            self.monitor = self._create_monitor(monitor_type)
+            if monitor is not None:
+                self.monitor = monitor
+            else:
+                self.monitor = self._create_monitor(monitor_type)
 
         if self.monitor.running:
             logger.warning(
@@ -253,6 +269,26 @@ class PerfmonitorService:
             interval = self.settings.monitoring.default_interval
         else:
             self.settings.monitoring.user_interval = interval
+
+        if check_sanity:
+            from jumper_extension.monitor.sanity import (
+                is_supported_monitor,
+                run_sanity_check,
+            )
+            if is_supported_monitor(self.monitor) and monitor is None:
+                # Use a throw-away instance so the real monitor starts
+                # with a clean state.
+                sanity_monitor = self._create_monitor(monitor_type)
+                run_sanity_check(sanity_monitor)
+            else:
+                msg = (
+                    f"[JUmPER] --check-sanity was tailored for the "
+                    f"'thread', 'subprocess_python' and 'native_c' monitors. "
+                    f"'{type(self.monitor).__name__}' is not supported by "
+                    f"the tailored check; skipping sanity check."
+                )
+                logger.warning(msg)
+                print(msg)
 
         self.monitor.start(interval)
         self.settings.monitoring.running = self.monitor.running
@@ -841,6 +877,7 @@ class PerfmonitorMagicAdapter:
         self.service.start_monitoring(
             interval=args.interval,
             monitor_type=args.monitor,
+            check_sanity=args.check_sanity,
         )
 
     def perfmonitor_stop(self, line: str):
