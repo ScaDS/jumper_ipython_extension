@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import uuid
@@ -810,8 +811,6 @@ class PerformanceVisualizer:
             update_interval: Seconds between refreshes (default 2.0).
             window_seconds: Width of the visible time window (default 120).
         """
-        import plotly.io as pio
-
         if not self.monitor.running:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
@@ -893,78 +892,63 @@ class PerformanceVisualizer:
         )
         display(HTML(f"<style>{header_css}</style>\n{header_html}"))
 
-        # -- Single display handle for the whole grid ---------------------- #
+        # -- Fixed panel IDs — stable for the entire live session ---------- #
+        panel_ids = {m: f"jumper-live-{session_id}-{m}" for m in default_metrics}
         grid_id = f"jumper-live-grid-{session_id}"
+        update_id = f"jumper-live-update-{session_id}"
         grid_css = (template_dir / "live_grid" / "live_grid.css").read_text(encoding="utf-8")
-        placeholder_html = '<p class="jumper-live-placeholder">Waiting for data…</p>'
 
-        def _render_grid_html(cells):
-            return env.get_template("live_grid/live_grid.html").render(
-                ncols=ncols, cells=cells,
+        # Skeleton grid displayed once — the Plotly divs stay in DOM for the
+        # whole session so Plotly.react() updates them in-place each tick.
+        init_html = (
+            f"<style>{grid_css}</style>\n"
+            + env.get_template("live_grid/live_grid.html").render(
+                ncols=ncols,
+                panels=[(panel_ids[m], label_map.get(m, m)) for m in default_metrics],
             )
-
-        init_cells = [
-            f'<p class="jumper-live-initializing">Initialising {label_map.get(m, m)}…</p>'
-            for m in default_metrics
-        ]
-        display(HTML(f"<style>{grid_css}</style>"))
-        display(HTML(_render_grid_html(init_cells)), display_id=grid_id)
+        )
+        display(HTML(init_html), display_id=grid_id)
+        # Initialise the script-update slot before the first update=True call.
+        display(HTML(""), display_id=update_id)
 
         # -- Background thread --------------------------------------------- #
-        def _render_grid():
-            """Build all panels and return a single HTML grid string."""
-            cells = []
+        def _render_update():
+            """Build Plotly.react() script tags for each panel via template.
+
+            Plotly.react() updates the existing chart in-place; if the div has
+            no chart yet (first call) it initialises one like newPlot(), so no
+            separate first-render path is needed.
+            """
+            updates = []
             for metric in default_metrics:
                 try:
-                    fig = self._build_live_figure(
-                        metric, level, window_seconds,
-                    )
-                    if fig is not None:
-                        html_frag = pio.to_html(
-                            fig,
-                            full_html=False,
-                            include_plotlyjs="cdn",
-                            config={"responsive": True,
-                                    "displayModeBar": True},
-                        )
-                    else:
-                        html_frag = placeholder_html
+                    fig = self._build_live_figure(metric, level, window_seconds)
+                    if fig is None:
+                        continue
+                    fig_dict = fig.to_dict()
+                    updates.append((
+                        panel_ids[metric],
+                        json.dumps(fig_dict["data"]),
+                        json.dumps(fig_dict["layout"]),
+                        json.dumps({"responsive": True, "displayModeBar": True}),
+                    ))
                 except Exception:
-                    logger.debug(
-                        "Live plot update error for %s", metric,
-                        exc_info=True,
-                    )
-                    html_frag = placeholder_html
-                cells.append(html_frag)
-            return _render_grid_html(cells)
+                    logger.debug("Live plot update error for %s", metric, exc_info=True)
+            return env.get_template("live_update/live_update.html").render(updates=updates)
 
         def _live_loop():
             try:
                 while not stop_event.is_set():
                     try:
-                        grid_html = _render_grid()
-                        display(
-                            HTML(grid_html),
-                            display_id=grid_id,
-                            update=True,
-                        )
+                        display(HTML(_render_update()), display_id=update_id, update=True)
                     except Exception:
-                        logger.debug(
-                            "Live plot grid update error",
-                            exc_info=True,
-                        )
+                        logger.debug("Live plot grid update error", exc_info=True)
                     if not self.monitor.running:
                         break
                     stop_event.wait(update_interval)
             finally:
-                # Final render
                 try:
-                    grid_html = _render_grid()
-                    display(
-                        HTML(grid_html),
-                        display_id=grid_id,
-                        update=True,
-                    )
+                    display(HTML(_render_update()), display_id=update_id, update=True)
                 except Exception:
                     pass
 
