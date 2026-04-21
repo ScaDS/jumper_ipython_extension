@@ -177,6 +177,26 @@ def _count_level_pids(monitor):
     return counts
 
 
+def _system_task_count_from_loadavg():
+    """Read the system-wide task count from ``/proc/loadavg``.
+
+    The fourth field of ``/proc/loadavg`` is ``running/total`` — the
+    total being the number of tasks (kernel view, includes threads)
+    currently in the system.  Unlike ``/proc/<pid>`` entries this file
+    remains readable by unprivileged users even when ``/proc`` is
+    mounted with ``hidepid=1``/``hidepid=2`` (common on shared HPC
+    nodes).  Returns ``None`` on non-Linux systems or parse errors.
+    """
+    try:
+        with open("/proc/loadavg") as f:
+            parts = f.read().split()
+        if len(parts) >= 4 and "/" in parts[3]:
+            return int(parts[3].split("/", 1)[1])
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
 def _snapshot_process_counts():
     """Snapshot process counts right now (call while workload is running)."""
     from jumper_extension.utilities import is_slurm_available
@@ -184,16 +204,30 @@ def _snapshot_process_counts():
     proc = psutil.Process()
     n_process_tree = 1 + len(proc.children(recursive=True))
 
+    all_procs = []
     try:
         all_procs = list(psutil.process_iter(["pid", "uids"]))
-        n_system = len(all_procs)
+        n_psutil_visible = len(all_procs)
         n_user = sum(
             1 for p in all_procs
             if p.info["uids"] and p.info["uids"].real == uid
         )
     except Exception:
-        n_system = -1
+        n_psutil_visible = -1
         n_user = -1
+
+    # psutil.process_iter only returns processes the caller can see via
+    # /proc/<pid>.  On systems with hidepid=1/2 this collapses to the
+    # current user's processes, which makes n_psutil_visible == n_user.
+    # Fall back to the system-wide task count from /proc/loadavg when
+    # it is clearly larger than what psutil can see.
+    nr_tasks = _system_task_count_from_loadavg()
+    if nr_tasks is not None and nr_tasks > max(0, n_psutil_visible):
+        n_system = nr_tasks
+        system_source = "tasks, /proc/loadavg"
+    else:
+        n_system = n_psutil_visible
+        system_source = "processes, psutil"
 
     n_slurm = None
     if is_slurm_available():
@@ -211,6 +245,7 @@ def _snapshot_process_counts():
         "user": n_user,
         "uid": uid,
         "system": n_system,
+        "system_source": system_source,
         "slurm": n_slurm,
     }
 
@@ -228,7 +263,9 @@ def print_experiment_overview(monitor, n_workers, proc_counts):
     uid = proc_counts.get("uid", "?")
     print(f"    process (PID tree):   {proc_counts.get('process_tree', '?')}")
     print(f"    user    (uid={uid}): {' ' * max(0, 4 - len(str(uid)))}{proc_counts.get('user', '?')}")
-    print(f"    system  (all):        {proc_counts.get('system', '?')}")
+    system_source = proc_counts.get("system_source", "")
+    system_label = f"system  ({system_source}):" if system_source else "system  (all):"
+    print(f"    {system_label:<22s}{proc_counts.get('system', '?')}")
     n_slurm = proc_counts.get("slurm")
     if n_slurm is not None:
         print(f"    slurm   (job={os.environ.get('SLURM_JOB_ID', '?')}): "
