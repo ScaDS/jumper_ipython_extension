@@ -173,7 +173,7 @@ def _count_level_pids(monitor):
     """Return a dict mapping each active level to its PID count."""
     counts = {}
     for level in getattr(monitor, "levels", []):
-        df = monitor.data.data.get(level, pd.DataFrame())
+        df = monitor.nodes.view(level=level)
         counts[level] = len(df)
     return counts
 
@@ -307,7 +307,7 @@ def print_experiment_overview(monitor, n_workers, proc_counts):
     # Per-level sample counts from last run
     print(f"  Samples from last run:")
     for level in getattr(monitor, "levels", []):
-        df = monitor.data.data.get(level, pd.DataFrame())
+        df = monitor.nodes.view(level=level)
         print(f"    {level:>8s}:             {len(df)}")
     print(f"{'─'*60}")
 
@@ -432,9 +432,9 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
     time.sleep(1.0)
 
     # Extract the "process" level data
-    if monitor.data is None:
+    if not monitor.nodes.node_names():
         return None
-    df = monitor.data.data.get("process", pd.DataFrame())
+    df = monitor.nodes.view(level="process")
     if df.empty:
         return None
 
@@ -569,10 +569,10 @@ def _sanity_check(backend_name):
     enough = False
     while time.monotonic() < hard_deadline:
         time.sleep(0.5)
-        if monitor.data is not None:
+        if monitor.nodes.node_names():
             levels = getattr(monitor, "levels", ["process"])
             counts = [
-                len(monitor.data.data.get(lv, pd.DataFrame()))
+                len(monitor.nodes.view(level=lv))
                 for lv in levels
             ]
             if counts and min(counts) >= required:
@@ -588,15 +588,15 @@ def _sanity_check(backend_name):
         except OSError:
             pass
 
-    if monitor.data is None:
-        print(f"    FAIL: monitor.data is None")
+    if not monitor.nodes.node_names():
+        print("    FAIL: no data collected (monitor has no registered nodes)")
         return False
 
     if not enough:
         # Print what we got so far for debugging
         levels = getattr(monitor, "levels", ["process"])
         for lv in levels:
-            df = monitor.data.data.get(lv, pd.DataFrame())
+            df = monitor.nodes.view(level=lv)
             n = len(df)
             print(f"    DEBUG [{lv}]: got {n}/{required} samples")
             if not df.empty:
@@ -607,7 +607,7 @@ def _sanity_check(backend_name):
 
     ok = True
     for level in getattr(monitor, "levels", ["process"]):
-        df = monitor.data.data.get(level, pd.DataFrame())
+        df = monitor.nodes.view(level=level)
         if df.empty:
             print(f"    FAIL [{level}]: no samples collected")
             ok = False

@@ -74,13 +74,13 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             traces.append(trace)
             y_values.extend(series.tolist())
             if metric == "memory" and ylim is None:
-                ylim = (0, self.monitor.memory_limits[level])
+                ylim = (0, self._hardware.memory_limits.get(level, 0.0))
 
         elif plot_type == "summary_series":
             columns = config.get("columns", [])
             if level == "system":
                 title = re.sub(
-                    r"\d+", str(self.monitor.num_system_cpus), title
+                    r"\d+", str(self._hardware.num_system_cpus), title
                 )
             line_styles = ["dot", "solid", "dash"]
             alpha_vals = [0.35, 1.0, 0.35]
@@ -540,7 +540,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         metrics_missing = not metric_subsets
         if metrics_missing:
             metric_subsets = ("cpu", "mem", "io")
-            if self.monitor.num_gpus:
+            if self._hardware and self._hardware.num_gpus:
                 metric_subsets += ("gpu", "gpu_all")
 
         valid_cells = self.cell_history.view()

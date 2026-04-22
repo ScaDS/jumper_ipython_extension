@@ -22,7 +22,7 @@ import threading
 import time
 from typing import Dict, List, Optional
 
-from jumper_extension.adapters.data import PerformanceData
+from jumper_extension.adapters.data import NodeInfo, NodeDataStore
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -64,7 +64,7 @@ class SubprocessPerformanceMonitor:
         self.cpu_handles: list = []
         self.memory_limits: dict = {}
 
-        self.data: Optional[PerformanceData] = None
+        self.nodes: NodeDataStore = NodeDataStore()
         self.levels: List[str] = get_available_levels()
 
         self.n_measurements: int = 0
@@ -116,10 +116,17 @@ class SubprocessPerformanceMonitor:
             self._kill_process()
             return
 
-        # Initialise data container with info from the collector
-        self.data = PerformanceData(
-            self.num_cpus, self.num_system_cpus, self.num_gpus
-        )
+        # Register local node with hardware info from the collector
+        self.nodes.register_node(NodeInfo(
+            node="local",
+            num_cpus=self.num_cpus,
+            num_system_cpus=self.num_system_cpus,
+            num_gpus=self.num_gpus,
+            gpu_memory=self.gpu_memory,
+            gpu_name=self.gpu_name,
+            memory_limits=self.memory_limits,
+            cpu_handles=self.cpu_handles,
+        ))
 
         # Start the reader thread (lightweight — just JSON parsing + append)
         self.running = True
@@ -279,7 +286,8 @@ class SubprocessPerformanceMonitor:
             level = msg.get("level", "process")
 
             try:
-                self.data.add_sample(
+                self.nodes.add_sample(
+                    "local",
                     level,
                     msg.get("time", 0.0),
                     sample.get("cpu_util", []),

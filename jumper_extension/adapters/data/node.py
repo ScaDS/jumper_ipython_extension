@@ -86,6 +86,18 @@ class NodeDataStore:
             gpu_util, gpu_band, gpu_mem, io_counters,
         )
 
+    def load_frames(self, node: str, frames: Dict[str, pd.DataFrame]) -> None:
+        """Inject pre-loaded DataFrames into a registered node's data container.
+
+        Used by offline (imported) monitors to populate data without going
+        through the live add_sample() path.
+        """
+        perf_data = self._nodes.get(node)
+        if perf_data is None:
+            return
+        for level, df in frames.items():
+            perf_data.data[level] = df
+
     # ------------------------------------------------------------------ #
     # Reading                                                             #
     # ------------------------------------------------------------------ #

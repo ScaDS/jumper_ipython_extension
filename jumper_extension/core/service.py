@@ -28,6 +28,7 @@ from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
+from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.monitor.common import MonitorProtocol
 from jumper_extension.monitor.backends.thread import PerformanceMonitor
 from jumper_extension.adapters.session import SessionExporter, SessionImporter
@@ -183,19 +184,20 @@ class PerfmonitorService:
                     source=self.monitor.session_source
                 )
             )
+        hardware = aggregate_node_info(self.monitor.nodes.hardware)
         print("[JUmPER]:")
         cpu_info = (
-            f"  CPUs: {self.monitor.num_cpus}\n    "
-            f"CPU affinity: {self.monitor.cpu_handles}"
+            f"  CPUs: {hardware.num_cpus}\n    "
+            f"CPU affinity: {hardware.cpu_handles}"
         )
         print(cpu_info)
         mem_gpu_info = (
-            f"  Memory: {self.monitor.memory_limits['system']} GB\n  "
-            f"GPUs: {self.monitor.num_gpus}"
+            f"  Memory: {hardware.memory_limits.get('system', 0.0)} GB\n  "
+            f"GPUs: {hardware.num_gpus}"
         )
         print(mem_gpu_info)
-        if self.monitor.num_gpus:
-            print(f"    {self.monitor.gpu_name}, {self.monitor.gpu_memory} GB")
+        if hardware.num_gpus:
+            print(f"    {hardware.gpu_name}, {hardware.gpu_memory} GB")
 
     def show_cell_history(self) -> None:
         """Show an interactive table of executed cells.
@@ -578,12 +580,12 @@ class PerfmonitorService:
             return {}
 
         if file:
-            self.monitor.data.export(
+            self.monitor.nodes.export(
                 file, level=level, cell_history=self.cell_history
             )
             return {}
         else:
-            df = self.monitor.data.view(
+            df = self.monitor.nodes.view(
                 level=level, cell_history=self.cell_history
             )
             var_name = name or self.settings.export_vars.perfdata
@@ -609,7 +611,7 @@ class PerfmonitorService:
             >>> frames = service.load_perfdata("performance.csv")
             >>> df = next(iter(frames.values()))
         """
-        df = self.monitor.data.load(file)
+        df = self.monitor.nodes.load(file)
         var_name = self.settings.loaded_vars.perfdata
         if df is not None:
             logger.info(

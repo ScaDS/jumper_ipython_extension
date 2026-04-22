@@ -108,11 +108,9 @@ def run_sanity_check(monitor, interval: float = 1.0, timeout: float = 10.0) -> b
     enough = False
     while time.monotonic() < deadline:
         time.sleep(0.5)
-        if monitor.data is not None:
-            levels = getattr(monitor, "levels", ["process"])
-            counts = [
-                len(monitor.data.data.get(lv, pd.DataFrame())) for lv in levels
-            ]
+        if monitor.nodes.node_names():
+            levels = monitor.nodes.levels
+            counts = [len(monitor.nodes.view(level=lv)) for lv in levels]
             if counts and min(counts) >= required:
                 enough = True
                 break
@@ -122,14 +120,14 @@ def run_sanity_check(monitor, interval: float = 1.0, timeout: float = 10.0) -> b
     io_thread.join(timeout=2)
     _cleanup_tmp(tmp_path_holder[0])
 
-    if monitor.data is None or not enough:
+    if not monitor.nodes.node_names() or not enough:
         print(f"[JUmPER] sanity check FAILED: not enough samples collected "
               f"(needed {required}).")
         return False
 
     ok = True
-    for level in getattr(monitor, "levels", ["process"]):
-        df = monitor.data.data.get(level, pd.DataFrame())
+    for level in monitor.nodes.levels:
+        df = monitor.nodes.view(level=level)
         if df.empty or len(df) < 2:
             print(f"[JUmPER] sanity check [{level}]: "
                   f"only {len(df)} sample(s), need >=2.")
@@ -164,7 +162,8 @@ def run_sanity_check(monitor, interval: float = 1.0, timeout: float = 10.0) -> b
                   f"no per-core CPU columns found.")
             ok = False
 
-        if getattr(monitor, "num_gpus", 0) > 0:
+        from jumper_extension.adapters.data import aggregate_node_info
+        if aggregate_node_info(monitor.nodes.hardware).num_gpus > 0:
             for col in _GPU_METRICS:
                 if col not in df.columns:
                     print(f"[JUmPER] sanity check [{level}]: "
