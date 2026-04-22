@@ -22,6 +22,7 @@ next to this file.
 
 import argparse
 import atexit
+import faulthandler
 import multiprocessing
 import os
 import signal
@@ -346,6 +347,23 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
         old_alarm = signal.signal(signal.SIGALRM, _timeout_handler)
         signal.alarm(int(deadline))
 
+    # Watchdog: if this run is still inside run_single() past the
+    # deadline, dump the full stack of every thread to stderr so we can
+    # diagnose where it hangs.  Repeats every <deadline>s until the run
+    # returns (at which point we cancel it in the finally block).
+    # faulthandler.dump_traceback_later is safe from async-signal context
+    # and does not interfere with SIGALRM.
+    faulthandler.enable()
+    try:
+        faulthandler.dump_traceback_later(
+            timeout=int(deadline),
+            repeat=True,
+            file=sys.stderr,
+        )
+    except (RuntimeError, ValueError):
+        # Older Pythons or already-armed timer — ignore.
+        pass
+
     workers = None
     stop_event = None
     t_wall_start = time.perf_counter()
@@ -390,6 +408,10 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
             signal.alarm(0)
             if old_alarm is not None:
                 signal.signal(signal.SIGALRM, old_alarm)
+        try:
+            faulthandler.cancel_dump_traceback_later()
+        except (RuntimeError, AttributeError):
+            pass
         # Always ensure workers are dead
         if workers and stop_event:
             try:
