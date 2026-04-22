@@ -198,23 +198,66 @@ def _system_task_count_from_loadavg():
 
 
 def _snapshot_process_counts():
-    """Snapshot process counts right now (call while workload is running)."""
+    """Snapshot process counts right now (call while workload is running).
+
+    The counters for user/slurm are computed in a single pass over
+    ``psutil.process_iter`` with per-process exception handling so that
+    one unreadable /proc entry (e.g. a race with a dying process, a
+    ``ZombieProcess``, or a ``hidepid``-restricted entry) does not
+    invalidate the totals.
+    """
     from jumper_extension.utilities import is_slurm_available
     uid = os.getuid()
-    proc = psutil.Process()
-    n_process_tree = 1 + len(proc.children(recursive=True))
+    slurm_job_id = (
+        os.environ.get("SLURM_JOB_ID", "") if is_slurm_available() else ""
+    )
 
-    all_procs = []
     try:
-        all_procs = list(psutil.process_iter(["pid", "uids"]))
-        n_psutil_visible = len(all_procs)
-        n_user = sum(
-            1 for p in all_procs
-            if p.info["uids"] and p.info["uids"].real == uid
-        )
+        n_process_tree = 1 + len(psutil.Process().children(recursive=True))
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        n_process_tree = -1
+
+    n_psutil_visible = 0
+    n_user = 0
+    n_slurm = 0 if slurm_job_id else None
+
+    try:
+        iterator = psutil.process_iter(["pid", "uids"])
     except Exception:
-        n_psutil_visible = -1
-        n_user = -1
+        iterator = iter(())
+
+    while True:
+        try:
+            p = next(iterator)
+        except StopIteration:
+            break
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+        except Exception:
+            # Catastrophic iterator failure — stop but keep partial counts.
+            break
+
+        n_psutil_visible += 1
+
+        # User filter
+        try:
+            info_uids = p.info.get("uids") if isinstance(p.info, dict) else None
+            is_user = bool(info_uids) and info_uids.real == uid
+        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+            is_user = False
+
+        if is_user:
+            n_user += 1
+
+        # Slurm filter — reading /proc/<pid>/environ is only possible
+        # for our own processes, so skip non-user PIDs to avoid tons of
+        # guaranteed-to-fail syscalls on busy nodes.
+        if slurm_job_id and is_user:
+            try:
+                if p.environ().get("SLURM_JOB_ID") == slurm_job_id:
+                    n_slurm += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
 
     # psutil.process_iter only returns processes the caller can see via
     # /proc/<pid>.  On systems with hidepid=1/2 this collapses to the
@@ -222,23 +265,12 @@ def _snapshot_process_counts():
     # Fall back to the system-wide task count from /proc/loadavg when
     # it is clearly larger than what psutil can see.
     nr_tasks = _system_task_count_from_loadavg()
-    if nr_tasks is not None and nr_tasks > max(0, n_psutil_visible):
+    if nr_tasks is not None and nr_tasks > n_psutil_visible:
         n_system = nr_tasks
         system_source = "tasks, /proc/loadavg"
     else:
         n_system = n_psutil_visible
         system_source = "processes, psutil"
-
-    n_slurm = None
-    if is_slurm_available():
-        slurm_job_id = os.environ.get("SLURM_JOB_ID", "")
-        try:
-            n_slurm = sum(
-                1 for p in all_procs
-                if _proc_in_slurm_job(p, slurm_job_id)
-            )
-        except Exception:
-            n_slurm = -1
 
     return {
         "process_tree": n_process_tree,
