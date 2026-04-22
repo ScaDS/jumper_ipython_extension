@@ -159,12 +159,9 @@ def sanity_check(timeout: float = 10.0) -> bool:
     enough = False
     while time.monotonic() < deadline:
         time.sleep(0.5)
-        if monitor.data is not None:
-            levels = getattr(monitor, "levels", ["process"])
-            counts = [
-                len(monitor.data.data.get(lv, pd.DataFrame()))
-                for lv in levels
-            ]
+        if monitor.nodes.node_names():
+            levels = monitor.nodes.levels
+            counts = [len(monitor.nodes.view(level=lv)) for lv in levels]
             if counts and min(counts) >= required_samples:
                 enough = True
                 break
@@ -178,7 +175,7 @@ def sanity_check(timeout: float = 10.0) -> bool:
         except OSError:
             pass
 
-    if not enough or monitor.data is None:
+    if not enough or not monitor.nodes.node_names():
         logger.info("[JUmPER] native_c sanity: not enough samples collected.")
         return False
 
@@ -187,8 +184,8 @@ def sanity_check(timeout: float = 10.0) -> bool:
         "time", "cpu_util_avg", "memory",
         "io_write", "io_read_count", "io_write_count",
     ]
-    for level in getattr(monitor, "levels", ["process"]):
-        df = monitor.data.data.get(level, pd.DataFrame())
+    for level in monitor.nodes.levels:
+        df = monitor.nodes.view(level=level)
         if df.empty or len(df) < 2:
             logger.info(
                 "[JUmPER] native_c sanity: level '%s' has insufficient data.", level

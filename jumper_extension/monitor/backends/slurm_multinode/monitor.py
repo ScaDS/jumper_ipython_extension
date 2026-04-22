@@ -17,7 +17,7 @@ import threading
 import time
 from typing import Dict, List, Optional
 
-from jumper_extension.adapters.data import PerformanceData
+from jumper_extension.adapters.data import NodeInfo, NodeDataStore
 from jumper_extension.monitor.backends.slurm_multinode._log_writer import MultinodeLogWriter
 from jumper_extension.monitor.backends.slurm_multinode._node_discovery import get_slurm_nodes
 from jumper_extension.utilities import get_available_levels
@@ -135,35 +135,23 @@ class SlurmMultinodeMonitor:
         # Resolve the Python interpreter used on remote nodes
         self._python_executable = python_executable or sys.executable
 
-        # MonitorProtocol surface (aggregated from nodes)
+        # MonitorProtocol surface
         self.interval: float = 1.0
         self.running: bool = False
         self.start_time: Optional[float] = None
         self.stop_time: Optional[float] = None
         self.wallclock_start_time: Optional[float] = None
         self.wallclock_stop_time: Optional[float] = None
-        self.num_cpus: int = 0
-        self.num_system_cpus: int = 0
-        self.num_gpus: int = 0
-        self.gpu_memory: float = 0.0
-        self.gpu_name: str = ""
-        self.cpu_handles: list = []
-        self.memory_limits: dict = {}
         self.is_imported: bool = False
         self.session_source: Optional[str] = None
+        self.nodes: NodeDataStore = NodeDataStore()
+        self.levels: List[str] = get_available_levels()
 
         # Internal
-        self._nodes: List[str] = []
+        self._node_hostnames: List[str] = []
         self._connections: Dict[str, _NodeConnection] = {}
         self._reader_threads: List[threading.Thread] = []
         self._log_writer = MultinodeLogWriter(log_path)
-
-        # Data container — initialised once we know hardware from collectors
-        self.data: Optional[PerformanceData] = None
-        self.levels = get_available_levels()
-
-        # Per-node metadata collected from collector "ready" messages
-        self.node_info: Dict[str, Dict] = {}
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -181,12 +169,12 @@ class SlurmMultinodeMonitor:
 
         # Discover nodes
         try:
-            self._nodes = get_slurm_nodes()
+            self._node_hostnames = get_slurm_nodes()
         except RuntimeError as exc:
             logger.error(f"[JUmPER]: {exc}")
             return
 
-        if not self._nodes:
+        if not self._node_hostnames:
             logger.error("[JUmPER]: No SLURM nodes discovered.")
             return
 
@@ -194,7 +182,7 @@ class SlurmMultinodeMonitor:
         self._log_writer.open()
 
         # Launch collectors on all nodes
-        for hostname in self._nodes:
+        for hostname in self._node_hostnames:
             conn = _NodeConnection(hostname, self._python_executable)
             conn.start(interval, self.levels)
             self._connections[hostname] = conn
@@ -213,7 +201,18 @@ class SlurmMultinodeMonitor:
                         if msg.get("status") == "ready":
                             conn.ready = True
                             conn.info = msg
-                            self.node_info[hostname] = msg
+                            node_info = NodeInfo(
+                                node=hostname,
+                                num_cpus=msg.get("num_cpus", 0),
+                                num_system_cpus=msg.get("num_system_cpus", 0),
+                                num_gpus=msg.get("num_gpus", 0),
+                                gpu_memory=msg.get("gpu_memory", 0.0),
+                                gpu_name=msg.get("gpu_name", ""),
+                                memory_limits=msg.get("memory_limits", {}),
+                                cpu_handles=msg.get("cpu_handles", []),
+                            )
+                            self.nodes.register_node(node_info)
+                            self.levels = msg.get("levels", self.levels)
                             logger.info(
                                 f"[JUmPER]: Collector on {hostname} ready "
                                 f"(cpus={msg.get('num_cpus')}, "
@@ -242,14 +241,6 @@ class SlurmMultinodeMonitor:
             if not ready_received:
                 logger.warning(f"[JUmPER]: Failed to receive ready message from {hostname} after {max_attempts} attempts")
 
-        # Aggregate hardware info from first responding node for Protocol
-        self._aggregate_hardware_info()
-
-        # Initialise data container
-        self.data = PerformanceData(
-            self.num_cpus, self.num_system_cpus, self.num_gpus
-        )
-
         # Start reader threads
         self.running = True
         for hostname, conn in self._connections.items():
@@ -266,7 +257,7 @@ class SlurmMultinodeMonitor:
         ready_count = sum(1 for c in self._connections.values() if c.ready)
         logger.info(
             f"[JUmPER]: Multinode monitor started on "
-            f"{ready_count}/{len(self._nodes)} nodes, "
+            f"{ready_count}/{len(self._node_hostnames)} nodes, "
             f"interval={interval}s, "
             f"log={self._log_writer.log_path}"
         )
@@ -294,40 +285,6 @@ class SlurmMultinodeMonitor:
         logger.info(
             f"[JUmPER]: Multinode monitor stopped after {elapsed:.1f}s."
         )
-
-    # ------------------------------------------------------------------
-    # Internal
-    # ------------------------------------------------------------------
-
-    def _aggregate_hardware_info(self) -> None:
-        """Aggregate hardware info from all connected nodes.
-
-        For Protocol compatibility we pick representative values;
-        the per-node detail lives in ``self.node_info``.
-        """
-        total_cpus = 0
-        total_system_cpus = 0
-        total_gpus = 0
-        gpu_memory = 0.0
-        gpu_name = ""
-
-        for info in self.node_info.values():
-            total_cpus += info.get("num_cpus", 0)
-            total_system_cpus += info.get("num_system_cpus", 0)
-            total_gpus += info.get("num_gpus", 0)
-            gpu_memory = max(gpu_memory, info.get("gpu_memory", 0.0))
-            gpu_name = info.get("gpu_name", "") or gpu_name
-
-        self.num_cpus = total_cpus
-        self.num_system_cpus = total_system_cpus
-        self.num_gpus = total_gpus
-        self.gpu_memory = gpu_memory
-        self.gpu_name = gpu_name
-
-        # Memory limits — per node, keyed by "node:level"
-        self.memory_limits = {
-            level: 0.0 for level in self.levels
-        }
 
     def _reader_loop(self, hostname: str, conn: _NodeConnection) -> None:
         """Continuously read JSON samples from a node's collector."""
@@ -362,6 +319,23 @@ class SlurmMultinodeMonitor:
             level = msg.get("level", "process")
             perf_time = msg.get("time", 0.0)
             wallclock = msg.get("wallclock", time.time())
+
+            # Feed into in-memory store using wall-clock for cross-node alignment
+            time_mark = wallclock - (self.wallclock_start_time or wallclock)
+            try:
+                self.nodes.add_sample(
+                    hostname,
+                    level,
+                    time_mark,
+                    sample.get("cpu_util", []),
+                    sample.get("memory", 0.0),
+                    sample.get("gpu_util", []),
+                    sample.get("gpu_band", []),
+                    sample.get("gpu_mem", []),
+                    sample.get("io_counters", [0, 0, 0, 0]),
+                )
+            except Exception as exc:
+                logger.warning(f"[JUmPER]: Failed to add sample from {hostname}: {exc}")
 
             # Write to log file
             self._log_writer.write_sample(

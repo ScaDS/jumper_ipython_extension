@@ -49,7 +49,7 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
             title = config.get("title", "")
             ylim = config.get("ylim")
             if metric == "memory" and ylim is None:
-                ylim = (0, self.monitor.memory_limits[level])
+                ylim = (0, self._hardware.memory_limits.get(level, 0.0))
             if not column or column not in df.columns:
                 return
         elif plot_type == "multi_series":
@@ -74,7 +74,7 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
             ylim = config.get("ylim")
             if level == "system":
                 title = re.sub(
-                    r"\d+", str(self.monitor.num_system_cpus), title
+                    r"\d+", str(self._hardware.num_system_cpus), title
                 )
             available_cols = [col for col in columns if col in df.columns]
             if not available_cols:

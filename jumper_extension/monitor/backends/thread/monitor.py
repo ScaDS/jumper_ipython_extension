@@ -6,7 +6,7 @@ from typing import Optional
 
 import psutil
 
-from jumper_extension.adapters.data import PerformanceData
+from jumper_extension.adapters.data import NodeInfo, NodeDataStore
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -93,9 +93,18 @@ class PerformanceMonitor:
         if self.num_gpus:
             self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem"])
 
-        self.data = PerformanceData(
-            self.num_cpus, self.num_system_cpus, self.num_gpus
+        node_info = NodeInfo(
+            node="local",
+            num_cpus=self.num_cpus,
+            num_system_cpus=self.num_system_cpus,
+            num_gpus=self.num_gpus,
+            gpu_memory=self.gpu_memory,
+            gpu_name=self.gpu_name,
+            memory_limits=self.memory_limits,
+            cpu_handles=self.cpu_handles,
         )
+        self.nodes = NodeDataStore()
+        self.nodes.register_node(node_info)
         # session state
         self.is_imported = False
         self.session_source = None
@@ -178,7 +187,7 @@ class PerformanceMonitor:
             self.process_pids = self._get_process_pids()
             metrics = self._collect_metrics()
             for level, data_tuple in zip(self.levels, metrics):
-                self.data.add_sample(level, *data_tuple)
+                self.nodes.add_sample("local", level, *data_tuple)
             self.n_measurements += 1
 
             # schedule next tick on the absolute timeline
@@ -199,7 +208,7 @@ class PerformanceMonitor:
             self.process_pids = self._get_process_pids()
             metrics = self._collect_metrics()
             for level, data_tuple in zip(self.levels, metrics):
-                self.data.add_sample(level, *data_tuple)
+                self.nodes.add_sample("local", level, *data_tuple)
             time_measurement = time.perf_counter() - time_start_measurement
             self.n_measurements += 1
             if time_measurement > self.interval:

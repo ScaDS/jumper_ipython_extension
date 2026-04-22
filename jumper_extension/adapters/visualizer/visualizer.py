@@ -14,6 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 from ipywidgets import widgets, Layout
 
 from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.monitor.common import UnavailablePerformanceMonitor, \
     MonitorProtocol
 from jumper_extension.core.messages import (
@@ -57,6 +58,7 @@ class PerformanceVisualizer:
         self.min_duration = None
         self._io_window = None
         self.subsets = {}
+        self._hardware = None  # cached NodeInfo aggregate, populated in attach()
 
     def attach(
         self,
@@ -64,6 +66,7 @@ class PerformanceVisualizer:
     ):
         """Attach started PerformanceMonitor."""
         self.monitor = monitor
+        self._hardware = aggregate_node_info(monitor.nodes.hardware)
         self.min_duration = self.monitor.interval
         # Smooth IO with ~1s rolling window based on sampling interval
         try:
@@ -107,7 +110,7 @@ class PerformanceVisualizer:
                     "type": "multi_series",
                     "prefix": "gpu_mem_",
                     "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, self.monitor.gpu_memory),
+                    "ylim": (0, self._hardware.gpu_memory),
                     "label": "GPU Memory (All GPUs)",
                 },
             },
@@ -121,7 +124,7 @@ class PerformanceVisualizer:
                     ],
                     "title": (
                         "CPU Utilization (%) - "
-                        f"{self.monitor.num_cpus} CPUs"
+                        f"{self._hardware.num_cpus} CPUs"
                     ),
                     "ylim": (0, 100),
                     "label": "CPU Utilization Summary",
@@ -137,7 +140,7 @@ class PerformanceVisualizer:
                     ],
                     "title": (
                         "GPU Utilization (%) - "
-                        f"{self.monitor.num_gpus} GPUs"
+                        f"{self._hardware.num_gpus} GPUs"
                     ),
                     "ylim": (0, 100),
                     "label": "GPU Utilization Summary",
@@ -151,7 +154,7 @@ class PerformanceVisualizer:
                     ],
                     "title": (
                         "GPU Bandwidth Usage (%) - "
-                        f"{self.monitor.num_gpus} GPUs"
+                        f"{self._hardware.num_gpus} GPUs"
                     ),
                     "ylim": (0, 100),
                     "label": "GPU Bandwidth Summary",
@@ -161,9 +164,9 @@ class PerformanceVisualizer:
                     "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
                     "title": (
                         "GPU Memory Usage (GB) - "
-                        f"{self.monitor.num_gpus} GPUs"
+                        f"{self._hardware.num_gpus} GPUs"
                     ),
-                    "ylim": (0, self.monitor.gpu_memory),
+                    "ylim": (0, self._hardware.gpu_memory),
                     "label": "GPU Memory Summary",
                 },
             },
@@ -321,7 +324,7 @@ class PerformanceVisualizer:
         filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
         perfdata = filter_perfdata(
             filtered_cells,
-            self.monitor.data.view(level=level),
+            self.monitor.nodes.view(level=level),
             not show_idle,
         )
 
@@ -356,7 +359,7 @@ class PerformanceVisualizer:
         for available_level in get_available_levels():
             perfdata_by_level[available_level] = filter_perfdata(
                 filtered_cells,
-                self.monitor.data.view(level=available_level),
+                self.monitor.nodes.view(level=available_level),
                 not current_show_idle,
             )
 
@@ -451,7 +454,7 @@ class PerformanceVisualizer:
         metrics_missing = not metric_subsets
         if metrics_missing:
             metric_subsets = ("cpu", "mem", "io")
-            if self.monitor.num_gpus:
+            if self._hardware and self._hardware.num_gpus:
                 metric_subsets += (
                     "gpu",
                     "gpu_all",
@@ -603,7 +606,7 @@ class PerformanceVisualizer:
         configured for the current sliding window.  Returns *None* when
         there is no data to show yet.
         """
-        df = self.monitor.data.view(level=level)
+        df = self.monitor.nodes.view(level=level)
         now = time.perf_counter() - self.monitor.start_time
         t_start = max(0, now - window_seconds)
         t_end = now
@@ -652,13 +655,13 @@ class PerformanceVisualizer:
                     ))
                     y_values.extend(series.tolist())
                     if metric == "memory" and ylim is None:
-                        ylim = (0, self.monitor.memory_limits[level])
+                        ylim = (0, self._hardware.memory_limits.get(level, 0.0))
 
             elif plot_type == "summary_series":
                 columns = config.get("columns", [])
                 if level == "system":
                     title = re.sub(
-                        r"\d+", str(self.monitor.num_system_cpus), title
+                        r"\d+", str(self._hardware.num_system_cpus), title
                     )
                 dashes = ["dot", "solid", "dash"]
                 opacities = [0.35, 1.0, 0.35]
@@ -829,7 +832,7 @@ class PerformanceVisualizer:
             # User specified --metrics: resolve and filter
             if not metric_subsets:
                 metric_subsets = ("cpu", "mem", "io")
-                if self.monitor.num_gpus:
+                if self._hardware and self._hardware.num_gpus:
                     metric_subsets += ("gpu", "gpu_all")
             metric_subsets = self._resolve_metric_subsets(metric_subsets)
             metrics_list, labeled_options = self._collect_metric_options(
@@ -855,11 +858,11 @@ class PerformanceVisualizer:
         else:
             # No --metrics flag: always CPU + Memory; add GPU if available
             default_metrics = ["cpu_summary", "memory"]
-            if self.monitor.num_gpus:
+            if self._hardware and self._hardware.num_gpus:
                 default_metrics += ["gpu_util_summary", "gpu_mem_summary"]
             # Resolve subsets needed for these metrics
             needed_subsets = ["cpu", "mem"]
-            if self.monitor.num_gpus:
+            if self._hardware and self._hardware.num_gpus:
                 needed_subsets.append("gpu")
             metric_subsets = self._resolve_metric_subsets(needed_subsets)
             _, labeled_options = self._collect_metric_options(metric_subsets)
