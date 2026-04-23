@@ -320,8 +320,13 @@ class SlurmMultinodeMonitor:
             perf_time = msg.get("time", 0.0)
             wallclock = msg.get("wallclock", time.time())
 
-            # Feed into in-memory store using wall-clock for cross-node alignment
-            time_mark = wallclock - (self.wallclock_start_time or wallclock)
+            # Convert wall-clock sample time to the head-node perf_counter basis
+            # so that filter_perfdata can align samples with cell_history.start_time.
+            # Cross-node alignment is preserved: all nodes share the same
+            # self.start_time and self.wallclock_start_time anchors.
+            time_mark = (self.start_time or 0.0) + (
+                wallclock - (self.wallclock_start_time or wallclock)
+            )
             try:
                 self.nodes.add_sample(
                     hostname,
