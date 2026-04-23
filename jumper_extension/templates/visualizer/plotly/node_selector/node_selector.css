@@ -7,6 +7,10 @@
   white-space: nowrap;
 }
 
+.jump-vis-node-label[hidden] {
+  display: none;
+}
+
 .jump-vis-node-sel {
   font-size: 13px;
   border: 1px solid var(--border);
