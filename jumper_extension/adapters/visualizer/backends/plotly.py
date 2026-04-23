@@ -436,37 +436,64 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
 
         fig.show(config={"responsive": True})
 
-    def _precompute_figures_for_wrapper(
-        self,
-        metrics,
-        perfdata_no_idle,
-        perfdata_with_idle,
-        full_range,
-    ):
-        """Pre-compute all metric × level × show_idle figure dicts.
+    def _prepare_processed_data_for_node(self, node_name, cell_range, show_idle):
+        """Like _prepare_processed_data_for_interactive but restricted to one node."""
+        from jumper_extension.utilities import filter_perfdata, get_available_levels
+        start_idx, end_idx = cell_range
+        cells_all = self.cell_history.view()
+        try:
+            mask = (
+                (cells_all["cell_index"] >= start_idx)
+                & (cells_all["cell_index"] <= end_idx)
+            )
+            filtered_cells = cells_all[mask]
+        except Exception:
+            filtered_cells = cells_all
 
-        Builds figures without embedded cell boundaries (JS draws them from the
-        separately stored ``boundaries_false`` / ``boundaries_true`` lists).
+        perfdata_by_level = {}
+        for available_level in get_available_levels():
+            perfdata_by_level[available_level] = filter_perfdata(
+                filtered_cells,
+                self.monitor.nodes.view(level=available_level, node=node_name),
+                not show_idle,
+            )
 
-        ``perfdata_no_idle`` must already be prepared before this call so that
-        ``self._compressed_cell_boundaries`` is set to the correct full-range
-        boundaries.  The with-idle figures are built second; they never read
-        ``_compressed_cell_boundaries`` (gated on the ``show_idle`` flag inside
-        ``_get_plotly_cell_boundaries``).
+        if all(df.empty for df in perfdata_by_level.values()):
+            return None
+
+        processed_perfdata = {}
+        for level_key, perfdata in perfdata_by_level.items():
+            if not perfdata.empty:
+                if not show_idle:
+                    # Discard returned boundaries — aggregate boundaries are
+                    # already snapshotted in _precompute_figures_for_wrapper.
+                    processed_data, _ = self._compress_time_axis(perfdata, cell_range)
+                    processed_perfdata[level_key] = processed_data
+                else:
+                    processed_data = perfdata.copy()
+                    processed_data["time"] -= self.monitor.start_time
+                    processed_perfdata[level_key] = processed_data
+            else:
+                processed_perfdata[level_key] = perfdata
+
+        return processed_perfdata
+
+    def _build_node_figures(self, metrics, perfdata_no_idle, perfdata_with_idle, full_range):
+        """Build metric × level × show_idle figure dicts for one node (or aggregate).
+
+        Returns ``(figures, ylims)`` where each is ``{metric: {level: {key: …}}}``.
         """
-        figures = {}  # metric → level → key → dict|None
-        ylims   = {}  # metric → level → key → [ymin, ymax]
+        figures = {}
+        ylims   = {}
         all_levels = set(
             list(perfdata_no_idle or {}) + list(perfdata_with_idle or {})
         )
-
         for metric in metrics:
             figures[metric] = {}
             ylims[metric]   = {}
             for level in all_levels:
                 figures[metric][level] = {}
                 ylims[metric][level]   = {}
-                # Build no-idle first (so _compressed_cell_boundaries is used)
                 for key, df in [
                     ("false", (perfdata_no_idle or {}).get(level)),
                     ("true",  (perfdata_with_idle or {}).get(level)),
@@ -497,7 +524,29 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                     except Exception:
                         figures[metric][level][key] = None
                         ylims[metric][level][key]   = [0, 1]
+        return figures, ylims
 
+    def _precompute_figures_for_wrapper(
+        self,
+        metrics,
+        perfdata_no_idle,
+        perfdata_with_idle,
+        full_range,
+        node_names=None,
+    ):
+        """Pre-compute all node × metric × level × show_idle figure dicts.
+
+        ``FIGS`` always has the shape ``{node: {metric: {level: {key: …}}}}``.
+        The ``""`` key holds the aggregate view; each hostname key holds the
+        per-node view.  Single-node sessions produce ``["local"]`` in
+        ``node_names`` — the structure is identical, the node-selector dropdown
+        is simply hidden by the frontend.
+
+        Boundaries are snapshotted at the top of this method while
+        ``_compressed_cell_boundaries`` still reflects the aggregate no-idle
+        data prepared in ``plot()``; per-node ``_compress_time_axis`` calls
+        intentionally discard their returned boundaries.
+        """
         boundaries_false = self._compute_cell_boundaries_json(
             full_range, show_idle=False
         )
@@ -505,11 +554,29 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             full_range, show_idle=True
         )
 
+        figures = {}
+        ylims   = {}
+
+        figures[""], ylims[""] = self._build_node_figures(
+            metrics, perfdata_no_idle, perfdata_with_idle, full_range
+        )
+        for node_name in (node_names or []):
+            node_no_idle   = self._prepare_processed_data_for_node(
+                node_name, full_range, False
+            )
+            node_with_idle = self._prepare_processed_data_for_node(
+                node_name, full_range, True
+            )
+            figures[node_name], ylims[node_name] = self._build_node_figures(
+                metrics, node_no_idle, node_with_idle, full_range
+            )
+
         return {
             "figures":          figures,
             "ylims":            ylims,
             "boundaries_false": boundaries_false,
             "boundaries_true":  boundaries_true,
+            "node_names":       node_names or [],
         }
 
     def _create_interactive_wrapper(
@@ -609,11 +676,13 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             full_range, True
         )
 
+        node_names = self.monitor.nodes.node_names()
         precomputed = self._precompute_figures_for_wrapper(
             metrics,
             processed_no_idle,
             processed_with_idle,
             full_range,
+            node_names=node_names,
         )
         precomputed["min_cell_index"]    = min_cell_idx
         precomputed["max_cell_index"]    = max_cell_idx
@@ -631,6 +700,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             initial_cell_range,
             show_idle,
             _precomputed_figures=precomputed,
+            node_names=node_names,
         )
         wrapper.display_ui()
 
@@ -657,19 +727,21 @@ class InteractivePlotlyWrapper:
         cell_range=None,
         show_idle=False,
         _precomputed_figures=None,
+        node_names=None,
     ):
-        self.plot_callback    = plot_callback
+        self.plot_callback     = plot_callback
         self.perfdata_by_level = perfdata_by_level
-        self.metrics          = metrics
-        self.labeled_options  = labeled_options
-        self.cell_range       = cell_range
-        self.show_idle        = show_idle
-        self.max_panels       = len(metrics) * 4
+        self.metrics           = metrics
+        self.labeled_options   = labeled_options
+        self.cell_range        = cell_range
+        self.show_idle         = show_idle
+        self.max_panels        = len(metrics) * 4
+        self._node_names       = node_names or []
         # Pre-computed figures supplied by PlotlyPerformanceVisualizer; if
         # None we fall back to computing lazily from plot_callback.
         self._precomputed_figures = _precomputed_figures
-        self._display_handle  = None
-        self._container_id    = f"jump-vis-{uuid.uuid4().hex[:8]}"
+        self._display_handle   = None
+        self._container_id     = f"jump-vis-{uuid.uuid4().hex[:8]}"
 
     # ------------------------------------------------------------------ #
     # Public API (kept stable with the old ipywidgets implementation)     #
@@ -700,17 +772,20 @@ class InteractivePlotlyWrapper:
         on ``_compressed_cell_boundaries`` being set correctly on the
         visualizer instance.  When called from ``update_data`` this may not
         hold, so only the current variant is guaranteed to be accurate.
+
+        Returns the same ``{node: {metric: …}}`` shape used by precomputed
+        figures, with the flat figures stored under the ``""`` (aggregate) key.
         """
-        result = {}
+        flat = {}
         levels = list(self.perfdata_by_level.keys())
         for _label, metric in self.labeled_options:
-            result[metric] = {}
+            flat[metric] = {}
             for level in levels:
                 df = self.perfdata_by_level.get(level)
-                result[metric][level] = {}
+                flat[metric][level] = {}
                 for key in ("true", "false"):
                     if df is None or df.empty:
-                        result[metric][level][key] = None
+                        flat[metric][level][key] = None
                         continue
                     try:
                         fig = self.plot_callback(
@@ -720,24 +795,26 @@ class InteractivePlotlyWrapper:
                             key == "true",
                             level,
                         )
-                        result[metric][level][key] = (
+                        flat[metric][level][key] = (
                             json.loads(fig.to_json()) if fig is not None else None
                         )
                     except Exception:
-                        result[metric][level][key] = None
-        return result
+                        flat[metric][level][key] = None
+        return {"": flat}
 
     # CSS and JS components are loaded in this order.
     _CSS_COMPONENTS = [
         "toolbar",
         "show_idle_checkbox",
         "cell_range_slider",
+        "node_selector",
         "add_panel_button",
         "panel",
     ]
     _JS_COMPONENTS = [
         "show_idle_checkbox",
         "cell_range_slider",
+        "node_selector",
         "add_panel_button",
         "panel",
     ]
@@ -756,7 +833,6 @@ class InteractivePlotlyWrapper:
             else self._compute_figures_from_callback()
         )
 
-        # Unpack rich pre-computed structure or fall back to plain figures dict
         if isinstance(pre, dict) and "figures" in pre:
             figures            = pre["figures"]
             ylims              = pre.get("ylims", {})
@@ -767,15 +843,18 @@ class InteractivePlotlyWrapper:
             initial_cell_range = pre.get(
                 "initial_cell_range", [min_cell_index, max_cell_index]
             )
+            node_names = pre.get("node_names", self._node_names)
         else:
-            figures            = pre
+            figures            = {"": pre}
             ylims              = {}
             boundaries_false   = []
             boundaries_true    = []
             min_cell_index     = 0
             max_cell_index     = 0
             initial_cell_range = [0, 0]
+            node_names         = self._node_names
 
+        is_multinode = len(node_names) > 1
         levels  = get_available_levels()
         init_lo = initial_cell_range[0] if initial_cell_range else min_cell_index
         init_hi = (
@@ -801,6 +880,8 @@ class InteractivePlotlyWrapper:
             max_cell_index=max_cell_index,
             init_lo=init_lo,
             init_hi=init_hi,
+            is_multinode=is_multinode,
+            node_names=node_names,
         )
         body_html = env.get_template("visualizer.html").render(**html_ctx)
 
@@ -831,6 +912,7 @@ class InteractivePlotlyWrapper:
             f"var MIN_CELL = {min_cell_index};",
             f"var MAX_CELL = {max_cell_index};",
             f"var INIT_RNG = {json.dumps(initial_cell_range)};",
+            f"var NODES    = {json.dumps(node_names)};",
         ])
 
         # ── 5. Plotly CDN loader (injected once per output block) ─────────
