@@ -44,7 +44,12 @@ module load release/24.04  GCCcore/11.3.0 Python
 source /data/horse/ws/s4122485-jumper_test/venv/bin/activate
 
 # Run benchmark
-python -m jumper_extension.monitor.benchmark.run_benchmark \
+#   -u                    : unbuffered stdout/stderr so Slurm .out/.err
+#                           updates live instead of in 4 KiB blocks
+#   PYTHONFAULTHANDLER=1  : print a Python traceback on fatal signals
+export PYTHONUNBUFFERED=1
+export PYTHONFAULTHANDLER=1
+python -u -m jumper_extension.monitor.benchmark.run_benchmark \
     --duration "$DURATION" \
     --repeats "$REPEATS" \
     --backends "$BACKENDS" \

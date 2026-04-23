@@ -347,22 +347,9 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
         old_alarm = signal.signal(signal.SIGALRM, _timeout_handler)
         signal.alarm(int(deadline))
 
-    # Watchdog: if this run is still inside run_single() past the
-    # deadline, dump the full stack of every thread to stderr so we can
-    # diagnose where it hangs.  Repeats every <deadline>s until the run
-    # returns (at which point we cancel it in the finally block).
-    # faulthandler.dump_traceback_later is safe from async-signal context
-    # and does not interfere with SIGALRM.
-    faulthandler.enable()
-    try:
-        faulthandler.dump_traceback_later(
-            timeout=int(deadline),
-            repeat=True,
-            file=sys.stderr,
-        )
-    except (RuntimeError, ValueError):
-        # Older Pythons or already-armed timer — ignore.
-        pass
+    # NOTE: the global watchdog installed in main() already covers this
+    # run.  We intentionally do not arm a second dump_traceback_later
+    # here — only one can be active at a time.
 
     workers = None
     stop_event = None
@@ -408,10 +395,6 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
             signal.alarm(0)
             if old_alarm is not None:
                 signal.signal(signal.SIGALRM, old_alarm)
-        try:
-            faulthandler.cancel_dump_traceback_later()
-        except (RuntimeError, AttributeError):
-            pass
         # Always ensure workers are dead
         if workers and stop_event:
             try:
@@ -716,6 +699,66 @@ def run_sanity_checks(backends):
 # Main
 # ---------------------------------------------------------------------------
 
+def _install_global_watchdog(results_dir, period_sec=60):
+    """Install a line-buffered watchdog that dumps tracebacks periodically.
+
+    Writes to ``<results_dir>/watchdog.log`` using line-buffered IO so
+    that entries show up promptly on shared filesystems, independent of
+    Slurm's stdio capture.  Additionally registers ``SIGUSR1`` as a
+    manual trigger so we can force a stack dump from outside the job::
+
+        scancel --signal=USR1 <jobid>
+
+    The ``SIGUSR1`` handler is chained, so it does not interfere with
+    the default behaviour if other code also registers it.
+    """
+    os.makedirs(results_dir, exist_ok=True)
+    log_path = os.path.join(results_dir, "watchdog.log")
+    # Line-buffered so every written line hits the page cache immediately.
+    wd_file = open(log_path, "a", buffering=1)
+    wd_file.write(
+        f"\n---- watchdog armed at {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        f" pid={os.getpid()} period={period_sec}s ----\n"
+    )
+    wd_file.flush()
+
+    faulthandler.enable(file=wd_file)
+    try:
+        faulthandler.dump_traceback_later(
+            timeout=int(period_sec),
+            repeat=True,
+            file=wd_file,
+        )
+    except (RuntimeError, ValueError):
+        pass
+
+    def _disarm_watchdog():
+        try:
+            faulthandler.cancel_dump_traceback_later()
+        except (RuntimeError, AttributeError):
+            pass
+        try:
+            wd_file.flush()
+        except (OSError, ValueError):
+            pass
+
+    atexit.register(_disarm_watchdog)
+
+    if hasattr(signal, "SIGUSR1"):
+        try:
+            faulthandler.register(
+                signal.SIGUSR1, file=wd_file, chain=False
+            )
+        except (RuntimeError, ValueError, OSError):
+            pass
+
+    print(f"[watchdog] dumping stacks every {period_sec}s → {log_path}",
+          flush=True)
+    print(f"[watchdog] manual dump: scancel --signal=USR1 $SLURM_JOB_ID",
+          flush=True)
+    return wd_file
+
+
 def main():
     parser = argparse.ArgumentParser(description="Monitor benchmark")
     parser.add_argument("--duration", type=int, default=60,
@@ -740,6 +783,8 @@ def main():
 
     results_dir = os.path.join(os.path.dirname(__file__), "results")
     os.makedirs(results_dir, exist_ok=True)
+
+    _install_global_watchdog(results_dir, period_sec=60)
 
     backends = (
         args.backends.split(",") if args.backends
