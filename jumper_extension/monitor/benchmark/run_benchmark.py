@@ -80,9 +80,20 @@ def _make_native_c_monitor():
 # CPU workload
 # ---------------------------------------------------------------------------
 
-def _cpu_burn(stop_event):
-    """Pure-Python busy loop to saturate one core."""
-    while not stop_event.is_set():
+def _cpu_burn(stop_event=None):
+    """Pure-Python busy loop to saturate one core.
+
+    Does *not* poll a shared ``multiprocessing.Event`` — under heavy
+    contention with many workers, the Event's internal ``SemLock`` can
+    deadlock the parent's ``stop_event.set()`` call if a worker is
+    SIGTERM'd while it happens to be holding the underlying POSIX
+    semaphore (which is not robust).  Instead, burn workers are simply
+    terminated via SIGTERM/SIGKILL by :func:`stop_workload`.
+
+    The ``stop_event`` argument is accepted for backwards compatibility
+    but ignored.
+    """
+    while True:
         s = 0
         for i in range(50_000):
             s += i * i
@@ -129,28 +140,39 @@ def _print_cpu_diagnostics():
 
 
 def start_workload(n_workers=None):
-    """Spawn *n_workers* processes (default: available CPUs) doing busy work."""
+    """Spawn *n_workers* processes (default: available CPUs) doing busy work.
+
+    Returns ``(workers, None)``; the second slot is kept for backwards
+    compatibility with callers that unpack ``(workers, stop_event)``.
+    No shared ``Event`` is used — see :func:`_cpu_burn` for rationale.
+    """
     if n_workers is None:
         n_workers = _available_cpus()
-    stop_event = multiprocessing.Event()
     workers = []
     for _ in range(n_workers):
-        p = multiprocessing.Process(target=_cpu_burn, args=(stop_event,), daemon=True)
+        p = multiprocessing.Process(target=_cpu_burn, daemon=True)
         p.start()
         workers.append(p)
-    return workers, stop_event
+    return workers, None
 
 
-def stop_workload(workers, stop_event):
-    stop_event.set()
-    # Send SIGTERM to all immediately — no need for graceful shutdown
+def stop_workload(workers, stop_event=None):
+    """Terminate burn workers via SIGTERM (then SIGKILL for stragglers).
+
+    ``stop_event`` is ignored — kept for API compatibility.  The
+    previous implementation's ``stop_event.set()`` call was the single
+    biggest source of hangs on HPC: the internal POSIX semaphore could
+    be permanently held by a worker that happened to be in its critical
+    section when SIGTERM arrived.
+    """
+    # Send SIGTERM to all immediately.
     for p in workers:
         try:
             if p.is_alive():
                 p.terminate()
         except (OSError, ValueError):
             pass
-    # Give them a brief moment to exit, then force-kill stragglers
+    # Give them a brief moment to exit, then force-kill stragglers.
     for p in workers:
         try:
             p.join(timeout=0.5)
@@ -380,7 +402,7 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
         t_setup_done = t_setup_done if 't_setup_done' in dir() else t_end
         t_teardown_start = time.perf_counter()
         print(f"      ⚠ {exc}")
-        if workers and stop_event:
+        if workers:
             try:
                 stop_workload(workers, stop_event)
             except Exception:
@@ -396,7 +418,7 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
             if old_alarm is not None:
                 signal.signal(signal.SIGALRM, old_alarm)
         # Always ensure workers are dead
-        if workers and stop_event:
+        if workers:
             try:
                 stop_workload(workers, stop_event)
             except Exception:
