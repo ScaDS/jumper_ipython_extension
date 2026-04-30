@@ -60,14 +60,15 @@ def _run_collector(interval: float, levels: Optional[List[str]] = None) -> None:
             for level, row in zip(monitor.levels, bootstrap_rows)
         }
 
+        hardware = monitor.nodes.hardware["local"]
         ready_msg = {
             "status": "ready",
             "node": hostname,
-            "num_cpus": monitor.num_cpus,
-            "num_system_cpus": monitor.num_system_cpus,
-            "num_gpus": monitor.num_gpus,
-            "gpu_memory": monitor.gpu_memory,
-            "gpu_name": monitor.gpu_name,
+            "num_cpus": hardware.num_cpus,
+            "num_system_cpus": hardware.num_system_cpus,
+            "num_gpus": hardware.num_gpus,
+            "gpu_memory": hardware.gpu_memory,
+            "gpu_name": hardware.gpu_name,
             "levels": levels,
             "pid": os.getpid(),
             "columns_by_level": columns_by_level,

@@ -17,9 +17,10 @@ class NvmlGpuBackend(GpuBackend):
     def __init__(self, monitor):
         super().__init__(monitor)
         self._pynvml = None
+        self._handles = []
 
     def _iter_handles(self):
-        return self._monitor.nvidia_gpu_handles
+        return self._handles
 
     def _get_util_rates(self, handle):
         if self._pynvml is None:
@@ -38,7 +39,7 @@ class NvmlGpuBackend(GpuBackend):
 
             return DefaultUtilRates()
 
-    def setup(self) -> None:
+    def setup(self) -> dict:
         # Logic is intentionally kept identical to the previous implementation.
         try:
             import pynvml
@@ -47,39 +48,35 @@ class NvmlGpuBackend(GpuBackend):
             self._pynvml = pynvml
             globals()["pynvml"] = pynvml
             ngpus = self._pynvml.nvmlDeviceGetCount()
-            self._monitor.nvidia_gpu_handles = [
+            self._handles = [
                 self._pynvml.nvmlDeviceGetHandleByIndex(i)
                 for i in range(ngpus)
             ]
-            if self._monitor.nvidia_gpu_handles:
-                handle = self._monitor.nvidia_gpu_handles[0]
+            if self._handles:
+                handle = self._handles[0]
                 gpu_mem = round(
                     self._pynvml.nvmlDeviceGetMemoryInfo(handle).total
                     / (1024**3),
                     2,
                     )
-                if self._monitor.gpu_memory == 0:
-                    self._monitor.gpu_memory = gpu_mem
                 name = self._pynvml.nvmlDeviceGetName(handle)
                 gpu_name = name.decode() if isinstance(name, bytes) else name
-                if not self._monitor.gpu_name:
-                    self._monitor.gpu_name = gpu_name
-                else:
-                    self._monitor.gpu_name += f", {gpu_name}"
+                return {"gpu_memory": gpu_mem, "gpu_name": gpu_name}
         except ImportError:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
                     ExtensionErrorCode.PYNVML_NOT_AVAILABLE
                 ]
             )
-            self._monitor.nvidia_gpu_handles = []
+            self._handles = []
         except Exception:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[
                     ExtensionErrorCode.NVIDIA_DRIVERS_NOT_AVAILABLE
                 ]
             )
-            self._monitor.nvidia_gpu_handles = []
+            self._handles = []
+        return {}
 
     def _collect_system(self, handle):
         util_rates = self._get_util_rates(handle)

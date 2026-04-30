@@ -167,16 +167,17 @@ def _run_collector(
         for level, row in zip(monitor.levels, bootstrap_rows)
     }
 
+    hardware = monitor.nodes.hardware["local"]
     ready_msg = {
         "status": "ready",
         "pid": os.getpid(),
-        "num_cpus": monitor.num_cpus,
-        "num_system_cpus": monitor.num_system_cpus,
-        "num_gpus": monitor.num_gpus,
-        "gpu_memory": monitor.gpu_memory,
-        "gpu_name": monitor.gpu_name,
-        "memory_limits": monitor.memory_limits,
-        "cpu_handles": monitor.cpu_handles,
+        "num_cpus": hardware.num_cpus,
+        "num_system_cpus": hardware.num_system_cpus,
+        "num_gpus": hardware.num_gpus,
+        "gpu_memory": hardware.gpu_memory,
+        "gpu_name": hardware.gpu_name,
+        "memory_limits": hardware.memory_limits,
+        "cpu_handles": hardware.cpu_handles,
         "levels": levels,
         "columns_by_level": columns_by_level,
     }

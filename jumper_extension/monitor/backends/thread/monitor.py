@@ -64,19 +64,19 @@ class PerformanceMonitor:
         same for cpu_affinity
         """
         try:
-            self.cpu_handles = self.process.cpu_affinity()
-            self.num_cpus = len(self.cpu_handles)
+            cpu_handles = self.process.cpu_affinity()
+            num_cpus = len(cpu_handles)
         except AttributeError:
-            self.cpu_handles = []
-            self.num_cpus = len(psutil.cpu_percent(percpu=True))
-        self.num_system_cpus = len(psutil.cpu_percent(percpu=True))
+            cpu_handles = []
+            num_cpus = len(psutil.cpu_percent(percpu=True))
+        num_system_cpus = len(psutil.cpu_percent(percpu=True))
         self.pid = os.getpid()
         self.uid = os.getuid()
         self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
         self.levels = get_available_levels()
         self.process_pids = []
 
-        self.memory_limits = {
+        memory_limits = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
@@ -93,20 +93,17 @@ class PerformanceMonitor:
         ):
             backend.setup()
 
-        self.nvidia_gpu_handles = []
-        self.amd_gpu_handles = []
-        self.gpu_memory = 0
-        self.gpu_name = ""
         self._gpu_backends = GpuBackendDiscovery(self).discover()
+        gpu_memory = 0.0
+        gpu_name_parts = []
         for backend in self._gpu_backends:
-            backend.setup()
-        self.num_gpus = len(self.nvidia_gpu_handles) + len(self.amd_gpu_handles)
-
-        self.metrics = [
-            "cpu", "memory", "io_read", "io_write", "io_read_count", "io_write_count",
-        ]
-        if self.num_gpus:
-            self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem"])
+            meta = backend.setup() or {}
+            if meta.get("gpu_memory", 0) > 0 and gpu_memory == 0:
+                gpu_memory = meta["gpu_memory"]
+            if meta.get("gpu_name"):
+                gpu_name_parts.append(meta["gpu_name"])
+        gpu_name = ", ".join(gpu_name_parts)
+        num_gpus = sum(len(b._handles) for b in self._gpu_backends)
 
         # Build the collector→handler pipeline
         _gpu_collector = _CombinedGpuCollector(self._gpu_backends)
@@ -119,18 +116,17 @@ class PerformanceMonitor:
             )),
         ]
 
-        node_info = NodeInfo(
-            node="local",
-            num_cpus=self.num_cpus,
-            num_system_cpus=self.num_system_cpus,
-            num_gpus=self.num_gpus,
-            gpu_memory=self.gpu_memory,
-            gpu_name=self.gpu_name,
-            memory_limits=self.memory_limits,
-            cpu_handles=self.cpu_handles,
-        )
         self.nodes = NodeDataStore()
-        self.nodes.register_node(node_info)
+        self.nodes.register_node(NodeInfo(
+            node="local",
+            num_cpus=num_cpus,
+            num_system_cpus=num_system_cpus,
+            num_gpus=num_gpus,
+            gpu_memory=gpu_memory,
+            gpu_name=gpu_name,
+            memory_limits=memory_limits,
+            cpu_handles=cpu_handles,
+        ))
 
         # Bootstrap: warm up process snapshots and IO counter state,
         # then derive per-level column names for schema pre-population.
