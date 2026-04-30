@@ -15,6 +15,13 @@ from ipywidgets import widgets, Layout
 
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.adapters.data import aggregate_node_info
+from jumper_extension.config.models import (
+    SingleSeriesConfig,
+    SummarySeriesConfig,
+    MultiSeriesConfig,
+    CompositeSeriesConfig,
+    validate_metric_config,
+)
 from jumper_extension.monitor.common import UnavailablePerformanceMonitor, \
     MonitorProtocol
 from jumper_extension.core.messages import (
@@ -63,153 +70,55 @@ class PerformanceVisualizer:
     def attach(
         self,
         monitor: MonitorProtocol,
+        metrics_config_path=None,
     ):
         """Attach started PerformanceMonitor."""
         self.monitor = monitor
         self._hardware = aggregate_node_info(monitor.nodes.hardware)
         self.min_duration = self.monitor.interval
-        # Smooth IO with ~1s rolling window based on sampling interval
         try:
             self._io_window = max(
                 1, int(round(1.0 / (self.monitor.interval or 1.0)))
             )
         except Exception:
             self._io_window = 1
-        self._build_subsets()
+        config_path = metrics_config_path or self._default_config_path()
+        self._load_subsets_from_config(config_path)
+        self._patch_hardware_dependent_ylims()
 
-    def _build_subsets(self):
-        """Build a dictionary of metric subsets based on the provided
-        configuration"""
-        # Compressed metrics configuration (dict-based entries for clarity)
-        self.subsets = {
-            "cpu_all": {
-                "cpu": {
-                    "type": "multi_series",
-                    "prefix": "cpu_util_",
-                    "title": "CPU Utilization (%) - Across Cores",
-                    "ylim": (0, 100),
-                    "label": "CPU Utilization (All Cores)",
-                }
-            },
-            "gpu_all": {
-                "gpu_util": {
-                    "type": "multi_series",
-                    "prefix": "gpu_util_",
-                    "title": "GPU Utilization (%) - Across GPUs",
-                    "ylim": (0, 100),
-                    "label": "GPU Utilization (All GPUs)",
-                },
-                "gpu_band": {
-                    "type": "multi_series",
-                    "prefix": "gpu_band_",
-                    "title": "GPU Bandwidth Usage (%) - Across GPUs",
-                    "ylim": (0, 100),
-                    "label": "GPU Bandwidth (All GPUs)",
-                },
-                "gpu_mem": {
-                    "type": "multi_series",
-                    "prefix": "gpu_mem_",
-                    "title": "GPU Memory Usage (GB) - Across GPUs",
-                    "ylim": (0, self._hardware.gpu_memory),
-                    "label": "GPU Memory (All GPUs)",
-                },
-            },
-            "cpu": {
-                "cpu_summary": {
-                    "type": "summary_series",
-                    "columns": [
-                        "cpu_util_min",
-                        "cpu_util_avg",
-                        "cpu_util_max",
-                    ],
-                    "title": (
-                        "CPU Utilization (%) - "
-                        f"{self._hardware.num_cpus} CPUs"
-                    ),
-                    "ylim": (0, 100),
-                    "label": "CPU Utilization Summary",
-                }
-            },
-            "gpu": {
-                "gpu_util_summary": {
-                    "type": "summary_series",
-                    "columns": [
-                        "gpu_util_min",
-                        "gpu_util_avg",
-                        "gpu_util_max",
-                    ],
-                    "title": (
-                        "GPU Utilization (%) - "
-                        f"{self._hardware.num_gpus} GPUs"
-                    ),
-                    "ylim": (0, 100),
-                    "label": "GPU Utilization Summary",
-                },
-                "gpu_band_summary": {
-                    "type": "summary_series",
-                    "columns": [
-                        "gpu_band_min",
-                        "gpu_band_avg",
-                        "gpu_band_max",
-                    ],
-                    "title": (
-                        "GPU Bandwidth Usage (%) - "
-                        f"{self._hardware.num_gpus} GPUs"
-                    ),
-                    "ylim": (0, 100),
-                    "label": "GPU Bandwidth Summary",
-                },
-                "gpu_mem_summary": {
-                    "type": "summary_series",
-                    "columns": ["gpu_mem_min", "gpu_mem_avg", "gpu_mem_max"],
-                    "title": (
-                        "GPU Memory Usage (GB) - "
-                        f"{self._hardware.num_gpus} GPUs"
-                    ),
-                    "ylim": (0, self._hardware.gpu_memory),
-                    "label": "GPU Memory Summary",
-                },
-            },
-            "mem": {
-                "memory": {
-                    "type": "single_series",
-                    "column": "memory",
-                    "title": "Memory Usage (GB)",
-                    "ylim": None,  # Will be set dynamically based on level
-                    "label": "Memory Usage",
-                }
-            },
-            "io": {
-                "io_read": {
-                    "type": "single_series",
-                    "column": "io_read",
-                    "title": "I/O Read (MB/s)",
-                    "ylim": None,
-                    "label": "IO Read MB/s",
-                },
-                "io_write": {
-                    "type": "single_series",
-                    "column": "io_write",
-                    "title": "I/O Write (MB/s)",
-                    "ylim": None,
-                    "label": "IO Write MB/s",
-                },
-                "io_read_count": {
-                    "type": "single_series",
-                    "column": "io_read_count",
-                    "title": "I/O Read Operations (ops/s)",
-                    "ylim": None,
-                    "label": "IO Read Ops",
-                },
-                "io_write_count": {
-                    "type": "single_series",
-                    "column": "io_write_count",
-                    "title": "I/O Write Operations (ops/s)",
-                    "ylim": None,
-                    "label": "IO Write Ops",
-                },
-            },
-        }
+    @staticmethod
+    def _default_config_path() -> Path:
+        return (
+            Path(__file__).parent.parent.parent
+            / "config" / "plots.yaml"
+        )
+
+    def _load_subsets_from_config(self, path) -> None:
+        import yaml
+        raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        self.subsets = {}
+        for subset_key, metrics in raw.get("subsets", {}).items():
+            self.subsets[subset_key] = {}
+            for metric_key, cfg in metrics.items():
+                if cfg is None:
+                    cfg = {}
+                self.subsets[subset_key][metric_key] = validate_metric_config(cfg)
+
+    def _patch_hardware_dependent_ylims(self) -> None:
+        """Fill in ylim fields that depend on hardware (gpu_memory)."""
+        hw = self._hardware
+        gpu_mem_ylim = (0.0, float(hw.gpu_memory)) if hw.gpu_memory else None
+        for subset_dict in self.subsets.values():
+            for cfg in subset_dict.values():
+                if cfg.ylim is None and isinstance(
+                    cfg, (MultiSeriesConfig, SummarySeriesConfig)
+                ):
+                    if hasattr(cfg, "prefix") and "gpu_mem" in getattr(cfg, "prefix", ""):
+                        cfg.ylim = gpu_mem_ylim
+                    elif hasattr(cfg, "columns") and any(
+                        "gpu_mem" in c for c in getattr(cfg, "columns", [])
+                    ):
+                        cfg.ylim = gpu_mem_ylim
 
     def _resolve_metric_subsets(
         self,
@@ -302,12 +211,8 @@ class PerformanceVisualizer:
             if subset in self.subsets:
                 for metric_key, cfg in self.subsets[subset].items():
                     metrics.append(metric_key)
-                    label = (
-                        cfg.get("label")
-                        if isinstance(cfg, dict)
-                        else metric_key
-                    )
-                    labeled_options.append((label or metric_key, metric_key))
+                    label = getattr(cfg, "label", metric_key) or metric_key
+                    labeled_options.append((label, metric_key))
             else:
                 logger.warning(
                     EXTENSION_ERROR_MESSAGES[
@@ -615,13 +520,13 @@ class PerformanceVisualizer:
             (subset[metric] for subset in self.subsets.values()
              if metric in subset), None,
         )
-        if not config or not isinstance(config, dict):
+        if config is None:
             return None
 
         fig = go.Figure()
-        plot_type = config.get("type")
-        title = config.get("title", "")
-        ylim = config.get("ylim")
+        plot_type = config.type
+        title = config.title
+        ylim = config.ylim
         y_values: list = []
 
         has_data = df is not None and not df.empty
@@ -633,23 +538,19 @@ class PerformanceVisualizer:
 
         if has_data:
             if plot_type == "single_series":
-                column = config.get("column")
+                column = config.column
                 if column and column in df.columns:
-                    series = df[column]
-                    if metric in ("io_read", "io_write",
-                                  "io_read_count", "io_write_count"):
-                        diffs = df[column].astype(float).diff().clip(lower=0)
-                        if metric in ("io_read", "io_write"):
-                            diffs = diffs / (1024**2)
-                        series = diffs.fillna(0.0)
+                    series = df[column].astype(float).clip(lower=0)
+                    if metric in ("io_read", "io_write"):
+                        series = series / (1024 ** 2)
+                    if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
                         if self._io_window and self._io_window > 1:
                             series = series.rolling(
-                                window=self._io_window,
-                                min_periods=1,
+                                window=self._io_window, min_periods=1
                             ).mean()
                     fig.add_trace(go.Scatter(
                         x=df["time"], y=series,
-                        name=config.get("label", column),
+                        name=config.label,
                         mode="lines",
                         line=dict(color="blue", width=2),
                     ))
@@ -658,7 +559,7 @@ class PerformanceVisualizer:
                         ylim = (0, self._hardware.memory_limits.get(level, 0.0))
 
             elif plot_type == "summary_series":
-                columns = config.get("columns", [])
+                columns = config.columns
                 if level == "system":
                     title = re.sub(
                         r"\d+", str(self._hardware.num_system_cpus), title
@@ -681,7 +582,7 @@ class PerformanceVisualizer:
                     y_values.extend(df[col].tolist())
 
             elif plot_type == "multi_series":
-                prefix = config.get("prefix", "")
+                prefix = config.prefix
                 series_cols = [
                     c for c in df.columns
                     if prefix and c.startswith(prefix)
@@ -702,6 +603,18 @@ class PerformanceVisualizer:
                         line=dict(color="blue", width=2),
                     ))
                     y_values.extend(df[avg_column].tolist())
+
+            elif plot_type == "composite_series":
+                for s in config.series:
+                    if s.column not in df.columns:
+                        continue
+                    series = df[s.column]
+                    fig.add_trace(go.Scatter(
+                        x=df["time"], y=series,
+                        name=s.label, mode="lines",
+                        line=dict(color=s.color, width=s.width),
+                    ))
+                    y_values.extend(series.tolist())
 
         # Compute y-range
         if ylim is None:

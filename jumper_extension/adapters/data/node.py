@@ -29,10 +29,10 @@ class NodeDataStore:
 
     Access patterns
     ---------------
-    ``store.hardware``           – Dict[str, NodeInfo] (metadata)
-    ``store.view(level)``        – aggregate DataFrame across all nodes
-    ``store.view(level, node=n)``– single-node DataFrame (includes per-core cols)
-    ``store.add_sample(node, …)``– write one sample for a node/level
+    ``store.hardware``                     – Dict[str, NodeInfo] (metadata)
+    ``store.view(level)``                  – aggregate DataFrame across all nodes
+    ``store.view(level, node=n)``          – single-node DataFrame
+    ``store.add_sample(node, level, row)`` – append one flat-dict sample
     """
 
     def __init__(self) -> None:
@@ -45,9 +45,7 @@ class NodeDataStore:
 
     def register_node(self, info: NodeInfo) -> None:
         self._info[info.node] = info
-        self._nodes[info.node] = PerformanceData(
-            info.num_cpus, info.num_system_cpus, info.num_gpus
-        )
+        self._nodes[info.node] = PerformanceData()
 
     @property
     def hardware(self) -> Dict[str, NodeInfo]:
@@ -66,25 +64,21 @@ class NodeDataStore:
     # Writing                                                             #
     # ------------------------------------------------------------------ #
 
-    def add_sample(
-        self,
-        node: str,
-        level: str,
-        time_mark: float,
-        cpu_util_per_core: list,
-        memory: float,
-        gpu_util: list,
-        gpu_band: list,
-        gpu_mem: list,
-        io_counters: list,
-    ) -> None:
+    def add_sample(self, node: str, level: str, row: dict) -> None:
         perf_data = self._nodes.get(node)
         if perf_data is None:
             return
-        perf_data.add_sample(
-            level, time_mark, cpu_util_per_core, memory,
-            gpu_util, gpu_band, gpu_mem, io_counters,
-        )
+        perf_data.add_sample(level, row)
+
+    def init_node_schema(
+        self, node: str, columns_by_level: Dict[str, List[str]]
+    ) -> None:
+        """Store per-level column lists so view() can return a correctly shaped
+        empty DataFrame before the first sample arrives."""
+        perf_data = self._nodes.get(node)
+        if perf_data is None:
+            return
+        perf_data._schema_columns = dict(columns_by_level)
 
     def load_frames(self, node: str, frames: Dict[str, pd.DataFrame]) -> None:
         """Inject pre-loaded DataFrames into a registered node's data container.
@@ -96,7 +90,7 @@ class NodeDataStore:
         if perf_data is None:
             return
         for level, df in frames.items():
-            perf_data.data[level] = df
+            perf_data._rows[level] = df.to_dict("records")
 
     # ------------------------------------------------------------------ #
     # Reading                                                             #
@@ -234,11 +228,11 @@ class NodeDataStore:
             return
         first = next(iter(self._nodes.values()))
         _, ext = os.path.splitext(filename)
-        fmt = ext.lower().lstrip(".") or "csv"
-        if not fmt:
-            fmt = "csv"
+        format = ext.lower().lstrip(".") or "csv"
+        if not format:
+            format = "csv"
             filename += ".csv"
-        writer = first._file_writers.get(fmt)
+        writer = first._file_writers.get(format)
         if writer:
             writer(filename, df)
 

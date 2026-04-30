@@ -40,22 +40,21 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
             ),
             None,
         )
-        if not config or not isinstance(config, dict):
+        if config is None:
             return
 
-        plot_type = config.get("type")
+        plot_type = config.type
+        title = config.title
+        ylim = config.ylim
+
         if plot_type == "single_series":
-            column = config.get("column")
-            title = config.get("title", "")
-            ylim = config.get("ylim")
+            column = config.column
             if metric == "memory" and ylim is None:
                 ylim = (0, self._hardware.memory_limits.get(level, 0.0))
             if not column or column not in df.columns:
                 return
         elif plot_type == "multi_series":
-            prefix = config.get("prefix", "")
-            title = config.get("title", "")
-            ylim = config.get("ylim")
+            prefix = config.prefix
             series_cols = [
                 col
                 for col in df.columns
@@ -69,15 +68,16 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
             ) and not series_cols:
                 return
         elif plot_type == "summary_series":
-            columns = config.get("columns", [])
-            title = config.get("title", "")
-            ylim = config.get("ylim")
+            columns = config.columns
             if level == "system":
                 title = re.sub(
                     r"\d+", str(self._hardware.num_system_cpus), title
                 )
             available_cols = [col for col in columns if col in df.columns]
             if not available_cols:
+                return
+        elif plot_type == "composite_series":
+            if not any(s.column in df.columns for s in config.series):
                 return
         else:
             return
@@ -86,17 +86,10 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
             _, ax = plt.subplots(figsize=self.figsize)
 
         if plot_type == "single_series":
-            series = df[column]
-            if metric in (
-                "io_read",
-                "io_write",
-                "io_read_count",
-                "io_write_count",
-            ):
-                diffs = df[column].astype(float).diff().clip(lower=0)
-                if metric in ("io_read", "io_write"):
-                    diffs = diffs / (1024**2)
-                series = diffs.fillna(0.0)
+            series = df[column].astype(float).clip(lower=0)
+            if metric in ("io_read", "io_write"):
+                series = series / (1024 ** 2)
+            if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
                 if self._io_window > 1:
                     series = series.rolling(
                         window=self._io_window, min_periods=1
@@ -125,6 +118,13 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
                 ax.plot(
                     df["time"], df[avg_column], "b-", linewidth=2, label="Mean"
                 )
+            ax.legend()
+        elif plot_type == "composite_series":
+            for s in config.series:
+                if s.column not in df.columns:
+                    continue
+                ax.plot(df["time"], df[s.column], linewidth=s.width,
+                        color=s.color, label=s.label)
             ax.legend()
 
         ax.set_title(title + (" (No Idle)" if not show_idle else ""))

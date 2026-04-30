@@ -34,31 +34,24 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             ),
             None,
         )
-        if not config or not isinstance(config, dict):
+        if config is None:
             return None
 
         traces = []
         y_values = []
-        plot_type = config.get("type")
-        title = config.get("title", "")
-        ylim = config.get("ylim")
+        plot_type = config.type
+        title = config.title
+        ylim = config.ylim
 
         if plot_type == "single_series":
-            column = config.get("column")
+            column = config.column
             if not column or column not in df.columns:
                 return None
 
-            series = df[column]
-            if metric in (
-                "io_read",
-                "io_write",
-                "io_read_count",
-                "io_write_count",
-            ):
-                diffs = df[column].astype(float).diff().clip(lower=0)
-                if metric in ("io_read", "io_write"):
-                    diffs = diffs / (1024**2)
-                series = diffs.fillna(0.0)
+            series = df[column].astype(float).clip(lower=0)
+            if metric in ("io_read", "io_write"):
+                series = series / (1024 ** 2)
+            if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
                 if self._io_window and self._io_window > 1:
                     series = series.rolling(
                         window=self._io_window, min_periods=1
@@ -69,7 +62,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                 y=series.tolist(),
                 mode="lines",
                 line=dict(color="blue", width=2),
-                name=config.get("label", column),
+                name=config.label,
             )
             traces.append(trace)
             y_values.extend(series.tolist())
@@ -77,7 +70,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                 ylim = (0, self._hardware.memory_limits.get(level, 0.0))
 
         elif plot_type == "summary_series":
-            columns = config.get("columns", [])
+            columns = config.columns
             if level == "system":
                 title = re.sub(
                     r"\d+", str(self._hardware.num_system_cpus), title
@@ -106,7 +99,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                 y_values.extend(y_series.tolist())
 
         elif plot_type == "multi_series":
-            prefix = config.get("prefix", "")
+            prefix = config.prefix
             series_cols = [
                 col
                 for col in df.columns
@@ -146,6 +139,22 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                     )
                 )
                 y_values.extend(avg_series.tolist())
+
+        elif plot_type == "composite_series":
+            for s in config.series:
+                if s.column not in df.columns:
+                    continue
+                series = df[s.column]
+                traces.append(go.Scatter(
+                    x=df["time"].tolist(),
+                    y=series.tolist(),
+                    mode="lines",
+                    line=dict(color=s.color, width=s.width),
+                    name=s.label,
+                ))
+                y_values.extend(series.tolist())
+            if not traces:
+                return None
         else:
             return None
 
