@@ -1,14 +1,16 @@
 import pickle
-import re
 from typing import List
 
 import matplotlib.pyplot as plt
 from IPython.display import display
 from ipywidgets import widgets, Layout
 
+from jumper_extension.adapters.visualizer.render import RENDERERS
 from jumper_extension.adapters.visualizer.visualizer import PerformanceVisualizer
 from jumper_extension.utilities import get_available_levels
 from jumper_extension.logo import jumper_colors
+
+_LINESTYLE_MPL = {"solid": "-", "dashed": "--", "dotted": ":"}
 
 
 def is_ipympl_backend():
@@ -43,93 +45,35 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
         if config is None:
             return
 
-        plot_type = config.type
-        title = config.title
-        ylim = config.ylim
-
-        if plot_type == "single_series":
-            column = config.column
-            if metric == "memory" and ylim is None:
-                ylim = (0, self._hardware.memory_limits.get(level, 0.0))
-            if not column or column not in df.columns:
-                return
-        elif plot_type == "multi_series":
-            prefix = config.prefix
-            series_cols = [
-                col
-                for col in df.columns
-                if prefix
-                and col.startswith(prefix)
-                and not col.endswith("avg")
-            ]
-            avg_column = f"{prefix}avg" if prefix else None
-            if (
-                avg_column is None or avg_column not in df.columns
-            ) and not series_cols:
-                return
-        elif plot_type == "summary_series":
-            columns = config.columns
-            if level == "system":
-                title = re.sub(
-                    r"\d+", str(self._hardware.num_system_cpus), title
-                )
-            available_cols = [col for col in columns if col in df.columns]
-            if not available_cols:
-                return
-        elif plot_type == "composite_series":
-            if not any(s.column in df.columns for s in config.series):
-                return
-        else:
+        render_fn = RENDERERS.get(config.type)
+        if render_fn is None:
+            return
+        result = render_fn(df, config, level, self._hardware, self._io_window)
+        if result is None:
             return
 
         if ax is None:
             _, ax = plt.subplots(figsize=self.figsize)
 
-        if plot_type == "single_series":
-            series = df[column].astype(float).clip(lower=0)
-            if metric in ("io_read", "io_write"):
-                series = series / (1024 ** 2)
-            if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
-                if self._io_window > 1:
-                    series = series.rolling(
-                        window=self._io_window, min_periods=1
-                    ).mean()
-            ax.plot(df["time"], series, color="blue", linewidth=2)
-        elif plot_type == "summary_series":
-            line_styles, alpha_vals = ["dotted", "-", "--"], [0.35, 1.0, 0.35]
-            for i, (col, label) in enumerate(
-                zip(columns, ["Min", "Average", "Max"])
-            ):
-                if col in df.columns:
-                    ax.plot(
-                        df["time"],
-                        df[col],
-                        color="blue",
-                        linestyle=line_styles[i % len(line_styles)],
-                        linewidth=2,
-                        alpha=alpha_vals[i % len(alpha_vals)],
-                        label=label,
-                    )
-            ax.legend()
-        elif plot_type == "multi_series":
-            for col in series_cols:
-                ax.plot(df["time"], df[col], "-", alpha=0.5, label=col)
-            if avg_column in df.columns:
-                ax.plot(
-                    df["time"], df[avg_column], "b-", linewidth=2, label="Mean"
-                )
-            ax.legend()
-        elif plot_type == "composite_series":
-            for s in config.series:
-                if s.column not in df.columns:
-                    continue
-                ax.plot(df["time"], df[s.column], linewidth=s.width,
-                        color=s.color, label=s.label)
+        has_legend = False
+        for item in result["series"]:
+            ax.plot(
+                df["time"],
+                item["data"],
+                linestyle=_LINESTYLE_MPL.get(item["linestyle"], "-"),
+                linewidth=item["width"],
+                color=item["color"],
+                alpha=item["opacity"],
+                label=item["label"],
+            )
+            has_legend = True
+        if has_legend:
             ax.legend()
 
-        ax.set_title(title + (" (No Idle)" if not show_idle else ""))
+        ax.set_title(result["title"] + (" (No Idle)" if not show_idle else ""))
         ax.set_xlabel("Time (seconds)")
         ax.grid(True)
+        ylim = result["ylim"]
         if ylim:
             ax.set_ylim(ylim)
         self._draw_cell_boundaries(ax, cell_range, show_idle)
