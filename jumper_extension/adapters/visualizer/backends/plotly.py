@@ -1,7 +1,6 @@
 import json
 import logging
 import pickle
-import re
 import uuid
 from pathlib import Path
 from typing import List
@@ -11,6 +10,7 @@ from plotly.subplots import make_subplots
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from IPython.display import display, HTML
 
+from jumper_extension.adapters.visualizer.render import RENDERERS
 from jumper_extension.adapters.visualizer.visualizer import PerformanceVisualizer
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -18,6 +18,8 @@ from jumper_extension.core.messages import (
 )
 from jumper_extension.utilities import get_available_levels
 from jumper_extension.logo import jumper_colors, logo_image
+
+_LINESTYLE_PLOTLY = {"solid": "solid", "dashed": "dash", "dotted": "dot"}
 
 logger = logging.getLogger("extension")
 
@@ -37,152 +39,45 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         if config is None:
             return None
 
-        traces = []
-        y_values = []
-        plot_type = config.type
-        title = config.title
-        ylim = config.ylim
-
-        if plot_type == "single_series":
-            column = config.column
-            if not column or column not in df.columns:
-                return None
-
-            series = df[column].astype(float).clip(lower=0)
-            if metric in ("io_read", "io_write"):
-                series = series / (1024 ** 2)
-            if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
-                if self._io_window and self._io_window > 1:
-                    series = series.rolling(
-                        window=self._io_window, min_periods=1
-                    ).mean()
-
-            trace = go.Scatter(
-                x=df["time"].tolist(),
-                y=series.tolist(),
-                mode="lines",
-                line=dict(color="blue", width=2),
-                name=config.label,
-            )
-            traces.append(trace)
-            y_values.extend(series.tolist())
-            if metric == "memory" and ylim is None:
-                ylim = (0, self._hardware.memory_limits.get(level, 0.0))
-
-        elif plot_type == "summary_series":
-            columns = config.columns
-            if level == "system":
-                title = re.sub(
-                    r"\d+", str(self._hardware.num_system_cpus), title
-                )
-            line_styles = ["dot", "solid", "dash"]
-            alpha_vals = [0.35, 1.0, 0.35]
-            labels = ["Min", "Average", "Max"]
-
-            for i, col in enumerate(columns):
-                if col not in df.columns:
-                    continue
-                y_series = df[col]
-                trace = go.Scatter(
-                    x=df["time"].tolist(),
-                    y=y_series.tolist(),
-                    mode="lines",
-                    line=dict(
-                        color="blue",
-                        dash=line_styles[i % len(line_styles)],
-                        width=2,
-                    ),
-                    opacity=alpha_vals[i % len(alpha_vals)],
-                    name=labels[i % len(labels)],
-                )
-                traces.append(trace)
-                y_values.extend(y_series.tolist())
-
-        elif plot_type == "multi_series":
-            prefix = config.prefix
-            series_cols = [
-                col
-                for col in df.columns
-                if prefix
-                and col.startswith(prefix)
-                and not col.endswith("avg")
-            ]
-            avg_column = f"{prefix}avg" if prefix else None
-            if (
-                avg_column is None or avg_column not in df.columns
-            ) and not series_cols:
-                return None
-
-            for col in series_cols:
-                y_series = df[col]
-                traces.append(
-                    go.Scatter(
-                        x=df["time"].tolist(),
-                        y=y_series.tolist(),
-                        mode="lines",
-                        line=dict(width=1),
-                        opacity=0.5,
-                        name=col,
-                    )
-                )
-                y_values.extend(y_series.tolist())
-
-            if avg_column in df.columns:
-                avg_series = df[avg_column]
-                traces.append(
-                    go.Scatter(
-                        x=df["time"].tolist(),
-                        y=avg_series.tolist(),
-                        mode="lines",
-                        line=dict(color="blue", width=2),
-                        name="Mean",
-                    )
-                )
-                y_values.extend(avg_series.tolist())
-
-        elif plot_type == "composite_series":
-            for s in config.series:
-                if s.column not in df.columns:
-                    continue
-                series = df[s.column]
-                traces.append(go.Scatter(
-                    x=df["time"].tolist(),
-                    y=series.tolist(),
-                    mode="lines",
-                    line=dict(color=s.color, width=s.width),
-                    name=s.label,
-                ))
-                y_values.extend(series.tolist())
-            if not traces:
-                return None
-        else:
+        render_fn = RENDERERS.get(config.type)
+        if render_fn is None:
+            return None
+        result = render_fn(df, config, level, self._hardware, self._io_window)
+        if result is None:
             return None
 
-        clean_values = []
-        for value in y_values:
-            try:
-                val = float(value)
-            except (TypeError, ValueError):
-                continue
-            if val != val:
-                continue
-            if val == float("inf") or val == float("-inf"):
-                continue
-            clean_values.append(val)
+        traces = []
+        y_values = []
+        for item in result["series"]:
+            traces.append(go.Scatter(
+                x=df["time"].tolist(),
+                y=item["data"].tolist(),
+                mode="lines",
+                line=dict(
+                    color=item["color"],
+                    dash=_LINESTYLE_PLOTLY.get(item["linestyle"], "solid"),
+                    width=item["width"],
+                ),
+                opacity=item["opacity"],
+                name=item["label"],
+            ))
+            y_values.extend(item["data"].tolist())
 
+        ylim = result["ylim"]
         if ylim is None:
+            clean_values = [
+                float(value) for value in y_values
+                if value == value
+                and float(value) not in (float("inf"), float("-inf"))
+            ]
             if clean_values:
-                y_min = min(clean_values)
-                y_max = max(clean_values)
-                if y_min == y_max:
-                    pad = abs(y_min) * 0.05 or 1.0
-                else:
-                    pad = (y_max - y_min) * 0.05
+                y_min, y_max = min(clean_values), max(clean_values)
+                pad = (y_max - y_min) * 0.05 if y_min != y_max else abs(y_min) * 0.05 or 1.0
                 ylim = (y_min - pad, y_max + pad)
             else:
                 ylim = (0, 1)
 
-        title = title + (" (No Idle)" if not show_idle else "")
+        title = result["title"] + (" (No Idle)" if not show_idle else "")
         return {"traces": traces, "title": title, "ylim": ylim}
 
     def _get_plotly_cell_boundaries(self, cell_range=None, show_idle=False):

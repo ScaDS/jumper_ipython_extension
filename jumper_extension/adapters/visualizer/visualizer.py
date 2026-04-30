@@ -1,10 +1,8 @@
 import json
 import logging
-import re
 import uuid
 import threading
 import time
-from collections import deque
 from pathlib import Path
 from typing import List, runtime_checkable, Protocol, Optional, Tuple
 
@@ -15,13 +13,14 @@ from ipywidgets import widgets, Layout
 
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.adapters.data import aggregate_node_info
+from jumper_extension.adapters.visualizer.render import RENDERERS
 from jumper_extension.config.models import (
-    SingleSeriesConfig,
-    SummarySeriesConfig,
     MultiSeriesConfig,
-    CompositeSeriesConfig,
+    SummarySeriesConfig,
     validate_metric_config,
 )
+
+_LINESTYLE_PLOTLY = {"solid": "solid", "dashed": "dash", "dotted": "dot"}
 from jumper_extension.monitor.common import UnavailablePerformanceMonitor, \
     MonitorProtocol
 from jumper_extension.core.messages import (
@@ -523,10 +522,11 @@ class PerformanceVisualizer:
         if config is None:
             return None
 
+        render_fn = RENDERERS.get(config.type)
+        if render_fn is None:
+            return None
+
         fig = go.Figure()
-        plot_type = config.type
-        title = config.title
-        ylim = config.ylim
         y_values: list = []
 
         has_data = df is not None and not df.empty
@@ -536,85 +536,25 @@ class PerformanceVisualizer:
             df = df[df["time"] >= t_start]
             has_data = not df.empty
 
-        if has_data:
-            if plot_type == "single_series":
-                column = config.column
-                if column and column in df.columns:
-                    series = df[column].astype(float).clip(lower=0)
-                    if metric in ("io_read", "io_write"):
-                        series = series / (1024 ** 2)
-                    if metric in ("io_read", "io_write", "io_read_count", "io_write_count"):
-                        if self._io_window and self._io_window > 1:
-                            series = series.rolling(
-                                window=self._io_window, min_periods=1
-                            ).mean()
-                    fig.add_trace(go.Scatter(
-                        x=df["time"], y=series,
-                        name=config.label,
-                        mode="lines",
-                        line=dict(color="blue", width=2),
-                    ))
-                    y_values.extend(series.tolist())
-                    if metric == "memory" and ylim is None:
-                        ylim = (0, self._hardware.memory_limits.get(level, 0.0))
+        result = render_fn(df, config, level, self._hardware, self._io_window) if has_data else None
 
-            elif plot_type == "summary_series":
-                columns = config.columns
-                if level == "system":
-                    title = re.sub(
-                        r"\d+", str(self._hardware.num_system_cpus), title
-                    )
-                dashes = ["dot", "solid", "dash"]
-                opacities = [0.35, 1.0, 0.35]
-                labels = ["Min", "Average", "Max"]
-                for i, col in enumerate(columns):
-                    if col not in df.columns:
-                        continue
-                    fig.add_trace(go.Scatter(
-                        x=df["time"], y=df[col],
-                        name=labels[i % len(labels)],
-                        mode="lines",
-                        line=dict(color="blue",
-                                  dash=dashes[i % len(dashes)],
-                                  width=2),
-                        opacity=opacities[i % len(opacities)],
-                    ))
-                    y_values.extend(df[col].tolist())
+        if result is not None:
+            for item in result["series"]:
+                fig.add_trace(go.Scatter(
+                    x=df["time"],
+                    y=item["data"],
+                    name=item["label"],
+                    mode="lines",
+                    opacity=item["opacity"],
+                    line=dict(
+                        color=item["color"],
+                        dash=_LINESTYLE_PLOTLY.get(item["linestyle"], "solid"),
+                        width=item["width"],
+                    ),
+                ))
+                y_values.extend(item["data"].tolist())
 
-            elif plot_type == "multi_series":
-                prefix = config.prefix
-                series_cols = [
-                    c for c in df.columns
-                    if prefix and c.startswith(prefix)
-                    and not c.endswith("avg")
-                ]
-                avg_column = f"{prefix}avg" if prefix else None
-                for col in series_cols:
-                    fig.add_trace(go.Scatter(
-                        x=df["time"], y=df[col],
-                        name=col, mode="lines",
-                        opacity=0.5, line=dict(width=1),
-                    ))
-                    y_values.extend(df[col].tolist())
-                if avg_column and avg_column in df.columns:
-                    fig.add_trace(go.Scatter(
-                        x=df["time"], y=df[avg_column],
-                        name="Mean", mode="lines",
-                        line=dict(color="blue", width=2),
-                    ))
-                    y_values.extend(df[avg_column].tolist())
-
-            elif plot_type == "composite_series":
-                for s in config.series:
-                    if s.column not in df.columns:
-                        continue
-                    series = df[s.column]
-                    fig.add_trace(go.Scatter(
-                        x=df["time"], y=series,
-                        name=s.label, mode="lines",
-                        line=dict(color=s.color, width=s.width),
-                    ))
-                    y_values.extend(series.tolist())
+        ylim = result["ylim"] if result is not None else config.ylim
 
         # Compute y-range
         if ylim is None:
@@ -626,6 +566,8 @@ class PerformanceVisualizer:
                 ylim = (ymin - pad, ymax + pad)
             else:
                 ylim = (0, 1)
+
+        title = result["title"] if result is not None else config.title
 
         # Cell boundaries
         shapes, annotations = [], []
