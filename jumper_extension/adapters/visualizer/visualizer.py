@@ -539,22 +539,22 @@ class PerformanceVisualizer:
         result = render_fn(df, config, level, self._hardware, self._io_window) if has_data else None
 
         if result is not None:
-            for item in result["series"]:
+            for item in result.series:
                 fig.add_trace(go.Scatter(
                     x=df["time"],
-                    y=item["data"],
-                    name=item["label"],
+                    y=item.data,
+                    name=item.label,
                     mode="lines",
-                    opacity=item["opacity"],
+                    opacity=item.opacity,
                     line=dict(
-                        color=item["color"],
-                        dash=_LINESTYLE_PLOTLY.get(item["linestyle"], "solid"),
-                        width=item["width"],
+                        color=item.color,
+                        dash=_LINESTYLE_PLOTLY.get(item.linestyle, "solid"),
+                        width=item.width,
                     ),
                 ))
-                y_values.extend(item["data"].tolist())
+                y_values.extend(item.data.tolist())
 
-        ylim = result["ylim"] if result is not None else config.ylim
+        ylim = result.ylim if result is not None else config.ylim
 
         # Compute y-range
         if ylim is None:
@@ -567,7 +567,7 @@ class PerformanceVisualizer:
             else:
                 ylim = (0, 1)
 
-        title = result["title"] if result is not None else config.title
+        title = result.title if result is not None else config.title
 
         # Cell boundaries
         shapes, annotations = [], []

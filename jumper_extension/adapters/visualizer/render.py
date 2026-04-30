@@ -1,30 +1,34 @@
 """Renderer registry infrastructure.
 
-Defines the PlotResult/SeriesItem contract and the RENDERERS dict.
+Defines PlotResult/SeriesItem and the RENDERERS dict.
 Actual renderer implementations live in renderers.py.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional, TypedDict
+from typing import Callable, Literal, Optional
 
-if TYPE_CHECKING:
-    import pandas as pd
+import pandas as pd
+from pydantic import BaseModel, ConfigDict
 
 
-class SeriesItem(TypedDict):
+class SeriesItem(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     label: str
-    data: "pd.Series"
-    color: str
-    width: float
-    opacity: float
-    linestyle: str  # "solid" | "dashed" | "dotted"
+    data: pd.Series
+    color: str = "blue"
+    width: float = 2.0
+    opacity: float = 1.0
+    linestyle: Literal["solid", "dashed", "dotted"] = "solid"
 
 
-class PlotResult(TypedDict):
+class PlotResult(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     series: list[SeriesItem]
     title: str
-    ylim: Optional[tuple[float, float]]  # None → backend computes from data
+    ylim: Optional[tuple[float, float]] = None
 
 
 RENDERERS: dict[str, Callable] = {}
@@ -35,12 +39,16 @@ def register(plot_type: str) -> Callable:
 
     Usage::
 
-        from jumper_extension.adapters.visualizer.render import register
+        from jumper_extension.adapters.visualizer.render import register, PlotResult, SeriesItem
 
         @register("my_type")
         def render_my_type(df, config, level, hardware, io_window):
-            ...
-            return PlotResult(series=[...], title=config.title, ylim=None)
+            series = df[config.column]
+            return PlotResult(
+                series=[SeriesItem(label=config.label, data=series)],
+                title=config.title,
+                ylim=config.ylim,
+            )
     """
     def decorator(fn: Callable) -> Callable:
         RENDERERS[plot_type] = fn

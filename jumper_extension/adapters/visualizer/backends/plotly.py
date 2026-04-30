@@ -48,22 +48,22 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
 
         traces = []
         y_values = []
-        for item in result["series"]:
+        for item in result.series:
             traces.append(go.Scatter(
                 x=df["time"].tolist(),
-                y=item["data"].tolist(),
+                y=item.data.tolist(),
                 mode="lines",
                 line=dict(
-                    color=item["color"],
-                    dash=_LINESTYLE_PLOTLY.get(item["linestyle"], "solid"),
-                    width=item["width"],
+                    color=item.color,
+                    dash=_LINESTYLE_PLOTLY.get(item.linestyle, "solid"),
+                    width=item.width,
                 ),
-                opacity=item["opacity"],
-                name=item["label"],
+                opacity=item.opacity,
+                name=item.label,
             ))
-            y_values.extend(item["data"].tolist())
+            y_values.extend(item.data.tolist())
 
-        ylim = result["ylim"]
+        ylim = result.ylim
         if ylim is None:
             clean_values = [
                 float(value) for value in y_values
@@ -77,7 +77,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             else:
                 ylim = (0, 1)
 
-        title = result["title"] + (" (No Idle)" if not show_idle else "")
+        title = result.title + (" (No Idle)" if not show_idle else "")
         return {"traces": traces, "title": title, "ylim": ylim}
 
     def _get_plotly_cell_boundaries(self, cell_range=None, show_idle=False):
