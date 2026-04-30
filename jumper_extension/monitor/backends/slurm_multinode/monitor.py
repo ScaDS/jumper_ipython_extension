@@ -212,6 +212,9 @@ class SlurmMultinodeMonitor:
                                 cpu_handles=msg.get("cpu_handles", []),
                             )
                             self.nodes.register_node(node_info)
+                            columns_by_level = msg.get("columns_by_level", {})
+                            if columns_by_level:
+                                self.nodes.init_node_schema(hostname, columns_by_level)
                             self.levels = msg.get("levels", self.levels)
                             logger.info(
                                 f"[JUmPER]: Collector on {hostname} ready "
@@ -315,43 +318,40 @@ class SlurmMultinodeMonitor:
                 logger.debug(f"[JUmPER]: Non-sample message from {hostname}: {msg}")
                 continue
 
-            sample = msg["sample"]
+            sample = msg["sample"]  # flat dict with "time" and all metric columns
             level = msg.get("level", "process")
-            perf_time = msg.get("time", 0.0)
             wallclock = msg.get("wallclock", time.time())
 
-            # Convert wall-clock sample time to the head-node perf_counter basis
-            # so that filter_perfdata can align samples with cell_history.start_time.
-            # Cross-node alignment is preserved: all nodes share the same
-            # self.start_time and self.wallclock_start_time anchors.
+            # Remap the "time" column to the head-node perf_counter basis so
+            # that filter_perfdata can align samples with cell_history.start_time.
             time_mark = (self.start_time or 0.0) + (
                 wallclock - (self.wallclock_start_time or wallclock)
             )
+            row = {**sample, "time": time_mark}
+
             try:
-                self.nodes.add_sample(
-                    hostname,
-                    level,
-                    time_mark,
-                    sample.get("cpu_util", []),
-                    sample.get("memory", 0.0),
-                    sample.get("gpu_util", []),
-                    sample.get("gpu_band", []),
-                    sample.get("gpu_mem", []),
-                    sample.get("io_counters", [0, 0, 0, 0]),
-                )
+                self.nodes.add_sample(hostname, level, row)
             except Exception as exc:
                 logger.warning(f"[JUmPER]: Failed to add sample from {hostname}: {exc}")
 
-            # Write to log file
-            self._log_writer.write_sample(
-                node=hostname,
-                level=level,
-                wallclock=wallclock,
-                perf_time=perf_time,
-                cpu_util=sample.get("cpu_util", []),
-                memory=sample.get("memory", 0.0),
-                gpu_util=sample.get("gpu_util", []),
-                gpu_band=sample.get("gpu_band", []),
-                gpu_mem=sample.get("gpu_mem", []),
-                io_counters=sample.get("io_counters", [0, 0, 0, 0]),
-            )
+            # Write to log file (best-effort; keep for offline analysis)
+            try:
+                self._log_writer.write_sample(
+                    node=hostname,
+                    level=level,
+                    wallclock=wallclock,
+                    perf_time=sample.get("time", 0.0),
+                    cpu_util=sample.get("cpu_util_avg", 0.0),
+                    memory=sample.get("memory", 0.0),
+                    gpu_util=sample.get("gpu_util_avg", 0.0),
+                    gpu_band=sample.get("gpu_band_avg", 0.0),
+                    gpu_mem=sample.get("gpu_mem_avg", 0.0),
+                    io_counters=[
+                        sample.get("io_read_count", 0.0),
+                        sample.get("io_write_count", 0.0),
+                        sample.get("io_read", 0.0),
+                        sample.get("io_write", 0.0),
+                    ],
+                )
+            except Exception:
+                pass

@@ -35,27 +35,17 @@ logger = logging.getLogger("extension")
 
 
 class SubprocessPerformanceMonitor:
-    """Performance monitor that delegates collection to a child process.
-
-    Usage is identical to :class:`PerformanceMonitor`::
-
-        monitor = SubprocessPerformanceMonitor()
-        monitor.start(interval=1.0)
-        # … CPU-heavy work in the main process …
-        monitor.stop()
-
-    Because the collection runs in a separate OS process, the GIL of the
-    main interpreter cannot block it.
-    """
+    """Performance monitor that delegates collection to a child process."""
 
     def __init__(self):
-        # MonitorProtocol surface — populated from collector handshake
         self.interval: float = 1.0
         self.running: bool = False
         self.start_time: Optional[float] = None
         self.stop_time: Optional[float] = None
         self.wallclock_start_time: Optional[float] = None
         self.wallclock_stop_time: Optional[float] = None
+        # Hardware fields populated from the collector ready handshake;
+        # kept for MonitorProtocol surface compatibility.
         self.num_cpus: int = 0
         self.num_system_cpus: int = 0
         self.num_gpus: int = 0
@@ -70,13 +60,12 @@ class SubprocessPerformanceMonitor:
         self.n_measurements: int = 0
         self.n_missed_measurements: int = 0
 
-        # session state
         self.is_imported: bool = False
         self.session_source: Optional[str] = None
 
-        # internal
         self._process: Optional[subprocess.Popen] = None
         self._reader_thread: Optional[threading.Thread] = None
+        self._ready_columns_by_level: Dict[str, List[str]] = {}
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -85,9 +74,7 @@ class SubprocessPerformanceMonitor:
     def start(self, interval: float = 1.0) -> None:
         if self.running:
             logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.MONITOR_ALREADY_RUNNING
-                ]
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.MONITOR_ALREADY_RUNNING]
             )
             return
 
@@ -96,27 +83,21 @@ class SubprocessPerformanceMonitor:
         self.wallclock_start_time = time.time()
 
         collector_cmd = self._build_agent_cmd(interval)
-
         self._process = subprocess.Popen(
             collector_cmd,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            start_new_session=True,  # own process group for clean kill
+            start_new_session=True,
         )
-        # Safety net: kill the collector if the parent exits without stop()
         atexit.register(self._cleanup_at_exit)
 
-        # Wait for the "ready" handshake
         if not self._wait_for_ready():
-            logger.error(
-                "[JUmPER]: Subprocess monitor collector failed to start."
-            )
+            logger.error("[JUmPER]: Subprocess monitor collector failed to start.")
             self._kill_process()
             return
 
-        # Register local node with hardware info from the collector
         self.nodes.register_node(NodeInfo(
             node="local",
             num_cpus=self.num_cpus,
@@ -127,8 +108,9 @@ class SubprocessPerformanceMonitor:
             memory_limits=self.memory_limits,
             cpu_handles=self.cpu_handles,
         ))
+        if self._ready_columns_by_level:
+            self.nodes.init_node_schema("local", self._ready_columns_by_level)
 
-        # Start the reader thread (lightweight — just JSON parsing + append)
         self.running = True
         self._reader_thread = threading.Thread(
             target=self._reader_loop,
@@ -138,9 +120,7 @@ class SubprocessPerformanceMonitor:
         self._reader_thread.start()
 
         logger.info(
-            EXTENSION_INFO_MESSAGES[
-                ExtensionInfoCode.MONITOR_STARTED
-            ].format(
+            EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MONITOR_STARTED].format(
                 pid=self._process.pid,
                 interval=self.interval,
             )
@@ -148,15 +128,11 @@ class SubprocessPerformanceMonitor:
 
     def stop(self) -> None:
         self.running = False
-
-        # Terminate the child process
         self._kill_process()
 
-        # Wait for the reader thread to drain
         if self._reader_thread is not None:
             self._reader_thread.join(timeout=5.0)
 
-        # Ensure the process is fully dead before touching stderr
         if self._process and self._process.poll() is None:
             self._process.kill()
             try:
@@ -164,18 +140,12 @@ class SubprocessPerformanceMonitor:
             except subprocess.TimeoutExpired:
                 pass
 
-        # Surface any collector-side errors.
-        # Use communicate() with a timeout to avoid blocking forever
-        # on a full pipe buffer.
         if self._process:
             try:
                 _, err = self._process.communicate(timeout=3)
                 if err and err.strip():
-                    logger.warning(
-                        f"[JUmPER]: Collector stderr: {err.strip()}"
-                    )
+                    logger.warning(f"[JUmPER]: Collector stderr: {err.strip()}")
             except (subprocess.TimeoutExpired, ValueError, OSError):
-                # Last resort: just close the pipes
                 try:
                     self._process.kill()
                 except OSError:
@@ -191,7 +161,6 @@ class SubprocessPerformanceMonitor:
         self.stop_time = time.perf_counter()
         self.wallclock_stop_time = time.time()
 
-        # Compute missed measurements from elapsed time vs actual samples
         elapsed = self.stop_time - self.start_time
         expected = int(elapsed / self.interval) if self.interval > 0 else 0
         self.n_missed_measurements = max(0, expected - self.n_measurements)
@@ -203,9 +172,7 @@ class SubprocessPerformanceMonitor:
         )
         if self.n_measurements > 0:
             logger.info(
-                EXTENSION_INFO_MESSAGES[
-                    ExtensionInfoCode.MISSED_MEASUREMENTS
-                ].format(
+                EXTENSION_INFO_MESSAGES[ExtensionInfoCode.MISSED_MEASUREMENTS].format(
                     perc_missed_measurements=(
                         self.n_missed_measurements / expected
                         if expected > 0 else 0
@@ -218,7 +185,6 @@ class SubprocessPerformanceMonitor:
     # ------------------------------------------------------------------
 
     def _wait_for_ready(self, max_attempts: int = 50) -> bool:
-        """Block until the collector sends a ``{"status": "ready", …}`` line."""
         for _ in range(max_attempts):
             line = self._read_line()
             if line is None:
@@ -238,12 +204,11 @@ class SubprocessPerformanceMonitor:
                 self.cpu_handles = msg.get("cpu_handles", [])
                 self.memory_limits = msg.get("memory_limits", {})
                 self.levels = msg.get("levels", self.levels)
+                self._ready_columns_by_level = msg.get("columns_by_level", {})
                 return True
 
             if msg.get("status") == "error":
-                logger.error(
-                    f"[JUmPER]: Collector error: {msg.get('error', '?')}"
-                )
+                logger.error(f"[JUmPER]: Collector error: {msg.get('error', '?')}")
                 return False
         return False
 
@@ -258,17 +223,14 @@ class SubprocessPerformanceMonitor:
         return None
 
     def _reader_loop(self) -> None:
-        """Continuously read JSON samples from the collector's stdout."""
         while self.running:
             line = self._read_line()
             if not line:
                 if self.running:
-                    # Collector exited unexpectedly
                     poll = self._process.poll() if self._process else None
                     if poll is not None:
                         logger.warning(
-                            "[JUmPER]: Subprocess collector exited "
-                            f"(code={poll})."
+                            f"[JUmPER]: Subprocess collector exited (code={poll})."
                         )
                         break
                     time.sleep(0.01)
@@ -286,38 +248,12 @@ class SubprocessPerformanceMonitor:
             level = msg.get("level", "process")
 
             try:
-                self.nodes.add_sample(
-                    "local",
-                    level,
-                    msg.get("time", 0.0),
-                    sample.get("cpu_util", []),
-                    sample.get("memory", 0.0),
-                    sample.get("gpu_util", []),
-                    sample.get("gpu_band", []),
-                    sample.get("gpu_mem", []),
-                    sample.get("io_counters", [0, 0, 0, 0]),
-                )
+                self.nodes.add_sample("local", level, sample)
                 self.n_measurements += 1
             except Exception as exc:
-                logger.warning(
-                    f"[JUmPER]: Failed to add sample: {exc}"
-                )
+                logger.warning(f"[JUmPER]: Failed to add sample: {exc}")
 
     def _build_agent_cmd(self, interval: float) -> str:
-        """Return the shell command that launches the monitoring collector.
-
-        The collector process attempts to elevate its own scheduling
-        priority via ``os.nice(-10)`` at startup (see
-        :func:`~jumper_extension.monitor.backends.subprocess_python._collector._run_collector`).
-        This helps the monitor keep up with the requested sampling
-        frequency even when all CPU cores are fully saturated by compute
-        tasks.  If the current user lacks ``CAP_SYS_NICE`` the attempt
-        is silently ignored and the collector instead lowers the priority
-        of the target process tree (including the root) to nice +15
-        (which requires no special privileges), giving itself a relative
-        advantage.  Renicing the root ensures future children inherit
-        the lowered priority automatically.
-        """
         levels_arg = ""
         if self.levels:
             levels_arg = f" --levels {','.join(self.levels)}"
@@ -330,7 +266,6 @@ class SubprocessPerformanceMonitor:
         )
 
     def _cleanup_at_exit(self) -> None:
-        """atexit handler — kill the collector if still alive."""
         self._kill_process()
 
     def _kill_process(self) -> None:
@@ -340,7 +275,6 @@ class SubprocessPerformanceMonitor:
                 pgid = os.getpgid(self._process.pid)
             except OSError:
                 pass
-            # Kill the entire process group (shell + collector binary)
             if pgid is not None and pgid != os.getpgid(0):
                 try:
                     os.killpg(pgid, signal.SIGTERM)
@@ -354,7 +288,6 @@ class SubprocessPerformanceMonitor:
             try:
                 self._process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                # SIGTERM didn't work — escalate to SIGKILL
                 if pgid is not None and pgid != os.getpgid(0):
                     try:
                         os.killpg(pgid, signal.SIGKILL)
@@ -369,4 +302,3 @@ class SubprocessPerformanceMonitor:
                     self._process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
                     pass
-

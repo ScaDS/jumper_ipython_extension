@@ -1,0 +1,25 @@
+collectors:
+  cpu:
+    _target_: jumper_extension.monitor.metrics.cpu.psutil.PsutilCpuBackend
+    storage:
+      type: per_device_aggregate
+      prefix: cpu_util_
+
+  memory:
+    _target_: jumper_extension.monitor.metrics.memory.psutil.PsutilMemoryBackend
+    storage:
+      type: scalar
+      column: memory
+
+  gpu:
+    _target_: jumper_extension.monitor.metrics.gpu.common.GpuBackendDiscovery
+    storage:
+      type: per_device_multi_aggregate
+      prefix: gpu_
+      metrics: [util, band, mem]
+
+  io:
+    _target_: jumper_extension.monitor.metrics.io.psutil.PsutilIoBackend
+    storage:
+      type: cumulative_rate
+      columns: [io_read_count, io_write_count, io_read, io_write]

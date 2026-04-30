@@ -1,13 +1,11 @@
 import json
 import os
-from typing import Optional, Callable
+from typing import Optional
 
 import pandas as pd
 import logging
-import logging.config
 
 from jumper_extension.utilities import get_available_levels, load_dataframe_from_file
-
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -19,12 +17,9 @@ logger = logging.getLogger("extension")
 
 
 class PerformanceData:
-    def __init__(self, num_cpus, num_system_cpus, num_gpus):
-        self.num_cpus = num_cpus
-        self.num_system_cpus = num_system_cpus
-        self.num_gpus = num_gpus
+    def __init__(self):
         self.levels = get_available_levels()
-        # Minimal required base columns for loaded performance data
+        # Base columns used only for offline load() validation
         self._base_columns = [
             "time",
             "memory",
@@ -36,10 +31,10 @@ class PerformanceData:
             "cpu_util_min",
             "cpu_util_max",
         ]
-        self.data = {
-            level: self._initialize_dataframe(level) for level in self.levels
-        }
-        # File writers/readers mappings
+        # O(1) append buffer; DataFrame built lazily in view()
+        self._rows: dict[str, list[dict]] = {level: [] for level in self.levels}
+        # Optional per-level column schema for empty-DataFrame shape
+        self._schema_columns: Optional[dict[str, list[str]]] = None
         self._file_writers = {
             "json": self._write_json,
             "csv": self._write_csv,
@@ -56,33 +51,6 @@ class PerformanceData:
                     ExtensionErrorCode.INVALID_LEVEL
                 ].format(level=level, levels=self.levels)
             )
-
-    def _initialize_dataframe(self, level):
-
-        effective_num_cpus = (
-            self.num_system_cpus if level == "system" else self.num_cpus
-        )
-
-        columns = self._base_columns + [f"cpu_util_{i}" for i in range(effective_num_cpus)]
-
-        if self.num_gpus > 0:
-            gpu_metrics = ["util", "band", "mem"]
-            columns.extend(
-                [
-                    f"gpu_{metric}_{stat}"
-                    for metric in gpu_metrics
-                    for stat in ["avg", "min", "max"]
-                ]
-            )
-            columns.extend(
-                [
-                    f"gpu_{metric}_{i}"
-                    for i in range(self.num_gpus)
-                    for metric in gpu_metrics
-                ]
-            )
-
-        return pd.DataFrame(columns=columns)
 
     def _attach_cell_index(self, df, cell_history) -> pd.DataFrame:
         result = df.copy()
@@ -101,74 +69,22 @@ class PerformanceData:
         df.to_csv(filename, index=False)
 
     def view(self, level="process", slice_=None, cell_history=None):
-        """View data for a specific level with optional slicing."""
         self._validate_level(level)
-        base = (
-            self.data[level]
-            if slice_ is None
-            else self.data[level].iloc[slice_[0] : slice_[1] + 1]
-        )
+        rows = self._rows.get(level, [])
+        if slice_ is not None:
+            rows = rows[slice_[0]: slice_[1] + 1]
+        df = pd.DataFrame(rows)
+        if df.empty and self._schema_columns and level in self._schema_columns:
+            df = pd.DataFrame(columns=self._schema_columns[level])
         return (
-            self._attach_cell_index(base, cell_history)
+            self._attach_cell_index(df, cell_history)
             if cell_history is not None
-            else base
+            else df
         )
 
-    def add_sample(
-        self,
-        level,
-        time_mark,
-        cpu_util_per_core,
-        memory,
-        gpu_util,
-        gpu_band,
-        gpu_mem,
-        io_counters,
-    ):
+    def add_sample(self, level: str, row: dict) -> None:
         self._validate_level(level)
-        effective_num_cpus = (
-            self.num_system_cpus if level == "system" else self.num_cpus
-        )
-
-        last_timestamp = 0
-        if len(self.data[level]):
-            last_timestamp = self.data[level].loc[len(self.data[level]) - 1][
-                "time"
-            ]
-
-        cumulative_metrics_ratio = time_mark - last_timestamp
-        row_data = {
-            "time": time_mark,
-            "memory": memory,
-            "io_read_count": io_counters[0] / cumulative_metrics_ratio,
-            "io_write_count": io_counters[1] / cumulative_metrics_ratio,
-            "io_read": io_counters[2] / cumulative_metrics_ratio,
-            "io_write": io_counters[3] / cumulative_metrics_ratio,
-            "cpu_util_avg": sum(cpu_util_per_core) / effective_num_cpus,
-            "cpu_util_min": min(cpu_util_per_core),
-            "cpu_util_max": max(cpu_util_per_core),
-            **{
-                f"cpu_util_{i}": cpu_util_per_core[i]
-                for i in range(effective_num_cpus)
-            },
-        }
-
-        if self.num_gpus > 0:
-            gpu_data = {"util": gpu_util, "band": gpu_band, "mem": gpu_mem}
-            for metric, values in gpu_data.items():
-                row_data.update(
-                    {
-                        f"gpu_{metric}_avg": sum(values) / self.num_gpus,
-                        f"gpu_{metric}_min": min(values),
-                        f"gpu_{metric}_max": max(values),
-                        **{
-                            f"gpu_{metric}_{i}": values[i]
-                            for i in range(self.num_gpus)
-                        },
-                    }
-                )
-
-        self.data[level].loc[len(self.data[level])] = row_data
+        self._rows[level].append(row)
 
     def export(
         self,
@@ -176,31 +92,18 @@ class PerformanceData:
         level="process",
         cell_history=None,
     ):
-        """Export performance data to JSON or CSV."""
         self._validate_level(level)
-        if len(self.data[level]) == 0:
+        df_to_write = self.view(level=level, cell_history=cell_history)
+        if df_to_write.empty:
             logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.NO_PERFORMANCE_DATA
-                ]
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_PERFORMANCE_DATA]
             )
             return
-
-        # Determine format from filename extension
         _, ext = os.path.splitext(filename)
-        format = ext.lower().lstrip(".")
-        
-        # Default to csv if no extension provided
+        format = ext.lower().lstrip(".") or "csv"
         if not format:
             format = "csv"
             filename += ".csv"
-
-        df_to_write = (
-            self._attach_cell_index(self.data[level], cell_history)
-            if cell_history is not None
-            else self.data[level]
-        )
-
         writer = self._file_writers.get(format)
         if writer is None:
             logger.warning(
@@ -213,19 +116,13 @@ class PerformanceData:
             )
             return
         writer(filename, df_to_write)
-
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.EXPORT_SUCCESS].format(
                 filename=filename
             )
         )
-        
-    def load(self, filename: str) -> Optional[pd.DataFrame]:
-        """Load performance data from CSV or JSON file.
 
-        Returns:
-            DataFrame if successful, None otherwise
-        """
+    def load(self, filename: str) -> Optional[pd.DataFrame]:
         return load_dataframe_from_file(
             filename,
             self._file_readers,

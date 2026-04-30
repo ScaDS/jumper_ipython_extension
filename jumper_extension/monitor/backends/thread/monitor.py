@@ -18,9 +18,31 @@ from jumper_extension.monitor.metrics.gpu.common import GpuBackendDiscovery
 from jumper_extension.monitor.metrics.io.psutil import PsutilIoBackend
 from jumper_extension.monitor.metrics.memory.psutil import PsutilMemoryBackend
 from jumper_extension.monitor.metrics.process.psutil import PsutilProcessBackend
+from jumper_extension.monitor.metrics.storage import (
+    ScalarHandler,
+    PerDeviceAggregateHandler,
+    PerDeviceMultiAggregateHandler,
+    CumulativeRateHandler,
+)
 from jumper_extension.utilities import detect_memory_limit, get_available_levels
 
 logger = logging.getLogger("extension")
+
+
+class _CombinedGpuCollector:
+    """Aggregates multiple GPU backends into a single collect() call."""
+
+    def __init__(self, backends):
+        self._backends = backends
+
+    def collect(self, level: str):
+        util, band, mem = [], [], []
+        for backend in self._backends:
+            backend_util, backend_band, backend_mem = backend.collect(level)
+            util.extend(backend_util)
+            band.extend(backend_band)
+            mem.extend(backend_mem)
+        return util, band, mem
 
 
 class PerformanceMonitor:
@@ -36,7 +58,7 @@ class PerformanceMonitor:
         self.n_measurements = 0
         self.n_missed_measurements = 0
         """
-        on MacOS cpu_affinity is not implemented in psutil 
+        on MacOS cpu_affinity is not implemented in psutil
         (raises AttributeError)
         set the num_cpus to the number of cpus in the system
         same for cpu_affinity
@@ -78,20 +100,24 @@ class PerformanceMonitor:
         self._gpu_backends = GpuBackendDiscovery(self).discover()
         for backend in self._gpu_backends:
             backend.setup()
-        self.num_gpus = len(self.nvidia_gpu_handles) + len(
-            self.amd_gpu_handles
-        )
-        self.metrics = [
-            "cpu",
-            "memory",
-            "io_read",
-            "io_write",
-            "io_read_count",
-            "io_write_count",
-        ]
+        self.num_gpus = len(self.nvidia_gpu_handles) + len(self.amd_gpu_handles)
 
+        self.metrics = [
+            "cpu", "memory", "io_read", "io_write", "io_read_count", "io_write_count",
+        ]
         if self.num_gpus:
             self.metrics.extend(["gpu_util", "gpu_band", "gpu_mem"])
+
+        # Build the collector→handler pipeline
+        _gpu_collector = _CombinedGpuCollector(self._gpu_backends)
+        self._pipeline = [
+            (self._cpu_backend,    PerDeviceAggregateHandler("cpu_util_")),
+            (self._memory_backend, ScalarHandler("memory")),
+            (_gpu_collector,       PerDeviceMultiAggregateHandler("gpu_", ["util", "band", "mem"])),
+            (self._io_backend,     CumulativeRateHandler(
+                ["io_read_count", "io_write_count", "io_read", "io_write"]
+            )),
+        ]
 
         node_info = NodeInfo(
             node="local",
@@ -105,6 +131,21 @@ class PerformanceMonitor:
         )
         self.nodes = NodeDataStore()
         self.nodes.register_node(node_info)
+
+        # Bootstrap: warm up process snapshots and IO counter state,
+        # then derive per-level column names for schema pre-population.
+        self._process_backend.snapshot_metrics()
+        columns_by_level: dict[str, list[str]] = {}
+        for level in self.levels:
+            row: dict = {"time": 0.0}
+            for collector, handler in self._pipeline:
+                try:
+                    row.update(handler.transform(collector.collect(level), level))
+                except Exception:
+                    pass
+            columns_by_level[level] = list(row.keys())
+        self.nodes.init_node_schema("local", columns_by_level)
+
         # session state
         self.is_imported = False
         self.session_source = None
@@ -124,52 +165,22 @@ class PerformanceMonitor:
         return self._process_backend.filter_process(proc, mode)
 
     def _get_filtered_processes(self, level="user", mode="cpu", handle=None):
-        return self._process_backend.get_filtered_processes(
-            level, mode, handle
-        )
+        return self._process_backend.get_filtered_processes(level, mode, handle)
 
     def _safe_proc_call(self, proc, proc_func, default=0):
         return self._process_backend.safe_proc_call(proc, proc_func, default)
 
-    def _collect_cpu(self, level="process"):
-        return self._cpu_backend.collect(level)
-
-    def _collect_memory(self, level="process"):
-        return self._memory_backend.collect(level)
-
-    def _collect_io(self, level="process"):
-        return self._io_backend.collect(level)
-
-    def _collect_gpu(self, level="process"):
-        if self.num_gpus == 0:
-            return [], [], []
-
-        self._validate_level(level)
-        gpu_util, gpu_band, gpu_mem = [], [], []
-
-        for backend in self._gpu_backends:
-            b_util, b_band, b_mem = backend.collect(level)
-            gpu_util.extend(b_util)
-            gpu_band.extend(b_band)
-            gpu_mem.extend(b_mem)
-
-        return gpu_util, gpu_band, gpu_mem
-
-
     def _collect_metrics(self):
-        # Snapshot all per-PID metrics once; backends read from the cache.
+        """Collect one sample per level; return a list of flat dicts."""
         self._process_backend.snapshot_metrics()
         time_mark = time.perf_counter()
-        return tuple(
-            (
-                time_mark,
-                self._collect_cpu(level),
-                self._collect_memory(level),
-                *self._collect_gpu(level),
-                self._collect_io(level),
-            )
-            for level in self.levels
-        )
+        rows = []
+        for level in self.levels:
+            row: dict = {"time": time_mark}
+            for collector, handler in self._pipeline:
+                row.update(handler.transform(collector.collect(level), level))
+            rows.append(row)
+        return rows
 
     def _collect_data(self):
         """Collect metrics at a fixed cadence anchored to an absolute timeline.
@@ -182,54 +193,26 @@ class PerformanceMonitor:
 
         The GIL is released during ``Event.wait`` just like ``time.sleep``.
         """
-        next_tick = time.perf_counter()          # first tick: now
+        next_tick = time.perf_counter()
         while not self._stop_event.is_set():
             self.process_pids = self._get_process_pids()
-            metrics = self._collect_metrics()
-            for level, data_tuple in zip(self.levels, metrics):
-                self.nodes.add_sample("local", level, *data_tuple)
+            rows = self._collect_metrics()
+            for level, row in zip(self.levels, rows):
+                self.nodes.add_sample("local", level, row)
             self.n_measurements += 1
 
-            # schedule next tick on the absolute timeline
             next_tick += self.interval
             delay = next_tick - time.perf_counter()
             if delay > 0:
                 self._stop_event.wait(delay)
             else:
-                # we're behind schedule — skip forward to the next
-                # achievable tick so we don't rapid-fire to "catch up"
                 self.n_missed_measurements += 1
                 next_tick = time.perf_counter()
-
-    # ---- original implementation kept as backup ----
-    def _collect_data_legacy(self):
-        while self.running:
-            time_start_measurement = time.perf_counter()
-            self.process_pids = self._get_process_pids()
-            metrics = self._collect_metrics()
-            for level, data_tuple in zip(self.levels, metrics):
-                self.nodes.add_sample("local", level, *data_tuple)
-            time_measurement = time.perf_counter() - time_start_measurement
-            self.n_measurements += 1
-            if time_measurement > self.interval:
-                """
-                logger.warning(
-                    EXTENSION_INFO_MESSAGES[
-                        ExtensionInfoCode.IMPRECISE_INTERVAL
-                    ].format(interval=self.interval),
-                    end="\r",
-                )
-                """
-                self.n_missed_measurements += 1
-            else:
-                time.sleep(self.interval - time_measurement)
 
     def start(self, interval: float = 1.0):
         if self.running:
             logger.warning(
-                EXTENSION_ERROR_MESSAGES[
-                    ExtensionErrorCode.MONITOR_ALREADY_RUNNING
-                ]
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.MONITOR_ALREADY_RUNNING]
             )
             return
         self.interval = interval
@@ -257,7 +240,6 @@ class PerformanceMonitor:
         self.stop_time = time.perf_counter()
         self.wallclock_stop_time = time.time()
 
-        # Recompute missed measurements from elapsed time vs actual samples
         elapsed = self.stop_time - self.start_time
         expected = int(elapsed / self.interval) if self.interval > 0 else 0
         self.n_missed_measurements = max(0, expected - self.n_measurements)
