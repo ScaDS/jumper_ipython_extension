@@ -44,15 +44,6 @@ class SubprocessPerformanceMonitor:
         self.stop_time: Optional[float] = None
         self.wallclock_start_time: Optional[float] = None
         self.wallclock_stop_time: Optional[float] = None
-        # Hardware fields populated from the collector ready handshake;
-        # kept for MonitorProtocol surface compatibility.
-        self.num_cpus: int = 0
-        self.num_system_cpus: int = 0
-        self.num_gpus: int = 0
-        self.gpu_memory: float = 0.0
-        self.gpu_name: str = ""
-        self.cpu_handles: list = []
-        self.memory_limits: dict = {}
 
         self.nodes: NodeDataStore = NodeDataStore()
         self.levels: List[str] = get_available_levels()
@@ -65,6 +56,7 @@ class SubprocessPerformanceMonitor:
 
         self._process: Optional[subprocess.Popen] = None
         self._reader_thread: Optional[threading.Thread] = None
+        self._ready_node_info: Optional[NodeInfo] = None
         self._ready_columns_by_level: Dict[str, List[str]] = {}
 
     # ------------------------------------------------------------------
@@ -98,16 +90,7 @@ class SubprocessPerformanceMonitor:
             self._kill_process()
             return
 
-        self.nodes.register_node(NodeInfo(
-            node="local",
-            num_cpus=self.num_cpus,
-            num_system_cpus=self.num_system_cpus,
-            num_gpus=self.num_gpus,
-            gpu_memory=self.gpu_memory,
-            gpu_name=self.gpu_name,
-            memory_limits=self.memory_limits,
-            cpu_handles=self.cpu_handles,
-        ))
+        self.nodes.register_node(self._ready_node_info)
         if self._ready_columns_by_level:
             self.nodes.init_node_schema("local", self._ready_columns_by_level)
 
@@ -196,13 +179,16 @@ class SubprocessPerformanceMonitor:
                 continue
 
             if msg.get("status") == "ready":
-                self.num_cpus = msg.get("num_cpus", 0)
-                self.num_system_cpus = msg.get("num_system_cpus", 0)
-                self.num_gpus = msg.get("num_gpus", 0)
-                self.gpu_memory = msg.get("gpu_memory", 0.0)
-                self.gpu_name = msg.get("gpu_name", "")
-                self.cpu_handles = msg.get("cpu_handles", [])
-                self.memory_limits = msg.get("memory_limits", {})
+                self._ready_node_info = NodeInfo(
+                    node="local",
+                    num_cpus=msg.get("num_cpus", 0),
+                    num_system_cpus=msg.get("num_system_cpus", 0),
+                    num_gpus=msg.get("num_gpus", 0),
+                    gpu_memory=msg.get("gpu_memory", 0.0),
+                    gpu_name=msg.get("gpu_name", ""),
+                    memory_limits=msg.get("memory_limits", {}),
+                    cpu_handles=msg.get("cpu_handles", []),
+                )
                 self.levels = msg.get("levels", self.levels)
                 self._ready_columns_by_level = msg.get("columns_by_level", {})
                 return True

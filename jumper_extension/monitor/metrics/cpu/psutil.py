@@ -18,7 +18,7 @@ class PsutilCpuBackend(CpuBackend):
             cpu_total = sum(
                 snap.get(pid, 0.0) for pid in self._m.process_pids
             )
-            return [cpu_total / self._m.num_cpus] * self._m.num_cpus
+            return [cpu_total / self._m.nodes.hardware["local"].num_cpus] * self._m.nodes.hardware["local"].num_cpus
         elif level == "user":
             # All process-level PIDs belong to this user, plus extras
             user_pids = set(self._m.process_pids)
@@ -26,11 +26,11 @@ class PsutilCpuBackend(CpuBackend):
                 p.pid for p in self._m._process_backend._snap_user_procs
             )
             cpu_total = sum(snap.get(pid, 0.0) for pid in user_pids)
-            return [cpu_total / self._m.num_cpus] * self._m.num_cpus
+            return [cpu_total / self._m.nodes.hardware["local"].num_cpus] * self._m.nodes.hardware["local"].num_cpus
         else:  # slurm
             slurm_pids = set(self._m.process_pids)
             slurm_pids.update(
                 p.pid for p in self._m._process_backend._snap_slurm_procs
             )
             cpu_total = sum(snap.get(pid, 0.0) for pid in slurm_pids)
-            return [cpu_total / self._m.num_cpus] * self._m.num_cpus
+            return [cpu_total / self._m.nodes.hardware["local"].num_cpus] * self._m.nodes.hardware["local"].num_cpus
