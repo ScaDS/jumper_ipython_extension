@@ -55,25 +55,23 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
         if ax is None:
             _, ax = plt.subplots(figsize=self.figsize)
 
-        has_legend = False
-        for item in result["series"]:
+        for item in result.series:
             ax.plot(
                 df["time"],
-                item["data"],
-                linestyle=_LINESTYLE_MPL.get(item["linestyle"], "-"),
-                linewidth=item["width"],
-                color=item["color"],
-                alpha=item["opacity"],
-                label=item["label"],
+                item.data,
+                linestyle=_LINESTYLE_MPL.get(item.linestyle, "-"),
+                linewidth=item.width,
+                color=item.color,
+                alpha=item.opacity,
+                label=item.label,
             )
-            has_legend = True
-        if has_legend:
+        if result.series:
             ax.legend()
 
-        ax.set_title(result["title"] + (" (No Idle)" if not show_idle else ""))
+        ax.set_title(result.title + (" (No Idle)" if not show_idle else ""))
         ax.set_xlabel("Time (seconds)")
         ax.grid(True)
-        ylim = result["ylim"]
+        ylim = result.ylim
         if ylim:
             ax.set_ylim(ylim)
         self._draw_cell_boundaries(ax, cell_range, show_idle)

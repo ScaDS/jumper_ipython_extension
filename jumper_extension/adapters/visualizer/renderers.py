@@ -3,17 +3,21 @@
 Each function is registered under its plot-type key via @register.
 To add a custom renderer, import register and decorate your function:
 
-    from jumper_extension.adapters.visualizer.render import register
+    from jumper_extension.adapters.visualizer.render import RENDERERS, PlotResult, SeriesItem, register
 
     @register("my_type")
     def render_my_type(df, config, level, hardware, io_window):
-        ...
-        return {"series": [...], "title": config.title, "ylim": None}
+        series = df[config.column]
+        return PlotResult(
+            series=[SeriesItem(label=config.label, data=series)],
+            title=config.title,
+            ylim=config.ylim,
+        )
 """
 
 import re
 
-from jumper_extension.adapters.visualizer.render import RENDERERS, register  # noqa: F401 — re-export RENDERERS for user convenience
+from jumper_extension.adapters.visualizer.render import RENDERERS, PlotResult, SeriesItem, register  # noqa: F401
 
 _IO_BYTE_COLUMNS = ("io_read", "io_write")
 _IO_COLUMNS = ("io_read", "io_write", "io_read_count", "io_write_count")
@@ -35,26 +39,25 @@ def render_single_series(df, config, level, hardware, io_window):
     if column == "memory" and ylim is None:
         ylim = (0.0, float(hardware.memory_limits.get(level, 0.0)))
 
-    return {
-        "series": [
-            {
-                "label": config.label,
-                "data": series,
-                "color": "blue",
-                "width": 2.0,
-                "opacity": 1.0,
-                "linestyle": "solid",
-            }
+    return PlotResult(
+        series=[
+            SeriesItem(
+                label=config.label,
+                data=series,
+                color="blue",
+                width=2.0,
+                opacity=1.0,
+                linestyle="solid",
+            )
         ],
-        "title": config.title,
-        "ylim": ylim,
-    }
+        title=config.title,
+        ylim=ylim,
+    )
 
 
 @register("summary_series")
 def render_summary_series(df, config, level, hardware, io_window):
-    columns = config.columns
-    available = [col for col in columns if col in df.columns]
+    available = [col for col in config.columns if col in df.columns]
     if not available:
         return None
 
@@ -67,25 +70,19 @@ def render_summary_series(df, config, level, hardware, io_window):
     labels = ["Min", "Average", "Max"]
 
     series_items = []
-    for index, column in enumerate(columns):
+    for index, column in enumerate(config.columns):
         if column not in df.columns:
             continue
-        series_items.append(
-            {
-                "label": labels[index % len(labels)],
-                "data": df[column],
-                "color": "blue",
-                "width": 2.0,
-                "opacity": opacities[index % len(opacities)],
-                "linestyle": linestyles[index % len(linestyles)],
-            }
-        )
+        series_items.append(SeriesItem(
+            label=labels[index % len(labels)],
+            data=df[column],
+            color="blue",
+            width=2.0,
+            opacity=opacities[index % len(opacities)],
+            linestyle=linestyles[index % len(linestyles)],
+        ))
 
-    return {
-        "series": series_items,
-        "title": title,
-        "ylim": config.ylim,
-    }
+    return PlotResult(series=series_items, title=title, ylim=config.ylim)
 
 
 @register("multi_series")
@@ -101,74 +98,61 @@ def render_multi_series(df, config, level, hardware, io_window):
     if not per_device_columns and not has_avg:
         return None
 
-    series_items = []
-    for column in per_device_columns:
-        series_items.append(
-            {
-                "label": column,
-                "data": df[column],
-                "color": "blue",
-                "width": 1.0,
-                "opacity": 0.5,
-                "linestyle": "solid",
-            }
+    series_items = [
+        SeriesItem(
+            label=column,
+            data=df[column],
+            color="blue",
+            width=1.0,
+            opacity=0.5,
+            linestyle="solid",
         )
+        for column in per_device_columns
+    ]
     if has_avg:
-        series_items.append(
-            {
-                "label": "Mean",
-                "data": df[avg_column],
-                "color": "blue",
-                "width": 2.0,
-                "opacity": 1.0,
-                "linestyle": "solid",
-            }
-        )
+        series_items.append(SeriesItem(
+            label="Mean",
+            data=df[avg_column],
+            color="blue",
+            width=2.0,
+            opacity=1.0,
+            linestyle="solid",
+        ))
 
-    return {
-        "series": series_items,
-        "title": config.title,
-        "ylim": config.ylim,
-    }
+    return PlotResult(series=series_items, title=config.title, ylim=config.ylim)
 
 
 @register("composite_series")
 def render_composite_series(df, config, level, hardware, io_window):
-    series_items = []
-    for style in config.series:
-        if style.column not in df.columns:
-            continue
-        series_items.append(
-            {
-                "label": style.label,
-                "data": df[style.column],
-                "color": style.color,
-                "width": style.width,
-                "opacity": 1.0,
-                "linestyle": "solid",
-            }
+    series_items = [
+        SeriesItem(
+            label=style.label,
+            data=df[style.column],
+            color=style.color,
+            width=style.width,
+            opacity=1.0,
+            linestyle="solid",
         )
+        for style in config.series
+        if style.column in df.columns
+    ]
 
     if not series_items:
         return None
 
-    return {
-        "series": series_items,
-        "title": config.title,
-        "ylim": config.ylim,
-    }
+    return PlotResult(series=series_items, title=config.title, ylim=config.ylim)
 
 
 # === User-defined renderers ===
 # Add your custom renderers below using @register("<type>").
-# The type must match the "type" field in your plots.yaml entry.
 #
 # Example:
 #
-#   @register("my_heatmap")
-#   def render_my_heatmap(df, config, level, hardware, io_window):
+#   @register("my_type")
+#   def render_my_type(df, config, level, hardware, io_window):
 #       series = df[config.column]
-#       return {"series": [{"label": config.label, "data": series,
-#                           "color": "purple", "width": 2.0,
-#                           "opacity": 1.0, "linestyle": "solid"}],
-#               "title": config.title, "ylim": config.ylim}
+#       return PlotResult(
+#           series=[SeriesItem(label=config.label, data=series)],
+#           title=config.title,
+#           ylim=config.ylim,
+#       )
