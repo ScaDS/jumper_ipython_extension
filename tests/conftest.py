@@ -59,7 +59,10 @@ def mock_cpu_base():
         mock_proc.return_value.cpu_percent.return_value = 25.0
         mock_proc.return_value.memory_full_info.return_value.uss = 2 * 1024**3
         mock_proc.return_value.io_counters.return_value = Mock(
-            read_count=100, write_count=50, read_bytes=1024, write_bytes=512
+            read_count=100,
+            write_count=50,
+            read_bytes=1024,
+            write_bytes=512,
         )
         mock_disk.return_value = Mock(
             read_count=1000,
@@ -86,26 +89,33 @@ def mock_cpu_only(mock_cpu_base):
 @pytest.fixture
 def mock_cpu_gpu(mock_cpu_base):
     """Mock system with 1 CPU (4 cores) and 1 GPU."""
-    with patch("pynvml.nvmlInit"), patch(
-        "pynvml.nvmlDeviceGetCount", return_value=1
-    ), patch(
-        "pynvml.nvmlDeviceGetHandleByIndex", return_value=Mock()
-    ), patch(
-        "pynvml.nvmlDeviceGetName", return_value=b"NVIDIA GeForce RTX 3080"
-    ), patch(
-        "pynvml.nvmlDeviceGetMemoryInfo"
-    ) as mock_mem, patch(
-        "pynvml.nvmlDeviceGetUtilizationRates"
-    ) as mock_util, patch(
-        "pynvml.nvmlDeviceGetTemperature", return_value=65
-    ), patch(
-        "pynvml.nvmlDeviceGetComputeRunningProcesses", return_value=[]
+    gpu_handle = Mock()
+    mock_mem_info = Mock(
+        total=10 * 1024**3,
+        used=2 * 1024**3,
+        free=8 * 1024**3,
+    )
+    mock_util_rates = Mock(gpu=75, memory=20)
+
+    def _nvml_gpu_setup(self) -> dict:
+        self._handles = [gpu_handle]
+        pynvml_mock = Mock()
+        pynvml_mock.nvmlDeviceGetMemoryInfo.return_value = mock_mem_info
+        pynvml_mock.nvmlDeviceGetUtilizationRates.return_value = mock_util_rates
+        pynvml_mock.nvmlDeviceGetComputeRunningProcesses.return_value = []
+        pynvml_mock.nvmlDeviceGetName.return_value = b"NVIDIA GeForce RTX 3080"
+        pynvml_mock.NVMLError = Exception
+        self._pynvml = pynvml_mock
+        return {
+            "gpu_memory": round(mock_mem_info.total / (1024**3), 2),
+            "gpu_name": "NVIDIA GeForce RTX 3080",
+        }
+
+    with patch(
+        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuBackend.setup",
+        _nvml_gpu_setup,
     ), patch(
         "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuBackend.setup",
         _noop_gpu_setup,
     ):
-        mock_mem.return_value = Mock(
-            total=10 * 1024**3, used=2 * 1024**3, free=8 * 1024**3
-        )
-        mock_util.return_value = Mock(gpu=75, memory=20)
         yield
