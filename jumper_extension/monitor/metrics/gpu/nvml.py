@@ -4,6 +4,7 @@ from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
+from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.gpu.common import GpuBackend
 
 logger = logging.getLogger("extension")
@@ -14,8 +15,8 @@ class NvmlGpuBackend(GpuBackend):
 
     name = "nvidia-nvml"
 
-    def __init__(self, monitor):
-        super().__init__(monitor)
+    def __init__(self, uid: int, slurm_job: str):
+        super().__init__(uid, slurm_job)
         self._pynvml = None
         self._handles = []
 
@@ -83,9 +84,9 @@ class NvmlGpuBackend(GpuBackend):
         memory_info = self._pynvml.nvmlDeviceGetMemoryInfo(handle)
         return util_rates.gpu, 0.0, memory_info.used / (1024**3)
 
-    def _collect_process(self, handle):
+    def _collect_process(self, handle, context: CollectionContext):
         util_rates = self._get_util_rates(handle)
-        pids = self._monitor.process_pids
+        pids = context["process_pids"]
         process_mem = (
                 sum(
                     p.usedGpuMemory
@@ -98,11 +99,20 @@ class NvmlGpuBackend(GpuBackend):
         )
         return util_rates.gpu if process_mem > 0 else 0.0, 0.0, process_mem
 
-    def _collect_other(self, handle, level: str):
+    def _collect_other(self, handle, level: str, context: CollectionContext):
         util_rates = self._get_util_rates(handle)
-        filtered_gpu_processes, all_processes = (
-            self._monitor._get_filtered_processes(level, "nvidia_gpu", handle)
-        )
+        if self._pynvml is None:
+            return 0.0, 0.0, 0.0
+        try:
+            all_processes = self._pynvml.nvmlDeviceGetComputeRunningProcesses(
+                handle
+            )
+            filtered_gpu_processes = [
+                p for p in all_processes
+                if self._filter_process(p.pid, level)
+            ]
+        except Exception:
+            return 0.0, 0.0, 0.0
         filtered_mem = (
                 sum(
                     p.usedGpuMemory

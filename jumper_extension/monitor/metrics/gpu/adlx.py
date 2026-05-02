@@ -4,6 +4,7 @@ from jumper_extension.core.messages import (
     ExtensionErrorCode,
     EXTENSION_ERROR_MESSAGES,
 )
+from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.gpu.common import GpuBackend
 
 logger = logging.getLogger("extension")
@@ -14,8 +15,8 @@ class AdlxGpuBackend(GpuBackend):
 
     name = "amd-adlx"
 
-    def __init__(self, monitor: "PerformanceMonitor"):
-        super().__init__(monitor)
+    def __init__(self, uid: int, slurm_job: str):
+        super().__init__(uid, slurm_job)
         self._adlx_helper = None
         self._adlx_system = None
         self._handles = []
@@ -87,11 +88,11 @@ class AdlxGpuBackend(GpuBackend):
             # If we can't get metrics, return zeros
             return 0.0, 0.0, 0.0
 
-    def _collect_process(self, handle):
+    def _collect_process(self, handle, context: CollectionContext):
         # AMD ADLX doesn't provide per-process metrics easily
         return 0.0, 0.0, 0.0
 
-    def _collect_other(self, handle, level: str):
+    def _collect_other(self, handle, level: str, context: CollectionContext):
         # AMD ADLX doesn't provide per-user metrics easily
         return 0.0, 0.0, 0.0
 
