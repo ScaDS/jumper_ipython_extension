@@ -1,5 +1,6 @@
 import psutil
 
+from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.cpu.common import CpuBackend
 
 
@@ -8,29 +9,22 @@ class PsutilCpuBackend(CpuBackend):
 
     name = "cpu-psutil"
 
-    def collect(self, level: str = "process") -> list[float]:
-        self._m._validate_level(level)
-        snap = self._m._process_backend._snap_cpu
+    def collect(self, level: str, context: CollectionContext) -> list[float]:
+        num_cpus = self._node_info.num_cpus
         if level == "system":
-            cpu_util_per_core = psutil.cpu_percent(percpu=True)
-            return cpu_util_per_core
+            return psutil.cpu_percent(percpu=True)
         elif level == "process":
             cpu_total = sum(
-                snap.get(pid, 0.0) for pid in self._m.process_pids
+                context["cpu"].get(pid, 0.0) for pid in context["process_pids"]
             )
-            return [cpu_total / self._m.nodes.hardware["local"].num_cpus] * self._m.nodes.hardware["local"].num_cpus
+            return [cpu_total / num_cpus] * num_cpus
         elif level == "user":
-            # All process-level PIDs belong to this user, plus extras
-            user_pids = set(self._m.process_pids)
-            user_pids.update(
-                p.pid for p in self._m._process_backend._snap_user_procs
+            cpu_total = sum(
+                context["cpu"].get(pid, 0.0) for pid in context["user_pids"]
             )
-            cpu_total = sum(snap.get(pid, 0.0) for pid in user_pids)
-            return [cpu_total / self._m.nodes.hardware["local"].num_cpus] * self._m.nodes.hardware["local"].num_cpus
+            return [cpu_total / num_cpus] * num_cpus
         else:  # slurm
-            slurm_pids = set(self._m.process_pids)
-            slurm_pids.update(
-                p.pid for p in self._m._process_backend._snap_slurm_procs
+            cpu_total = sum(
+                context["cpu"].get(pid, 0.0) for pid in context["slurm_pids"]
             )
-            cpu_total = sum(snap.get(pid, 0.0) for pid in slurm_pids)
-            return [cpu_total / self._m.nodes.hardware["local"].num_cpus] * self._m.nodes.hardware["local"].num_cpus
+            return [cpu_total / num_cpus] * num_cpus

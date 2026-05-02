@@ -1,5 +1,6 @@
 import psutil
 
+from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.memory.common import MemoryBackend
 
 
@@ -8,9 +9,7 @@ class PsutilMemoryBackend(MemoryBackend):
 
     name = "memory-psutil"
 
-    def collect(self, level: str = "process") -> float:
-        self._m._validate_level(level)
-        snap = self._m._process_backend._snap_rss
+    def collect(self, level: str, context: CollectionContext) -> float:
         if level == "system":
             return (
                 psutil.virtual_memory().total
@@ -18,20 +17,16 @@ class PsutilMemoryBackend(MemoryBackend):
             ) / (1024**3)
         elif level == "process":
             memory_total = sum(
-                snap.get(pid, 0) for pid in self._m.process_pids
+                context["rss"].get(pid, 0) for pid in context["process_pids"]
             )
             return memory_total / (1024**3)
         elif level == "user":
-            user_pids = set(self._m.process_pids)
-            user_pids.update(
-                p.pid for p in self._m._process_backend._snap_user_procs
+            memory_total = sum(
+                context["rss"].get(pid, 0) for pid in context["user_pids"]
             )
-            memory_total = sum(snap.get(pid, 0) for pid in user_pids)
             return memory_total / (1024**3)
         else:  # slurm
-            slurm_pids = set(self._m.process_pids)
-            slurm_pids.update(
-                p.pid for p in self._m._process_backend._snap_slurm_procs
+            memory_total = sum(
+                context["rss"].get(pid, 0) for pid in context["slurm_pids"]
             )
-            memory_total = sum(snap.get(pid, 0) for pid in slurm_pids)
             return memory_total / (1024**3)
