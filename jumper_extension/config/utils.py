@@ -3,17 +3,32 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 from typing import Any
 
 
-def instantiate(cfg: dict, **extra_kwargs: Any) -> Any:
+def instantiate_backend(cls: type, available: dict) -> Any:
+    """Instantiate *cls* injecting only the kwargs it declares by name.
+
+    Each parameter name in ``cls.__init__`` is looked up in *available*;
+    unrecognised names are silently ignored.
+    """
+    sig = inspect.signature(cls.__init__)
+    filtered = {k: v for k, v in available.items() if k in sig.parameters}
+    return cls(**filtered)
+
+
+def instantiate(cfg: dict, **available: Any) -> Any:
     """Instantiate a class from a config dict with a ``_target_`` key.
 
     The dict is consumed: ``_target_`` is popped before the remaining keys
-    are forwarded as keyword arguments to the constructor.
+    are forwarded as keyword arguments to the constructor alongside any
+    *available* values whose names match constructor parameters.
     """
     cfg = dict(cfg)
     target = cfg.pop("_target_")
     module_path, class_name = target.rsplit(".", 1)
     cls = getattr(importlib.import_module(module_path), class_name)
-    return cls(**cfg, **extra_kwargs)
+    sig = inspect.signature(cls.__init__)
+    filtered = {k: v for k, v in available.items() if k in sig.parameters}
+    return cls(**cfg, **filtered)
