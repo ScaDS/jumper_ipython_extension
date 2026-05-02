@@ -6,7 +6,7 @@ import time
 import psutil
 
 from jumper_extension.adapters.data import NodeInfo, NodeDataStore
-from jumper_extension.config.utils import instantiate_backend
+from jumper_extension.config.utils import instantiate, load_collectors_config
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -14,40 +14,11 @@ from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
 )
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.cpu.psutil import PsutilCpuBackend
-from jumper_extension.monitor.metrics.gpu.common import GpuBackendDiscovery
-from jumper_extension.monitor.metrics.io.psutil import PsutilIoBackend
-from jumper_extension.monitor.metrics.memory.psutil import PsutilMemoryBackend
 from jumper_extension.monitor.metrics.process.psutil import PsutilProcessBackend
-from jumper_extension.monitor.metrics.storage import (
-    ScalarHandler,
-    PerDeviceAggregateHandler,
-    PerDeviceMultiAggregateHandler,
-    CumulativeRateHandler,
-)
+from jumper_extension.monitor.metrics.storage import make_handler
 from jumper_extension.utilities import detect_memory_limit, get_available_levels
 
 logger = logging.getLogger("extension")
-
-
-class _CombinedGpuCollector:
-    """Aggregates multiple GPU backends into a single snapshot/collect() call."""
-
-    def __init__(self, backends):
-        self._backends = backends
-
-    def snapshot(self, context: CollectionContext) -> None:
-        for backend in self._backends:
-            backend.snapshot(context)
-
-    def collect(self, level: str, context: CollectionContext):
-        util, band, mem = [], [], []
-        for backend in self._backends:
-            backend_util, backend_band, backend_mem = backend.collect(level, context)
-            util.extend(backend_util)
-            band.extend(backend_band)
-            mem.extend(backend_mem)
-        return util, band, mem
 
 
 class PerformanceMonitor:
@@ -111,27 +82,20 @@ class PerformanceMonitor:
             "slurm_job": self.slurm_job,
         }
 
-        self._cpu_backend = instantiate_backend(PsutilCpuBackend, available)
-        self._memory_backend = instantiate_backend(PsutilMemoryBackend, available)
-        self._io_backend = instantiate_backend(PsutilIoBackend, available)
-        for backend in (
-            self._cpu_backend,
-            self._memory_backend,
-            self._io_backend,
-        ):
-            backend.setup()
-
-        self._gpu_backends = GpuBackendDiscovery(available).discover()
-        gpu_memory = 0.0
-        gpu_name_parts = []
-        for backend in self._gpu_backends:
+        # Build pipeline from config — collectors.yaml is the single source of truth
+        cfg = load_collectors_config()
+        self._pipeline = []
+        num_gpus, gpu_memory, gpu_name = 0, 0.0, ""
+        for collector_cfg in cfg["collectors"].values():
+            collector_cfg = dict(collector_cfg)
+            storage_cfg = collector_cfg.pop("storage")
+            backend = instantiate(collector_cfg, **available)
             meta = backend.setup() or {}
-            if meta.get("gpu_memory", 0) > 0 and gpu_memory == 0:
-                gpu_memory = meta["gpu_memory"]
-            if meta.get("gpu_name"):
-                gpu_name_parts.append(meta["gpu_name"])
-        gpu_name = ", ".join(gpu_name_parts)
-        num_gpus = sum(len(b._handles) for b in self._gpu_backends)
+            if "num_gpus" in meta:
+                num_gpus = meta["num_gpus"]
+                gpu_memory = meta.get("gpu_memory", 0.0)
+                gpu_name = meta.get("gpu_name", "")
+            self._pipeline.append((backend, make_handler(storage_cfg)))
 
         # Rebuild node_info with discovered GPU data
         node_info = NodeInfo(
@@ -144,20 +108,10 @@ class PerformanceMonitor:
             memory_limits=memory_limits,
             cpu_handles=cpu_handles,
         )
-        # Propagate updated node_info to CPU and memory backends
-        self._cpu_backend._node_info = node_info
-        self._memory_backend._node_info = node_info
-
-        # Build the collector→handler pipeline
-        _gpu_collector = _CombinedGpuCollector(self._gpu_backends)
-        self._pipeline = [
-            (self._cpu_backend,    PerDeviceAggregateHandler("cpu_util_")),
-            (self._memory_backend, ScalarHandler("memory")),
-            (_gpu_collector,       PerDeviceMultiAggregateHandler("gpu_", ["util", "band", "mem"])),
-            (self._io_backend,     CumulativeRateHandler(
-                ["io_read_count", "io_write_count", "io_read", "io_write"]
-            )),
-        ]
+        # Propagate updated node_info to backends that declare it
+        for backend, _ in self._pipeline:
+            if hasattr(backend, "_node_info"):
+                backend._node_info = node_info
 
         self.nodes = NodeDataStore()
         self.nodes.register_node(node_info)
@@ -207,6 +161,7 @@ class PerformanceMonitor:
             "rss": {},
             "io": {},
         }
+        self._process_backend.snapshot(context)
         for backend, _ in self._pipeline:
             backend.snapshot(context)
 
