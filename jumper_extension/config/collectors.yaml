@@ -12,7 +12,7 @@ collectors:
       column: memory
 
   gpu:
-    _target_: jumper_extension.monitor.metrics.gpu.common.GpuBackendDiscovery
+    _target_: jumper_extension.monitor.metrics.gpu.common.MultiGpuBackend
     storage:
       type: per_device_multi_aggregate
       prefix: gpu_

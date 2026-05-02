@@ -86,18 +86,59 @@ class NullGpuBackend(GpuBackend):
         return []
 
 
-class GpuBackendDiscovery:
-    """Selects GPU backends based on what's available at runtime."""
+class GpuDiscovery:
+    """Finds all available GPU device backends at runtime."""
 
-    def __init__(self, available: dict):
-        self._available = available
+    def __init__(self, uid: int, slurm_job: str):
+        self._uid = uid
+        self._slurm_job = slurm_job
 
-    def discover(self):
+    def discover(self) -> list[GpuBackend]:
         from jumper_extension.monitor.metrics.gpu.nvml import NvmlGpuBackend
         from jumper_extension.monitor.metrics.gpu.adlx import AdlxGpuBackend
         from jumper_extension.config.utils import instantiate_backend
 
+        available = {"uid": self._uid, "slurm_job": self._slurm_job}
         return [
-            instantiate_backend(NvmlGpuBackend, self._available),
-            instantiate_backend(AdlxGpuBackend, self._available),
+            instantiate_backend(NvmlGpuBackend, available),
+            instantiate_backend(AdlxGpuBackend, available),
         ]
+
+
+class MultiGpuBackend:
+    """Combined GPU pipeline member — aggregates all discovered device backends."""
+
+    def __init__(self, uid: int, slurm_job: str):
+        self._uid = uid
+        self._slurm_job = slurm_job
+        self._backends: list[GpuBackend] = []
+
+    def setup(self) -> dict:
+        self._backends = GpuDiscovery(self._uid, self._slurm_job).discover()
+        gpu_memory = 0.0
+        gpu_name_parts = []
+        for backend in self._backends:
+            meta = backend.setup() or {}
+            if meta.get("gpu_memory", 0) > 0 and gpu_memory == 0:
+                gpu_memory = meta["gpu_memory"]
+            if meta.get("gpu_name"):
+                gpu_name_parts.append(meta["gpu_name"])
+        num_gpus = sum(len(b._handles) for b in self._backends)
+        return {
+            "num_gpus": num_gpus,
+            "gpu_memory": gpu_memory,
+            "gpu_name": ", ".join(gpu_name_parts),
+        }
+
+    def snapshot(self, context: CollectionContext) -> None:
+        for backend in self._backends:
+            backend.snapshot(context)
+
+    def collect(self, level: str, context: CollectionContext):
+        util, band, mem = [], [], []
+        for backend in self._backends:
+            backend_util, backend_band, backend_mem = backend.collect(level, context)
+            util.extend(backend_util)
+            band.extend(backend_band)
+            mem.extend(backend_mem)
+        return util, band, mem
