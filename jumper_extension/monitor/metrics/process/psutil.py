@@ -4,6 +4,7 @@ from typing import Any, Callable, Optional
 import psutil
 
 from jumper_extension.utilities import is_slurm_available
+from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.process.common import ProcessBackend
 
 
@@ -14,14 +15,6 @@ class PsutilProcessBackend(ProcessBackend):
 
     def setup(self) -> None:
         self._process_cache: dict[int, psutil.Process] = {}
-        # Per-tick metric snapshot: populated once per tick by
-        # snapshot_metrics(), consumed by CPU/memory/IO backends.
-        self._snap_cpu: dict[int, float] = {}
-        self._snap_rss: dict[int, int] = {}
-        self._snap_io: dict[int, tuple] = {}
-        # Cached filtered PID lists for user/slurm levels (per tick)
-        self._snap_user_procs: list[psutil.Process] = []
-        self._snap_slurm_procs: list[psutil.Process] = []
 
     def _get_or_create_process(self, pid: int) -> psutil.Process:
         """Return a cached Process object for *pid*, creating one if needed."""
@@ -33,10 +26,10 @@ class PsutilProcessBackend(ProcessBackend):
 
     def get_process_pids(self) -> set[int]:
         """Get current process PID and all its children PIDs."""
-        pids = {self._m.pid}
+        pids = {self._pid}
         try:
             pids.update(
-                child.pid for child in self._m.process.children(recursive=True)
+                child.pid for child in self._process.children(recursive=True)
             )
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
@@ -46,84 +39,88 @@ class PsutilProcessBackend(ProcessBackend):
         }
         return pids
 
-    def snapshot_metrics(self) -> None:
+    def snapshot(self, context: CollectionContext) -> None:
         """Collect cpu/memory/io for every known PID in one pass.
 
-        Call this once per tick *after* :meth:`get_process_pids`.  The
-        CPU, memory, and IO backends then read from the snapshot instead
-        of issuing redundant per-PID syscalls for each level.
+        Populates context["cpu"], context["rss"], context["io"],
+        context["user_pids"], and context["slurm_pids"].
+        Call this once per tick after process_pids has been set in context.
         """
-        self._snap_cpu.clear()
-        self._snap_rss.clear()
-        self._snap_io.clear()
+        cpu = context["cpu"]
+        rss = context["rss"]
+        io = context["io"]
+        process_pids = context["process_pids"]
 
         # 1) Snapshot process-level PIDs
-        for pid in self._m.process_pids:
+        for pid in process_pids:
             proc = self._get_or_create_process(pid)
             try:
-                self._snap_cpu[pid] = proc.cpu_percent()
+                cpu[pid] = proc.cpu_percent()
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                self._snap_cpu[pid] = 0.0
+                cpu[pid] = 0.0
             try:
-                self._snap_rss[pid] = proc.memory_info().rss
+                rss[pid] = proc.memory_info().rss
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                self._snap_rss[pid] = 0
+                rss[pid] = 0
             try:
-                self._snap_io[pid] = proc.io_counters()
+                io[pid] = proc.io_counters()
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                self._snap_io[pid] = None
+                io[pid] = None
 
         # 2) Snapshot user/slurm-filtered processes (only the ones
         #    not already covered by the process-level set above)
-        self._snap_user_procs = []
-        self._snap_slurm_procs = []
+        user_pids = set(process_pids)
+        slurm_pids = set(process_pids)
         try:
             for proc in psutil.process_iter(["pid", "uids"]):
                 pid = proc.pid
-                if pid in self._snap_cpu:
+                if pid in cpu:
                     continue  # already collected above
                 try:
-                    is_user = proc.uids().real == self._m.uid
+                    is_user = proc.uids().real == self._uid
                 except (psutil.AccessDenied, psutil.NoSuchProcess):
                     is_user = False
                 if not is_user:
                     continue
-                self._snap_user_procs.append(proc)
+                user_pids.add(pid)
                 # Collect metrics for this PID too
                 try:
-                    self._snap_cpu[pid] = proc.cpu_percent()
+                    cpu[pid] = proc.cpu_percent()
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    self._snap_cpu[pid] = 0.0
+                    cpu[pid] = 0.0
                 try:
-                    self._snap_rss[pid] = proc.memory_info().rss
+                    rss[pid] = proc.memory_info().rss
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    self._snap_rss[pid] = 0
+                    rss[pid] = 0
                 try:
-                    self._snap_io[pid] = proc.io_counters()
+                    io[pid] = proc.io_counters()
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    self._snap_io[pid] = None
+                    io[pid] = None
                 # Check slurm membership
                 if is_slurm_available():
                     try:
                         if proc.environ().get("SLURM_JOB_ID") == str(
-                            self._m.slurm_job
+                            self._slurm_job
                         ):
-                            self._snap_slurm_procs.append(proc)
+                            slurm_pids.add(pid)
                     except (psutil.AccessDenied, psutil.NoSuchProcess):
                         pass
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 
+        context["user_pids"] = user_pids
+        context["slurm_pids"] = slurm_pids
+
     def filter_process(self, proc: psutil.Process, mode: str) -> bool:
         """Check if process matches the filtering mode."""
         try:
             if mode == "user":
-                return proc.uids().real == self._m.uid
+                return proc.uids().real == self._uid
             elif mode == "slurm":
                 if not is_slurm_available():
                     return False
                 return proc.environ().get("SLURM_JOB_ID") == str(
-                    self._m.slurm_job
+                    self._slurm_job
                 )
         except (psutil.AccessDenied, psutil.NoSuchProcess):
             pass
@@ -135,7 +132,7 @@ class PsutilProcessBackend(ProcessBackend):
         mode: str = "cpu",
         handle: Optional[object] = None,
     ):
-        """Get filtered processes for CPU or GPU monitoring."""
+        """Get filtered processes for CPU monitoring."""
         if mode == "cpu":
             return [
                 proc
@@ -144,22 +141,6 @@ class PsutilProcessBackend(ProcessBackend):
                     proc, lambda p: self.filter_process(p, level), False
                 )
             ]
-        elif mode == "nvidia_gpu":
-            try:
-                import pynvml
-            except ImportError:
-                return [], []
-            all_procs = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
-            filtered = [
-                p
-                for p in all_procs
-                if self.safe_proc_call(
-                    p.pid,
-                    lambda proc: self.filter_process(proc, level),
-                    False,
-                )
-            ]
-            return filtered, all_procs
         else:
             raise ValueError(f"Unknown mode: {mode}")
 
