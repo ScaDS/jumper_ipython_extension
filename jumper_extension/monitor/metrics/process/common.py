@@ -1,23 +1,28 @@
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional
 
 import psutil
 
-if TYPE_CHECKING:
-    from jumper_extension.monitor.common import PerformanceMonitor
+from jumper_extension.monitor.metrics.context import CollectionContext
 
 
 class ProcessBackend:
-    """Backend for process enumeration and filtering."""
+    """Backend for process enumeration and snapshotting."""
 
     name = "process-base"
 
-    def __init__(self, monitor: "PerformanceMonitor"):
-        self._m = monitor
+    def __init__(self, pid: int, process: psutil.Process, uid: int, slurm_job: str):
+        self._pid = pid
+        self._process = process
+        self._uid = uid
+        self._slurm_job = slurm_job
 
     def setup(self) -> None:
         return None
 
     def get_process_pids(self) -> set[int]:
+        raise NotImplementedError
+
+    def snapshot(self, context: CollectionContext) -> None:
         raise NotImplementedError
 
     def filter_process(self, proc: psutil.Process, mode: str) -> bool:
