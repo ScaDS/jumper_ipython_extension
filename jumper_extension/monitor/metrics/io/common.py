@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from jumper_extension.monitor.common import PerformanceMonitor
+from jumper_extension.monitor.metrics.context import CollectionContext
 
 
 class IoBackend:
@@ -9,11 +6,14 @@ class IoBackend:
 
     name = "io-base"
 
-    def __init__(self, monitor: "PerformanceMonitor"):
-        self._m = monitor
+    def __init__(self):
+        pass
 
     def setup(self) -> None:
         return None
 
-    def collect(self, level: str = "process") -> list[int]:
+    def snapshot(self, context: CollectionContext) -> None:
+        return None
+
+    def collect(self, level: str, context: CollectionContext) -> list[int]:
         raise NotImplementedError
