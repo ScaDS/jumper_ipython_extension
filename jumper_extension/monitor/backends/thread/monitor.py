@@ -2,17 +2,18 @@ import logging
 import os
 import threading
 import time
-from typing import Optional
 
 import psutil
 
 from jumper_extension.adapters.data import NodeInfo, NodeDataStore
+from jumper_extension.config.utils import instantiate_backend
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
+from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.cpu.psutil import PsutilCpuBackend
 from jumper_extension.monitor.metrics.gpu.common import GpuBackendDiscovery
 from jumper_extension.monitor.metrics.io.psutil import PsutilIoBackend
@@ -30,15 +31,19 @@ logger = logging.getLogger("extension")
 
 
 class _CombinedGpuCollector:
-    """Aggregates multiple GPU backends into a single collect() call."""
+    """Aggregates multiple GPU backends into a single snapshot/collect() call."""
 
     def __init__(self, backends):
         self._backends = backends
 
-    def collect(self, level: str):
+    def snapshot(self, context: CollectionContext) -> None:
+        for backend in self._backends:
+            backend.snapshot(context)
+
+    def collect(self, level: str, context: CollectionContext):
         util, band, mem = [], [], []
         for backend in self._backends:
-            backend_util, backend_band, backend_mem = backend.collect(level)
+            backend_util, backend_band, backend_mem = backend.collect(level, context)
             util.extend(backend_util)
             band.extend(backend_band)
             mem.extend(backend_mem)
@@ -74,26 +79,49 @@ class PerformanceMonitor:
         self.uid = os.getuid()
         self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
         self.levels = get_available_levels()
-        self.process_pids = []
+        self.process_pids = set()
 
         memory_limits = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
 
-        self._process_backend = PsutilProcessBackend(self)
-        self._cpu_backend = PsutilCpuBackend(self)
-        self._memory_backend = PsutilMemoryBackend(self)
-        self._io_backend = PsutilIoBackend(self)
+        self._process_backend = PsutilProcessBackend(
+            pid=self.pid,
+            process=self.process,
+            uid=self.uid,
+            slurm_job=self.slurm_job,
+        )
+        self._process_backend.setup()
+
+        node_info = NodeInfo(
+            node="local",
+            num_cpus=num_cpus,
+            num_system_cpus=num_system_cpus,
+            num_gpus=0,  # updated after GPU discovery below
+            gpu_memory=0.0,
+            gpu_name="",
+            memory_limits=memory_limits,
+            cpu_handles=cpu_handles,
+        )
+
+        available = {
+            "node_info": node_info,
+            "uid": self.uid,
+            "slurm_job": self.slurm_job,
+        }
+
+        self._cpu_backend = instantiate_backend(PsutilCpuBackend, available)
+        self._memory_backend = instantiate_backend(PsutilMemoryBackend, available)
+        self._io_backend = instantiate_backend(PsutilIoBackend, available)
         for backend in (
-            self._process_backend,
             self._cpu_backend,
             self._memory_backend,
             self._io_backend,
         ):
             backend.setup()
 
-        self._gpu_backends = GpuBackendDiscovery(self).discover()
+        self._gpu_backends = GpuBackendDiscovery(available).discover()
         gpu_memory = 0.0
         gpu_name_parts = []
         for backend in self._gpu_backends:
@@ -104,6 +132,21 @@ class PerformanceMonitor:
                 gpu_name_parts.append(meta["gpu_name"])
         gpu_name = ", ".join(gpu_name_parts)
         num_gpus = sum(len(b._handles) for b in self._gpu_backends)
+
+        # Rebuild node_info with discovered GPU data
+        node_info = NodeInfo(
+            node="local",
+            num_cpus=num_cpus,
+            num_system_cpus=num_system_cpus,
+            num_gpus=num_gpus,
+            gpu_memory=gpu_memory,
+            gpu_name=gpu_name,
+            memory_limits=memory_limits,
+            cpu_handles=cpu_handles,
+        )
+        # Propagate updated node_info to CPU and memory backends
+        self._cpu_backend._node_info = node_info
+        self._memory_backend._node_info = node_info
 
         # Build the collector→handler pipeline
         _gpu_collector = _CombinedGpuCollector(self._gpu_backends)
@@ -117,26 +160,26 @@ class PerformanceMonitor:
         ]
 
         self.nodes = NodeDataStore()
-        self.nodes.register_node(NodeInfo(
-            node="local",
-            num_cpus=num_cpus,
-            num_system_cpus=num_system_cpus,
-            num_gpus=num_gpus,
-            gpu_memory=gpu_memory,
-            gpu_name=gpu_name,
-            memory_limits=memory_limits,
-            cpu_handles=cpu_handles,
-        ))
+        self.nodes.register_node(node_info)
 
         # Bootstrap: warm up process snapshots and IO counter state,
         # then derive per-level column names for schema pre-population.
-        self._process_backend.snapshot_metrics()
+        bootstrap_context: CollectionContext = {
+            "process_pids": set(),
+            "user_pids": set(),
+            "slurm_pids": set(),
+            "cpu": {},
+            "rss": {},
+            "io": {},
+        }
+        for backend, _ in self._pipeline:
+            backend.snapshot(bootstrap_context)
         columns_by_level: dict[str, list[str]] = {}
         for level in self.levels:
             row: dict = {"time": 0.0}
             for collector, handler in self._pipeline:
                 try:
-                    row.update(handler.transform(collector.collect(level), level))
+                    row.update(handler.transform(collector.collect(level, bootstrap_context), level))
                 except Exception:
                     pass
             columns_by_level[level] = list(row.keys())
@@ -146,9 +189,6 @@ class PerformanceMonitor:
         self.is_imported = False
         self.session_source = None
 
-    def _get_process_pids(self):
-        return self._process_backend.get_process_pids()
-
     def _validate_level(self, level):
         if level not in self.levels:
             raise ValueError(
@@ -157,24 +197,25 @@ class PerformanceMonitor:
                 ].format(level=level, levels=self.levels)
             )
 
-    def _filter_process(self, proc, mode):
-        return self._process_backend.filter_process(proc, mode)
-
-    def _get_filtered_processes(self, level="user", mode="cpu", handle=None):
-        return self._process_backend.get_filtered_processes(level, mode, handle)
-
-    def _safe_proc_call(self, proc, proc_func, default=0):
-        return self._process_backend.safe_proc_call(proc, proc_func, default)
-
     def _collect_metrics(self):
         """Collect one sample per level; return a list of flat dicts."""
-        self._process_backend.snapshot_metrics()
+        context: CollectionContext = {
+            "process_pids": self.process_pids,
+            "user_pids": set(),
+            "slurm_pids": set(),
+            "cpu": {},
+            "rss": {},
+            "io": {},
+        }
+        for backend, _ in self._pipeline:
+            backend.snapshot(context)
+
         time_mark = time.perf_counter()
         rows = []
         for level in self.levels:
             row: dict = {"time": time_mark}
             for collector, handler in self._pipeline:
-                row.update(handler.transform(collector.collect(level), level))
+                row.update(handler.transform(collector.collect(level, context), level))
             rows.append(row)
         return rows
 
@@ -191,7 +232,7 @@ class PerformanceMonitor:
         """
         next_tick = time.perf_counter()
         while not self._stop_event.is_set():
-            self.process_pids = self._get_process_pids()
+            self.process_pids = self._process_backend.get_process_pids()
             rows = self._collect_metrics()
             for level, row in zip(self.levels, rows):
                 self.nodes.add_sample("local", level, row)
