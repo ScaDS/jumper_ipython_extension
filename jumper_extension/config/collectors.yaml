@@ -1,18 +1,21 @@
 collectors:
   cpu:
     _target_: jumper_extension.monitor.metrics.cpu.psutil.PsutilCpuBackend
+    inject: [node_info]
     storage:
       type: per_device_aggregate
       prefix: cpu_util_
 
   memory:
     _target_: jumper_extension.monitor.metrics.memory.psutil.PsutilMemoryBackend
+    inject: [node_info]
     storage:
       type: scalar
       column: memory
 
   gpu:
     _target_: jumper_extension.monitor.metrics.gpu.common.MultiGpuBackend
+    inject: [uid, slurm_job]
     storage:
       type: per_device_multi_aggregate
       prefix: gpu_
@@ -20,6 +23,7 @@ collectors:
 
   io:
     _target_: jumper_extension.monitor.metrics.io.psutil.PsutilIoBackend
+    inject: []
     storage:
       type: cumulative_rate
       columns: [io_read_count, io_write_count, io_read, io_write]
