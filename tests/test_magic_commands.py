@@ -99,7 +99,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
 
     # Test empty data
     with patch.object(
-        magics.magic_adapter.service.monitor.data,
+        magics.magic_adapter.service.monitor.nodes,
         "view",
         return_value=pd.DataFrame(columns=["time"]),
     ):
@@ -108,7 +108,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
     # Test with data
     df = pd.DataFrame({"time": [1.0, 2.0], "cpu_util_avg": [50.0, 60.0]})
     with patch.object(
-        magics.magic_adapter.service.monitor.data, "view", return_value=df
+        magics.magic_adapter.service.monitor.nodes, "view", return_value=df
     ), patch.object(magics.magic_adapter.service.visualizer, "plot"), patch.object(
         magics.magic_adapter.service.monitor, "start_time", 0.0
     ):
@@ -121,7 +121,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
         magics.post_run_cell(type("Result", (), {"result": None})())
 
     with patch.object(
-        magics.magic_adapter.service.monitor.data, "view", return_value=df
+        magics.magic_adapter.service.monitor.nodes, "view", return_value=df
     ), patch.object(magics.magic_adapter.service.visualizer, "plot"), patch.object(
         magics.magic_adapter.service.monitor, "start_time", 0.0
     ):
@@ -158,7 +158,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
     service = magics.magic_adapter.service
     monitor = service.monitor
 
-    with patch.object(monitor.data, "view", return_value=df), patch.object(
+    with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         PlotlyPerformanceVisualizer, "_render_direct_plot"
     ) as mock_plotly_render:
         magics.perfmonitor_plot(
@@ -169,14 +169,14 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
         assert mock_plotly_render.called
 
     # No --backend: should use default from settings ("plotly")
-    with patch.object(monitor.data, "view", return_value=df), patch.object(
+    with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         PlotlyPerformanceVisualizer, "_render_direct_plot"
     ) as mock_plotly_default_render:
         magics.perfmonitor_plot("--metrics cpu_summary --level process --cell 0")
         assert isinstance(service.visualizer, PlotlyPerformanceVisualizer)
         assert mock_plotly_default_render.called
 
-    with patch.object(monitor.data, "view", return_value=df), patch.object(
+    with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         MatplotlibPerformanceVisualizer, "_render_direct_plot"
     ) as mock_matplotlib_render:
         magics.perfmonitor_plot(
@@ -187,7 +187,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
         assert mock_matplotlib_render.called
 
     # No --backend again: should keep using settings default ("matplotlib")
-    with patch.object(monitor.data, "view", return_value=df), patch.object(
+    with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         MatplotlibPerformanceVisualizer, "_render_direct_plot"
     ) as mock_matplotlib_default_render:
         magics.perfmonitor_plot("--metrics cpu_summary --level process --cell 0")
@@ -217,7 +217,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
 
     # Test empty data
     with patch.object(
-        magics.magic_adapter.service.monitor.data,
+        magics.magic_adapter.service.monitor.nodes,
         "view",
         return_value=pd.DataFrame(columns=["time"]),
     ):
@@ -234,7 +234,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
         }
     )
     with patch.object(
-            magics.magic_adapter.service.monitor.data,
+            magics.magic_adapter.service.monitor.nodes,
             "view",
             return_value=df
     ):
@@ -253,7 +253,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
         }
     )
     with patch.object(
-            magics.magic_adapter.service.monitor.data,
+            magics.magic_adapter.service.monitor.nodes,
             "view",
             return_value=df_partial):
         magics.magic_adapter.service.reporter.print()
@@ -272,7 +272,7 @@ def test_export_and_help(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
     df = pd.DataFrame({"time": [1.0]})
     with patch.object(
-        magics.magic_adapter.service.monitor.data,
+        magics.magic_adapter.service.monitor.nodes,
         "view",
         return_value=df,
     ):
@@ -280,7 +280,7 @@ def test_export_and_help(ipython, mock_cpu_only):
         assert "custom_perf" in ipython.user_ns
         assert ipython.user_ns["custom_perf"].equals(df)
     ipython.user_ns.pop("custom_perf", None)
-    with patch.object(magics.magic_adapter.service.monitor.data, "export"):
+    with patch.object(magics.magic_adapter.service.monitor.nodes, "export"):
         magics.perfmonitor_export_perfdata("")
         magics.perfmonitor_export_perfdata("--file custom.csv")
     magics.perfmonitor_stop("")
