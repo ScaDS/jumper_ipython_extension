@@ -5,8 +5,8 @@ import time
 
 import psutil
 
-from jumper_extension.adapters.data import NodeInfo, NodeDataStore
-from jumper_extension.config.utils import instantiate, load_collectors_config
+from jumper_extension.adapters.data import NodeDataStore
+from jumper_extension.monitor.pipeline import PipelineBuilder
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -15,7 +15,6 @@ from jumper_extension.core.messages import (
 )
 from jumper_extension.monitor.metrics.context import CollectionContext
 from jumper_extension.monitor.metrics.process.psutil import PsutilProcessBackend
-from jumper_extension.monitor.metrics.storage import make_handler
 from jumper_extension.utilities import detect_memory_limit, get_available_levels
 
 logger = logging.getLogger("extension")
@@ -40,19 +39,19 @@ class PerformanceMonitor:
         same for cpu_affinity
         """
         try:
-            cpu_handles = self.process.cpu_affinity()
-            num_cpus = len(cpu_handles)
+            self.cpu_handles = self.process.cpu_affinity()
+            self.num_cpus = len(self.cpu_handles)
         except AttributeError:
-            cpu_handles = []
-            num_cpus = len(psutil.cpu_percent(percpu=True))
-        num_system_cpus = len(psutil.cpu_percent(percpu=True))
+            self.cpu_handles = []
+            self.num_cpus = len(psutil.cpu_percent(percpu=True))
+        self.num_system_cpus = len(psutil.cpu_percent(percpu=True))
         self.pid = os.getpid()
         self.uid = os.getuid()
         self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
         self.levels = get_available_levels()
         self.process_pids = set()
 
-        memory_limits = {
+        self.memory_limits = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
@@ -65,53 +64,31 @@ class PerformanceMonitor:
         )
         self._process_backend.setup()
 
-        self.node_info = NodeInfo(
-            node="local",
-            num_cpus=num_cpus,
-            num_system_cpus=num_system_cpus,
-            num_gpus=0,
-            gpu_memory=0.0,
-            gpu_name="",
-            memory_limits=memory_limits,
-            cpu_handles=cpu_handles,
-        )
-
-        # Build pipeline from config — collectors.yaml is the single source of truth
-        cfg = load_collectors_config()
-        self._pipeline = []
-        num_gpus, gpu_memory, gpu_name = 0, 0.0, ""
-        for collector_cfg in cfg["collectors"].values():
-            collector_cfg = dict(collector_cfg)
-            storage_cfg = collector_cfg.pop("storage")
-            inject_keys = collector_cfg.pop("inject", [])
-            injected = {k: getattr(self, k) for k in inject_keys}
-            backend = instantiate(collector_cfg, **injected)
-            meta = backend.setup() or {}
-            if "num_gpus" in meta:
-                num_gpus = meta["num_gpus"]
-                gpu_memory = meta.get("gpu_memory", 0.0)
-                gpu_name = meta.get("gpu_name", "")
-            self._pipeline.append((backend, make_handler(storage_cfg)))
-
-        self.node_info = NodeInfo(
-            node="local",
-            num_cpus=num_cpus,
-            num_system_cpus=num_system_cpus,
-            num_gpus=num_gpus,
-            gpu_memory=gpu_memory,
-            gpu_name=gpu_name,
-            memory_limits=memory_limits,
-            cpu_handles=cpu_handles,
-        )
-        for backend, _ in self._pipeline:
-            if hasattr(backend, "_node_info"):
-                backend._node_info = self.node_info
+        # Ordered list of (backend, handler) pairs built from collectors.yaml.
+        # Each tick: all backends snapshot() the process state into a shared
+        # context, then collect() + handler.transform() produce flat metric rows.
+        self._pipeline = None
+        PipelineBuilder(self).build(deferred_keys=["node_info"])
 
         self.nodes = NodeDataStore()
         self.nodes.register_node(self.node_info)
 
-        # Bootstrap: warm up process snapshots and IO counter state,
-        # then derive per-level column names for schema pre-population.
+        self._bootstrap_schema()
+
+        # session state
+        self.is_imported = False
+        self.session_source = None
+
+    def _bootstrap_schema(self):
+        """Warm up all pipeline backends and derive per-level column names.
+
+        Two reasons this must run before the first real tick:
+        - psutil.cpu_percent() returns 0.0 on its first call per process object;
+          IO counters need a baseline snapshot to compute rates.
+        - Column names are not known statically — they depend on how many CPUs/GPUs
+          are present. A dry collect() pass discovers them so NodeDataStore can
+          pre-allocate the schema before any data arrives.
+        """
         bootstrap_context: CollectionContext = {
             "process_pids": set(),
             "user_pids": set(),
@@ -132,10 +109,6 @@ class PerformanceMonitor:
                     pass
             columns_by_level[level] = list(row.keys())
         self.nodes.init_node_schema("local", columns_by_level)
-
-        # session state
-        self.is_imported = False
-        self.session_source = None
 
     def _validate_level(self, level):
         if level not in self.levels:
