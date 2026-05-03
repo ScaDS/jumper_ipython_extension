@@ -5,6 +5,8 @@ Writes per-node, per-sample performance data to a structured log file
 touching the visualizer.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -63,12 +65,12 @@ class MultinodeLogWriter:
         level: str,
         wallclock: float,
         perf_time: float,
-        cpu_util: list,
+        cpu_util: list[float],
         memory: float,
-        gpu_util: list,
-        gpu_band: list,
-        gpu_mem: list,
-        io_counters: list,
+        gpu_util: list[float],
+        gpu_band: list[float],
+        gpu_mem: list[float],
+        io_counters: list[float],
     ) -> None:
         """Append one sample to the log file."""
         if self._file is None:

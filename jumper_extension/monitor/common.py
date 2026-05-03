@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import Dict, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 import pandas as pd
 
@@ -54,7 +56,7 @@ class UnavailablePerformanceMonitor:
     def __init__(self, reason: str = "Performance monitor is not available"):
         object.__setattr__(self, "_reason", reason)
 
-    def __getattribute__(self, name: str):
+    def __getattribute__(self, name: str) -> Any:
         if name in {
             "_reason", "__class__", "__repr__", "__str__",
             "__init__", "__getattribute__", "__setattr__",

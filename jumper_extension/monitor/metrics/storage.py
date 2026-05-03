@@ -34,7 +34,7 @@ class PerDeviceAggregateHandler:
     def __init__(self, prefix: str) -> None:
         self._prefix = prefix
 
-    def transform(self, raw: list, level: str) -> dict[str, float]:
+    def transform(self, raw: list[float], level: str) -> dict[str, float]:
         if not raw:
             return {}
         n = len(raw)
@@ -54,11 +54,11 @@ class PerDeviceMultiAggregateHandler:
       gpu_util_0, gpu_util_avg, …, gpu_band_0, …, gpu_mem_0, …
     """
 
-    def __init__(self, prefix: str, metrics: list) -> None:
+    def __init__(self, prefix: str, metrics: list[str]) -> None:
         self._prefix = prefix
         self._metrics = metrics
 
-    def transform(self, raw: tuple, level: str) -> dict[str, float]:
+    def transform(self, raw: tuple[list[float], ...], level: str) -> dict[str, float]:
         result: dict[str, float] = {}
         for metric, values in zip(self._metrics, raw):
             sub = PerDeviceAggregateHandler(f"{self._prefix}{metric}_")
@@ -74,12 +74,12 @@ class CumulativeRateHandler:
     Returns zeros on the first call (no previous state available).
     """
 
-    def __init__(self, columns: list) -> None:
+    def __init__(self, columns: list[str]) -> None:
         self._columns = columns
-        self._last_counters: dict[str, list] = {}
+        self._last_counters: dict[str, list[int]] = {}
         self._last_time: dict[str, float] = {}
 
-    def transform(self, raw: list, level: str) -> dict[str, float]:
+    def transform(self, raw: list[int], level: str) -> dict[str, float]:
         now = _time.perf_counter()
         last = self._last_counters.get(level)
         last_t = self._last_time.get(level, now)

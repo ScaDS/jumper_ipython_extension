@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import Any, Iterable
 
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -20,10 +23,10 @@ class NvmlGpuBackend(GpuBackend):
         self._pynvml = None
         self._handles = []
 
-    def _iter_handles(self):
+    def _iter_handles(self) -> Iterable[object]:
         return self._handles
 
-    def _get_util_rates(self, handle):
+    def _get_util_rates(self, handle: object):
         if self._pynvml is None:
             class DefaultUtilRates:
                 gpu = 0.0
@@ -40,7 +43,7 @@ class NvmlGpuBackend(GpuBackend):
 
             return DefaultUtilRates()
 
-    def setup(self) -> dict:
+    def setup(self) -> dict[str, Any]:
         # Logic is intentionally kept identical to the previous implementation.
         try:
             import pynvml
@@ -79,12 +82,16 @@ class NvmlGpuBackend(GpuBackend):
             self._handles = []
         return {}
 
-    def _collect_system(self, handle):
+    def _collect_system(self, handle: object) -> tuple[float, float, float]:
         util_rates = self._get_util_rates(handle)
         memory_info = self._pynvml.nvmlDeviceGetMemoryInfo(handle)
         return util_rates.gpu, 0.0, memory_info.used / (1024**3)
 
-    def _collect_process(self, handle, context: CollectionContext):
+    def _collect_process(
+        self,
+        handle: object,
+        context: CollectionContext,
+    ) -> tuple[float, float, float]:
         util_rates = self._get_util_rates(handle)
         pids = context["process_pids"]
         process_mem = (
@@ -99,7 +106,12 @@ class NvmlGpuBackend(GpuBackend):
         )
         return util_rates.gpu if process_mem > 0 else 0.0, 0.0, process_mem
 
-    def _collect_other(self, handle, level: str, context: CollectionContext):
+    def _collect_other(
+        self,
+        handle: object,
+        level: str,
+        context: CollectionContext,
+    ) -> tuple[float, float, float]:
         util_rates = self._get_util_rates(handle)
         if self._pynvml is None:
             return 0.0, 0.0, 0.0

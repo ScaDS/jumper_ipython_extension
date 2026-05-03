@@ -131,7 +131,7 @@ class PsutilProcessBackend(ProcessBackend):
         level: str = "user",
         mode: str = "cpu",
         handle: Optional[object] = None,
-    ):
+    ) -> list[psutil.Process]:
         """Get filtered processes for CPU monitoring."""
         if mode == "cpu":
             return [
@@ -149,7 +149,7 @@ class PsutilProcessBackend(ProcessBackend):
         proc,
         proc_func: Callable[[psutil.Process], Any],
         default=0,
-    ):
+    ) -> Any:
         """Safely call a process method and return default on error."""
         try:
             if not isinstance(proc, psutil.Process):
