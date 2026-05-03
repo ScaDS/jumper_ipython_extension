@@ -36,17 +36,14 @@ def instantiate_backend(cls: type, available: dict) -> Any:
     return cls(**filtered)
 
 
-def instantiate(cfg: dict, **available: Any) -> Any:
+def instantiate(cfg: dict, **injected: Any) -> Any:
     """Instantiate a class from a config dict with a ``_target_`` key.
 
-    The dict is consumed: ``_target_`` is popped before the remaining keys
-    are forwarded as keyword arguments to the constructor alongside any
-    *available* values whose names match constructor parameters.
+    ``_target_`` is popped; remaining keys are forwarded as keyword arguments
+    together with *injected* values declared via ``inject:`` in the config.
     """
     cfg = dict(cfg)
     target = cfg.pop("_target_")
     module_path, class_name = target.rsplit(".", 1)
     cls = getattr(importlib.import_module(module_path), class_name)
-    sig = inspect.signature(cls.__init__)
-    filtered = {k: v for k, v in available.items() if k in sig.parameters}
-    return cls(**cfg, **filtered)
+    return cls(**cfg, **injected)

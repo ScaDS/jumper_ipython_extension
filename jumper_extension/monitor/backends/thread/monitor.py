@@ -65,22 +65,16 @@ class PerformanceMonitor:
         )
         self._process_backend.setup()
 
-        node_info = NodeInfo(
+        self.node_info = NodeInfo(
             node="local",
             num_cpus=num_cpus,
             num_system_cpus=num_system_cpus,
-            num_gpus=0,  # updated after GPU discovery below
+            num_gpus=0,
             gpu_memory=0.0,
             gpu_name="",
             memory_limits=memory_limits,
             cpu_handles=cpu_handles,
         )
-
-        available = {
-            "node_info": node_info,
-            "uid": self.uid,
-            "slurm_job": self.slurm_job,
-        }
 
         # Build pipeline from config — collectors.yaml is the single source of truth
         cfg = load_collectors_config()
@@ -89,7 +83,9 @@ class PerformanceMonitor:
         for collector_cfg in cfg["collectors"].values():
             collector_cfg = dict(collector_cfg)
             storage_cfg = collector_cfg.pop("storage")
-            backend = instantiate(collector_cfg, **available)
+            inject_keys = collector_cfg.pop("inject", [])
+            injected = {k: getattr(self, k) for k in inject_keys}
+            backend = instantiate(collector_cfg, **injected)
             meta = backend.setup() or {}
             if "num_gpus" in meta:
                 num_gpus = meta["num_gpus"]
@@ -97,8 +93,7 @@ class PerformanceMonitor:
                 gpu_name = meta.get("gpu_name", "")
             self._pipeline.append((backend, make_handler(storage_cfg)))
 
-        # Rebuild node_info with discovered GPU data
-        node_info = NodeInfo(
+        self.node_info = NodeInfo(
             node="local",
             num_cpus=num_cpus,
             num_system_cpus=num_system_cpus,
@@ -108,13 +103,12 @@ class PerformanceMonitor:
             memory_limits=memory_limits,
             cpu_handles=cpu_handles,
         )
-        # Propagate updated node_info to backends that declare it
         for backend, _ in self._pipeline:
             if hasattr(backend, "_node_info"):
-                backend._node_info = node_info
+                backend._node_info = self.node_info
 
         self.nodes = NodeDataStore()
-        self.nodes.register_node(node_info)
+        self.nodes.register_node(self.node_info)
 
         # Bootstrap: warm up process snapshots and IO counter state,
         # then derive per-level column names for schema pre-population.
