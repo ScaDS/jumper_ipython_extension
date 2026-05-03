@@ -30,7 +30,7 @@ class PipelineBuilder:
     def _build_main(
         self,
         deferred_keys: list[str],
-    ) -> list[tuple[dict[str, Any], dict[str, Any], list[str]]]:
+    ) -> list[tuple[dict, dict, list[str]]]:
         cfg = load_collectors_config()
         self._monitor._pipeline = []
         deferred = []
@@ -65,7 +65,7 @@ class PipelineBuilder:
 
     def _build_deferred(
         self,
-        deferred: list[tuple[dict[str, Any], dict[str, Any], list[str]]],
+        deferred: list[tuple[dict, dict, list[str]]],
     ):
         for collector_cfg, storage_cfg, inject_keys in deferred:
             injected = {k: getattr(self._monitor, k) for k in inject_keys}

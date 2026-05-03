@@ -17,7 +17,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from jumper_extension.adapters.data import NodeInfo, NodeDataStore
 from jumper_extension.monitor.backends.slurm_multinode._log_writer import MultinodeLogWriter
@@ -36,7 +36,7 @@ class _NodeConnection:
         self.process: Optional[subprocess.Popen] = None
         self.reader_thread: Optional[threading.Thread] = None
         self.ready = False
-        self.info: dict[str, Any] = {}
+        self.info: dict = {}
 
     def start(self, interval: float, levels: Optional[List[str]] = None) -> None:
         """Launch the remote collector via srun."""

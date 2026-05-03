@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable
+from typing import Iterable
 
 import psutil
 
@@ -119,7 +119,7 @@ class MultiGpuBackend:
         self._slurm_job = slurm_job
         self._backends: list[GpuBackend] = []
 
-    def setup(self) -> dict[str, Any]:
+    def setup(self) -> dict:
         self._backends = GpuDiscovery(self._uid, self._slurm_job).discover()
         gpu_memory = 0.0
         gpu_name_parts = []
