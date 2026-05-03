@@ -1,4 +1,6 @@
-from typing import Iterable
+from __future__ import annotations
+
+from typing import Any, Iterable
 
 import psutil
 
@@ -56,7 +58,11 @@ class GpuBackend:
     def snapshot(self, context: CollectionContext) -> None:
         return None
 
-    def collect(self, level: str, context: CollectionContext):
+    def collect(
+        self,
+        level: str,
+        context: CollectionContext,
+    ) -> tuple[list[float], list[float], list[float]]:
         """Collect metrics for the given level.
 
         Returns: (gpu_util, gpu_band, gpu_mem)
@@ -82,7 +88,7 @@ class NullGpuBackend(GpuBackend):
 
     name = "gpu-disabled"
 
-    def _iter_handles(self):
+    def _iter_handles(self) -> Iterable[object]:
         return []
 
 
@@ -113,7 +119,7 @@ class MultiGpuBackend:
         self._slurm_job = slurm_job
         self._backends: list[GpuBackend] = []
 
-    def setup(self) -> dict:
+    def setup(self) -> dict[str, Any]:
         self._backends = GpuDiscovery(self._uid, self._slurm_job).discover()
         gpu_memory = 0.0
         gpu_name_parts = []
@@ -134,7 +140,11 @@ class MultiGpuBackend:
         for backend in self._backends:
             backend.snapshot(context)
 
-    def collect(self, level: str, context: CollectionContext):
+    def collect(
+        self,
+        level: str,
+        context: CollectionContext,
+    ) -> tuple[list[float], list[float], list[float]]:
         util, band, mem = [], [], []
         for backend in self._backends:
             backend_util, backend_band, backend_mem = backend.collect(level, context)

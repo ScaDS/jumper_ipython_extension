@@ -7,6 +7,8 @@ same :class:`MonitorProtocol` surface as the default single-node
 service layer.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -15,7 +17,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from jumper_extension.adapters.data import NodeInfo, NodeDataStore
 from jumper_extension.monitor.backends.slurm_multinode._log_writer import MultinodeLogWriter
@@ -34,7 +36,7 @@ class _NodeConnection:
         self.process: Optional[subprocess.Popen] = None
         self.reader_thread: Optional[threading.Thread] = None
         self.ready = False
-        self.info: Dict = {}
+        self.info: dict[str, Any] = {}
 
     def start(self, interval: float, levels: Optional[List[str]] = None) -> None:
         """Launch the remote collector via srun."""

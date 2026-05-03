@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import psutil
 
 from jumper_extension.monitor.metrics.context import CollectionContext
@@ -9,7 +13,7 @@ class PsutilIoBackend(IoBackend):
 
     name = "io-psutil"
 
-    def _add_io(self, totals, io_data):
+    def _add_io(self, totals: list[int], io_data: Any):
         if io_data:
             totals[0] += io_data.read_count
             totals[1] += io_data.write_count

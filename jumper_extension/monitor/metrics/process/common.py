@@ -33,7 +33,7 @@ class ProcessBackend:
         level: str = "user",
         mode: str = "cpu",
         handle: Optional[object] = None,
-    ):
+    ) -> list[psutil.Process]:
         raise NotImplementedError
 
     def safe_proc_call(
@@ -41,5 +41,5 @@ class ProcessBackend:
         proc,
         proc_func: Callable[[psutil.Process], Any],
         default=0,
-    ):
+    ) -> Any:
         raise NotImplementedError

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import logging
 import os
 import threading
 import time
+from typing import Any
 
 import psutil
 
@@ -22,16 +25,16 @@ logger = logging.getLogger("extension")
 
 class PerformanceMonitor:
     def __init__(self):
-        self.interval = 1.0
-        self.running = False
-        self.start_time = None
-        self.stop_time = None
-        self.wallclock_start_time = None
-        self.wallclock_stop_time = None
-        self.monitor_thread = None
+        self.interval: float = 1.0
+        self.running: bool = False
+        self.start_time: float | None = None
+        self.stop_time: float | None = None
+        self.wallclock_start_time: float | None = None
+        self.wallclock_stop_time: float | None = None
+        self.monitor_thread: threading.Thread | None = None
         self.process = psutil.Process()
-        self.n_measurements = 0
-        self.n_missed_measurements = 0
+        self.n_measurements: int = 0
+        self.n_missed_measurements: int = 0
         """
         on MacOS cpu_affinity is not implemented in psutil
         (raises AttributeError)
@@ -45,13 +48,13 @@ class PerformanceMonitor:
             self.cpu_handles = []
             self.num_cpus = len(psutil.cpu_percent(percpu=True))
         self.num_system_cpus = len(psutil.cpu_percent(percpu=True))
-        self.pid = os.getpid()
-        self.uid = os.getuid()
-        self.slurm_job = os.environ.get("SLURM_JOB_ID", 0)
-        self.levels = get_available_levels()
-        self.process_pids = set()
+        self.pid: int = os.getpid()
+        self.uid: int = os.getuid()
+        self.slurm_job: str | int = os.environ.get("SLURM_JOB_ID", 0)
+        self.levels: list[str] = get_available_levels()
+        self.process_pids: set[int] = set()
 
-        self.memory_limits = {
+        self.memory_limits: dict[str, Any] = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
@@ -67,7 +70,7 @@ class PerformanceMonitor:
         # Ordered list of (backend, handler) pairs built from collectors.yaml.
         # Each tick: all backends snapshot() the process state into a shared
         # context, then collect() + handler.transform() produce flat metric rows.
-        self._pipeline = None
+        self._pipeline: list[tuple[Any, Any]] | None = None
         PipelineBuilder(self).build(deferred_keys=["node_info"])
 
         self.nodes = NodeDataStore()
@@ -76,8 +79,8 @@ class PerformanceMonitor:
         self._bootstrap_schema()
 
         # session state
-        self.is_imported = False
-        self.session_source = None
+        self.is_imported: bool = False
+        self.session_source: str | None = None
 
     def _bootstrap_schema(self):
         """Warm up all pipeline backends and derive per-level column names.
@@ -110,7 +113,7 @@ class PerformanceMonitor:
             columns_by_level[level] = list(row.keys())
         self.nodes.init_node_schema("local", columns_by_level)
 
-    def _validate_level(self, level):
+    def _validate_level(self, level: str):
         if level not in self.levels:
             raise ValueError(
                 EXTENSION_ERROR_MESSAGES[
@@ -118,7 +121,7 @@ class PerformanceMonitor:
                 ].format(level=level, levels=self.levels)
             )
 
-    def _collect_metrics(self):
+    def _collect_metrics(self) -> list[dict[str, float]]:
         """Collect one sample per level; return a list of flat dicts."""
         context: CollectionContext = {
             "process_pids": self.process_pids,

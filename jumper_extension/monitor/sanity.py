@@ -15,11 +15,14 @@ all-zero.
     :func:`is_supported_monitor`.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import tempfile
 import threading
 import time
+from typing import Any
 
 import pandas as pd
 
@@ -44,7 +47,7 @@ _GPU_METRICS = [
 ]
 
 
-def is_supported_monitor(monitor) -> bool:
+def is_supported_monitor(monitor: Any) -> bool:
     """Return ``True`` if *monitor* is a backend the sanity check supports.
 
     Only ``thread`` (``PerformanceMonitor``), ``subprocess_python``
@@ -62,7 +65,7 @@ def is_supported_monitor(monitor) -> bool:
     return isinstance(monitor, (PerformanceMonitor, SubprocessPerformanceMonitor))
 
 
-def run_sanity_check(monitor, interval: float = 1.0, timeout: float = 10.0) -> bool:
+def run_sanity_check(monitor: Any, interval: float = 1.0, timeout: float = 10.0) -> bool:
     """Run a short sanity check on an *unstarted* monitor.
 
     Collects ~3 samples at ``interval`` seconds while a background IO
@@ -181,7 +184,7 @@ def run_sanity_check(monitor, interval: float = 1.0, timeout: float = 10.0) -> b
     return ok
 
 
-def _cleanup_tmp(path):
+def _cleanup_tmp(path: str | None):
     if path:
         try:
             os.unlink(path)

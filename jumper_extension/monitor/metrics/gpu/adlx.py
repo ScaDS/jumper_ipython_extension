@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import Any, Iterable
 
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -21,10 +24,10 @@ class AdlxGpuBackend(GpuBackend):
         self._adlx_system = None
         self._handles = []
 
-    def _iter_handles(self):
+    def _iter_handles(self) -> Iterable[object]:
         return self._handles
 
-    def setup(self) -> dict:
+    def setup(self) -> dict[str, Any]:
         # Logic is intentionally kept identical to the previous implementation.
         try:
             from ADLXPybind import ADLXHelper, ADLX_RESULT
@@ -62,7 +65,7 @@ class AdlxGpuBackend(GpuBackend):
         self._handles = []
         return {}
 
-    def _collect_system(self, handle):
+    def _collect_system(self, handle: object) -> tuple[float, float, float]:
         try:
             if self._adlx_system is None:
                 return 0.0, 0.0, 0.0
@@ -88,11 +91,20 @@ class AdlxGpuBackend(GpuBackend):
             # If we can't get metrics, return zeros
             return 0.0, 0.0, 0.0
 
-    def _collect_process(self, handle, context: CollectionContext):
+    def _collect_process(
+        self,
+        handle: object,
+        context: CollectionContext,
+    ) -> tuple[float, float, float]:
         # AMD ADLX doesn't provide per-process metrics easily
         return 0.0, 0.0, 0.0
 
-    def _collect_other(self, handle, level: str, context: CollectionContext):
+    def _collect_other(
+        self,
+        handle: object,
+        level: str,
+        context: CollectionContext,
+    ) -> tuple[float, float, float]:
         # AMD ADLX doesn't provide per-user metrics easily
         return 0.0, 0.0, 0.0
 
