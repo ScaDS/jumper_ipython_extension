@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterable
+from typing import Iterable
 
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -27,7 +27,7 @@ class AdlxGpuBackend(GpuBackend):
     def _iter_handles(self) -> Iterable[object]:
         return self._handles
 
-    def setup(self) -> dict[str, Any]:
+    def setup(self) -> dict:
         # Logic is intentionally kept identical to the previous implementation.
         try:
             from ADLXPybind import ADLXHelper, ADLX_RESULT

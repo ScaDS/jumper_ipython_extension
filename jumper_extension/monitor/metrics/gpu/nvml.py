@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterable
+from typing import Iterable
 
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
@@ -43,7 +43,7 @@ class NvmlGpuBackend(GpuBackend):
 
             return DefaultUtilRates()
 
-    def setup(self) -> dict[str, Any]:
+    def setup(self) -> dict:
         # Logic is intentionally kept identical to the previous implementation.
         try:
             import pynvml

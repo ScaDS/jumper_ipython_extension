@@ -54,7 +54,7 @@ class PerformanceMonitor:
         self.levels: list[str] = get_available_levels()
         self.process_pids: set[int] = set()
 
-        self.memory_limits: dict[str, Any] = {
+        self.memory_limits: dict = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
