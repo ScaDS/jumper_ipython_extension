@@ -213,6 +213,17 @@ def _run_dart_workload(n_darts_total, n_workers, hard_timeout=None):
 # ---------------------------------------------------------------------------
 
 PROBE_DARTS_PER_WORKER = 200_000
+# Calibration is considered converged once a full-sized run lands
+# within ``CALIB_TOLERANCE`` of the requested target.  Anything tighter
+# would just be noise from jitter between repeats.
+CALIB_TOLERANCE = 0.15  # 15 %
+CALIB_MAX_ITER = 3
+
+
+def _round_per_worker(n_darts_total, n_workers):
+    """Round so each worker gets the same tidy (multiple-of-1000) count."""
+    per = max(1000, ((n_darts_total // n_workers) // 1000) * 1000)
+    return per * n_workers, per
 
 
 def calibrate_workload(n_workers, target_sec=30.0, n_repeats=10):
@@ -220,18 +231,27 @@ def calibrate_workload(n_workers, target_sec=30.0, n_repeats=10):
 
     Returns ``(n_darts_total, baseline_mean, baseline_std, baseline_times)``.
 
-    The procedure has two phases:
+    A tiny probe on its own is not enough: with N workers ≫ CPU cores
+    (as in the Slurm script) the probe is fork-bound and overestimates
+    steady-state throughput by several ×, producing dart counts whose
+    real runtime is far above ``target_sec``.  We therefore iterate:
 
-    1. **Probe**: a small fixed-size run estimates throughput
-       (darts/second) on this machine with this worker count.
-    2. **Baseline**: ``n_repeats`` full-size runs (no monitor) measure
-       the actual workload runtime.  Their mean is later used as the
-       reference for computing per-run overhead percentages.
+    1. **Probe** — very cheap, gives a first-order rate estimate.
+    2. **Calibration loop** — run one *full-sized* workload; if its
+       runtime is outside ±``CALIB_TOLERANCE`` of ``target_sec``, rescale
+       ``n_darts_total`` by the observed ratio and try again (up to
+       ``CALIB_MAX_ITER`` times).  Each iteration runs the actual
+       target-sized workload, so it directly measures the steady-state
+       rate under the real scheduling regime.
+    3. **Baseline** — ``n_repeats`` full-size runs form the unmonitored
+       reference used to compute per-run overhead percentages.
     """
     print(f"\n{'='*60}")
     print(f"Calibration  (target≈{target_sec:.0f}s, "
           f"workers={n_workers}, repeats={n_repeats})")
     print(f"{'='*60}")
+
+    hard = target_sec * 3 + 30
 
     # 1) Probe -----------------------------------------------------------
     probe_total = PROBE_DARTS_PER_WORKER * n_workers
@@ -246,13 +266,44 @@ def calibrate_workload(n_workers, target_sec=30.0, n_repeats=10):
         )
     rate = probe_total / t_probe
     print(f"{t_probe:.2f}s  ({rate:.2e} darts/s, π≈{pi_probe:.4f})")
+    print(f"  (probe rate is a first-order estimate; the next step "
+          f"validates it at full size)")
 
-    # 2) Pick the dart budget for the target duration -------------------
-    n_darts_total = int(rate * target_sec)
-    # Round per-worker count to a tidy multiple so each worker does the
-    # same amount of work and totals are exact.
-    per = max(1000, ((n_darts_total // n_workers) // 1000) * 1000)
-    n_darts_total = per * n_workers
+    # 2) Iterative correction at full size -------------------------------
+    # ``rate`` initialises n_darts_total; subsequent iterations refine
+    # it until a full-sized run lands within the tolerance band.
+    n_darts_total, per = _round_per_worker(
+        max(1000 * n_workers, int(rate * target_sec)), n_workers
+    )
+    last_t = None
+    for it in range(1, CALIB_MAX_ITER + 1):
+        print(f"  calib {it}/{CALIB_MAX_ITER}: {n_darts_total:,} darts "
+              f"({per:,}/worker) … ", end="", flush=True)
+        pi_cal, t_cal, n_done = _run_dart_workload(
+            n_darts_total, n_workers, hard_timeout=hard,
+        )
+        if n_done < n_workers or t_cal <= 0:
+            raise RuntimeError(
+                f"calibration iteration {it} failed: only "
+                f"{n_done}/{n_workers} workers reported after {t_cal:.2f}s"
+            )
+        err = (t_cal - target_sec) / target_sec
+        print(f"{t_cal:6.2f}s  (π≈{pi_cal:.4f}, error {err:+.1%})")
+        last_t = t_cal
+        if abs(err) <= CALIB_TOLERANCE:
+            print(f"  → converged within ±{CALIB_TOLERANCE:.0%}")
+            break
+        # Rescale proportionally to hit the target on the next try.
+        scale = target_sec / t_cal
+        n_darts_total, per = _round_per_worker(
+            max(1000 * n_workers, int(n_darts_total * scale)),
+            n_workers,
+        )
+    else:
+        print(f"  ⚠ calibration did not converge after {CALIB_MAX_ITER} "
+              f"iterations (last={last_t:.2f}s vs target {target_sec:.0f}s); "
+              f"proceeding with current dart count.")
+
     print(f"  target: {n_darts_total:,} darts "
           f"({per:,}/worker × {n_workers} workers)")
 
@@ -260,8 +311,7 @@ def calibrate_workload(n_workers, target_sec=30.0, n_repeats=10):
     times = []
     for r in range(1, n_repeats + 1):
         pi, t, n_done = _run_dart_workload(
-            n_darts_total, n_workers,
-            hard_timeout=target_sec * 3 + 30,
+            n_darts_total, n_workers, hard_timeout=hard,
         )
         times.append(t)
         ok = "ok" if n_done == n_workers else f"only {n_done}/{n_workers}"
@@ -273,6 +323,10 @@ def calibrate_workload(n_workers, target_sec=30.0, n_repeats=10):
     std = float(arr.std(ddof=1)) if len(arr) > 1 else 0.0
     print(f"  → baseline = {mean:.2f}s ± {std:.2f}s "
           f"(min {arr.min():.2f}, max {arr.max():.2f})")
+    if abs(mean - target_sec) / target_sec > CALIB_TOLERANCE:
+        print(f"  ⚠ baseline mean is {((mean-target_sec)/target_sec):+.1%} "
+              f"off the {target_sec:.0f}s target — consider rerunning "
+              f"with more baseline repeats or a different worker count.")
     print(f"{'='*60}\n")
     return n_darts_total, mean, std, times
 
