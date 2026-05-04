@@ -4,9 +4,10 @@
 #SBATCH --error=jumper_benchmark_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --time=02:00:00
-#SBATCH --mem=4G
+#SBATCH --cpus-per-task=128
+#SBATCH --time=24:00:00
+#SBATCH --mem=480G
+#SBATCH --exclusive
 ##SBATCH --hint=nomultithread
 
 # --- Adjust these as needed -------------------------------------------
@@ -19,7 +20,7 @@
 DURATION=30
 REPEATS=20
 # Backends: thread,subprocess_python,native_c  (or a subset)
-BACKENDS="native_c,subprocess_python,native_c"
+BACKENDS="thread,subprocess_python,native_c"
 # Frequencies in Hz
 FREQUENCIES="0.5,1,2,4"
 # ----------------------------------------------------------------------
@@ -59,7 +60,7 @@ python -u -m jumper_extension.monitor.benchmark.run_benchmark \
     --repeats "$REPEATS" \
     --backends "$BACKENDS" \
     --frequencies "$FREQUENCIES" \
-    --workers 64
+    --workers 256
 
 echo ""
 echo "Benchmark finished at $(date)"
