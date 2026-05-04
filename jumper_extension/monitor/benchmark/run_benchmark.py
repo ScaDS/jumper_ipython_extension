@@ -25,9 +25,11 @@ import atexit
 import faulthandler
 import multiprocessing
 import os
+import random
 import signal
 import sys
 import time
+from queue import Empty as QueueEmpty
 
 import numpy as np
 import pandas as pd
@@ -77,26 +79,202 @@ def _make_native_c_monitor():
 
 
 # ---------------------------------------------------------------------------
-# CPU workload
+# CPU workload — parallel Monte-Carlo Pi via dart-throwing
+# ---------------------------------------------------------------------------
+#
+# Why dart-throwing instead of an open-ended busy loop?
+#
+# The previous implementation spawned N infinite ``_cpu_burn`` workers
+# and SIGTERM'd them after a fixed wallclock window.  That gives a hit-
+# rate measurement (samples observed vs samples expected) but says
+# nothing about the *runtime cost* the monitor imposes on the workload.
+#
+# The new workload is a fixed-size, embarrassingly-parallel Monte Carlo
+# Pi estimation.  Each worker throws a fixed number of darts at a unit
+# square and counts how many fall inside the unit quarter-circle; the
+# parent aggregates the hits into a Pi estimate.  Because the work is
+# *finite and identical every run*, we can:
+#
+#   * calibrate ``n_darts_total`` once (without any monitor running) so
+#     the workload takes a target wallclock duration (default ≈ 30 s),
+#   * re-run the same workload with a monitor active, and
+#   * report ``runtime overhead`` = (t_with_monitor − t_baseline) /
+#     t_baseline as an additional benchmark axis next to the hit-rate
+#     of achievable sampling frequencies.
+#
+# Implementation notes:
+#   * Pure-Python tight loop saturates one core per worker (the C
+#     ``random()`` call still releases the GIL, but each worker is its
+#     own process).
+#   * Hits are returned via a ``multiprocessing.Queue``; workers
+#     self-terminate when done, no SIGTERM dance required.
+#   * Seeds are derived from the parent PID + worker index + start
+#     time, so two workers in the same run never produce identical
+#     streams, but a single calibration is reproducible enough to be
+#     stable across repeats on the same node.
+
+
+def _dart_worker(n_darts: int, seed: int, result_queue) -> None:
+    """Throw ``n_darts`` darts at the unit square, push hit count.
+
+    A "hit" is a dart that lands inside the unit quarter-circle
+    (``x*x + y*y <= 1``).  The function is a pure-Python tight loop on
+    purpose: that is what we want to monitor.
+    """
+    rng = random.Random(seed)
+    rand = rng.random  # local binding speeds the loop up measurably
+    hits = 0
+    for _ in range(n_darts):
+        x = rand()
+        y = rand()
+        if x * x + y * y <= 1.0:
+            hits += 1
+    try:
+        result_queue.put(hits)
+    except Exception:
+        # Parent may have torn down the queue already (timeout path);
+        # nothing useful we can do from a child here.
+        pass
+
+
+def _spawn_dart_workers(n_darts_total: int, n_workers: int):
+    """Fork ``n_workers`` dart workers and return ``(workers, queue, per_worker)``.
+
+    Splits the dart budget evenly; any remainder is dropped (≤ n_workers
+    darts) so each worker does exactly the same amount of work, keeping
+    the CPU load symmetric and the runtime tight.
+    """
+    per_worker = max(1, n_darts_total // n_workers)
+    queue: multiprocessing.Queue = multiprocessing.Queue()
+    workers = []
+    base_seed = (os.getpid() << 16) ^ int(time.perf_counter_ns() & 0xFFFFFFFF)
+    for i in range(n_workers):
+        p = multiprocessing.Process(
+            target=_dart_worker,
+            args=(per_worker, base_seed ^ (i + 1), queue),
+            daemon=True,
+        )
+        p.start()
+        workers.append(p)
+    return workers, queue, per_worker
+
+
+def _await_dart_workers(workers, queue, per_worker, hard_timeout=None):
+    """Drain ``queue`` until every worker reports, then reap children.
+
+    Returns ``(pi_estimate, n_workers_reported, total_hits, total_darts)``.
+    A ``QueueEmpty`` from the timeout aborts early; remaining workers
+    are SIGKILL'd to keep the system clean.
+    """
+    n_workers = len(workers)
+    deadline = (time.perf_counter() + hard_timeout) if hard_timeout else None
+    total_hits = 0
+    n_done = 0
+    for _ in range(n_workers):
+        if deadline is not None:
+            timeout = max(0.0, deadline - time.perf_counter())
+        else:
+            timeout = None
+        try:
+            total_hits += queue.get(timeout=timeout)
+            n_done += 1
+        except QueueEmpty:
+            break
+        except (EOFError, OSError):
+            break
+    # Reap workers (they should already be exiting on their own).
+    for p in workers:
+        try:
+            p.join(timeout=2)
+            if p.is_alive():
+                p.kill()
+                p.join(timeout=1)
+        except (OSError, ValueError):
+            pass
+    total_darts = per_worker * n_workers
+    pi = (4.0 * total_hits / total_darts) if total_darts else float("nan")
+    return pi, n_done, total_hits, total_darts
+
+
+def _run_dart_workload(n_darts_total, n_workers, hard_timeout=None):
+    """Run one full dart-throwing workload, return ``(pi, elapsed, n_done)``."""
+    workers, queue, per_worker = _spawn_dart_workers(n_darts_total, n_workers)
+    t0 = time.perf_counter()
+    pi, n_done, _hits, _total = _await_dart_workers(
+        workers, queue, per_worker, hard_timeout=hard_timeout
+    )
+    elapsed = time.perf_counter() - t0
+    return pi, elapsed, n_done
+
+
+# ---------------------------------------------------------------------------
+# Calibration: choose n_darts so the workload takes ~target_sec, then
+# measure the unmonitored baseline runtime over several repeats.
 # ---------------------------------------------------------------------------
 
-def _cpu_burn(stop_event=None):
-    """Pure-Python busy loop to saturate one core.
+PROBE_DARTS_PER_WORKER = 200_000
 
-    Does *not* poll a shared ``multiprocessing.Event`` — under heavy
-    contention with many workers, the Event's internal ``SemLock`` can
-    deadlock the parent's ``stop_event.set()`` call if a worker is
-    SIGTERM'd while it happens to be holding the underlying POSIX
-    semaphore (which is not robust).  Instead, burn workers are simply
-    terminated via SIGTERM/SIGKILL by :func:`stop_workload`.
 
-    The ``stop_event`` argument is accepted for backwards compatibility
-    but ignored.
+def calibrate_workload(n_workers, target_sec=30.0, n_repeats=10):
+    """Find ``n_darts_total`` so a single workload takes ≈ ``target_sec``.
+
+    Returns ``(n_darts_total, baseline_mean, baseline_std, baseline_times)``.
+
+    The procedure has two phases:
+
+    1. **Probe**: a small fixed-size run estimates throughput
+       (darts/second) on this machine with this worker count.
+    2. **Baseline**: ``n_repeats`` full-size runs (no monitor) measure
+       the actual workload runtime.  Their mean is later used as the
+       reference for computing per-run overhead percentages.
     """
-    while True:
-        s = 0
-        for i in range(50_000):
-            s += i * i
+    print(f"\n{'='*60}")
+    print(f"Calibration  (target≈{target_sec:.0f}s, "
+          f"workers={n_workers}, repeats={n_repeats})")
+    print(f"{'='*60}")
+
+    # 1) Probe -----------------------------------------------------------
+    probe_total = PROBE_DARTS_PER_WORKER * n_workers
+    print(f"  probe: {probe_total:,} darts … ", end="", flush=True)
+    pi_probe, t_probe, n_done = _run_dart_workload(
+        probe_total, n_workers, hard_timeout=120
+    )
+    if n_done < n_workers or t_probe <= 0:
+        raise RuntimeError(
+            f"probe failed: only {n_done}/{n_workers} workers reported "
+            f"after {t_probe:.2f}s"
+        )
+    rate = probe_total / t_probe
+    print(f"{t_probe:.2f}s  ({rate:.2e} darts/s, π≈{pi_probe:.4f})")
+
+    # 2) Pick the dart budget for the target duration -------------------
+    n_darts_total = int(rate * target_sec)
+    # Round per-worker count to a tidy multiple so each worker does the
+    # same amount of work and totals are exact.
+    per = max(1000, ((n_darts_total // n_workers) // 1000) * 1000)
+    n_darts_total = per * n_workers
+    print(f"  target: {n_darts_total:,} darts "
+          f"({per:,}/worker × {n_workers} workers)")
+
+    # 3) Baseline repeats (no monitor) -----------------------------------
+    times = []
+    for r in range(1, n_repeats + 1):
+        pi, t, n_done = _run_dart_workload(
+            n_darts_total, n_workers,
+            hard_timeout=target_sec * 3 + 30,
+        )
+        times.append(t)
+        ok = "ok" if n_done == n_workers else f"only {n_done}/{n_workers}"
+        print(f"    baseline {r:2d}/{n_repeats}: {t:6.2f}s  "
+              f"(π≈{pi:.4f}, {ok})")
+
+    arr = np.array(times)
+    mean = float(arr.mean())
+    std = float(arr.std(ddof=1)) if len(arr) > 1 else 0.0
+    print(f"  → baseline = {mean:.2f}s ± {std:.2f}s "
+          f"(min {arr.min():.2f}, max {arr.max():.2f})")
+    print(f"{'='*60}\n")
+    return n_darts_total, mean, std, times
 
 
 def _available_cpus():
@@ -137,54 +315,6 @@ def _print_cpu_diagnostics():
     print(f"  os.cpu_count():       {os.cpu_count()}")
     print(f"  → _available_cpus():  {_available_cpus()}")
     print()
-
-
-def start_workload(n_workers=None):
-    """Spawn *n_workers* processes (default: available CPUs) doing busy work.
-
-    Returns ``(workers, None)``; the second slot is kept for backwards
-    compatibility with callers that unpack ``(workers, stop_event)``.
-    No shared ``Event`` is used — see :func:`_cpu_burn` for rationale.
-    """
-    if n_workers is None:
-        n_workers = _available_cpus()
-    workers = []
-    for _ in range(n_workers):
-        p = multiprocessing.Process(target=_cpu_burn, daemon=True)
-        p.start()
-        workers.append(p)
-    return workers, None
-
-
-def stop_workload(workers, stop_event=None):
-    """Terminate burn workers via SIGTERM (then SIGKILL for stragglers).
-
-    ``stop_event`` is ignored — kept for API compatibility.  The
-    previous implementation's ``stop_event.set()`` call was the single
-    biggest source of hangs on HPC: the internal POSIX semaphore could
-    be permanently held by a worker that happened to be in its critical
-    section when SIGTERM arrived.
-    """
-    # Send SIGTERM to all immediately.
-    for p in workers:
-        try:
-            if p.is_alive():
-                p.terminate()
-        except (OSError, ValueError):
-            pass
-    # Give them a brief moment to exit, then force-kill stragglers.
-    for p in workers:
-        try:
-            p.join(timeout=0.5)
-            if p.is_alive():
-                p.kill()
-        except (OSError, ValueError):
-            pass
-    for p in workers:
-        try:
-            p.join(timeout=0.5)
-        except (OSError, ValueError):
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -349,78 +479,133 @@ def _proc_in_slurm_job(proc, slurm_job_id):
 # Single benchmark run
 # ---------------------------------------------------------------------------
 
-def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
-    """Run one benchmark: backend × frequency.
+def run_single(backend_name, freq_hz, n_darts_total, baseline_time, n_workers):
+    """Run one benchmark: ``backend × frequency`` over the calibrated
+    Pi-via-darts workload.
 
-    Returns a dict with summary statistics and the raw DataFrame, or
-    None if no data was collected.
+    Parameters
+    ----------
+    backend_name
+        Key into :data:`BACKENDS`.
+    freq_hz
+        Sampling frequency for the monitor under test.
+    n_darts_total
+        Total number of darts (calibrated once per process to give a
+        wallclock duration ≈ ``--duration``).
+    baseline_time
+        Mean unmonitored wallclock runtime of the same workload, used
+        to compute the runtime overhead the monitor imposes.
+    n_workers
+        Number of dart-throwing worker processes.
+
+    Returns ``dict`` with summary statistics and the raw DataFrame, or
+    ``None`` if no usable data was collected.
     """
     interval = 1.0 / freq_hz
-    expected_samples = int(duration_sec * freq_hz)
 
-    monitor = BACKENDS[backend_name]()
-
-    # Hard timeout
-    deadline = duration_sec + 30
+    # Hard timeout: 3× the unmonitored baseline plus a generous fixed
+    # margin for monitor setup/teardown and Slurm/SSH stalls.  The
+    # alarm raises ``TimeoutError`` from the main thread.
+    deadline = max(60, int(baseline_time * 3 + 30))
     old_alarm = None
     def _timeout_handler(signum, frame):
         raise TimeoutError(f"Run exceeded hard deadline of {deadline}s")
     if hasattr(signal, "SIGALRM"):
         old_alarm = signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(int(deadline))
+        signal.alarm(deadline)
 
-    # NOTE: the global watchdog installed in main() already covers this
-    # run.  We intentionally do not arm a second dump_traceback_later
-    # here — only one can be active at a time.
+    monitor = None
+    workers = []
+    queue = None
+    per_worker = max(1, n_darts_total // n_workers)
+    pi_estimate = float("nan")
+    n_done = 0
+    proc_counts = {}
 
-    workers = None
-    stop_event = None
     t_wall_start = time.perf_counter()
+    t_workload_start = t_workload_end = t_wall_start
+    t_teardown_done = t_wall_start
+
     try:
-        workers, stop_event = start_workload(n_workers=n_workers)
-        print(f"({len(workers)} burn workers) ", end="", flush=True)
-        time.sleep(0.5)
+        # 1) Fork the dart workers FIRST.  Constructing the monitor
+        #    afterwards keeps NVML's "do not fork after nvmlInit"
+        #    contract intact (otherwise the parent segfaults at
+        #    teardown — see the previous fix).
+        workers, queue, per_worker = _spawn_dart_workers(
+            n_darts_total, n_workers
+        )
+        print(f"({len(workers)} dart workers, {per_worker:,}/worker) ",
+              end="", flush=True)
+
+        # 2) Construct + start the monitor.  This is the moment from
+        #    which the workload is being observed; we measure
+        #    ``t_workload_start`` here so the reported duration
+        #    matches what the monitor saw.
+        monitor = BACKENDS[backend_name]()
         monitor.start(interval=interval)
-        t_setup_done = time.perf_counter()
+        t_workload_start = time.perf_counter()
 
-        # --- measurement window ---
-        t_start = time.perf_counter()
-
-        # Snapshot process counts while workload is running
+        # 3) Snapshot process counts once while the workload is running.
         proc_counts = _snapshot_process_counts()
 
-        time.sleep(duration_sec)
-        t_end = time.perf_counter()
+        # 4) Block until every worker reports its hit count, or the
+        #    SIGALRM deadline fires.
+        deadline_abs = time.perf_counter() + deadline
+        total_hits = 0
+        for _ in range(n_workers):
+            timeout = max(0.0, deadline_abs - time.perf_counter())
+            try:
+                total_hits += queue.get(timeout=timeout)
+                n_done += 1
+            except QueueEmpty:
+                break
+            except (EOFError, OSError):
+                break
+        t_workload_end = time.perf_counter()
+        total_darts = per_worker * n_workers
+        pi_estimate = (
+            4.0 * total_hits / total_darts if total_darts else float("nan")
+        )
 
-        # --- teardown ---
-        t_teardown_start = time.perf_counter()
-        stop_workload(workers, stop_event)
+        # 5) Stop the monitor before reaping children so the collector
+        #    thread is guaranteed to have left its critical section
+        #    before any data extraction below.
         monitor.stop()
+        for p in workers:
+            try:
+                p.join(timeout=2)
+                if p.is_alive():
+                    p.kill()
+                    p.join(timeout=1)
+            except (OSError, ValueError):
+                pass
         t_teardown_done = time.perf_counter()
     except TimeoutError as exc:
-        t_end = time.perf_counter()
-        t_setup_done = t_setup_done if 't_setup_done' in dir() else t_end
-        t_teardown_start = time.perf_counter()
+        t_workload_end = time.perf_counter()
         print(f"      ⚠ {exc}")
-        if workers:
+        if monitor is not None:
             try:
-                stop_workload(workers, stop_event)
+                monitor.stop()
             except Exception:
                 pass
-        try:
-            monitor.stop()
-        except Exception:
-            pass
+        for p in workers:
+            try:
+                if p.is_alive():
+                    p.kill()
+            except Exception:
+                pass
         t_teardown_done = time.perf_counter()
     finally:
         if hasattr(signal, "SIGALRM"):
             signal.alarm(0)
             if old_alarm is not None:
                 signal.signal(signal.SIGALRM, old_alarm)
-        # Always ensure workers are dead
-        if workers:
+        # Last-ditch: ensure no worker outlives this run.
+        for p in workers:
             try:
-                stop_workload(workers, stop_event)
+                if p.is_alive():
+                    p.kill()
+                    p.join(timeout=1)
             except Exception:
                 pass
 
@@ -436,8 +621,17 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
     # avoid leftover scheduling artifacts leaking into the next run.
     time.sleep(1.0)
 
-    # Extract the "process" level data
-    if monitor.data is None:
+    # --- Extract the "process" level data --------------------------------
+    if monitor is None or monitor.data is None:
+        return None
+    # If the collector thread did not terminate (slow tick under heavy
+    # contention), reading the per-level DataFrames now would race with
+    # pandas internals on the collector side and can segfault inside
+    # ``concatenate_managers``.  Skip this run defensively.
+    mon_thread = getattr(monitor, "monitor_thread", None)
+    if mon_thread is not None and mon_thread.is_alive():
+        print("      ⚠ collector thread still alive after stop(); "
+              "skipping run to avoid pandas race")
         return None
     df = monitor.data.data.get("process", pd.DataFrame())
     if df.empty:
@@ -450,20 +644,37 @@ def run_single(backend_name, freq_hz, duration_sec, n_workers=None):
     df["hit"] = df["inter_arrival"].le(interval * 1.5)
     df.loc[df.index[0], "hit"] = True
 
-    actual_duration = t_end - t_start
-    setup_time = t_setup_done - t_wall_start
-    teardown_time = t_teardown_done - t_teardown_start
-    total_wall = t_teardown_done - t_wall_start
+    workload_duration = max(0.0, t_workload_end - t_workload_start)
+    setup_time = max(0.0, t_workload_start - t_wall_start)
+    teardown_time = max(0.0, t_teardown_done - t_workload_end)
+    total_wall = max(0.0, t_teardown_done - t_wall_start)
     n_actual = len(df)
+
+    # Expected samples = how many ticks should fit in the *actual*
+    # workload window (monitor was active for exactly this long).
+    expected_samples = max(1, int(round(workload_duration * freq_hz)))
+
+    # Runtime overhead introduced by the monitor.  ``baseline_time`` is
+    # the mean unmonitored runtime measured during calibration.
+    overhead_s = workload_duration - baseline_time
+    overhead_pct = (
+        100.0 * overhead_s / baseline_time if baseline_time > 0 else float("nan")
+    )
 
     return {
         "backend": backend_name,
         "freq_hz": freq_hz,
         "interval": interval,
-        "duration": actual_duration,
+        "duration": workload_duration,
+        "baseline": baseline_time,
+        "overhead_s": overhead_s,
+        "overhead_pct": overhead_pct,
+        "n_darts": n_darts_total,
+        "pi_estimate": pi_estimate,
+        "workers_finished": n_done,
         "expected": expected_samples,
         "actual": n_actual,
-        "hit_rate": min(100.0, n_actual / expected_samples * 100) if expected_samples else 0,
+        "hit_rate": min(100.0, n_actual / expected_samples * 100),
         "mean_iat": df["inter_arrival"].mean(),
         "median_iat": df["inter_arrival"].median(),
         "p95_iat": df["inter_arrival"].quantile(0.95),
@@ -745,20 +956,23 @@ def _install_global_watchdog(results_dir, period_sec=60):
     wd_file.flush()
 
     faulthandler.enable(file=wd_file)
-    try:
-        faulthandler.dump_traceback_later(
-            timeout=int(period_sec),
-            repeat=True,
-            file=wd_file,
-        )
-    except (RuntimeError, ValueError):
-        pass
+    # NOTE: ``faulthandler.dump_traceback_later(repeat=True)`` runs a
+    # C-level watchdog thread that walks every Python thread's
+    # ``PyThreadState`` from *outside* the GIL.  On CPython ≤3.10 this
+    # has a known race against heavily-threaded psutil workloads (and
+    # against process trees with many forks): the watchdog can observe
+    # a thread mid-state-swap, after which that thread's next pure-
+    # Python step crashes with "PyThreadState_Get: the function must
+    # be called with the GIL held, but the GIL is released (the
+    # current Python thread state is NULL)".  We therefore do *not*
+    # arm the periodic dump; ``faulthandler.enable()`` above is still
+    # active so genuine segfaults are reported with tracebacks, and
+    # the per-run ``SIGALRM`` in ``run_single`` already provides a
+    # hard timeout.  Manual stack dumps are still available via
+    # SIGUSR1 (registered below).
+    _ = period_sec  # kept in signature for API compatibility
 
     def _disarm_watchdog():
-        try:
-            faulthandler.cancel_dump_traceback_later()
-        except (RuntimeError, AttributeError):
-            pass
         try:
             wd_file.flush()
         except (OSError, ValueError):
@@ -774,7 +988,8 @@ def _install_global_watchdog(results_dir, period_sec=60):
         except (RuntimeError, ValueError, OSError):
             pass
 
-    print(f"[watchdog] dumping stacks every {period_sec}s → {log_path}",
+    print(f"[watchdog] segfault tracebacks → {log_path} "
+          f"(periodic dump disabled to avoid CPython 3.10 tstate race)",
           flush=True)
     print(f"[watchdog] manual dump: scancel --signal=USR1 $SLURM_JOB_ID",
           flush=True)
@@ -783,11 +998,18 @@ def _install_global_watchdog(results_dir, period_sec=60):
 
 def main():
     parser = argparse.ArgumentParser(description="Monitor benchmark")
-    parser.add_argument("--duration", type=int, default=60,
-                        help="Workload duration in seconds (default: 60)")
+    parser.add_argument("--duration", type=float, default=30.0,
+                        help="Target wallclock duration of the unmonitored "
+                             "workload, in seconds.  The number of darts is "
+                             "calibrated once at startup so a single run takes "
+                             "≈ this long (default: 30).")
     parser.add_argument("--repeats", type=int, default=10,
-                        help="Number of repetitions per configuration "
-                             "(default: 10)")
+                        help="Number of monitored repetitions per "
+                             "(backend, frequency) pair (default: 10)")
+    parser.add_argument("--baseline-repeats", type=int, default=10,
+                        help="Number of *unmonitored* repetitions used to "
+                             "establish the runtime baseline against which "
+                             "the monitor overhead is computed (default: 10)")
     parser.add_argument("--backends", type=str, default=None,
                         help="Comma-separated list of backends to test "
                              "(default: all)")
@@ -795,7 +1017,7 @@ def main():
                         help="Comma-separated list of frequencies in Hz "
                              "(default: 1,2,4,8,16)")
     parser.add_argument("--workers", type=int, default=None,
-                        help="Number of CPU burn workers "
+                        help="Number of dart-throwing worker processes "
                              "(default: auto-detect from SLURM / affinity)")
     parser.add_argument("--skip-sanity", action="store_true",
                         help="Skip the initial sanity checks")
@@ -818,6 +1040,7 @@ def main():
     )
 
     n_repeats = args.repeats
+    n_workers = args.workers if args.workers is not None else _available_cpus()
     overview_printed = False
     agg_summaries = []
 
@@ -830,6 +1053,33 @@ def main():
     else:
         print("\n(Sanity checks skipped)\n")
 
+    # --- Calibrate the workload (no monitor active) -------------------
+    # The dart count is fixed for the entire run; ``baseline_time`` is
+    # the reference against which every monitored run's duration is
+    # compared to derive the runtime overhead %.
+    n_darts_total, baseline_time, baseline_std, baseline_times = (
+        calibrate_workload(
+            n_workers=n_workers,
+            target_sec=float(args.duration),
+            n_repeats=int(args.baseline_repeats),
+        )
+    )
+    # Persist the baseline so the plotter / downstream tools can read it.
+    pd.DataFrame({
+        "rep": list(range(1, len(baseline_times) + 1)),
+        "duration_s": baseline_times,
+    }).to_csv(os.path.join(results_dir, "baseline.csv"), index=False)
+    with open(os.path.join(results_dir, "baseline.txt"), "w") as f:
+        f.write(
+            f"n_workers={n_workers}\n"
+            f"n_darts_total={n_darts_total}\n"
+            f"per_worker={n_darts_total // n_workers}\n"
+            f"baseline_mean_s={baseline_time:.6f}\n"
+            f"baseline_std_s={baseline_std:.6f}\n"
+            f"baseline_min_s={min(baseline_times):.6f}\n"
+            f"baseline_max_s={max(baseline_times):.6f}\n"
+        )
+
     for backend_name in backends:
         if backend_name not in BACKENDS:
             print(f"Unknown backend: {backend_name!r}, skipping")
@@ -840,9 +1090,13 @@ def main():
 
         for freq in frequencies:
             interval = 1.0 / freq
-            expected = int(args.duration * freq)
+            # Expected sample count assuming the workload still takes
+            # ≈ baseline_time; per-run actuals are reported alongside.
+            expected = max(1, int(round(baseline_time * freq)))
             print(f"\n  {freq} Hz (interval={interval:.3f}s), "
-                  f"expected≈{expected}, repeats={n_repeats}",
+                  f"expected≈{expected} samples / "
+                  f"baseline≈{baseline_time:.1f}s, "
+                  f"repeats={n_repeats}",
                   flush=True)
 
             run_rows = []
@@ -851,8 +1105,12 @@ def main():
             for rep in range(1, n_repeats + 1):
                 print(f"    run {rep}/{n_repeats} …", end=" ", flush=True)
                 try:
-                    result = run_single(backend_name, freq, args.duration,
-                                         n_workers=args.workers)
+                    result = run_single(
+                        backend_name, freq,
+                        n_darts_total=n_darts_total,
+                        baseline_time=baseline_time,
+                        n_workers=n_workers,
+                    )
                 except Exception as exc:
                     print(f"FAILED: {exc}")
                     continue
@@ -866,12 +1124,13 @@ def main():
                 n = result["actual"]
                 pct = result["hit_rate"]
                 dur = result["duration"]
-                setup = result["setup_time"]
-                td = result["teardown_time"]
+                ovh = result["overhead_pct"]
                 wall = result["total_wall"]
-                print(f"{n}/{expected} ({pct:.1f}%) "
-                      f"[measure={dur:.1f}s, setup={setup:.1f}s, "
-                      f"teardown={td:.1f}s, total={wall:.1f}s]")
+                pi = result["pi_estimate"]
+                print(f"{n}/{expected} ({pct:.1f}%)  "
+                      f"t={dur:.2f}s vs base {baseline_time:.2f}s "
+                      f"(overhead {ovh:+.1f}%)  "
+                      f"π≈{pi:.4f}  total={wall:.1f}s")
 
                 all_dfs.append(result["df"])
                 last_monitor = result.pop("monitor")
@@ -888,12 +1147,13 @@ def main():
             if not overview_printed and last_monitor is not None:
                 print_experiment_overview(
                     last_monitor,
-                    _available_cpus(),
+                    n_workers,
                     last_proc_counts,
                 )
                 overview_printed = True
 
-            # Outlier removal
+            # Outlier removal (still on hit_rate; overhead follows
+            # roughly linearly so outliers cluster together).
             kept = remove_outliers(run_rows)
 
             # Save all per-run raw data (use the median-hit-rate run
@@ -913,23 +1173,32 @@ def main():
             metrics = [
                 "hit_rate", "mean_iat", "median_iat",
                 "p95_iat", "p99_iat", "max_iat", "actual", "duration",
+                "overhead_s", "overhead_pct",
             ]
             agg = {
                 "backend": backend_name,
                 "freq_hz": freq,
                 "interval": interval,
                 "expected": expected,
+                "baseline_s": baseline_time,
+                "n_darts": n_darts_total,
+                "n_workers": n_workers,
                 "n_runs": len(kept),
             }
             for m in metrics:
-                vals = np.array([r[m] for r in kept])
-                agg[f"{m}_mean"] = np.mean(vals)
-                agg[f"{m}_std"] = np.std(vals, ddof=1) if len(vals) > 1 else 0
+                vals = np.array([r[m] for r in kept], dtype=float)
+                agg[f"{m}_mean"] = float(np.mean(vals))
+                agg[f"{m}_std"] = (
+                    float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0
+                )
             agg_summaries.append(agg)
 
             print(f"    → avg hit_rate: "
                   f"{agg['hit_rate_mean']:.1f}% "
-                  f"± {agg['hit_rate_std']:.1f}%  "
+                  f"± {agg['hit_rate_std']:.1f}%   "
+                  f"avg overhead: "
+                  f"{agg['overhead_pct_mean']:+.1f}% "
+                  f"± {agg['overhead_pct_std']:.1f}%   "
                   f"({len(kept)} runs)")
 
     # ---- Final summary ----
@@ -940,12 +1209,17 @@ def main():
 
         print(f"\n{'='*60}")
         print("Aggregated Summary (mean ± std)")
+        print(f"  baseline (no monitor): "
+              f"{baseline_time:.2f}s ± {baseline_std:.2f}s "
+              f"over {len(baseline_times)} repeats, "
+              f"{n_darts_total:,} darts on {n_workers} workers")
         print(f"{'='*60}")
         display_cols = [
             "backend", "freq_hz", "expected", "n_runs",
             "actual_mean", "actual_std",
             "hit_rate_mean", "hit_rate_std",
-            "duration_mean",
+            "duration_mean", "duration_std",
+            "overhead_pct_mean", "overhead_pct_std",
             "mean_iat_mean", "p95_iat_mean", "max_iat_mean",
         ]
         display_cols = [c for c in display_cols if c in summary.columns]

@@ -10,8 +10,13 @@
 ##SBATCH --hint=nomultithread
 
 # --- Adjust these as needed -------------------------------------------
-# Duration per single run (seconds) and number of repeats per config
-DURATION=20
+# Target wallclock duration (seconds) of the calibrated dart workload.
+# The benchmark probes throughput once at startup and picks the dart
+# count so that a single *unmonitored* run takes ≈ this long.  Each
+# (backend, frequency) configuration is then re-run REPEATS times with
+# the monitor active and the per-run runtime is compared against the
+# unmonitored baseline to derive the runtime overhead.
+DURATION=30
 REPEATS=20
 # Backends: thread,subprocess_python,native_c  (or a subset)
 BACKENDS="native_c,subprocess_python,native_c"

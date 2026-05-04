@@ -175,11 +175,29 @@ class PerformanceMonitor:
         """
         next_tick = time.perf_counter()          # first tick: now
         while not self._stop_event.is_set():
-            self.process_pids = self._get_process_pids()
-            metrics = self._collect_metrics()
-            for level, data_tuple in zip(self.levels, metrics):
-                self.data.add_sample(level, *data_tuple)
-            self.n_measurements += 1
+            # A single tick must never be able to kill the collector
+            # thread.  If it does, the exception propagates through
+            # ``threading._bootstrap_inner`` → ``invoke_excepthook``,
+            # which under heavy load (pandas/psutil state corruption,
+            # fork churn from 256 burn workers, etc.) has been
+            # observed to segfault the whole process.  Any exception
+            # here is therefore logged and the tick is counted as
+            # missed; the loop continues until ``stop()`` is called.
+            # ``BaseException`` is deliberately excluded so that
+            # ``KeyboardInterrupt`` / ``SystemExit`` still propagate.
+            try:
+                self.process_pids = self._get_process_pids()
+                metrics = self._collect_metrics()
+                for level, data_tuple in zip(self.levels, metrics):
+                    self.data.add_sample(level, *data_tuple)
+                self.n_measurements += 1
+            except Exception as exc:
+                logger.warning(
+                    "[JUmPER]: monitor tick failed (%s: %s); "
+                    "skipping this sample",
+                    type(exc).__name__, exc,
+                )
+                self.n_missed_measurements += 1
 
             # schedule next tick on the absolute timeline
             next_tick += self.interval
@@ -244,7 +262,26 @@ class PerformanceMonitor:
         if hasattr(self, "_stop_event"):
             self._stop_event.set()
         if self.monitor_thread:
-            self.monitor_thread.join(timeout=2.0)
+            # The collector may currently be inside _collect_metrics(),
+            # which under heavy load (e.g. thousands of processes from a
+            # 256-worker burn) can take well over a second to finish a
+            # single tick.  Returning from stop() while the thread is
+            # still inside ``data.add_sample(...)`` produces a data race
+            # on the per-level DataFrames: any caller that subsequently
+            # reads ``monitor.data`` can land in pandas concat at the
+            # same moment the collector is reallocating blocks, which
+            # segfaults inside ``concatenate_managers``.  Wait long
+            # enough to cover even pathologically slow ticks; the
+            # benchmark/service watchdog (SIGALRM / faulthandler) is
+            # the real upper bound on hangs.
+            self.monitor_thread.join(timeout=30.0)
+            if self.monitor_thread.is_alive():
+                logger.warning(
+                    "[JUmPER]: Monitor thread did not terminate within "
+                    "30s of stop(); leaving it running to avoid blocking, "
+                    "but ``monitor.data`` is unsafe to read until it "
+                    "exits."
+                )
         self.stop_time = time.perf_counter()
         self.wallclock_stop_time = time.time()
 
