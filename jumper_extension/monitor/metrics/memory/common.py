@@ -2,7 +2,7 @@ from jumper_extension.adapters.data import NodeInfo
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class MemoryBackend:
+class MemoryCollectorBackend:
     """Backend for memory metrics."""
 
     name = "memory-base"

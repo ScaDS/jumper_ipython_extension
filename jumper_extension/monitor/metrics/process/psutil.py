@@ -5,10 +5,10 @@ import psutil
 
 from jumper_extension.utilities import is_slurm_available
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.process.common import ProcessBackend
+from jumper_extension.monitor.metrics.process.common import ProcessCollectorBackend
 
 
-class PsutilProcessBackend(ProcessBackend):
+class PsutilProcessCollector(ProcessCollectorBackend):
     """Process backend implemented via psutil."""
 
     name = "process-psutil"

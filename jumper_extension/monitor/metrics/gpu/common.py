@@ -8,7 +8,7 @@ from jumper_extension.utilities import is_slurm_available
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class GpuBackend:
+class GpuCollectorBackend:
     """A pluggable backend that provides GPU discovery and metric collection."""
 
     name = "gpu-base"
@@ -83,7 +83,7 @@ class GpuBackend:
         return gpu_util, gpu_band, gpu_mem
 
 
-class NullGpuBackend(GpuBackend):
+class NullGpuCollector(GpuCollectorBackend):
     """A no-op backend used when no GPU backend is available."""
 
     name = "gpu-disabled"
@@ -99,25 +99,25 @@ class GpuDiscovery:
         self._uid = uid
         self._slurm_job = slurm_job
 
-    def discover(self) -> list[GpuBackend]:
-        from jumper_extension.monitor.metrics.gpu.nvml import NvmlGpuBackend
-        from jumper_extension.monitor.metrics.gpu.adlx import AdlxGpuBackend
+    def discover(self) -> list[GpuCollectorBackend]:
+        from jumper_extension.monitor.metrics.gpu.nvml import NvmlGpuCollector
+        from jumper_extension.monitor.metrics.gpu.adlx import AdlxGpuCollector
         from jumper_extension.config.utils import instantiate_backend
 
         available = {"uid": self._uid, "slurm_job": self._slurm_job}
         return [
-            instantiate_backend(NvmlGpuBackend, available),
-            instantiate_backend(AdlxGpuBackend, available),
+            instantiate_backend(NvmlGpuCollector, available),
+            instantiate_backend(AdlxGpuCollector, available),
         ]
 
 
-class MultiGpuBackend:
+class MultiGpuCollector:
     """Combined GPU pipeline member — aggregates all discovered device backends."""
 
     def __init__(self, uid: int, slurm_job: str):
         self._uid = uid
         self._slurm_job = slurm_job
-        self._backends: list[GpuBackend] = []
+        self._backends: list[GpuCollectorBackend] = []
 
     def setup(self) -> dict:
         self._backends = GpuDiscovery(self._uid, self._slurm_job).discover()

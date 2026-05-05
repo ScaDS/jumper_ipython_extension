@@ -1,7 +1,7 @@
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class IoBackend:
+class IoCollectorBackend:
     """Backend for I/O metrics."""
 
     name = "io-base"

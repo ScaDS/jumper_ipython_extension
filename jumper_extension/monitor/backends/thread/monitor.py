@@ -17,7 +17,7 @@ from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
 )
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.process.psutil import PsutilProcessBackend
+from jumper_extension.monitor.metrics.process.psutil import PsutilProcessCollector
 from jumper_extension.utilities import detect_memory_limit, get_available_levels
 
 logger = logging.getLogger("extension")
@@ -59,7 +59,7 @@ class PerformanceMonitor:
             for level in self.levels
         }
 
-        self._process_backend = PsutilProcessBackend(
+        self._process_backend = PsutilProcessCollector(
             pid=self.pid,
             process=self.process,
             uid=self.uid,

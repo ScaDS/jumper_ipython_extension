@@ -5,10 +5,10 @@ from typing import Any
 import psutil
 
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.io.common import IoBackend
+from jumper_extension.monitor.metrics.io.common import IoCollectorBackend
 
 
-class PsutilIoBackend(IoBackend):
+class PsutilIoCollector(IoCollectorBackend):
     """I/O backend implemented via psutil."""
 
     name = "io-psutil"

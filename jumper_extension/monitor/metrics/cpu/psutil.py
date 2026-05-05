@@ -1,10 +1,10 @@
 import psutil
 
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.cpu.common import CpuBackend
+from jumper_extension.monitor.metrics.cpu.common import CpuCollectorBackend
 
 
-class PsutilCpuBackend(CpuBackend):
+class PsutilCpuCollector(CpuCollectorBackend):
     """CPU backend implemented via psutil."""
 
     name = "cpu-psutil"
