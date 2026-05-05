@@ -204,7 +204,7 @@ def _run_collector(
         while running:
             _t0 = time.perf_counter()
             try:
-                monitor.process_pids = monitor._get_process_pids()
+                monitor.process_pids = monitor._process_backend.get_process_pids()
             except (psutil.NoSuchProcess, psutil.AccessDenied, ProcessLookupError):
                 next_tick += interval
                 delay = next_tick - time.perf_counter()
