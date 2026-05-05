@@ -4,8 +4,6 @@ To add a new metric source implement a :class:`CollectorBackend` subclass and a
 matching :class:`StorageHandler`, then register them in ``collectors.yaml``.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import Any, Protocol
 
