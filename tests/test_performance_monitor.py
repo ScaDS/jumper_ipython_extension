@@ -81,10 +81,10 @@ def test_gpu_failures():
         return {}
 
     with patch(
-        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuBackend.setup",
+        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuCollector.setup",
         _failing_nvml_setup,
     ), patch(
-        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuBackend.setup",
+        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuCollector.setup",
         _noop_adlx_setup,
     ), patch("psutil.Process") as mock_proc:
         mock_proc.return_value.cpu_affinity.return_value = [0, 1]
