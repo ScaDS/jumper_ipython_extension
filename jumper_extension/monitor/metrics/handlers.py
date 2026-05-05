@@ -6,8 +6,6 @@ all current collector return types without requiring those collectors to be
 modified.
 """
 
-from __future__ import annotations
-
 import time as _time
 
 from jumper_extension.monitor.metrics.common import StorageHandler  # noqa: F401
