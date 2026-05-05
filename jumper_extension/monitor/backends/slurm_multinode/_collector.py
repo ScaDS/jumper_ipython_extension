@@ -109,7 +109,6 @@ def _run_collector(interval: float, levels: Optional[List[str]] = None) -> None:
     try:
         while running:
             t0 = time.perf_counter()
-            monitor.process_pids = monitor._process_backend.get_process_pids()
             rows = monitor._collect_metrics()
 
             for level, row in zip(monitor.levels, rows):

@@ -97,9 +97,18 @@ class CumulativeRateHandler:
         }
 
 
+class NoOpHandler:
+    """raw: None  →  {} (process backend: context-only, no metric output)"""
+
+    def transform(self, raw, level: str) -> dict[str, float]:
+        return {}
+
+
 def make_handler(storage_cfg: dict) -> StorageHandler:
     """Instantiate the right StorageHandler from a storage-config dict."""
     t = storage_cfg["type"]
+    if t == "noop":
+        return NoOpHandler()
     if t == "scalar":
         return ScalarHandler(column=storage_cfg["column"])
     if t == "per_device_aggregate":
