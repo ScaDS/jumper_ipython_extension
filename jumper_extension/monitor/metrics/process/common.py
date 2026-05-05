@@ -22,6 +22,9 @@ class ProcessCollectorBackend:
     def get_process_pids(self) -> set[int]:
         raise NotImplementedError
 
+    def collect(self, level: str, context: CollectionContext) -> None:
+        raise NotImplementedError
+
     def snapshot(self, context: CollectionContext) -> None:
         raise NotImplementedError
 

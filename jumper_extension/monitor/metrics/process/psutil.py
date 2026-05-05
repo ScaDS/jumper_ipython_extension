@@ -40,12 +40,13 @@ class PsutilProcessCollector(ProcessCollectorBackend):
         return pids
 
     def snapshot(self, context: CollectionContext) -> None:
-        """Collect cpu/memory/io for every known PID in one pass.
+        """Compute process_pids then collect cpu/memory/io for every known PID.
 
-        Populates context["cpu"], context["rss"], context["io"],
-        context["user_pids"], and context["slurm_pids"].
-        Call this once per tick after process_pids has been set in context.
+        Populates context["process_pids"], context["cpu"], context["rss"],
+        context["io"], context["user_pids"], and context["slurm_pids"].
         """
+        context["process_pids"] = self.get_process_pids()
+
         cpu = context["cpu"]
         rss = context["rss"]
         io = context["io"]
@@ -78,7 +79,7 @@ class PsutilProcessCollector(ProcessCollectorBackend):
                     continue  # already collected above
                 try:
                     is_user = proc.uids().real == self._uid
-                except (psutil.AccessDenied, psutil.NoSuchProcess):
+                except (psutil.AccessDenied, psutil.NoSuchProcess, IndexError):
                     is_user = False
                 if not is_user:
                     continue
@@ -105,11 +106,14 @@ class PsutilProcessCollector(ProcessCollectorBackend):
                             slurm_pids.add(pid)
                     except (psutil.AccessDenied, psutil.NoSuchProcess):
                         pass
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+        except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
             pass
 
         context["user_pids"] = user_pids
         context["slurm_pids"] = slurm_pids
+
+    def collect(self, level: str, context: CollectionContext) -> None:
+        return None
 
     def filter_process(self, proc: psutil.Process, mode: str) -> bool:
         """Check if process matches the filtering mode."""

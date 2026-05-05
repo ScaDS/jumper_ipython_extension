@@ -1,4 +1,11 @@
 collectors:
+  # Must remain first in config: _process_backend hardcodes pipeline[0];
+  process:
+    _target_: jumper_extension.monitor.metrics.process.psutil.PsutilProcessCollector
+    inject: [pid, process, uid, slurm_job]
+    storage:
+      type: noop
+
   cpu:
     _target_: jumper_extension.monitor.metrics.cpu.psutil.PsutilCpuCollector
     inject: [node_info]

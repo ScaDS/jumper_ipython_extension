@@ -17,7 +17,6 @@ from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
 )
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.process.psutil import PsutilProcessCollector
 from jumper_extension.utilities import detect_memory_limit, get_available_levels
 
 logger = logging.getLogger("extension")
@@ -52,20 +51,11 @@ class PerformanceMonitor:
         self.uid: int = os.getuid()
         self.slurm_job: str | int = os.environ.get("SLURM_JOB_ID", 0)
         self.levels: list[str] = get_available_levels()
-        self.process_pids: set[int] = set()
 
         self.memory_limits: dict = {
             level: detect_memory_limit(level, self.uid, self.slurm_job)
             for level in self.levels
         }
-
-        self._process_backend = PsutilProcessCollector(
-            pid=self.pid,
-            process=self.process,
-            uid=self.uid,
-            slurm_job=self.slurm_job,
-        )
-        self._process_backend.setup()
 
         # Ordered list of (backend, handler) pairs built from collectors.yaml.
         # Each tick: all backends snapshot() the process state into a shared
@@ -81,6 +71,11 @@ class PerformanceMonitor:
         # session state
         self.is_imported: bool = False
         self.session_source: str | None = None
+
+    @property
+    def _process_backend(self):
+        """Index 0: process collector is always first in collectors.yaml."""
+        return self._pipeline[0][0]
 
     def _bootstrap_schema(self):
         """Warm up all pipeline backends and derive per-level column names.
@@ -124,14 +119,13 @@ class PerformanceMonitor:
     def _collect_metrics(self) -> list[dict[str, float]]:
         """Collect one sample per level; return a list of flat dicts."""
         context: CollectionContext = {
-            "process_pids": self.process_pids,
+            "process_pids": set(),
             "user_pids": set(),
             "slurm_pids": set(),
             "cpu": {},
             "rss": {},
             "io": {},
         }
-        self._process_backend.snapshot(context)
         for backend, _ in self._pipeline:
             backend.snapshot(context)
 
@@ -157,7 +151,6 @@ class PerformanceMonitor:
         """
         next_tick = time.perf_counter()
         while not self._stop_event.is_set():
-            self.process_pids = self._process_backend.get_process_pids()
             rows = self._collect_metrics()
             for level, row in zip(self.levels, rows):
                 self.nodes.add_sample("local", level, row)

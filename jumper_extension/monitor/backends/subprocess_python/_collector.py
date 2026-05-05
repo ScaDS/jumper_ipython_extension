@@ -204,7 +204,7 @@ def _run_collector(
         while running:
             _t0 = time.perf_counter()
             try:
-                monitor.process_pids = monitor._process_backend.get_process_pids()
+                process_pids = monitor._process_backend.get_process_pids()
             except (psutil.NoSuchProcess, psutil.AccessDenied, ProcessLookupError):
                 next_tick += interval
                 delay = next_tick - time.perf_counter()
@@ -215,7 +215,7 @@ def _run_collector(
                 continue
             _t1 = time.perf_counter()
 
-            _renice_target_pids(monitor.process_pids)
+            _renice_target_pids(process_pids)
             _t2 = time.perf_counter()
 
             try:
@@ -246,7 +246,7 @@ def _run_collector(
             if _tick_count <= 5 or _tick_count % 10 == 0:
                 _renice_log.write(
                     f"[{time.strftime('%H:%M:%S')}] tick={_tick_count} "
-                    f"npids={len(monitor.process_pids)} "
+                    f"npids={len(process_pids)} "
                     f"get_pids={_t1-_t0:.3f}s "
                     f"renice={_t2-_t1:.3f}s "
                     f"collect={_t3-_t2:.3f}s "
