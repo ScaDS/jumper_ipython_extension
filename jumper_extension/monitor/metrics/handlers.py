@@ -1,4 +1,4 @@
-"""StorageHandler layer — transforms raw collector output into flat dicts.
+"""Handler layer — transforms raw collector output into flat dicts.
 
 Each handler converts one specific raw type into a ``dict[str, float]``
 ready to be appended as a DataFrame row.  The four concrete handlers cover
@@ -102,22 +102,3 @@ class NoOpHandler:
 
     def transform(self, raw, level: str) -> dict[str, float]:
         return {}
-
-
-def make_handler(storage_cfg: dict) -> StorageHandler:
-    """Instantiate the right StorageHandler from a storage-config dict."""
-    t = storage_cfg["type"]
-    if t == "noop":
-        return NoOpHandler()
-    if t == "scalar":
-        return ScalarHandler(column=storage_cfg["column"])
-    if t == "per_device_aggregate":
-        return PerDeviceAggregateHandler(prefix=storage_cfg["prefix"])
-    if t == "per_device_multi_aggregate":
-        return PerDeviceMultiAggregateHandler(
-            prefix=storage_cfg["prefix"],
-            metrics=storage_cfg["metrics"],
-        )
-    if t == "cumulative_rate":
-        return CumulativeRateHandler(columns=storage_cfg["columns"])
-    raise ValueError(f"Unknown storage type: {t!r}")

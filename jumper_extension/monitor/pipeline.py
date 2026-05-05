@@ -7,7 +7,6 @@ if TYPE_CHECKING:
 
 from jumper_extension.adapters.data import NodeInfo
 from jumper_extension.config.utils import instantiate, load_collectors_config
-from jumper_extension.monitor.metrics.storage import make_handler
 
 
 class PipelineBuilder:
@@ -37,10 +36,10 @@ class PipelineBuilder:
         num_gpus, gpu_memory, gpu_name = 0, 0.0, ""
         for collector_cfg in cfg["collectors"].values():
             collector_cfg = dict(collector_cfg)
-            storage_cfg = collector_cfg.pop("storage")
+            handler_cfg = collector_cfg.pop("handler")
             inject_keys = collector_cfg.pop("inject", [])
             if self._defer(inject_keys, deferred_keys):
-                deferred.append((collector_cfg, storage_cfg, inject_keys))
+                deferred.append((collector_cfg, handler_cfg, inject_keys))
                 continue
             injected = {k: getattr(self._monitor, k) for k in inject_keys}
             backend = instantiate(collector_cfg, **injected)
@@ -49,7 +48,7 @@ class PipelineBuilder:
                 num_gpus = meta["num_gpus"]
                 gpu_memory = meta.get("gpu_memory", 0.0)
                 gpu_name = meta.get("gpu_name", "")
-            self._monitor._pipeline.append((backend, make_handler(storage_cfg)))
+            self._monitor._pipeline.append((backend, instantiate(handler_cfg)))
 
         self._monitor.node_info = NodeInfo(
             node="local",
@@ -67,8 +66,8 @@ class PipelineBuilder:
         self,
         deferred: list[tuple[dict, dict, list[str]]],
     ):
-        for collector_cfg, storage_cfg, inject_keys in deferred:
+        for collector_cfg, handler_cfg, inject_keys in deferred:
             injected = {k: getattr(self._monitor, k) for k in inject_keys}
             backend = instantiate(collector_cfg, **injected)
             backend.setup()
-            self._monitor._pipeline.append((backend, make_handler(storage_cfg)))
+            self._monitor._pipeline.append((backend, instantiate(handler_cfg)))
