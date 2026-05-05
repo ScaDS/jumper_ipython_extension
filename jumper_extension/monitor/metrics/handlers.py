@@ -9,13 +9,8 @@ modified.
 from __future__ import annotations
 
 import time as _time
-from typing import Protocol
 
-
-class StorageHandler(Protocol):
-    def transform(self, raw, level: str) -> dict[str, float]:
-        """Return a flat column→value dict for one sample."""
-        ...
+from jumper_extension.monitor.metrics.common import StorageHandler  # noqa: F401
 
 
 class ScalarHandler:

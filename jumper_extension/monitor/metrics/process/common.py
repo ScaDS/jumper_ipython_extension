@@ -1,12 +1,19 @@
+from abc import abstractmethod
 from typing import Any, Callable, Optional
 
 import psutil
 
+from jumper_extension.monitor.metrics.common import CollectorBackend
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class ProcessCollectorBackend:
-    """Backend for process enumeration and snapshotting."""
+class ProcessCollectorBackend(CollectorBackend):
+    """Base for process enumeration backends.
+
+    Serves a dual role: populates the shared :class:`CollectionContext` via
+    :meth:`snapshot` so other backends can avoid redundant syscalls, and
+    exposes process-filtering utilities used by GPU backends.
+    """
 
     name = "process-base"
 
@@ -16,33 +23,30 @@ class ProcessCollectorBackend:
         self._uid = uid
         self._slurm_job = slurm_job
 
-    def setup(self) -> None:
-        return None
+    @abstractmethod
+    def get_process_pids(self) -> set[int]: ...
 
-    def get_process_pids(self) -> set[int]:
-        raise NotImplementedError
+    @abstractmethod
+    def snapshot(self, context: CollectionContext) -> None: ...
 
-    def collect(self, level: str, context: CollectionContext) -> None:
-        raise NotImplementedError
+    @abstractmethod
+    def collect(self, level: str, context: CollectionContext) -> None: ...
 
-    def snapshot(self, context: CollectionContext) -> None:
-        raise NotImplementedError
+    @abstractmethod
+    def filter_process(self, proc: psutil.Process, mode: str) -> bool: ...
 
-    def filter_process(self, proc: psutil.Process, mode: str) -> bool:
-        raise NotImplementedError
-
+    @abstractmethod
     def get_filtered_processes(
         self,
         level: str = "user",
         mode: str = "cpu",
         handle: Optional[object] = None,
-    ) -> list[psutil.Process]:
-        raise NotImplementedError
+    ) -> list[psutil.Process]: ...
 
+    @abstractmethod
     def safe_proc_call(
         self,
         proc,
         proc_func: Callable[[psutil.Process], Any],
         default=0,
-    ) -> Any:
-        raise NotImplementedError
+    ) -> Any: ...

@@ -1,19 +1,13 @@
+from abc import abstractmethod
+
+from jumper_extension.monitor.metrics.common import CollectorBackend
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class IoCollectorBackend:
-    """Backend for I/O metrics."""
+class IoCollectorBackend(CollectorBackend):
+    """Base for I/O metric backends."""
 
     name = "io-base"
 
-    def __init__(self):
-        pass
-
-    def setup(self) -> None:
-        return None
-
-    def snapshot(self, context: CollectionContext) -> None:
-        return None
-
-    def collect(self, level: str, context: CollectionContext) -> list[int]:
-        raise NotImplementedError
+    @abstractmethod
+    def collect(self, level: str, context: CollectionContext) -> list[int]: ...
