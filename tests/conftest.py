@@ -77,10 +77,10 @@ def mock_cpu_base():
 def mock_cpu_only(mock_cpu_base):
     """Mock system with 1 CPU (4 cores) and no GPU."""
     with patch(
-        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuBackend.setup",
+        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuCollector.setup",
         _noop_gpu_setup,
     ), patch(
-        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuBackend.setup",
+        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuCollector.setup",
         _noop_gpu_setup,
     ):
         yield
@@ -112,10 +112,10 @@ def mock_cpu_gpu(mock_cpu_base):
         }
 
     with patch(
-        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuBackend.setup",
+        "jumper_extension.monitor.metrics.gpu.nvml.NvmlGpuCollector.setup",
         _nvml_gpu_setup,
     ), patch(
-        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuBackend.setup",
+        "jumper_extension.monitor.metrics.gpu.adlx.AdlxGpuCollector.setup",
         _noop_gpu_setup,
     ):
         yield
