@@ -5,10 +5,11 @@ from typing import Iterable
 import psutil
 
 from jumper_extension.utilities import is_slurm_available
+from jumper_extension.monitor.metrics.common import CollectorBackend
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class GpuCollectorBackend:
+class GpuCollectorBackend(CollectorBackend):
     """A pluggable backend that provides GPU discovery and metric collection."""
 
     name = "gpu-base"
@@ -16,10 +17,6 @@ class GpuCollectorBackend:
     def __init__(self, uid: int, slurm_job: str):
         self._uid = uid
         self._slurm_job = slurm_job
-
-    def setup(self) -> None:
-        """Initialize backend and discover GPU handles."""
-        return None
 
     def shutdown(self) -> None:
         """Clean up resources if needed."""
@@ -54,9 +51,6 @@ class GpuCollectorBackend:
         self, handle: object, level: str, context: CollectionContext
     ) -> tuple[float, float, float]:
         raise NotImplementedError
-
-    def snapshot(self, context: CollectionContext) -> None:
-        return None
 
     def collect(
         self,
