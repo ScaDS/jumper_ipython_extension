@@ -2,7 +2,7 @@ from jumper_extension.adapters.data import NodeInfo
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class CpuBackend:
+class CpuCollectorBackend:
     """Backend for CPU metrics."""
 
     name = "cpu-base"

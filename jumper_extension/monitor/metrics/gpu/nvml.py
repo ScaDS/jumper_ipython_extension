@@ -8,12 +8,12 @@ from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
 )
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.gpu.common import GpuBackend
+from jumper_extension.monitor.metrics.gpu.common import GpuCollectorBackend
 
 logger = logging.getLogger("extension")
 
 
-class NvmlGpuBackend(GpuBackend):
+class NvmlGpuCollector(GpuCollectorBackend):
     """NVIDIA NVML backend (uses pynvml)."""
 
     name = "nvidia-nvml"

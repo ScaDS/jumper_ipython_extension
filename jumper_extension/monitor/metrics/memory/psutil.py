@@ -1,10 +1,10 @@
 import psutil
 
 from jumper_extension.monitor.metrics.context import CollectionContext
-from jumper_extension.monitor.metrics.memory.common import MemoryBackend
+from jumper_extension.monitor.metrics.memory.common import MemoryCollectorBackend
 
 
-class PsutilMemoryBackend(MemoryBackend):
+class PsutilMemoryCollector(MemoryCollectorBackend):
     """Memory backend implemented via psutil."""
 
     name = "memory-psutil"

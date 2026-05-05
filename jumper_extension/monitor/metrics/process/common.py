@@ -5,7 +5,7 @@ import psutil
 from jumper_extension.monitor.metrics.context import CollectionContext
 
 
-class ProcessBackend:
+class ProcessCollectorBackend:
     """Backend for process enumeration and snapshotting."""
 
     name = "process-base"
