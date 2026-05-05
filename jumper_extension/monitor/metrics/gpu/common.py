@@ -102,12 +102,10 @@ class GpuDiscovery:
     def discover(self) -> list[GpuCollectorBackend]:
         from jumper_extension.monitor.metrics.gpu.nvml import NvmlGpuCollector
         from jumper_extension.monitor.metrics.gpu.adlx import AdlxGpuCollector
-        from jumper_extension.config.utils import instantiate_backend
 
-        available = {"uid": self._uid, "slurm_job": self._slurm_job}
         return [
-            instantiate_backend(NvmlGpuCollector, available),
-            instantiate_backend(AdlxGpuCollector, available),
+            NvmlGpuCollector(uid=self._uid, slurm_job=self._slurm_job),
+            AdlxGpuCollector(uid=self._uid, slurm_job=self._slurm_job),
         ]
 
 

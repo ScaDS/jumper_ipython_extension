@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import inspect
 from pathlib import Path
 from typing import Any
 
@@ -23,17 +22,6 @@ _COLLECTORS_CONFIG: dict = _read_collectors_config()
 def load_collectors_config() -> dict:
     """Return the collectors config loaded at import time."""
     return _COLLECTORS_CONFIG
-
-
-def instantiate_backend(cls: type, available: dict) -> Any:
-    """Instantiate *cls* injecting only the kwargs it declares by name.
-
-    Each parameter name in ``cls.__init__`` is looked up in *available*;
-    unrecognised names are silently ignored.
-    """
-    sig = inspect.signature(cls.__init__)
-    filtered = {k: v for k, v in available.items() if k in sig.parameters}
-    return cls(**filtered)
 
 
 def instantiate(cfg: dict, **injected: Any) -> Any:
