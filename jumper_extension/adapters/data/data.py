@@ -55,6 +55,8 @@ class PerformanceData:
     def _attach_cell_index(self, df, cell_history) -> pd.DataFrame:
         result = df.copy()
         result["cell_index"] = pd.NA
+        if "time" not in result.columns:
+            return result
         times = result["time"].to_numpy()
         for row in cell_history.data.itertuples(index=False):
             mask = (times >= row.start_time) & (times <= row.end_time)
