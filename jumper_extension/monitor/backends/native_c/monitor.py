@@ -7,6 +7,7 @@ compiled C binary (``jumper_collector``) instead of a Python child process.
 import os
 from typing import List
 
+from jumper_extension.config.c import load_c_collectors_config
 from jumper_extension.monitor.backends.subprocess_python.monitor import (
     SubprocessPerformanceMonitor,
 )
@@ -51,9 +52,12 @@ class CSubprocessPerformanceMonitor(SubprocessPerformanceMonitor):
         levels_arg = ""
         if self.levels:
             levels_arg = f" --levels {','.join(self.levels)}"
+        collectors = load_c_collectors_config()
+        collectors_arg = f" --collectors {','.join(collectors)}"
         return (
             f"{binary}"
             f" --interval {interval}"
             f" --target-pid {os.getpid()}"
             f"{levels_arg}"
+            f"{collectors_arg}"
         )

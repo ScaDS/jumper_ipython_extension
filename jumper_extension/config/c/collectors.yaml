@@ -1,0 +1,5 @@
+collectors:
+  - cpu
+  - memory
+  - io
+  - gpu

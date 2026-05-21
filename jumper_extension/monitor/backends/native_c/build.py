@@ -28,46 +28,38 @@ logger = logging.getLogger("extension")
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _BINARY_NAME = "jumper_collector"
 _BINARY_PATH = os.path.join(_THIS_DIR, _BINARY_NAME)
-_SOURCE_PATH = os.path.join(_THIS_DIR, "collector.c")
+_MAIN_SOURCE = os.path.join(_THIS_DIR, "monitor.c")
 
 # Cache the result so we only build/check once per process.
 _native_c_available: bool | None = None
 
 
 def build_collector(force: bool = False) -> bool:
-    """Compile the C collector binary.
+    """Compile the C collector binary via make.
 
     Returns ``True`` if the binary is ready to use (either freshly built
-    or already present and *force* is ``False``).
+    or already present and up to date per make's dependency tracking).
     """
-    if not force and os.path.isfile(_BINARY_PATH):
-        # Already compiled — check it's newer than the source.
-        try:
-            if os.path.getmtime(_BINARY_PATH) >= os.path.getmtime(_SOURCE_PATH):
-                return True
-        except OSError:
-            pass
-
-    if not os.path.isfile(_SOURCE_PATH):
-        logger.debug("[JUmPER] C collector source not found at %s", _SOURCE_PATH)
+    if not os.path.isfile(_MAIN_SOURCE):
+        logger.debug("[JUmPER] C collector source not found at %s", _MAIN_SOURCE)
         return False
 
-    cc = os.environ.get("CC", "")
-    if not cc:
-        cc = shutil.which("cc") or shutil.which("gcc") or ""
-    if not cc:
-        logger.info("[JUmPER] No C compiler found — native_c backend unavailable.")
+    make = shutil.which("make") or ""
+    if not make:
+        logger.info("[JUmPER] make not found — native_c backend unavailable.")
         print(
-            "[JUmPER] No C compiler found; falling back to subprocess_python "
-            "monitor."
+            "[JUmPER] make not found; falling back to subprocess_python monitor."
         )
         return False
 
-    cmd = [cc, "-O2", "-Wall", "-o", _BINARY_PATH, _SOURCE_PATH, "-lm", "-ldl"]
+    if force and os.path.isfile(_BINARY_PATH):
+        os.remove(_BINARY_PATH)
+
+    cmd = [make, "-C", _THIS_DIR, _BINARY_NAME]
     print(
         "[JUmPER] Compiling native_c monitor binary (first use, one-time step)..."
     )
-    logger.info("[JUmPER] Compiling C collector: %s", " ".join(cmd))
+    logger.info("[JUmPER] Building C collector: %s", " ".join(cmd))
     try:
         result = subprocess.run(
             cmd,
@@ -77,18 +69,18 @@ def build_collector(force: bool = False) -> bool:
         )
         if result.returncode != 0:
             logger.warning(
-                "[JUmPER] C collector compilation failed:\n%s",
+                "[JUmPER] C collector build failed:\n%s",
                 result.stderr.strip(),
             )
             print(
-                "[JUmPER] native_c compilation failed; falling back to "
+                "[JUmPER] native_c build failed; falling back to "
                 "subprocess_python monitor."
             )
             return False
     except (OSError, subprocess.TimeoutExpired) as exc:
-        logger.warning("[JUmPER] C collector compilation error: %s", exc)
+        logger.warning("[JUmPER] C collector build error: %s", exc)
         print(
-            f"[JUmPER] native_c compilation error ({exc}); falling back to "
+            f"[JUmPER] native_c build error ({exc}); falling back to "
             f"subprocess_python monitor."
         )
         return False
