@@ -3,15 +3,26 @@ CFLAGS  ?= -O2 -Wall -Wextra
 LDFLAGS ?= -lm -ldl
 TARGET  := jumper_collector
 
-SRC := collector.c
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+SRCS := \
+    monitor.c                 \
+    metrics/cpu/cpu.c         \
+    metrics/memory/memory.c   \
+    metrics/io/io.c           \
+    metrics/gpu/gpu.c
+
+OBJS := $(patsubst %.c,$(DIR)%.o,$(SRCS))
 
 .PHONY: all clean
 
 all: $(DIR)$(TARGET)
 
-$(DIR)$(TARGET): $(DIR)$(SRC)
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+$(DIR)$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(DIR)%.o: $(DIR)%.c
+	$(CC) $(CFLAGS) -I$(DIR) -c -o $@ $<
 
 clean:
-	rm -f $(DIR)$(TARGET)
+	rm -f $(OBJS) $(DIR)$(TARGET)
