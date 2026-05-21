@@ -14,7 +14,7 @@ A collector is a pair of:
 - **`StorageHandler`** — converts the raw value into a flat `{column: value}` dict
   that becomes a DataFrame row.
 
-Both are registered in `jumper_extension/config/collectors.yaml` and instantiated
+Both are registered in `jumper_extension/config/python/collectors.yaml` and instantiated
 automatically — no changes to the monitor or pipeline code are needed.
 
 !!! note
