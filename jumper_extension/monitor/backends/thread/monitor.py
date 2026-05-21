@@ -57,7 +57,7 @@ class PerformanceMonitor:
             for level in self.levels
         }
 
-        # Ordered list of (backend, handler) pairs built from collectors.yaml.
+        # Ordered list of (backend, handler) pairs built from config/python/collectors.yaml.
         # Each tick: all backends snapshot() the process state into a shared
         # context, then collect() + handler.transform() produce flat metric rows.
         self._pipeline: list[tuple[Any, Any]] | None = None
@@ -74,7 +74,7 @@ class PerformanceMonitor:
 
     @property
     def _process_backend(self):
-        """Index 0: process collector is always first in collectors.yaml."""
+        """Index 0: process collector is always first in config/python/collectors.yaml."""
         return self._pipeline[0][0]
 
     def _bootstrap_schema(self):

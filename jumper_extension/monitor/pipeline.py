@@ -6,7 +6,8 @@ if TYPE_CHECKING:
     from jumper_extension.monitor.backends.thread.monitor import PerformanceMonitor
 
 from jumper_extension.adapters.data import NodeInfo
-from jumper_extension.config.utils import instantiate, load_collectors_config
+from jumper_extension.config.utils import instantiate
+from jumper_extension.config.python import load_collectors_config
 
 
 class PipelineBuilder:
