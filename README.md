@@ -253,12 +253,18 @@ for a step-by-step walkthrough.
 
 To extend the metric pipeline with a new group of logically related metrics —
 for example network I/O or a hardware sensor — without replacing the entire
-monitor backend, JUmPER lets you register a **collector**: a `CollectorBackend`
-+ `StorageHandler` pair loaded automatically from `collectors.yaml`. See the
-full [Custom Collectors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/custom-collector/)
-for a step-by-step walkthrough including a `NetworkCollector` example.
+monitor backend, there are two ways to create a collector:
 
->Note that: collectors integrate only with the existing thread and subprocess_python monitors
+1. **Python collector** — a `CollectorBackend` + `StorageHandler` pair loaded
+   automatically from `collectors.yaml`. Works with the `thread` and
+   `subprocess_python` monitors. See the full
+   [Custom Python Collectors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/python-custom-collector/)
+   for a step-by-step walkthrough including a `NetworkCollector` example.
+
+2. **C collector** — a C translation unit implementing the `CCollector` interface,
+   compiled directly into the `native_c` binary. See the
+   [Custom C Collectors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/c-custom-collector/)
+   for a step-by-step walkthrough.
 
 ### Visualizing Custom Collector Metrics
 

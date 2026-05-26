@@ -16,9 +16,11 @@ This guide walks through:
 
 !!! tip "Adding a single metric group instead?"
     You may want to add only some minor part of a monitor instead of the full
-    monitor backend reimplementation, we call this part a [collector](custom-collector.md)
+    monitor backend reimplementation, we call this part a collector
     which by its name collects one or more logically related metrics like,
-    for example, network statistics.
+    for example, network statistics. We support two collector implementations 
+    for the respective backends: [Python collectors](python-custom-collector.md) (for `thread`
+    and `subprocess_python`) and [C collectors](c-custom-collector.md) (for `native_c`).
 
 ---
 
