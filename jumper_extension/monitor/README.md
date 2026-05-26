@@ -26,7 +26,8 @@ monitor/
     │   ├── _collector.py           # Python collector (run in child process)
     │   └── monitor.py              # SubprocessPerformanceMonitor
     ├── native_c/                   # Native C collector monitor
-    │   ├── collector.c / Makefile  # C collector source & build
+    │   ├── monitor.c / monitor.h / Makefile  # C source, shared header & build
+    │   ├── metrics/                # Per-metric C backends (cpu, memory, io, gpu)
     │   └── monitor.py              # CSubprocessPerformanceMonitor
     └── slurm_multinode/            # Multi-node SLURM monitor
         ├── _collector.py           # Per-node collector (run via srun)
@@ -82,11 +83,15 @@ directly and speaks the same JSON-lines protocol.  Benefits:
   (no compile-time dependency; graceful fallback if absent)
 - SLURM level auto-detected from the target process's environment
 
-The binary is **compiled automatically** from `collector.c` the first
+The binary is **compiled automatically** from `monitor.c` the first
 time the monitor is requested (or during `pip install`).  If compilation
 fails (no C compiler) or the sanity check detects missing metrics, the
 subprocess Python collector is used instead — no manual intervention
 needed.
+
+To add a new C metric backend see the
+[Custom C Collectors](https://scads.github.io/jumper_jupyter_performance/latest/guides/c-custom-collector/)
+guide.
 
 ### 3. Subprocess monitor — Python collector (`"subprocess_python"`)
 
@@ -150,61 +155,8 @@ values, and are not all-zero at each monitoring level.
 > skipped check does **not** mean the monitor is broken; it only
 > means the tailored check does not apply to it.
 
-## Custom monitors
+## Extending the monitor
 
-Any object that satisfies `MonitorProtocol` (see `common.py`) can be
-plugged into the service via the `monitor=` argument of
-`service.start_monitoring`. The protocol is small — lifecycle methods
-plus a handful of metadata attributes:
-
-```python
-class MonitorProtocol(Protocol):
-    interval: float
-    data: PerformanceData
-    num_cpus: int
-    num_system_cpus: int
-    num_gpus: int
-    memory_limits: dict
-    cpu_handles: list[int]
-    gpu_name: str
-    running: bool
-    is_imported: bool
-    session_source: Optional[str]
-
-    def start(self, interval: float = 1.0) -> None: ...
-    def stop(self) -> None: ...
-```
-
-A user-supplied monitor takes precedence over `monitor_type` and
-bypasses the built-in factory. The bundled `SlurmMultinodeMonitor`
-is itself a good example of a non-trivial custom monitor:
-
-```python
-from jumper_extension.core.service import build_perfmonitor_service
-from jumper_extension.monitor.backends.slurm_multinode import (
-    SlurmMultinodeMonitor,
-)
-
-service = build_perfmonitor_service()
-
-my_monitor = SlurmMultinodeMonitor(
-    log_path="runs/2026-04-21/jumper_multinode.jsonl",
-    python_executable="/opt/conda/envs/hpc/bin/python",
-)
-
-service.start_monitoring(interval=1.0, monitor=my_monitor)
-
-# ... run workload ...
-
-service.stop_monitoring()
-```
-
-After `start_monitoring` returns, the visualizer, reporter, session
-exporter and magic commands are all transparently attached to the
-custom monitor. The full walk-through with a minimal end-to-end
-skeleton lives in the online docs:
-[Custom Monitors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/custom-monitor/).
-
-> **Note.** `--check-sanity` is automatically skipped when a custom
-> monitor is plugged in via `monitor=`, because the tailored check
-> assumes the metric schema of the built-in backends (see above).
+- [Custom Monitors](https://scads.github.io/jumper_jupyter_performance/latest/guides/custom-monitor/) — implement a full `MonitorProtocol` backend
+- [Custom Python Collectors](https://scads.github.io/jumper_jupyter_performance/latest/guides/python-custom-collector/) — add a metric group to `thread` / `subprocess_python` via `collectors.yaml`
+- [Custom C Collectors](https://scads.github.io/jumper_jupyter_performance/latest/guides/c-custom-collector/) — add a C metric backend to the `native_c` binary
