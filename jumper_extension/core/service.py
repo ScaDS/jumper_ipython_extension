@@ -1,7 +1,7 @@
 import logging
 import shlex
 from contextlib import contextmanager
-from typing import Optional, Tuple, List, Dict, Iterator
+from typing import Any, Optional, Tuple, List, Dict, Iterator
 
 import pandas as pd
 
@@ -11,6 +11,7 @@ from jumper_extension.core.parsers import (
     parse_arguments,
     build_perfmonitor_start_parser,
     build_perfreport_parser,
+    build_ai_review_parser,
     build_auto_perfreports_parser,
     build_perfmonitor_plot_parser,
     build_export_perfdata_parser,
@@ -28,6 +29,7 @@ from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
+from jumper_extension.adapters.ai_reviewer.reviewer import AIReviewerProtocol, build_ai_reviewer
 from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.monitor.common import MonitorProtocol
 from jumper_extension.monitor.backends.thread import PerformanceMonitor
@@ -64,6 +66,7 @@ class PerfmonitorService:
         monitor: MonitorProtocol,
         visualizer: VisualizerProtocol,
         reporter: PerformanceReporter,
+        ai_reviewer: AIReviewerProtocol,
         cell_history: CellHistory,
         script_writer: NotebookScriptWriter,
     ):
@@ -74,6 +77,8 @@ class PerfmonitorService:
             monitor: Performance monitor that will collect metrics.
             visualizer: Visualizer attached to the monitor.
             reporter: Reporter responsible for performance reports.
+            ai_reviewer: Adapter running the LLM-powered optimization
+                review workflow.
             cell_history: Cell history tracker for executed cells.
             script_writer: Script writer used for code recording.
         """
@@ -81,6 +86,7 @@ class PerfmonitorService:
         self.monitor = monitor
         self.visualizer = visualizer
         self.reporter = reporter
+        self.ai_reviewer = ai_reviewer
         self.cell_history = cell_history
         self.script_writer = script_writer
         self._skip_report = False
@@ -300,6 +306,7 @@ class PerfmonitorService:
         self.settings.monitoring.running = self.monitor.running
         self.visualizer.attach(self.monitor)
         self.reporter.attach(self.monitor)
+        self.ai_reviewer.attach(self.monitor)
         return None
 
     def stop_monitoring(self) -> None:
@@ -832,6 +839,75 @@ class PerfmonitorService:
         finally:
             self.on_post_run_cell(None)
 
+    def ai_review(
+        self,
+        shell: Any,
+        cell_range: Optional[Tuple[int, int]] = None,
+        level: str = "process",
+    ) -> None:
+        """Run the AI-powered performance review on a fresh cell selection.
+
+        Delegates to the attached :attr:`ai_reviewer`, which collects
+        the cell code and performance context, asks the LLM to identify
+        the bottleneck and propose optimizations, then displays the
+        numbered options together with ``--resume`` commands. The
+        resulting state is kept under a short run id so a follow-up
+        ``%perfmonitor_ai_review --resume <id> --select <n>`` can apply
+        (optionally refined) one of the suggestions.
+
+        Args:
+            shell: The current IPython shell instance.
+            cell_range: Optional ``(start_idx, end_idx)`` cell range to
+                analyze. If ``None``, the last non-short cell is used.
+            level: Monitoring level used to gather performance data.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.ai_review(shell)
+            >>> service.ai_review(shell, cell_range=(2, 4), level="user")
+        """
+        self.ai_reviewer.review(shell, cell_range=cell_range, level=level)
+
+    def ai_review_resume(
+        self,
+        shell: Any,
+        run_id: str,
+        select: int,
+        refine: str = "",
+    ) -> None:
+        """Apply a previously suggested optimization, optionally refined.
+
+        Delegates to the attached :attr:`ai_reviewer`, which loads the
+        state stored under ``run_id`` by a prior ``%perfmonitor_ai_review``
+        run, marks suggestion ``select`` as chosen and runs the resume
+        workflow: if ``refine`` is provided, the suggestion is rewritten
+        per the custom instruction first; either way the resulting code
+        is placed into the next cell via ``shell.set_next_input``.
+
+        Args:
+            shell: The current IPython shell instance.
+            run_id: Identifier of a pending review (see the resume
+                commands printed by ``%perfmonitor_ai_review``).
+            select: 1-based index of the suggestion to apply.
+            refine: Optional custom instruction used to rewrite the
+                chosen suggestion before applying it.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.ai_review_resume(shell, "abc123", select=1)
+            >>> service.ai_review_resume(
+            ...     shell,
+            ...     "abc123",
+            ...     select=2,
+            ...     refine="use multiprocessing instead of joblib",
+            ... )
+        """
+        self.ai_reviewer.resume(shell, run_id, select=select, refine=refine)
+
     def close(self) -> None:
         """Stop monitoring and release resources held by the service.
 
@@ -986,6 +1062,38 @@ class PerfmonitorMagicAdapter:
             text=args.text
         )
 
+    def perfmonitor_ai_review(self, line: str, shell: Any) -> None:
+        """Run a fresh AI review or apply a suggestion from a previous one."""
+        args = parse_arguments(self.parsers.ai_review, line)
+        if not args:
+            return
+
+        if args.resume:
+            if args.select is None:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.SELECT_REQUIRED_FOR_RESUME]
+                )
+                return
+            self.service.ai_review_resume(
+                shell,
+                run_id=args.resume,
+                select=args.select,
+                refine=args.refine,
+            )
+            return
+
+        cell_range = None
+        if args.cell:
+            cell_range = self._parse_cell_range(args.cell)
+            if cell_range is None:
+                return
+
+        self.service.ai_review(
+            shell,
+            cell_range=cell_range,
+            level=args.level,
+        )
+
     def perfmonitor_export_perfdata(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:
         """Export performance data or push as DataFrame."""
         args = parse_arguments(self.parsers.export_perfdata, line)
@@ -1031,6 +1139,8 @@ class PerfmonitorMagicAdapter:
             "perfmonitor_start [interval] [--monitor TYPE] -- start monitoring (default: 1s, monitor=default)",
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
+            "perfmonitor_ai_review [--cell RANGE] [--level LEVEL] -- LLM-powered optimization"
+            " suggestions; resume with --resume RUN_ID --select N [--refine TEXT]",
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
             "perfmonitor_enable_perfreports [--level LEVEL] [--interval INTERVAL] [--text] -- enable auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
@@ -1182,6 +1292,7 @@ def build_perfmonitor_service(
         display_disabled=display_disabled,
         display_disabled_reason=display_disabled_reason,
     )
+    ai_reviewer = build_ai_reviewer(reporter)
     script_writer = NotebookScriptWriter(cell_history)
 
     return PerfmonitorService(
@@ -1189,6 +1300,7 @@ def build_perfmonitor_service(
         monitor=monitor,
         visualizer=visualizer,
         reporter=reporter,
+        ai_reviewer=ai_reviewer,
         cell_history=cell_history,
         script_writer=script_writer,
     )
@@ -1237,6 +1349,7 @@ def build_perfmonitor_magic_adapter(
     parsers = ArgParsers(
         perfmonitor_start=build_perfmonitor_start_parser(),
         perfreport=build_perfreport_parser(),
+        ai_review=build_ai_review_parser(),
         auto_perfreports=build_auto_perfreports_parser(),
         perfmonitor_plot=build_perfmonitor_plot_parser(),
         export_perfdata=build_export_perfdata_parser(),

@@ -249,6 +249,45 @@ class PerfmonitorMagics(Magics):
         self.magic_adapter.perfmonitor_perfreport(line)
 
     @line_magic
+    def perfmonitor_ai_review(self, line: str) -> None:
+        """Get LLM-powered optimization suggestions, or apply one.
+
+        Fresh run: analyzes the selected cell's code and performance
+        data, asks the LLM to identify the bottleneck and propose
+        ranked optimization options, then displays them together with
+        a run id and ``--resume`` commands.
+
+        Resume run: applies suggestion ``--select N`` from a previous
+        ``--resume RUN_ID`` review - optionally rewriting it first via
+        ``--refine "custom instruction"`` - and places the resulting
+        code into the next cell.
+
+        Args:
+            line: Raw argument string, such as ``"--cell 5 --level
+                process"`` or ``"--resume abc123 --select 1"``.
+        Returns:
+            None
+
+        Examples:
+            Analyze the last cell::
+
+                %perfmonitor_ai_review
+
+            Analyze a specific cell range::
+
+                %perfmonitor_ai_review --cell 2:5 --level user
+
+            Apply the first suggestion from a previous run::
+
+                %perfmonitor_ai_review --resume abc123 --select 1
+
+            Apply a refined version of the second suggestion::
+
+                %perfmonitor_ai_review --resume abc123 --select 2 --refine "use multiprocessing instead of joblib"
+        """
+        self.magic_adapter.perfmonitor_ai_review(line, self.shell)
+
+    @line_magic
     def perfmonitor_export_perfdata(self, line: str) -> None:
         """Export performance data or push it into the notebook.
 

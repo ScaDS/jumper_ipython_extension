@@ -30,6 +30,11 @@ urls = {Homepage = "https://github.com/ScaDS/jumper_jupyter_performance"}
 jumper_extension = "jumper_extension:load_ipython_extension"
 
 [project.optional-dependencies]
+ai = [
+    "langgraph>=0.2",
+    "langchain-openai>=0.2",
+]
+
 test = [
     "pytest",
     "pytest-mock",
@@ -49,5 +54,6 @@ include = ["jumper_extension*"]
 [tool.setuptools.package-data]
 "jumper_extension.config" = ["*.yaml"]
 "jumper_extension.templates.report" = ["*.html", "*.css"]
+"jumper_extension.templates.ai_review" = ["*.html", "*.css"]
 "jumper_extension.templates.visualizer.plotly" = ["**/*"]
 "jumper_extension.monitor.backends.native_c" = ["collector.c", "Makefile", "jumper_collector"]

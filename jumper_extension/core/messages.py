@@ -24,6 +24,7 @@ class ExtensionErrorCode(Enum):
     INVALID_INTERVAL_VALUE = auto()
     INVALID_METRIC_SUBSET = auto()
     NO_ACTIVE_MONITOR = auto()
+    SELECT_REQUIRED_FOR_RESUME = auto()
     MONITOR_ALREADY_RUNNING = auto()
     UNSUPPORTED_FORMAT = auto()
     INVALID_LEVEL = auto()
@@ -48,6 +49,7 @@ class ExtensionInfoCode(Enum):
     SESSION_IMPORTED = auto()
     IMPORTED_SESSION_PLOT = auto()
     IMPORTED_SESSION_RESOURCES = auto()
+    AI_REVIEW_NOT_AVAILABLE = auto()
 
 _BASE_EXTENSION_ERROR_MESSAGES = {
     ExtensionErrorCode.PYNVML_NOT_AVAILABLE: (
@@ -77,6 +79,9 @@ _BASE_EXTENSION_ERROR_MESSAGES = {
     ),
     ExtensionErrorCode.NO_ACTIVE_MONITOR: (
         "No active performance monitoring session"
+    ),
+    ExtensionErrorCode.SELECT_REQUIRED_FOR_RESUME: (
+        "Please provide --select N to choose which suggestion to apply"
     ),
     ExtensionErrorCode.MONITOR_ALREADY_RUNNING: (
         "Performance monitoring already running"
@@ -129,6 +134,10 @@ _BASE_EXTENSION_INFO_MESSAGES = {
     ExtensionInfoCode.SESSION_IMPORTED: ("Session imported successfully: {source}"),
     ExtensionInfoCode.IMPORTED_SESSION_PLOT: ("Using imported session data for plotting: {source}"),
     ExtensionInfoCode.IMPORTED_SESSION_RESOURCES: ("Showing resources from imported session: {source}"),
+    ExtensionInfoCode.AI_REVIEW_NOT_AVAILABLE: (
+        "AI review is not available: {reason}. Install the optional "
+        "dependencies with: pip install jumper-extension[ai]"
+    ),
 }
 
 def _apply_prefix(messages):

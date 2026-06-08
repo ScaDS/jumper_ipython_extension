@@ -13,6 +13,7 @@ class ArgParsers:
     """Configuration for command-line argument parsers."""
     perfmonitor_start: argparse.ArgumentParser
     perfreport: argparse.ArgumentParser
+    ai_review: argparse.ArgumentParser
     auto_perfreports: argparse.ArgumentParser
     perfmonitor_plot: argparse.ArgumentParser
     export_perfdata: argparse.ArgumentParser
@@ -73,6 +74,40 @@ def build_perfreport_parser() -> argparse.ArgumentParser:
         "--text",
         action="store_true",
         help="Show report in text format"
+    )
+    return parser
+
+def build_ai_review_parser() -> argparse.ArgumentParser:
+    """Build an ArgumentParser for the perfmonitor_ai_review command."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--cell",
+        type=str,
+        help="Cell index or range to analyze (e.g., 5, 2:8, :5)"
+    )
+    parser.add_argument(
+        "--level",
+        default="process",
+        choices=get_available_levels(),
+        help="Performance level",
+    )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        metavar="RUN_ID",
+        help="Resume a previous review and apply one of its suggestions",
+    )
+    parser.add_argument(
+        "--select",
+        type=int,
+        metavar="N",
+        help="1-based index of the suggestion to apply (required with --resume)",
+    )
+    parser.add_argument(
+        "--refine",
+        type=str,
+        default="",
+        help="Custom instruction used to rewrite the chosen suggestion before applying it",
     )
     return parser
 

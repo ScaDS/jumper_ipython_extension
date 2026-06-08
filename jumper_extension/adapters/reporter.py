@@ -32,7 +32,7 @@ class ReportBuilder:
         self.min_duration = None
         self.analyzer = analyzer
 
-    def _prepare_report_data(self, cell_range, level):
+    def prepare_report_data(self, cell_range, level):
         """Prepare all necessary data for performance reporting.
 
         Returns:
@@ -170,7 +170,7 @@ class ReportPrinter(ReportBuilder):
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""
-        data = self._prepare_report_data(cell_range, level)
+        data = self.prepare_report_data(cell_range, level)
         if data is None:
             return
 
@@ -254,7 +254,7 @@ class ReportDisplayer(ReportBuilder):
     def display(self, cell_range=None, level="process"):
         """Print performance report"""
 
-        data = self._prepare_report_data(cell_range, level)
+        data = self.prepare_report_data(cell_range, level)
         if data is None:
             return
 
@@ -341,6 +341,21 @@ class PerformanceReporter:
         # Attach to displayer
         self.displayer.monitor = monitor
         self.displayer.min_duration = monitor.interval
+
+    def build_context(self, cell_range=None, level: str = "process") -> dict | None:
+        """Assemble cell code, performance data and tags for the AI review agent.
+
+        Reuses :meth:`ReportBuilder.prepare_report_data`, which already
+        gathers everything the agent needs: ``filtered_cells`` (with
+        ``raw_cell`` holding the cell source code), ``perfdata``, and
+        ``tags_model``.
+
+        Returns:
+            dict | None: ``{filtered_cells, perfdata, tags_model,
+            total_duration, cell_range}``, or ``None`` if no data is
+            available for the requested range.
+        """
+        return self.printer.prepare_report_data(cell_range, level)
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""
