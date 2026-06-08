@@ -6,12 +6,9 @@ from langchain_openai import ChatOpenAI
 
 DEFAULT_BASE_URL = "https://llm.scads.ai/v1"
 DEFAULT_MODEL = "MiniMaxAI/MiniMax-M2.7"
-# Kimi-K2.6 is a "thinking" model: it spends a large share of its output
-# budget on hidden reasoning before the final answer, so max_tokens must
-# be generous enough to leave room for the actual (structured) response.
+
 DEFAULT_MAX_TOKENS = 8000
-# A single call can legitimately take over a minute on this model; bound
-# it so a stuck request fails with a clear error instead of hanging.
+
 DEFAULT_TIMEOUT = 120.0
 
 
