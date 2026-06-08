@@ -5,7 +5,14 @@ from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
 DEFAULT_BASE_URL = "https://llm.scads.ai/v1"
-DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+DEFAULT_MODEL = "MiniMaxAI/MiniMax-M2.7"
+# Kimi-K2.6 is a "thinking" model: it spends a large share of its output
+# budget on hidden reasoning before the final answer, so max_tokens must
+# be generous enough to leave room for the actual (structured) response.
+DEFAULT_MAX_TOKENS = 8000
+# A single call can legitimately take over a minute on this model; bound
+# it so a stuck request fails with a clear error instead of hanging.
+DEFAULT_TIMEOUT = 120.0
 
 
 @dataclass
@@ -14,6 +21,8 @@ class LLMClientConfig:
     base_url: str
     api_key: str
     model: str
+    max_tokens: int
+    timeout: float
 
     @classmethod
     def from_env(cls) -> "LLMClientConfig":
@@ -22,6 +31,8 @@ class LLMClientConfig:
             base_url=os.environ.get("JUMPER_AI_BASE_URL", DEFAULT_BASE_URL),
             api_key=os.environ.get("JUMPER_AI_API_KEY", ""),
             model=os.environ.get("JUMPER_AI_MODEL", DEFAULT_MODEL),
+            max_tokens=int(os.environ.get("JUMPER_AI_MAX_TOKENS", DEFAULT_MAX_TOKENS)),
+            timeout=float(os.environ.get("JUMPER_AI_TIMEOUT", DEFAULT_TIMEOUT)),
         )
 
 
@@ -35,4 +46,6 @@ def build_llm(config: LLMClientConfig) -> BaseChatModel:
         base_url=config.base_url,
         api_key=config.api_key,
         model=config.model,
+        max_tokens=config.max_tokens,
+        timeout=config.timeout,
     )

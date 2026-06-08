@@ -40,8 +40,7 @@
             <p class="ai-option-description">{{ option.description }}</p>
             <details class="ai-diff">
               <summary>Show suggested code (diff)</summary>
-              <pre class="ai-diff-body">{% for line in option.diff %}<span class="ai-diff-line ai-diff-line--{{ line.kind }}">{{ line.text }}</span>
-{% endfor %}</pre>
+              <pre class="ai-diff-body">{% for line in option.diff %}<span class="ai-diff-line ai-diff-line--{{ line.kind }}">{{ line.text }}</span>{% endfor %}</pre>
             </details>
             <div class="ai-resume-command">
               <code>{{ option.resume_command }}</code>

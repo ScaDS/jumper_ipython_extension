@@ -22,7 +22,13 @@ class _SuggestionSchema(BaseModel):
     """Structured-output schema for a single optimization suggestion."""
     title: str = Field(description="Short (3-6 word) name of the optimization technique")
     description: str = Field(description="One or two sentences explaining the change and its benefit")
-    code: str = Field(description="Complete rewritten cell source code implementing the suggestion")
+    code: str = Field(
+        description=(
+            "Complete rewritten cell source code implementing the suggestion, "
+            "as properly formatted multi-line Python (real newlines between "
+            "statements, PEP 8 style) - never a semicolon-joined one-liner"
+        )
+    )
 
 
 class _SuggestionListSchema(BaseModel):

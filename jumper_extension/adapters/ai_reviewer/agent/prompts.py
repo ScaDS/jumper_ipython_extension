@@ -23,8 +23,10 @@ Each option must contain:
 
 Keep each suggested rewrite focused on a single optimization idea, runnable \
 as a standalone notebook cell, and as close to the original code as possible \
-outside of the optimized section. Return the options as a JSON array matching \
-the requested schema, ordered from most to least impactful.\
+outside of the optimized section. Write "code" as properly formatted \
+multi-line Python with real newlines between statements (PEP 8 style) - \
+never as a semicolon-joined one-liner. Return the options as a JSON array \
+matching the requested schema, ordered from most to least impactful.\
 """
 
 REFINE_SYSTEM_PROMPT = """\
@@ -35,5 +37,7 @@ custom instruction.
 
 Rewrite the suggested code so it follows the user's instruction while still \
 addressing the original bottleneck analysis. Respond with the complete \
-rewritten cell source code only - no explanations, no markdown code fences.\
+rewritten cell source code only - no explanations, no markdown code fences. \
+Format it as properly formatted multi-line Python with real newlines between \
+statements (PEP 8 style) - never as a semicolon-joined one-liner.\
 """
