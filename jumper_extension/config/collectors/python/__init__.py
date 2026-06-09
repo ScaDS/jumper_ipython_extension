@@ -1,12 +1,22 @@
-from pathlib import Path
+from importlib import resources
 
 import yaml
 
 
 def _read_collectors_config() -> dict:
-    config_path = Path(__file__).parent / "collectors.yaml"
-    with open(config_path) as f:
-        return yaml.safe_load(f)
+    try:
+        config_text = (
+            resources.files(__package__)
+            .joinpath("collectors.yaml")
+            .read_text(encoding="utf-8")
+        )
+    except AttributeError:
+        config_text = resources.read_text(
+            __package__,
+            "collectors.yaml",
+            encoding="utf-8",
+        )
+    return yaml.safe_load(config_text)
 
 
 # Loaded once at import time — not affected by test patches on builtins.open.

@@ -43,13 +43,15 @@ class PipelineBuilder:
                 deferred.append((collector_cfg, handler_cfg, inject_keys))
                 continue
             injected = {k: getattr(self._monitor, k) for k in inject_keys}
-            backend = instantiate(collector_cfg, **injected)
-            meta = backend.setup() or {}
+            collector_backend = instantiate(collector_cfg, **injected)
+            meta = collector_backend.setup() or {}
             if "num_gpus" in meta:
                 num_gpus = meta["num_gpus"]
                 gpu_memory = meta.get("gpu_memory", 0.0)
                 gpu_name = meta.get("gpu_name", "")
-            self._monitor._pipeline.append((backend, instantiate(handler_cfg)))
+            self._monitor._pipeline.append(
+                (collector_backend, instantiate(handler_cfg))
+            )
 
         self._monitor.node_info = NodeInfo(
             node="local",
@@ -69,6 +71,8 @@ class PipelineBuilder:
     ):
         for collector_cfg, handler_cfg, inject_keys in deferred:
             injected = {k: getattr(self._monitor, k) for k in inject_keys}
-            backend = instantiate(collector_cfg, **injected)
-            backend.setup()
-            self._monitor._pipeline.append((backend, instantiate(handler_cfg)))
+            collector_backend = instantiate(collector_cfg, **injected)
+            collector_backend.setup()
+            self._monitor._pipeline.append(
+                (collector_backend, instantiate(handler_cfg))
+            )
