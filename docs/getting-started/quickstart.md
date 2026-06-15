@@ -29,7 +29,8 @@ Begin collecting performance data for subsequent cells:
 ```
 
 - `interval` is optional and specifies how often metrics are sampled in seconds.
-- If omitted, the default interval of `1` second is used.
+- If omitted, the configured default interval (`1.0` second) is used. See
+  [Configuration](../guides/configuration.md) to change this default.
 
 ### 2. Run your code
 
@@ -47,6 +48,8 @@ Show an aggregate report for the current session:
 - Without arguments, the report covers all cells executed so far.
 - `--cell RANGE` restricts the analysis to specific cells (for example `5`, `2:8`, `:5`, or `3:`).
 - `--level LEVEL` selects the monitoring scope: `process`, `user`, `system`, or `slurm` (if available).
+  The default shown here comes from the global configuration — see
+  [Configuration](../guides/configuration.md).
 
 The report prints aggregated metrics such as CPU utilization, memory usage, GPU utilization, and GPU memory across the selected range.
 

@@ -8,8 +8,9 @@ The core package (`jumper_extension.core`) defines the domain model, configurati
 
 ## **State**
 
-The `state` module contains dataclasses describing runtime settings for
-monitoring, automatic reports, and exported or loaded variables.
+The `state` module contains dataclasses describing mutable runtime state for
+monitoring and automatic reports, seeded from the configurable defaults in
+`AppConfig.settings`.
 
 ::: jumper_extension.core.state
 

@@ -6,7 +6,9 @@ at compile time, not via `default.yaml`.
 
 !!! note
     For the **Python** monitor backends (`thread`, `subprocess_python`) see
-    [Custom Python Collectors](python-custom-collector.md).
+    [Custom Python Collectors](python-custom-collector.md). For an overview of
+    the config system this `default.yaml` is part of, see
+    [Configuration](configuration.md).
 
 ---
 

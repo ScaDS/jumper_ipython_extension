@@ -7,7 +7,9 @@ automatically.
 
 !!! note
     This guide covers the **Python** monitor backends (`thread`, `subprocess_python`).
-    For the native C binary see [Custom C Collectors](c-custom-collector.md).
+    For the native C binary see [Custom C Collectors](c-custom-collector.md). For an
+    overview of the config system this `default.yaml` is part of, see
+    [Configuration](configuration.md).
 
 ---
 

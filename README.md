@@ -269,7 +269,7 @@ monitor backend, there are two ways to create a collector:
 ### Visualizing Custom Collector Metrics
 
 Custom collector columns are available to `%perfmonitor_plot --metrics` once
-registered in `plots.yaml`. See the
+registered in `config/plots/default.yaml`. See the
 [Visualizing Custom Collector Metrics guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/visualizing-custom-collector-metrics/)
 for the full reference — built-in plot types, `default_subsets`, and a
 disk-vs-network composite panel example.

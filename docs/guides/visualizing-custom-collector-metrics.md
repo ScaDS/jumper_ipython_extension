@@ -1,8 +1,12 @@
 # Visualizing Custom Collector Metrics
 
+!!! note
+    For an overview of the config system this `default.yaml` is part of, see
+    [Configuration](configuration.md).
+
 Every column produced by a collector ends up as a column in the performance
 DataFrame. To make it available to `%perfmonitor_plot --metrics`, add an entry to
-`jumper_extension/config/plots.yaml` under `subsets:`:
+`jumper_extension/config/plots/default.yaml` under `subsets:`:
 
 ```yaml
 subsets:
@@ -30,10 +34,10 @@ interactive widgets, direct plots, live mode, and exports.
 ## Controlling which subsets appear by default
 
 When `%perfmonitor_plot` is called without `--metrics`, it shows the subsets listed
-in `default_subsets:` at the top of `plots.yaml`:
+in `default_subsets:` at the top of `config/plots/default.yaml`:
 
 ```yaml
-# plots.yaml
+# config/plots/default.yaml
 default_subsets: [cpu, mem, io]   # shown when %perfmonitor_plot is called with no --metrics
 
 subsets:
@@ -60,7 +64,7 @@ Lustre/NFS mount). Both `io_read` and `net_bytes_recv` are collected as cumulati
 counters and stored in bytes/s — the same unit — so they can be plotted together on
 one panel using `composite_series`.
 
-Add to `plots.yaml`:
+Add to `config/plots/default.yaml`:
 
 ```yaml
 subsets:
