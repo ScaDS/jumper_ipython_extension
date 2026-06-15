@@ -845,34 +845,62 @@ class PerformanceVisualizer:
             )
             return combined
 
-        # Use a FigureWidget for in-place, incremental updates. This is
-        # still pure Plotly (FigureWidget is plotly.graph_objects' ipywidgets
-        # variant): the widget owns its own Comm channel, so updates pushed
-        # from a background thread are routed correctly (regular display()
-        # calls from a thread have no ``parent_header`` and get dropped by
-        # JupyterLab), and only the data/layout diffs are sent each tick
-        # instead of re-rendering the entire plot.
-        initial_fig = _build_combined_figure()
-        fig_widget = go.FigureWidget(
-            data=initial_fig.data,
-            layout=initial_fig.layout,
-        )
-        display(fig_widget)
+        # Render via the standard Plotly mimetype path (no ipywidgets) and
+        # refresh in place using ``display_id`` + ``update=True``.
+        #
+        # Important: a background thread has no ``parent_header`` set on the
+        # ipykernel, so any IOPub message it emits is dropped by the
+        # frontend (this is what made the live view update only
+        # sporadically — typically only when the user happened to run
+        # another cell, momentarily setting a parent header).  We capture
+        # the parent header of the cell that called ``plot_live`` and
+        # re-attach it inside the worker thread before each ``display``.
+        ipython = None
+        kernel = None
+        saved_parent = None
+        saved_ident = None
+        try:
+            from IPython import get_ipython
+            ipython = get_ipython()
+            kernel = getattr(ipython, "kernel", None) if ipython else None
+            if kernel is not None:
+                try:
+                    saved_parent = kernel.get_parent("shell")
+                except Exception:
+                    saved_parent = getattr(kernel, "_parent_header", None)
+                ident = getattr(kernel, "_parent_ident", None)
+                if isinstance(ident, dict):
+                    saved_ident = ident.get("shell")
+                else:
+                    saved_ident = ident
+        except Exception:
+            logger.debug("Could not capture parent header for live view", exc_info=True)
+
+        def _attach_parent():
+            if kernel is None or saved_parent is None:
+                return
+            try:
+                kernel.set_parent(saved_ident, saved_parent, channel="shell")
+            except TypeError:
+                try:
+                    kernel.set_parent(saved_ident, saved_parent)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+        display(_build_combined_figure(), display_id=grid_id)
 
         # -- Background thread --------------------------------------------- #
         def _refresh():
             try:
-                new_fig = _build_combined_figure()
+                fig = _build_combined_figure()
             except Exception:
                 logger.debug("Live plot build error", exc_info=True)
                 return
             try:
-                with fig_widget.batch_update():
-                    # Replace traces and layout in one Comm message.
-                    fig_widget.data = ()
-                    if new_fig.data:
-                        fig_widget.add_traces(list(new_fig.data))
-                    fig_widget.layout.update(new_fig.layout)
+                _attach_parent()
+                display(fig, display_id=grid_id, update=True)
             except Exception:
                 logger.debug("Live plot refresh error", exc_info=True)
 
