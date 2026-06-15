@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://scads.github.io/jumper_jupyter_performance/guides/session-transfer/">
+        <link rel="canonical" href="https://scads.github.io/jumper_jupyter_performance/guides/custom-monitor/">
       
       
-        <link rel="prev" href="../../getting-started/quickstart/">
+        <link rel="prev" href="../plot-export/">
       
       
-        <link rel="next" href="../script-export/">
+        <link rel="next" href="../python-custom-collector/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Transfer Sessions Between Machines - JUmPER – Jupyter meets Performance</title>
+        <title>Custom Monitors - JUmPER – Jupyter meets Performance</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#transfer-sessions-between-machines" class="md-skip">
+        <a href="#custom-monitors" class="md-skip">
           Skip to content
         </a>
       
@@ -105,7 +105,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Transfer Sessions Between Machines
+              Custom Monitors
             
           </span>
         </div>
@@ -525,37 +525,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Session Transfer
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../session-transfer/" class="md-nav__link">
         
   
   
@@ -571,37 +544,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#try-it-yourself" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Try it yourself:
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -667,10 +609,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../custom-monitor/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Monitors
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -686,6 +655,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-monitorprotocol-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The MonitorProtocol surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugging-a-custom-monitor-into-the-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugging a custom monitor into the service
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-example-slurm-multi-node-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked example — SLURM multi-node monitor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-your-own-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing your own monitor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interaction-with-check-sanity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction with --check-sanity
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1650,10 +1694,54 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#try-it-yourself" class="md-nav__link">
+  <a href="#the-monitorprotocol-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Try it yourself:
+        The MonitorProtocol surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugging-a-custom-monitor-into-the-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugging a custom monitor into the service
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-example-slurm-multi-node-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked example — SLURM multi-node monitor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-your-own-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing your own monitor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interaction-with-check-sanity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction with --check-sanity
       
     </span>
   </a>
@@ -1680,41 +1768,273 @@
   
 
 
-<h1 id="transfer-sessions-between-machines">Transfer Sessions Between Machines</h1>
-<p>This guide will show how to export a monitoring session and import it on another system for offline analysis.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Presentation</label><label for="__tabbed_1_2">Video</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p><iframe 
-    src="https://scribehow.com/embed/Export_and_Import_a_Jupyter_Notebook_Session__zGYSa5TrT86yAUlebmANyQ"
-    width="100%" 
-    height="700"
-    allow="fullscreen"
-    style="aspect-ratio: 1 / 1; border: 0; min-height: 480px">
-</iframe></p>
+<h1 id="custom-monitors">Custom Monitors</h1>
+<p>JUmPER's monitoring layer is fully pluggable. The service, reporter,
+visualizer and session exporter all program against a single
+structural interface — <code>MonitorProtocol</code> — defined in
+<code>jumper_extension/monitor/common.py</code>. Any object that satisfies it can
+be used as a drop-in replacement for the built-in backends.</p>
+<p>This guide walks through:</p>
+<ol>
+<li><a href="#the-monitorprotocol-surface">The <code>MonitorProtocol</code> surface</a></li>
+<li><a href="#plugging-a-custom-monitor-into-the-service">Plugging a custom monitor into the service</a></li>
+<li><a href="#worked-example-slurm-multi-node-monitor">Worked example — the SLURM multi-node monitor</a></li>
+<li><a href="#writing-your-own-monitor">Writing your own monitor</a></li>
+<li><a href="#interaction-with-check-sanity">Interaction with <code>--check-sanity</code></a></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Adding a single metric group instead?</p>
+<p>You may want to add only some minor part of a monitor instead of the full
+monitor backend reimplementation, we call this part a collector
+which by its name collects one or more logically related metrics like,
+for example, network statistics. We support two collector implementations 
+for the respective backends: <a href="../python-custom-collector/">Python collectors</a> (for <code>thread</code>
+and <code>subprocess_python</code>) and <a href="../c-custom-collector/">C collectors</a> (for <code>native_c</code>).</p>
 </div>
-<div class="tabbed-block">
-<p><iframe 
-    src="https://scribehow.com/embed/Export_and_Import_a_Jupyter_Notebook_Session__zGYSa5TrT86yAUlebmANyQ?as=video"
-    width="100%"
-    height="700"
-    allow="fullscreen"
-    style="aspect-ratio: 16 / 12; border: 0; min-height: 480px">
-</iframe></p>
+<hr />
+<h2 id="the-monitorprotocol-surface">The <code>MonitorProtocol</code> surface</h2>
+<p>A monitor is any object with the following attributes and methods:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">PerformanceData</span>
+
+
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MonitorProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="c1"># Lifecycle</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">running</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="c1"># Collected data</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">PerformanceData</span>
+
+    <span class="c1"># Timestamps (filled in by start()/stop())</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">wallclock_start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">wallclock_stop_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+
+    <span class="c1"># Hardware / context metadata</span>
+    <span class="n">num_cpus</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">num_system_cpus</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">num_gpus</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">gpu_memory</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">gpu_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cpu_handles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">memory_limits</span><span class="p">:</span> <span class="nb">dict</span>
+
+    <span class="c1"># Session state (set to False / None for live monitors)</span>
+    <span class="n">is_imported</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">session_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</code></pre></div>
+<p><code>PerformanceData</code> (see <code>jumper_extension/adapters/data.py</code>) is the
+per-level in-memory container. Built-in monitors populate it via
+<code>self.data.add_sample(level, time, cpu_util, memory, gpu_util,
+gpu_band, gpu_mem, io_counters)</code> from their collection loop.</p>
+<p>The protocol is <code>@runtime_checkable</code>, so</p>
+<div class="highlight"><pre><span></span><code><span class="nb">isinstance</span><span class="p">(</span><span class="n">my_monitor</span><span class="p">,</span> <span class="n">MonitorProtocol</span><span class="p">)</span>
+</code></pre></div>
+<p>tells you whether your class exposes the required attributes.</p>
+<hr />
+<h2 id="plugging-a-custom-monitor-into-the-service">Plugging a custom monitor into the service</h2>
+<p><code>PerfmonitorService.start_monitoring</code> accepts an optional <code>monitor=</code>
+parameter. A user-supplied instance takes precedence over
+<code>monitor_type</code> and bypasses the built-in factory:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.core.service</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_perfmonitor_service</span>
+
+<span class="n">service</span> <span class="o">=</span> <span class="n">build_perfmonitor_service</span><span class="p">()</span>
+<span class="n">service</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="n">my_custom_monitor</span><span class="p">)</span>
+
+<span class="c1"># ... workload ...</span>
+
+<span class="n">service</span><span class="o">.</span><span class="n">stop_monitoring</span><span class="p">()</span>
+</code></pre></div>
+<p>After <code>start_monitoring</code> returns, the service transparently attaches
+the visualizer, reporter, session exporter and magic commands to your
+monitor. Everything that works with the default backends — live
+plots, <code>%perfmonitor_perfreport</code>, <code>export_session</code>, etc. — works with
+a custom monitor as long as its <code>data</code> container is populated on the
+same shape as the built-in monitors (CPU/memory/GPU/IO metric columns
+at the expected per-level granularity).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When <code>monitor=</code> is used together with <code>check_sanity=True</code> (the
+Python counterpart of <code>--check-sanity</code>), the tailored sanity check
+is automatically skipped and a warning is printed. The tailored
+check assumes the metric schema of the built-in backends; see
+<a href="#interaction-with-check-sanity">Interaction with <code>--check-sanity</code></a>.</p>
 </div>
+<hr />
+<h2 id="worked-example-slurm-multi-node-monitor">Worked example — SLURM multi-node monitor</h2>
+<p>The bundled <code>SlurmMultinodeMonitor</code> is itself a custom monitor: it
+satisfies <code>MonitorProtocol</code> but collects samples from all nodes of a
+SLURM allocation via <code>srun</code>. It's a good reference for what a
+non-trivial custom backend looks like.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.core.service</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_perfmonitor_service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.monitor.backends.slurm_multinode</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SlurmMultinodeMonitor</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">service</span> <span class="o">=</span> <span class="n">build_perfmonitor_service</span><span class="p">()</span>
+
+<span class="c1"># Configure a multi-node SLURM monitor. Both arguments are optional;</span>
+<span class="c1"># defaults target a standard single-allocation setup.</span>
+<span class="n">my_monitor</span> <span class="o">=</span> <span class="n">SlurmMultinodeMonitor</span><span class="p">(</span>
+    <span class="n">log_path</span><span class="o">=</span><span class="s2">&quot;runs/2026-04-21/jumper_multinode.jsonl&quot;</span><span class="p">,</span>
+    <span class="n">python_executable</span><span class="o">=</span><span class="s2">&quot;/opt/conda/envs/hpc/bin/python&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">service</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="n">my_monitor</span><span class="p">)</span>
+
+<span class="c1"># Drive a distributed workload here (MPI, torch.distributed, etc.);</span>
+<span class="c1"># every remote collector streams samples back over its srun pipe.</span>
+
+<span class="n">service</span><span class="o">.</span><span class="n">stop_monitoring</span><span class="p">()</span>
+
+<span class="c1"># The standard reporter, plotter and exporter all work against the</span>
+<span class="c1"># monitor you just plugged in:</span>
+<span class="n">service</span><span class="o">.</span><span class="n">export_perfdata</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s2">&quot;runs/2026-04-21/perf.csv&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Inside <code>SlurmMultinodeMonitor</code>, the protocol attributes are populated
+from the ready-handshake of each per-node collector:</p>
+<ul>
+<li><code>start()</code> discovers the node list (<code>get_slurm_nodes()</code>), launches
+  a collector on each node via <code>srun</code>, waits for a JSON <code>"ready"</code>
+  message per node, aggregates hardware info (<code>_aggregate_hardware_info</code>),
+  and starts per-node reader threads that feed samples into the shared
+  <code>PerformanceData</code>.</li>
+<li><code>stop()</code> terminates the remote collectors, joins the reader threads,
+  and closes the log writer.</li>
+</ul>
+<p>See <code>jumper_extension/monitor/backends/slurm_multinode/monitor.py</code> for
+the full implementation.</p>
+<hr />
+<h2 id="writing-your-own-monitor">Writing your own monitor</h2>
+<p>A minimal skeleton for a new monitor looks like this:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">PerformanceData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_available_levels</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCustomMonitor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Monitor that collects samples from my_metric_source.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Protocol surface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wallclock_start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wallclock_stop_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Hardware metadata (fill in what applies to your source)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cpus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_system_cpus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpu_memory</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpu_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cpu_handles</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory_limits</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Session state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_imported</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Data container (set in start())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PerformanceData</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_available_levels</span><span class="p">()</span>
+
+        <span class="c1"># Internal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wallclock_start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Probe your source, fill hardware info ...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cpus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_system_cpus</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">PerformanceData</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_cpus</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_system_cpus</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_gpus</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wallclock_stop_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="c1"># Replace these with real measurements from your source.</span>
+            <span class="n">cpu_util</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+            <span class="n">memory</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">gpu_util</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">gpu_band</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">gpu_mem</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">io</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># read_bytes, write_bytes, reads, writes</span>
+            <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">add_sample</span><span class="p">(</span>
+                    <span class="n">level</span><span class="p">,</span> <span class="n">now</span><span class="p">,</span> <span class="n">cpu_util</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span>
+                    <span class="n">gpu_util</span><span class="p">,</span> <span class="n">gpu_band</span><span class="p">,</span> <span class="n">gpu_mem</span><span class="p">,</span> <span class="n">io</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+</code></pre></div>
+<p>Hook it up the same way:</p>
+<div class="highlight"><pre><span></span><code><span class="n">service</span> <span class="o">=</span> <span class="n">build_perfmonitor_service</span><span class="p">()</span>
+<span class="n">service</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="n">MyCustomMonitor</span><span class="p">())</span>
+</code></pre></div>
+<p>Rules of thumb:</p>
+<ul>
+<li><strong>Populate <code>data</code> on every tick for each monitoring level</strong> that
+  your source covers. Built-in visualizations and reports iterate over
+  <code>monitor.levels</code> and read <code>monitor.data.data[level]</code>.</li>
+<li><strong>Set timestamps</strong> (<code>start_time</code>, <code>wallclock_start_time</code>, and their
+  <code>stop_time</code> counterparts) so the reporter can compute durations.</li>
+<li><strong>Keep <code>running</code> truthful</strong> — the magic commands branch on it.</li>
+<li><strong>Be robust to <code>stop()</code> being called while <code>start()</code> is still
+  wiring things up</strong>; model lifecycle with a stop event, like the
+  built-in backends do.</li>
+</ul>
+<hr />
+<h2 id="interaction-with-check-sanity">Interaction with <code>--check-sanity</code></h2>
+<p><code>%perfmonitor_start --check-sanity</code> runs a short validation of the
+collected samples (required columns present, no NaN, non-zero for
+active-by-definition metrics, etc.).</p>
+<div class="admonition warning">
+<p class="admonition-title">IMPORTANT</p>
+<p>The sanity check was tailored for the <code>thread</code>,
+<code>subprocess_python</code> and <code>native_c</code> backends. It assumes the
+per-level metric schema produced by those monitors (CPU/memory/IO
+columns, optional GPU columns). Running it against any other
+monitor — including <code>slurm_multinode</code> and any custom monitor you
+write — is <strong>expected to fail</strong>, because the column set produced
+by those backends is different.</p>
+<p>When a custom monitor is plugged in via
+<code>service.start_monitoring(monitor=…)</code>, JUmPER detects this and
+<strong>skips</strong> the sanity check automatically, printing a warning so
+the user is aware. A skipped check is not a failure of the monitor
+itself; it only means the tailored check does not apply.</p>
 </div>
-</div>
-<h2 id="try-it-yourself">Try it yourself:</h2>
-<p><a href="https://mybinder.org/v2/gh/ScaDS/jumper_jupyter_performance/feature/binder?urlpath=%2Fdoc%2Ftree%2Fdemos%2Fexport_session.ipynb"><img alt="Binder" src="https://mybinder.org/badge_logo.svg" /></a></p>
 
 
 
 
 
 
-
-  
-  
 
 
 
