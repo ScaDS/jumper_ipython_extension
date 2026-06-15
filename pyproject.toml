@@ -13,7 +13,9 @@ dependencies = [
     "ipython",
     "matplotlib",
     "plotly",
-    "kaleido",
+    # Kaleido 1.x requires plotly>=6.1.1; pin to the stable 0.2.x series
+    # for compatibility with plotly 5.x (used in this project).
+    "kaleido==0.2.1",
     "pandas",
     "numpy",
     "ipympl",
