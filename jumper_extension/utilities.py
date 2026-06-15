@@ -18,9 +18,13 @@ def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
     if cell_history_data is None or cell_history_data.empty:
         return perfdata.iloc[0:0]
 
-    # Guard against perfdata collected before the time column was introduced
+    # Guard against perfdata collected before the time column was introduced.
+    # Stay silent when perfdata is empty — that just means no samples were
+    # collected yet (e.g. monitor not running or cells too short) and the
+    # downstream "no performance data" message already covers it.
     if "time" not in perfdata.columns:
-        logger.warning("[JUmPER]: perfdata is missing 'time' column")
+        if not perfdata.empty:
+            logger.warning("[JUmPER]: perfdata is missing 'time' column")
         return perfdata.iloc[0:0]
 
     if compress_idle:

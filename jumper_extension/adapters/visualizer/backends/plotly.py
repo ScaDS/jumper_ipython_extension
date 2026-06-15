@@ -309,8 +309,20 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                 ".jpeg"
             ):
                 save_jpeg += ".jpg"
-            fig.write_image(save_jpeg, format="jpeg", scale=2)
-            print(f"Plot saved as JPEG: {save_jpeg}")
+            try:
+                fig.write_image(save_jpeg, format="jpeg", scale=2)
+                print(f"Plot saved as JPEG: {save_jpeg}")
+            except Exception as e:
+                logger.warning(
+                    "Failed to save JPEG to %s: %s. "
+                    "JPEG export requires a working Chrome/Chromium for kaleido. "
+                    "If you are on Linux with snap-installed Chromium, the snap "
+                    "sandbox often blocks kaleido; try running `choreo_get_chrome` "
+                    "once to install a known-working Chrome, or install a non-snap "
+                    "Chrome/Chromium build.",
+                    save_jpeg,
+                    e,
+                )
 
         if pickle_file:
             if not pickle_file.endswith(".pkl"):

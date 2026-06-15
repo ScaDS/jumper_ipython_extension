@@ -187,6 +187,9 @@ class PerformanceMonitor:
         )
 
     def stop(self):
+        if self.start_time is None:
+            self.running = False
+            return
         self.running = False
         if hasattr(self, "_stop_event"):
             self._stop_event.set()
