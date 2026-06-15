@@ -845,33 +845,34 @@ class PerformanceVisualizer:
             )
             return combined
 
-        # Render into an ipywidgets Output container. The Output widget has
-        # its own Comm channel, so display() calls made from the background
-        # thread land in the right place even though they have no
-        # ``parent_header`` set (which is why simple
-        # ``display(..., display_id=..., update=True)`` from a thread does
-        # not refresh the plot in JupyterLab).
-        from IPython.display import clear_output
-
-        output = widgets.Output()
-        display(output)
-        with output:
-            display(_build_combined_figure())
+        # Use a FigureWidget for in-place, incremental updates. This is
+        # still pure Plotly (FigureWidget is plotly.graph_objects' ipywidgets
+        # variant): the widget owns its own Comm channel, so updates pushed
+        # from a background thread are routed correctly (regular display()
+        # calls from a thread have no ``parent_header`` and get dropped by
+        # JupyterLab), and only the data/layout diffs are sent each tick
+        # instead of re-rendering the entire plot.
+        initial_fig = _build_combined_figure()
+        fig_widget = go.FigureWidget(
+            data=initial_fig.data,
+            layout=initial_fig.layout,
+        )
+        display(fig_widget)
 
         # -- Background thread --------------------------------------------- #
         def _refresh():
             try:
-                fig = _build_combined_figure()
+                new_fig = _build_combined_figure()
             except Exception:
                 logger.debug("Live plot build error", exc_info=True)
                 return
             try:
-                with output:
-                    # ``wait=True`` keeps the previous figure visible until
-                    # the new one is rendered, avoiding a flash of empty
-                    # space on every tick.
-                    clear_output(wait=True)
-                    display(fig)
+                with fig_widget.batch_update():
+                    # Replace traces and layout in one Comm message.
+                    fig_widget.data = ()
+                    if new_fig.data:
+                        fig_widget.add_traces(list(new_fig.data))
+                    fig_widget.layout.update(new_fig.layout)
             except Exception:
                 logger.debug("Live plot refresh error", exc_info=True)
 
