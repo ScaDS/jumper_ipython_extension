@@ -763,152 +763,131 @@ class PerformanceVisualizer:
 
         # -- Fixed panel IDs — stable for the entire live session ---------- #
         panel_ids = {m: f"jumper-live-{session_id}-{m}" for m in default_metrics}
-        grid_id = f"jumper-live-grid-{session_id}"
-        update_id = f"jumper-live-update-{session_id}"
         grid_css = (template_dir / "live_grid" / "live_grid.css").read_text(encoding="utf-8")
 
-        # -- Live figure: one Plotly subplots figure, refreshed in place --- #
-        # We render via the standard plotly mimetype (same path as normal
-        # plotting — which the user has confirmed works in their JupyterHub
-        # environment) and refresh via ``display(..., display_id=X,
-        # update=True)``. This avoids HTML <script> tags and the
-        # ``application/javascript`` mimetype, both of which JupyterLab
-        # may strip silently.
-        n_panels = len(default_metrics)
-        nrows = (n_panels + ncols - 1) // ncols
+        # -- Persistent grid scaffold + Plotly loader ---------------------- #
+        # We render the panel <div>s once via display(HTML(...)). Subsequent
+        # refreshes only push small <script>Plotly.react("<panel_id>", …)
+        # </script> payloads through an ipywidgets.Output below the grid.
+        # Plotly.react diffs against the existing trace arrays and patches
+        # what changed in place — no DOM teardown, no event-handler churn,
+        # and roughly 10–50× cheaper than repeated Plotly.newPlot calls.
+        plotly_loader = (
+            "<script>\n"
+            "(function(){\n"
+            "  if(typeof window.Plotly!=='undefined')return;\n"
+            "  var s=document.createElement('script');\n"
+            "  s.src='https://cdn.plot.ly/plotly-2.35.2.min.js';\n"
+            "  s.charset='utf-8';\n"
+            "  document.head.appendChild(s);\n"
+            "})();\n"
+            "</script>"
+        )
+        grid_html = env.get_template("live_grid/live_grid.html").render(
+            ncols=ncols,
+            panels=[(panel_ids[m], label_map.get(m, m)) for m in default_metrics],
+        )
+        display(HTML(
+            f"{plotly_loader}\n<style>{grid_css}</style>\n{grid_html}"
+        ))
 
-        def _build_combined_figure():
-            """Build a single subplots figure containing all live panels."""
-            subplot_titles = [label_map.get(m, m) for m in default_metrics]
-            combined = make_subplots(
-                rows=nrows,
-                cols=ncols,
-                subplot_titles=subplot_titles,
-                vertical_spacing=0.12,
-                horizontal_spacing=0.08,
-            )
-            for idx, metric in enumerate(default_metrics):
-                row = idx // ncols + 1
-                col = idx % ncols + 1
-                try:
-                    sub_fig = self._build_live_figure(
-                        metric, level, window_seconds
-                    )
-                except Exception:
-                    logger.debug(
-                        "Live plot build error for %s", metric, exc_info=True
-                    )
-                    sub_fig = None
-                if sub_fig is None:
-                    continue
-                for trace in sub_fig.data:
-                    combined.add_trace(trace, row=row, col=col)
-                # Copy axis ranges/titles and shapes/annotations onto the
-                # corresponding subplot axes.
-                xaxis = sub_fig.layout.xaxis
-                yaxis = sub_fig.layout.yaxis
-                if xaxis.range is not None:
-                    combined.update_xaxes(
-                        range=list(xaxis.range), row=row, col=col
-                    )
-                if yaxis.range is not None:
-                    combined.update_yaxes(
-                        range=list(yaxis.range), row=row, col=col
-                    )
-                combined.update_xaxes(
-                    title_text=xaxis.title.text if xaxis.title else None,
-                    row=row,
-                    col=col,
-                )
-                # Map shapes/annotations onto this subplot's xref/yref.
-                xref = "x" if idx == 0 else f"x{idx + 1}"
-                yref = "y" if idx == 0 else f"y{idx + 1}"
-                for shape in sub_fig.layout.shapes or ():
-                    s = shape.to_plotly_json()
-                    s["xref"] = xref
-                    s["yref"] = yref
-                    combined.add_shape(s)
-                for annotation in sub_fig.layout.annotations or ():
-                    a = annotation.to_plotly_json()
-                    # subplot_titles already added annotations with no xref;
-                    # only copy our cell-marker annotations (those have x/y).
-                    if a.get("x") is None or a.get("y") is None:
-                        continue
-                    a["xref"] = xref
-                    a["yref"] = yref
-                    combined.add_annotation(a)
-            combined.update_layout(
-                template="plotly_white",
-                showlegend=False,
-                margin=dict(l=50, r=16, t=45, b=40),
-                height=max(260, int(self.figsize[1] * 105)) * nrows,
-            )
-            return combined
-
-        # Render the live figure inside an ``ipywidgets.Output`` widget and
-        # refresh it by atomically reassigning ``output.outputs``.
-        #
-        # Why not ``display(..., display_id=..., update=True)`` from the
-        # worker thread?
-        #   * ``display`` has no ``update`` kwarg; the proper API is
-        #     ``update_display`` — but even then the IOPub message has no
-        #     ``parent_header`` when emitted from a background thread, so
-        #     JupyterLab cannot match it to the original output area and
-        #     treats every refresh as a brand-new plot.
-        #   * Setting ``output.outputs = (...)`` instead sends a single
-        #     widget-state Comm message via the Output widget's own
-        #     channel — no parent header is required, the message is
-        #     atomic (no flash between clear/display) and JupyterLab
-        #     always re-renders the contents in place.
+        # ipywidgets.Output below the grid receives the per-tick update
+        # scripts. Reassigning ``output.outputs = (...)`` is atomic and
+        # works from background threads (no parent_header is required —
+        # the Output widget has its own Comm channel).
         output = widgets.Output()
         display(output)
 
-        def _figure_to_output_dict(fig):
-            """Convert a Plotly figure to a display_data output entry."""
-            try:
-                bundle = fig._repr_mimebundle_()
-            except Exception:
-                bundle = None
-            if isinstance(bundle, tuple) and len(bundle) == 2:
-                data, metadata = bundle
-            elif isinstance(bundle, dict):
-                data, metadata = bundle, {}
-            else:
-                # Fallback: emit the plotly mimetype manually.
-                data = {
-                    "application/vnd.plotly.v1+json": fig.to_plotly_json(),
-                }
-                metadata = {}
-            return {
-                "output_type": "display_data",
-                "data": data,
-                "metadata": metadata or {},
-            }
+        update_template = env.get_template("live_update/live_update.html")
+        config_json = json.dumps({
+            "responsive": True,
+            "displayModeBar": True,
+            "displaylogo": False,
+        })
+        panel_height = max(220, int(self.figsize[1] * 105))
+        # Decimation target per trace. The sliding window keeps full
+        # resolution up to this many points; beyond that we stride-sample.
+        max_points_per_trace = 400
 
-        # Initial render.
-        output.outputs = (_figure_to_output_dict(_build_combined_figure()),)
+        def _decimate_traces(fig):
+            """Stride-decimate trace x/y arrays to keep payloads small."""
+            for tr in fig.data:
+                x = getattr(tr, "x", None)
+                y = getattr(tr, "y", None)
+                if x is None or y is None:
+                    continue
+                try:
+                    n = len(x)
+                except TypeError:
+                    continue
+                if n <= max_points_per_trace:
+                    continue
+                step = max(1, n // max_points_per_trace)
+                tr.x = x[::step]
+                tr.y = y[::step]
 
-        # -- Background thread --------------------------------------------- #
-        def _refresh():
+        def _placeholder_layout(metric):
+            return dict(
+                template="plotly_white",
+                title=label_map.get(metric, metric) + " — waiting for data…",
+                margin=dict(l=50, r=16, t=45, b=40),
+                height=panel_height,
+                xaxis=dict(title="Time (seconds)"),
+                uirevision="live",
+            )
+
+        def _build_panel_payload(metric):
+            """Return (data_json, layout_json) for one panel."""
             try:
-                fig = _build_combined_figure()
+                fig = self._build_live_figure(metric, level, window_seconds)
             except Exception:
-                logger.debug("Live plot build error", exc_info=True)
-                return
+                logger.debug(
+                    "Live plot build error for %s", metric, exc_info=True
+                )
+                fig = None
+            if fig is None:
+                return "[]", json.dumps(_placeholder_layout(metric))
+            _decimate_traces(fig)
+            # Stable uirevision keeps user pan/zoom across refreshes.
+            fig.update_layout(uirevision="live", height=panel_height)
+            payload = fig.to_plotly_json()
+            return (
+                json.dumps(payload.get("data", []), default=str),
+                json.dumps(payload.get("layout", {}), default=str),
+            )
+
+        def _emit():
             try:
-                output.outputs = (_figure_to_output_dict(fig),)
+                updates = [
+                    (panel_ids[m], *_build_panel_payload(m))
+                    + (config_json,)
+                    for m in default_metrics
+                ]
+                # ``updates`` items are 4-tuples (panel_id, data, layout, config).
+                html = update_template.render(updates=updates)
+                output.outputs = (
+                    {
+                        "output_type": "display_data",
+                        "data": {"text/html": html},
+                        "metadata": {},
+                    },
+                )
             except Exception:
                 logger.debug("Live plot refresh error", exc_info=True)
 
+        # Initial render.
+        _emit()
+
+        # -- Background thread --------------------------------------------- #
         def _live_loop():
             try:
                 while not stop_event.is_set():
-                    _refresh()
                     if not self.monitor.running:
                         break
                     stop_event.wait(update_interval)
+                    _emit()
             finally:
-                _refresh()
+                _emit()
 
         thread = threading.Thread(target=_live_loop, daemon=True)
         thread.start()
