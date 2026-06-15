@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper-extension"
-version = "0.3.6"
+version = "0.4.0"
 description = "IPython extension for monitoring cell performance"
 readme={ file='README.md', content-type="text/markdown"}
 license-files=["LICENSE"]
@@ -48,6 +48,8 @@ include = ["jumper_extension*"]
 
 [tool.setuptools.package-data]
 "jumper_extension.config" = ["*.yaml"]
+"jumper_extension.config.collectors.python" = ["*.yaml"]
+"jumper_extension.config.collectors.c" = ["*.yaml"]
 "jumper_extension.templates.report" = ["*.html", "*.css"]
 "jumper_extension.templates.visualizer.plotly" = ["**/*"]
 "jumper_extension.monitor.backends.native_c" = ["collector.c", "Makefile", "jumper_collector"]
