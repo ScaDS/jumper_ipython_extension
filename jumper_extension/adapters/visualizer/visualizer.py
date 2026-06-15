@@ -9,7 +9,7 @@ from typing import List, runtime_checkable, Protocol, Optional, Tuple
 import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
-from IPython.display import display, HTML, Javascript
+from IPython.display import display, update_display, HTML, Javascript
 from jinja2 import Environment, FileSystemLoader
 from ipywidgets import widgets, Layout
 
@@ -900,7 +900,7 @@ class PerformanceVisualizer:
                 return
             try:
                 _attach_parent()
-                display(fig, display_id=grid_id, update=True)
+                update_display(fig, display_id=grid_id)
             except Exception:
                 logger.debug("Live plot refresh error", exc_info=True)
 
