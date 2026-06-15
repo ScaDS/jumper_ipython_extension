@@ -9,6 +9,7 @@ from typing import List, runtime_checkable, Protocol, Optional, Tuple
 import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
+from plotly.utils import PlotlyJSONEncoder
 from IPython.display import display, update_display, HTML, Javascript
 from jinja2 import Environment, FileSystemLoader
 from ipywidgets import widgets, Layout
@@ -852,8 +853,8 @@ class PerformanceVisualizer:
             fig.update_layout(uirevision="live", height=panel_height)
             payload = fig.to_plotly_json()
             return (
-                json.dumps(payload.get("data", []), default=str),
-                json.dumps(payload.get("layout", {}), default=str),
+                json.dumps(payload.get("data", []), cls=PlotlyJSONEncoder),
+                json.dumps(payload.get("layout", {}), cls=PlotlyJSONEncoder),
             )
 
         def _emit():
