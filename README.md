@@ -53,7 +53,7 @@ pip install .
 
 For NVIDIA GPU monitoring:
 ```bash
-pip install pynvml
+pip install nvidia-ml-py
 ```
 
 For AMD GPU monitoring:
