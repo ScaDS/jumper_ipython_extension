@@ -222,7 +222,7 @@ The following metric keys can be used with `--metrics` for both direct and live 
 
 5. **View cell execution history**:
    ```python
-   %cell_history
+   %show_cell_history
    ```
 
    Shows an interactive table of all executed cells with timestamps and durations.
@@ -338,7 +338,7 @@ The extension supports four different levels of metric collection, each providin
 | `%perfmonitor_stop` | Stop monitoring |
 | `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
 | `%perfmonitor_plot [--metrics LIST] [--cell RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE] [--live [INTERVAL WINDOW]]` | Interactive plot with widgets; direct plotting of selected metrics; live updating plots; optional export to JPEG or pickle |
-| `%cell_history` | Show execution history of all cells with interactive table |
+| `%show_cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
 | `%perfmonitor_export_perfdata [--file filename] [--level LEVEL]` | Export performance data to dataframe. Export performance data to CSV if `--file` is set. |
