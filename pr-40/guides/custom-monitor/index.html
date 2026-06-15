@@ -16,7 +16,7 @@
         <link rel="prev" href="../plot-export/">
       
       
-        <link rel="next" href="../custom-collector/">
+        <link rel="next" href="../python-custom-collector/">
       
       
         
@@ -742,14 +742,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../custom-collector/" class="md-nav__link">
+      <a href="../python-custom-collector/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Custom Collectors
+    Custom Python Collectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../c-custom-collector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom C Collectors
   
 
     
@@ -1757,9 +1785,11 @@ be used as a drop-in replacement for the built-in backends.</p>
 <div class="admonition tip">
 <p class="admonition-title">Adding a single metric group instead?</p>
 <p>You may want to add only some minor part of a monitor instead of the full
-monitor backend reimplementation, we call this part a <a href="../custom-collector/">collector</a>
+monitor backend reimplementation, we call this part a collector
 which by its name collects one or more logically related metrics like,
-for example, network statistics.</p>
+for example, network statistics. We support two collector implementations 
+for the respective backends: <a href="../python-custom-collector/">Python collectors</a> (for <code>thread</code>
+and <code>subprocess_python</code>) and <a href="../c-custom-collector/">C collectors</a> (for <code>native_c</code>).</p>
 </div>
 <hr />
 <h2 id="the-monitorprotocol-surface">The <code>MonitorProtocol</code> surface</h2>
