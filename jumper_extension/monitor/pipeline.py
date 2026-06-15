@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from jumper_extension.adapters.data import NodeInfo
 from jumper_extension.config.utils import instantiate
-from jumper_extension.config.collectors.python import load_collectors_config
+from jumper_extension.config.loader import load_config
 
 
 class PipelineBuilder:
@@ -31,11 +31,11 @@ class PipelineBuilder:
         self,
         deferred_keys: list[str],
     ) -> list[tuple[dict, dict, list[str]]]:
-        cfg = load_collectors_config()
+        collectors_cfg = load_config().collectors.python.collectors
         self._monitor._pipeline = []
         deferred = []
         num_gpus, gpu_memory, gpu_name = 0, 0.0, ""
-        for collector_cfg in cfg["collectors"].values():
+        for collector_cfg in collectors_cfg.values():
             collector_cfg = dict(collector_cfg)
             handler_cfg = collector_cfg.pop("handler")
             inject_keys = collector_cfg.pop("inject", [])

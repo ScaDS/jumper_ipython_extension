@@ -9,7 +9,7 @@ subsets:
   your_subset:           # group name — also usable as a shorthand key in --metrics
     your_metric_key:     # what the user types in --metrics
       type: single_series
-      column: your_column    # column name declared in collectors.yaml handler columns
+      column: your_column    # column name declared in default.yaml handler columns
       title: "Chart title"
       ylim: null             # or [min, max]
       label: "Legend label"

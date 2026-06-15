@@ -9,7 +9,7 @@ from jumper_extension.monitor.backends.native_c.build import (
     build_collector,
 )
 from jumper_extension.monitor.backends.native_c import CSubprocessPerformanceMonitor
-from jumper_extension.config.collectors.c import load_c_collectors_config
+from jumper_extension.config.loader import load_config
 
 pytestmark = pytest.mark.skipif(
     not shutil.which("make"),
@@ -64,7 +64,7 @@ def test_collects_data():
     monitor.stop()
 
     hw = monitor.nodes.hardware["local"]
-    active = load_c_collectors_config()
+    active = load_config().collectors.c.collectors
     expected = _expected_columns(active, hw.num_system_cpus, hw.num_gpus)
 
     for level in monitor.nodes.levels:

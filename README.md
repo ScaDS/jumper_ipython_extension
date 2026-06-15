@@ -256,7 +256,7 @@ for example network I/O or a hardware sensor — without replacing the entire
 monitor backend, there are two ways to create a collector:
 
 1. **Python collector** — a `CollectorBackend` + `StorageHandler` pair loaded
-   automatically from `collectors.yaml`. Works with the `thread` and
+   automatically from `default.yaml`. Works with the `thread` and
    `subprocess_python` monitors. See the full
    [Custom Python Collectors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/python-custom-collector/)
    for a step-by-step walkthrough including a `NetworkCollector` example.

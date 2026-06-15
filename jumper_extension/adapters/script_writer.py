@@ -4,7 +4,7 @@ from textwrap import dedent
 from typing import Optional, List
 from datetime import datetime
 
-from jumper_extension.core.state import Settings
+from jumper_extension.core.state import State
 from jumper_extension.adapters.cell_history import CellHistory
 
 logger = logging.getLogger("extension")
@@ -18,14 +18,15 @@ class NotebookScriptWriter:
     metadata about execution time and cell numbers.
     """
 
-    def __init__(self, cell_history: CellHistory):
+    def __init__(self, cell_history: CellHistory, default_interval: float):
         self.cell_history = cell_history
         self.output_path = None
         # recording state
         self._recording = False
         self._start_time = None
         self._start_cell_index: Optional[int] = None
-        self._settings_state = Settings()
+        self._state = State()
+        self._default_interval = default_interval
         # names of magics that start/stop script writing (to exclude their cells)
         self._control_magics = {"start_write_script", "end_write_script"}
 
@@ -33,15 +34,15 @@ class NotebookScriptWriter:
         """Check if cell is being recorded."""
         return self._recording
 
-    def start_recording(self, settings_state: Settings, output_path: Optional[str] = None):
+    def start_recording(self, state: State, output_path: Optional[str] = None):
         """
         Start recording code from cells.
 
         Args:
-            settings_state: Extension settings at the time of recording started
+            state: Extension runtime state at the time recording started
             output_path: Path to the output file (overrides value from __init__)
         """
-        self._settings_state = settings_state
+        self._state = state
         if output_path:
             self.output_path = output_path
         else:
@@ -214,20 +215,20 @@ class NotebookScriptWriter:
             f.write(footer)
 
     def _restore_perfmonitor(self) -> str:
-        if self._settings_state.monitoring.running:
-            settings = self._settings_state
+        if self._state.monitoring.running:
+            state = self._state
 
             # Determine interval to restore
-            interval = settings.monitoring.user_interval
+            interval = state.monitoring.user_interval
             if not interval:
-                interval = settings.monitoring.default_interval
+                interval = self._default_interval
 
             # If auto-reports were enabled, a single enable call will both start monitoring
             # (if needed) and configure reports consistently with original settings.
-            if settings.perfreports.enabled:
-                level = settings.perfreports.level
+            if state.perfreports.enabled:
+                level = state.perfreports.level
                 args = f"--level {level} --interval {interval}"
-                if settings.perfreports.text:
+                if state.perfreports.text:
                     args += " --text"
                 return f"magic_adapter.perfmonitor_enable_perfreports({args!r})\n"
 

@@ -64,3 +64,54 @@ MetricConfig = Annotated[
 def validate_metric_config(data: dict):
     from pydantic import TypeAdapter
     return TypeAdapter(MetricConfig).validate_python(data)
+
+
+class PerfReportsDefaults(BaseModel):
+    level: str = "process"
+    text: bool = False
+
+
+class MonitoringDefaults(BaseModel):
+    default_interval: float = 1.0
+
+
+class ExportVarsConfig(BaseModel):
+    perfdata: str = "perfdata_df"
+    cell_history: str = "cell_history_df"
+
+
+class LoadedVarsConfig(BaseModel):
+    perfdata: str = "loaded_perfdata_df"
+    cell_history: str = "loaded_cell_history_df"
+
+
+class SettingsConfig(BaseModel):
+    perfreports: PerfReportsDefaults = Field(default_factory=PerfReportsDefaults)
+    monitoring: MonitoringDefaults = Field(default_factory=MonitoringDefaults)
+    export_vars: ExportVarsConfig = Field(default_factory=ExportVarsConfig)
+    loaded_vars: LoadedVarsConfig = Field(default_factory=LoadedVarsConfig)
+    visualizer_backend: str = "matplotlib"
+
+
+class PlotsConfig(BaseModel):
+    default_subsets: list[str] = Field(default_factory=lambda: ["cpu", "mem", "io"])
+    subsets: dict[str, dict[str, MetricConfig]]
+
+
+class PythonCollectorsConfig(BaseModel):
+    collectors: dict[str, dict]
+
+
+class CCollectorsConfig(BaseModel):
+    collectors: list[str]
+
+
+class CollectorsConfig(BaseModel):
+    python: PythonCollectorsConfig
+    c: CCollectorsConfig
+
+
+class AppConfig(BaseModel):
+    settings: SettingsConfig = Field(default_factory=SettingsConfig)
+    plots: PlotsConfig
+    collectors: CollectorsConfig

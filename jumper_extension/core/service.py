@@ -22,7 +22,9 @@ from jumper_extension.core.parsers import (
     build_import_session_parser,
     ArgParsers,
 )
-from jumper_extension.core.state import Settings
+from jumper_extension.config.loader import load_config
+from jumper_extension.config.models import AppConfig
+from jumper_extension.core.state import State
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
@@ -62,7 +64,8 @@ class PerfmonitorService:
     """
     def __init__(
         self,
-        settings: Settings,
+        state: State,
+        config: AppConfig,
         monitor: MonitorProtocol,
         visualizer: VisualizerProtocol,
         reporter: PerformanceReporter,
@@ -73,7 +76,9 @@ class PerfmonitorService:
         """Initialize a PerfmonitorService instance.
 
         Args:
-            settings: Extension settings to use for this service.
+            state: Mutable runtime state for this session.
+            config: Application configuration (settings defaults,
+                plot subsets, collector pipelines).
             monitor: Performance monitor that will collect metrics.
             visualizer: Visualizer attached to the monitor.
             reporter: Reporter responsible for performance reports.
@@ -82,7 +87,8 @@ class PerfmonitorService:
             cell_history: Cell history tracker for executed cells.
             script_writer: Script writer used for code recording.
         """
-        self.settings = settings
+        self.state = state
+        self.config = config
         self.monitor = monitor
         self.visualizer = visualizer
         self.reporter = reporter
@@ -159,15 +165,15 @@ class PerfmonitorService:
         if (
                 not self._skip_report
                 and self.monitor.running
-                and self.settings.perfreports.enabled
+                and self.state.perfreports.enabled
         ):
-            if self.settings.perfreports.text:
+            if self.state.perfreports.text:
                 self.reporter.print(
-                    cell_range=None, level=self.settings.perfreports.level
+                    cell_range=None, level=self.state.perfreports.level
                 )
             else:
                 self.reporter.display(
-                    cell_range=None, level=self.settings.perfreports.level
+                    cell_range=None, level=self.state.perfreports.level
                 )
 
     def show_resources(self) -> None:
@@ -278,9 +284,9 @@ class PerfmonitorService:
             return ExtensionErrorCode.MONITOR_ALREADY_RUNNING
 
         if interval is None:
-            interval = self.settings.monitoring.default_interval
+            interval = self.config.settings.monitoring.default_interval
         else:
-            self.settings.monitoring.user_interval = interval
+            self.state.monitoring.user_interval = interval
 
         if check_sanity:
             from jumper_extension.monitor.sanity import (
@@ -303,7 +309,7 @@ class PerfmonitorService:
                 print(msg)
 
         self.monitor.start(interval)
-        self.settings.monitoring.running = self.monitor.running
+        self.state.monitoring.running = self.monitor.running
         self.visualizer.attach(self.monitor)
         self.reporter.attach(self.monitor)
         self.ai_reviewer.attach(self.monitor)
@@ -324,7 +330,7 @@ class PerfmonitorService:
             )
             return
         self.monitor.stop()
-        self.settings.monitoring.running = False
+        self.state.monitoring.running = False
 
     def plot_performance(
         self,
@@ -386,11 +392,11 @@ class PerfmonitorService:
             )
 
         selected_backend = (
-            (backend or self.settings.visualizer_backend) or "matplotlib"
+            (backend or self.state.visualizer_backend) or "matplotlib"
         )
         selected_backend = selected_backend.strip().lower()
         if backend:
-            self.settings.visualizer_backend = selected_backend
+            self.state.visualizer_backend = selected_backend
 
         current_backend = (
             "plotly"
@@ -413,7 +419,7 @@ class PerfmonitorService:
             metrics or save_jpeg or pickle_file
         ):
             # Default to configured level for direct plotting/export paths
-            effective_level = self.settings.perfreports.level
+            effective_level = self.state.perfreports.level
 
         if effective_level is not None:
             available_levels = get_available_levels()
@@ -474,9 +480,9 @@ class PerfmonitorService:
                     text=True,
                 )
         """
-        self.settings.perfreports.enabled = True
-        self.settings.perfreports.level = level
-        self.settings.perfreports.text = text
+        self.state.perfreports.enabled = True
+        self.state.perfreports.level = level
+        self.state.perfreports.text = text
 
         format_message = "text" if text else "html"
         options_message = f"level: {level}, interval: {interval}, format: {format_message}"
@@ -500,7 +506,7 @@ class PerfmonitorService:
         Examples:
             >>> service.disable_perfreports()
         """
-        self.settings.perfreports.enabled = False
+        self.state.perfreports.enabled = False
         logger.info(
             EXTENSION_INFO_MESSAGES[
                 ExtensionInfoCode.PERFORMANCE_REPORTS_DISABLED
@@ -598,7 +604,7 @@ class PerfmonitorService:
             df = self.monitor.nodes.view(
                 level=level, cell_history=self.cell_history
             )
-            var_name = name or self.settings.export_vars.perfdata
+            var_name = name or self.config.settings.export_vars.perfdata
             logger.info(
                 EXTENSION_INFO_MESSAGES[
                     ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE
@@ -622,7 +628,7 @@ class PerfmonitorService:
             >>> df = next(iter(frames.values()))
         """
         df = self.monitor.nodes.load(file)
-        var_name = self.settings.loaded_vars.perfdata
+        var_name = self.config.settings.loaded_vars.perfdata
         if df is not None:
             logger.info(
                 EXTENSION_INFO_MESSAGES[
@@ -664,7 +670,7 @@ class PerfmonitorService:
             return {}
         else:
             df = self.cell_history.view()
-            var_name = name or self.settings.export_vars.cell_history
+            var_name = name or self.config.settings.export_vars.cell_history
             logger.info(
                 f"[JUmPER]: Cell history data available as '{var_name}'"
             )
@@ -685,7 +691,7 @@ class PerfmonitorService:
             >>> df = next(iter(frames.values()))
         """
         df = self.cell_history.load(file)
-        var_name = self.settings.loaded_vars.cell_history
+        var_name = self.config.settings.loaded_vars.cell_history
         if df is not None:
             logger.info(
                 f"[JUmPER]: Cell history data available as '{var_name}'"
@@ -784,7 +790,7 @@ class PerfmonitorService:
 
                 service.start_script_recording("analysis_script.py")
         """
-        self.script_writer.start_recording(self.settings.snapshot(), output_path)
+        self.script_writer.start_recording(self.state.snapshot(), output_path)
 
         if output_path:
             logger.info(f"[JUmPER]: Started script recording to '{output_path}'")
@@ -1273,8 +1279,9 @@ def build_perfmonitor_service(
         >>> from jumper_extension.core.service import build_perfmonitor_service
         >>> service = build_perfmonitor_service()
     """
-    settings = Settings()
-    settings.visualizer_backend = (
+    config = load_config()
+    state = State.from_config(config.settings)
+    state.visualizer_backend = (
         visualizer_backend.strip().lower()
         if visualizer_backend
         else "matplotlib"
@@ -1293,10 +1300,14 @@ def build_perfmonitor_service(
         display_disabled_reason=display_disabled_reason,
     )
     ai_reviewer = build_ai_reviewer(reporter)
-    script_writer = NotebookScriptWriter(cell_history)
+    script_writer = NotebookScriptWriter(
+        cell_history,
+        default_interval=config.settings.monitoring.default_interval,
+    )
 
     return PerfmonitorService(
-        settings=settings,
+        state=state,
+        config=config,
         monitor=monitor,
         visualizer=visualizer,
         reporter=reporter,

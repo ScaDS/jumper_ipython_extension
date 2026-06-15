@@ -75,7 +75,7 @@ def test_cell_operations(ipython, mock_cpu_only):
 
     # Test auto-reports with level option
     magics.perfmonitor_enable_perfreports("--level user")
-    assert magics.magic_adapter.service.settings.perfreports.level == "user"
+    assert magics.magic_adapter.service.state.perfreports.level == "user"
     # First call to post_run_cell resets _skip_report flag
     magics.post_run_cell(result)
     with patch.object(
@@ -165,7 +165,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
             "--backend plotly --metrics cpu_summary --level process --cell 0"
         )
         assert isinstance(service.visualizer, PlotlyPerformanceVisualizer)
-        assert service.settings.visualizer_backend == "plotly"
+        assert service.state.visualizer_backend == "plotly"
         assert mock_plotly_render.called
 
     # No --backend: should use default from settings ("plotly")
@@ -183,7 +183,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
             "--backend matplotlib --metrics cpu_summary --level process --cell 0"
         )
         assert isinstance(service.visualizer, MatplotlibPerformanceVisualizer)
-        assert service.settings.visualizer_backend == "matplotlib"
+        assert service.state.visualizer_backend == "matplotlib"
         assert mock_matplotlib_render.called
 
     # No --backend again: should keep using settings default ("matplotlib")
@@ -389,7 +389,7 @@ def test_load_perfdata_csv(ipython, tmp_path):
     magics.perfmonitor_load_perfdata(str(csv_path))
 
     # Verify DataFrame was pushed to IPython namespace
-    loaded_var = magics.magic_adapter.service.settings.loaded_vars.perfdata
+    loaded_var = magics.magic_adapter.service.config.settings.loaded_vars.perfdata
     assert loaded_var in ipython.user_ns
     loaded_df = ipython.user_ns[loaded_var]
     assert len(loaded_df) == 2
@@ -435,7 +435,7 @@ def test_load_perfdata_json(ipython, tmp_path):
     magics.perfmonitor_load_perfdata(str(json_path))
 
     # Verify DataFrame was pushed to IPython namespace
-    loaded_var = magics.magic_adapter.service.settings.loaded_vars.perfdata
+    loaded_var = magics.magic_adapter.service.config.settings.loaded_vars.perfdata
     assert loaded_var in ipython.user_ns
     loaded_df = ipython.user_ns[loaded_var]
     assert len(loaded_df) == 2
@@ -466,7 +466,7 @@ def test_load_cell_history_csv(ipython, tmp_path):
     magics.perfmonitor_load_cell_history(str(csv_path))
 
     # Verify DataFrame was pushed to IPython namespace
-    loaded_var = magics.magic_adapter.service.settings.loaded_vars.cell_history
+    loaded_var = magics.magic_adapter.service.config.settings.loaded_vars.cell_history
     assert loaded_var in ipython.user_ns
     loaded_df = ipython.user_ns[loaded_var]
     assert len(loaded_df) == 1

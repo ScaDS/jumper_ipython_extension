@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import uuid
@@ -14,10 +15,11 @@ from ipywidgets import widgets, Layout
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.adapters.visualizer.render import RENDERERS
+from jumper_extension.config.loader import load_config
 from jumper_extension.config.models import (
     MultiSeriesConfig,
+    PlotsConfig,
     SummarySeriesConfig,
-    validate_metric_config,
 )
 
 _LINESTYLE_PLOTLY = {"solid": "solid", "dashed": "dash", "dotted": "dot"}
@@ -70,7 +72,7 @@ class PerformanceVisualizer:
     def attach(
         self,
         monitor: MonitorProtocol,
-        metrics_config_path=None,
+        plots_config: Optional[PlotsConfig] = None,
     ):
         """Attach started PerformanceMonitor."""
         self.monitor = monitor
@@ -82,29 +84,10 @@ class PerformanceVisualizer:
             )
         except Exception:
             self._io_window = 1
-        config_path = metrics_config_path or self._default_config_path()
-        self._load_subsets_from_config(config_path)
+        cfg = plots_config or load_config().plots
+        self.default_subsets = tuple(cfg.default_subsets)
+        self.subsets = copy.deepcopy(cfg.subsets)
         self._patch_hardware_dependent_ylims()
-
-    @staticmethod
-    def _default_config_path() -> Path:
-        return (
-            Path(__file__).parent.parent.parent
-            / "config" / "plots.yaml"
-        )
-
-    def _load_subsets_from_config(self, path) -> None:
-        import yaml
-        raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-        raw_defaults = raw.get("default_subsets", ["cpu", "mem", "io"])
-        self.default_subsets = tuple(str(s) for s in raw_defaults)
-        self.subsets = {}
-        for subset_key, metrics in raw.get("subsets", {}).items():
-            self.subsets[subset_key] = {}
-            for metric_key, cfg in metrics.items():
-                if cfg is None:
-                    cfg = {}
-                self.subsets[subset_key][metric_key] = validate_metric_config(cfg)
 
     def _patch_hardware_dependent_ylims(self) -> None:
         """Fill in ylim fields that depend on hardware (gpu_memory)."""

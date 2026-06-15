@@ -53,6 +53,8 @@ include = ["jumper_extension*"]
 
 [tool.setuptools.package-data]
 "jumper_extension.config" = ["*.yaml"]
+"jumper_extension.config.settings" = ["*.yaml"]
+"jumper_extension.config.plots" = ["*.yaml"]
 "jumper_extension.config.collectors.c" = ["*.yaml"]
 "jumper_extension.config.collectors.python" = ["*.yaml"]
 "jumper_extension.templates.report" = ["*.html", "*.css"]
