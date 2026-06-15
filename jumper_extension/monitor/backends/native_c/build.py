@@ -55,7 +55,11 @@ def build_collector(force: bool = False) -> bool:
     if force and os.path.isfile(_BINARY_PATH):
         os.remove(_BINARY_PATH)
 
-    cmd = [make, "-C", _THIS_DIR, _BINARY_NAME]
+    # Invoke the default ('all') target rather than naming the binary
+    # explicitly: the Makefile defines its target with an absolute path
+    # ($(DIR)$(TARGET)), so `make jumper_collector` would fail with
+    # "No rule to make target 'jumper_collector'".
+    cmd = [make, "-C", _THIS_DIR]
     print(
         "[JUmPER] Compiling native_c monitor binary (first use, one-time step)..."
     )
