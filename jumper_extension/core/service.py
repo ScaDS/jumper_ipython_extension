@@ -757,9 +757,10 @@ class PerfmonitorService:
     def fast_setup(self) -> None:
         """Quickly start monitoring with per-cell reports enabled.
 
-        This convenience helper starts monitoring with a one-second
-        interval and enables HTML performance reports at the ``process``
-        level.
+        This convenience helper starts monitoring and enables HTML
+        performance reports using the configured defaults
+        (``AppConfig.settings.monitoring.default_interval`` and
+        ``AppConfig.settings.perfreports``).
 
         Returns:
             None
@@ -767,8 +768,14 @@ class PerfmonitorService:
         Examples:
             >>> service.fast_setup()
         """
-        self.start_monitoring(1.0)
-        self.enable_perfreports(level="process", interval=1.0, text=False)
+        perfreports = self.config.settings.perfreports
+        interval = self.config.settings.monitoring.default_interval
+        self.start_monitoring(interval)
+        self.enable_perfreports(
+            level=perfreports.level,
+            interval=interval,
+            text=perfreports.text,
+        )
         logger.info("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
 
     def start_script_recording(self, output_path: Optional[str] = None) -> None:
@@ -998,11 +1005,12 @@ class PerfmonitorMagicAdapter:
     def _parse_live_args(live_list):
         """Parse --live argument list into (interval, window) tuple.
 
-        ``--live``           → (2.0, 120.0)
-        ``--live 1.0``       → (1.0, 120.0)
+        ``--live``           → configured (live_update_interval, live_window_seconds)
+        ``--live 1.0``       → (1.0, live_window_seconds)
         ``--live 2.0 60``    → (2.0, 60.0)
         """
-        defaults = (2.0, 120.0)
+        monitoring = load_config().settings.monitoring
+        defaults = (monitoring.live_update_interval, monitoring.live_window_seconds)
         if not live_list:
             return defaults
         interval = live_list[0] if len(live_list) >= 1 else defaults[0]
@@ -1255,7 +1263,7 @@ def build_perfmonitor_service(
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
         display_disabled_reason: str = "Display not available.",
-        visualizer_backend: str = "matplotlib",
+        visualizer_backend: Optional[str] = None,
 ) -> PerfmonitorService:
     """Build a new :class:`PerfmonitorService` instance.
 
@@ -1269,8 +1277,9 @@ def build_perfmonitor_service(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
-        visualizer_backend: Visualizer backend to use. Supported values:
-            ``"matplotlib"`` (default) and ``"plotly"``.
+        visualizer_backend: Visualizer backend to use (``"matplotlib"`` or
+            ``"plotly"``). If not given, ``AppConfig.settings.visualizer_backend``
+            is used.
 
     Returns:
         PerfmonitorService: A fully initialized service instance.
@@ -1284,7 +1293,7 @@ def build_perfmonitor_service(
     state.visualizer_backend = (
         visualizer_backend.strip().lower()
         if visualizer_backend
-        else "matplotlib"
+        else config.settings.visualizer_backend
     )
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
@@ -1292,7 +1301,7 @@ def build_perfmonitor_service(
         cell_history,
         plots_disabled=plots_disabled,
         plots_disabled_reason=plots_disabled_reason,
-        backend=visualizer_backend,
+        backend=state.visualizer_backend,
     )
     reporter = build_performance_reporter(
         cell_history,
@@ -1322,7 +1331,7 @@ def build_perfmonitor_magic_adapter(
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
         display_disabled_reason: str = "Display not available.",
-        visualizer_backend: str = "matplotlib",
+        visualizer_backend: Optional[str] = None,
 ) -> PerfmonitorMagicAdapter:
     """Build a new :class:`PerfmonitorMagicAdapter` instance.
 
@@ -1337,8 +1346,9 @@ def build_perfmonitor_magic_adapter(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
-        visualizer_backend: Visualizer backend to use. Supported values:
-            ``"matplotlib"`` (default) and ``"plotly"``.
+        visualizer_backend: Visualizer backend to use (``"matplotlib"`` or
+            ``"plotly"``). If not given, ``AppConfig.settings.visualizer_backend``
+            is used.
 
     Returns:
         PerfmonitorMagicAdapter: Adapter instance wrapping the service.

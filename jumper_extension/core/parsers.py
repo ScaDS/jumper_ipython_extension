@@ -27,13 +27,14 @@ class ArgParsers:
 
 def build_perfmonitor_start_parser() -> argparse.ArgumentParser:
     """Build an ArgumentParser for the perfmonitor_start command."""
+    default_interval = load_config().settings.monitoring.default_interval
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
         "interval",
         nargs="?",
         type=float,
         default=None,
-        help="Sampling interval in seconds (default: 1.0)",
+        help=f"Sampling interval in seconds (default: {default_interval})",
     )
     parser.add_argument(
         "--monitor",
@@ -115,6 +116,7 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
     return parser
 
 def build_perfmonitor_plot_parser() -> argparse.ArgumentParser:
+    monitoring = load_config().settings.monitoring
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
         "--metrics",
@@ -154,18 +156,20 @@ def build_perfmonitor_plot_parser() -> argparse.ArgumentParser:
         type=float,
         metavar=("INTERVAL", "WINDOW"),
         help="Enable live-updating plots. Optional args: INTERVAL (update rate "
-             "in seconds, default 2.0) and WINDOW (sliding window in seconds, "
-             "default 120). E.g. --live, --live 1.0, --live 2.0 60"
+             f"in seconds, default {monitoring.live_update_interval}) and WINDOW "
+             f"(sliding window in seconds, default {monitoring.live_window_seconds}). "
+             "E.g. --live, --live 1.0, --live 2.0 60"
     )
     return parser
 
 def build_auto_perfreports_parser() -> argparse.ArgumentParser:
     parser = build_perfreport_parser()
+    default_interval = load_config().settings.monitoring.default_interval
     parser.add_argument(
         "--interval",
         type=float,
-        default=load_config().settings.monitoring.default_interval,
-        help="Interval between automatic reports (default: 1 second)",
+        default=default_interval,
+        help=f"Interval between automatic reports (default: {default_interval})",
     )
     return parser
 

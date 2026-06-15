@@ -73,6 +73,8 @@ class PerfReportsDefaults(BaseModel):
 
 class MonitoringDefaults(BaseModel):
     default_interval: float = 1.0
+    live_update_interval: float = 2.0
+    live_window_seconds: float = 120.0
 
 
 class ExportVarsConfig(BaseModel):
@@ -90,7 +92,7 @@ class SettingsConfig(BaseModel):
     monitoring: MonitoringDefaults = Field(default_factory=MonitoringDefaults)
     export_vars: ExportVarsConfig = Field(default_factory=ExportVarsConfig)
     loaded_vars: LoadedVarsConfig = Field(default_factory=LoadedVarsConfig)
-    visualizer_backend: str = "matplotlib"
+    visualizer_backend: str = "plotly"
 
 
 class PlotsConfig(BaseModel):

@@ -4,6 +4,8 @@ perfreports:
 
 monitoring:
   default_interval: 1.0
+  live_update_interval: 2.0
+  live_window_seconds: 120.0
 
 export_vars:
   perfdata: perfdata_df
@@ -13,4 +15,4 @@ loaded_vars:
   perfdata: loaded_perfdata_df
   cell_history: loaded_cell_history_df
 
-visualizer_backend: matplotlib
+visualizer_backend: plotly
