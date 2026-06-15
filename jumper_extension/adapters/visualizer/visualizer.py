@@ -845,51 +845,48 @@ class PerformanceVisualizer:
             )
             return combined
 
-        # Render via the standard Plotly mimetype path (no ipywidgets) and
-        # refresh in place using ``display_id`` + ``update=True``.
+        # Render the live figure inside an ``ipywidgets.Output`` widget and
+        # refresh it by atomically reassigning ``output.outputs``.
         #
-        # Important: a background thread has no ``parent_header`` set on the
-        # ipykernel, so any IOPub message it emits is dropped by the
-        # frontend (this is what made the live view update only
-        # sporadically — typically only when the user happened to run
-        # another cell, momentarily setting a parent header).  We capture
-        # the parent header of the cell that called ``plot_live`` and
-        # re-attach it inside the worker thread before each ``display``.
-        ipython = None
-        kernel = None
-        saved_parent = None
-        saved_ident = None
-        try:
-            from IPython import get_ipython
-            ipython = get_ipython()
-            kernel = getattr(ipython, "kernel", None) if ipython else None
-            if kernel is not None:
-                try:
-                    saved_parent = kernel.get_parent("shell")
-                except Exception:
-                    saved_parent = getattr(kernel, "_parent_header", None)
-                ident = getattr(kernel, "_parent_ident", None)
-                if isinstance(ident, dict):
-                    saved_ident = ident.get("shell")
-                else:
-                    saved_ident = ident
-        except Exception:
-            logger.debug("Could not capture parent header for live view", exc_info=True)
+        # Why not ``display(..., display_id=..., update=True)`` from the
+        # worker thread?
+        #   * ``display`` has no ``update`` kwarg; the proper API is
+        #     ``update_display`` — but even then the IOPub message has no
+        #     ``parent_header`` when emitted from a background thread, so
+        #     JupyterLab cannot match it to the original output area and
+        #     treats every refresh as a brand-new plot.
+        #   * Setting ``output.outputs = (...)`` instead sends a single
+        #     widget-state Comm message via the Output widget's own
+        #     channel — no parent header is required, the message is
+        #     atomic (no flash between clear/display) and JupyterLab
+        #     always re-renders the contents in place.
+        output = widgets.Output()
+        display(output)
 
-        def _attach_parent():
-            if kernel is None or saved_parent is None:
-                return
+        def _figure_to_output_dict(fig):
+            """Convert a Plotly figure to a display_data output entry."""
             try:
-                kernel.set_parent(saved_ident, saved_parent, channel="shell")
-            except TypeError:
-                try:
-                    kernel.set_parent(saved_ident, saved_parent)
-                except Exception:
-                    pass
+                bundle = fig._repr_mimebundle_()
             except Exception:
-                pass
+                bundle = None
+            if isinstance(bundle, tuple) and len(bundle) == 2:
+                data, metadata = bundle
+            elif isinstance(bundle, dict):
+                data, metadata = bundle, {}
+            else:
+                # Fallback: emit the plotly mimetype manually.
+                data = {
+                    "application/vnd.plotly.v1+json": fig.to_plotly_json(),
+                }
+                metadata = {}
+            return {
+                "output_type": "display_data",
+                "data": data,
+                "metadata": metadata or {},
+            }
 
-        display(_build_combined_figure(), display_id=grid_id)
+        # Initial render.
+        output.outputs = (_figure_to_output_dict(_build_combined_figure()),)
 
         # -- Background thread --------------------------------------------- #
         def _refresh():
@@ -899,8 +896,7 @@ class PerformanceVisualizer:
                 logger.debug("Live plot build error", exc_info=True)
                 return
             try:
-                _attach_parent()
-                update_display(fig, display_id=grid_id)
+                output.outputs = (_figure_to_output_dict(fig),)
             except Exception:
                 logger.debug("Live plot refresh error", exc_info=True)
 
