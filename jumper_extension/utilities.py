@@ -18,6 +18,15 @@ def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
     if cell_history_data is None or cell_history_data.empty:
         return perfdata.iloc[0:0]
 
+    # Guard against perfdata collected before the time column was introduced.
+    # Stay silent when perfdata is empty — that just means no samples were
+    # collected yet (e.g. monitor not running or cells too short) and the
+    # downstream "no performance data" message already covers it.
+    if "time" not in perfdata.columns:
+        if not perfdata.empty:
+            logger.warning("[JUmPER]: perfdata is missing 'time' column")
+        return perfdata.iloc[0:0]
+
     if compress_idle:
         # Remove idle periods between cells
         # Create time masks for each cell's execution period
@@ -30,7 +39,10 @@ def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
 
         if masks:
             combined_mask = pd.concat(masks, axis=1).any(axis=1)
-            return perfdata[combined_mask]
+            # Use .values to avoid IndexingError when perfdata has
+            # a non-unique or misaligned index (e.g. multi-level data
+            # at high sampling frequencies).
+            return perfdata.loc[combined_mask.values]
         else:
             return perfdata.iloc[0:0]
     else:
