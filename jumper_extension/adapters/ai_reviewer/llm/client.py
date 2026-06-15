@@ -4,12 +4,7 @@ from dataclasses import dataclass
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
-DEFAULT_BASE_URL = "https://llm.scads.ai/v1"
-DEFAULT_MODEL = "MiniMaxAI/MiniMax-M2.7"
-
-DEFAULT_MAX_TOKENS = 8000
-
-DEFAULT_TIMEOUT = 120.0
+from jumper_extension.config.loader import load_config
 
 
 @dataclass
@@ -22,14 +17,16 @@ class LLMClientConfig:
     timeout: float
 
     @classmethod
-    def from_env(cls) -> "LLMClientConfig":
-        """Build a config from ``JUMPER_AI_*`` environment variables."""
+    def from_config(cls) -> "LLMClientConfig":
+        """Build a config from AppConfig.ai; the API key comes from the
+        environment variable named by ``ai.api_key_env``."""
+        ai = load_config().ai
         return cls(
-            base_url=os.environ.get("JUMPER_AI_BASE_URL", DEFAULT_BASE_URL),
-            api_key=os.environ.get("JUMPER_AI_API_KEY", ""),
-            model=os.environ.get("JUMPER_AI_MODEL", DEFAULT_MODEL),
-            max_tokens=int(os.environ.get("JUMPER_AI_MAX_TOKENS", DEFAULT_MAX_TOKENS)),
-            timeout=float(os.environ.get("JUMPER_AI_TIMEOUT", DEFAULT_TIMEOUT)),
+            base_url=ai.base_url,
+            api_key=os.environ.get(ai.api_key_env, ""),
+            model=ai.model,
+            max_tokens=ai.max_tokens,
+            timeout=ai.timeout,
         )
 
 

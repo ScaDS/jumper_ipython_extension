@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, List, Any
 
 from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.config.loader import load_config
 from jumper_extension.utilities import get_available_levels
 
 
@@ -58,6 +59,7 @@ def build_perfmonitor_start_parser() -> argparse.ArgumentParser:
 
 def build_perfreport_parser() -> argparse.ArgumentParser:
     """Build an ArgumentParser instance for JUmPER commands."""
+    perfreports = load_config().settings.perfreports
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
         "--cell",
@@ -66,13 +68,14 @@ def build_perfreport_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--level",
-        default="process",
+        default=perfreports.level,
         choices=get_available_levels(),
         help="Performance level",
     )
     parser.add_argument(
         "--text",
         action="store_true",
+        default=perfreports.text,
         help="Show report in text format"
     )
     return parser
@@ -87,7 +90,7 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--level",
-        default="process",
+        default=load_config().settings.perfreports.level,
         choices=get_available_levels(),
         help="Performance level",
     )
@@ -161,7 +164,7 @@ def build_auto_perfreports_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--interval",
         type=float,
-        default=1.0,
+        default=load_config().settings.monitoring.default_interval,
         help="Interval between automatic reports (default: 1 second)",
     )
     return parser
@@ -172,7 +175,7 @@ def build_export_perfdata_parser() -> argparse.ArgumentParser:
     parser.add_argument("--name", type=str, help="Custom DataFrame variable name")
     parser.add_argument(
         "--level",
-        default="process",
+        default=load_config().settings.perfreports.level,
         choices=get_available_levels(),
         help="Performance level",
     )

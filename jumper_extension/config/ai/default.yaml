@@ -1,0 +1,5 @@
+base_url: https://llm.scads.ai/v1
+model: MiniMaxAI/MiniMax-M2.7
+max_tokens: 8000
+timeout: 120.0
+api_key_env: JUMPER_AI_API_KEY

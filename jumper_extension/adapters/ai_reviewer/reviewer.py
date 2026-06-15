@@ -75,7 +75,7 @@ class AIReviewer:
             from jumper_extension.adapters.ai_reviewer.llm.client import LLMClientConfig, build_llm
             from jumper_extension.adapters.ai_reviewer.ui.review_display import build_ai_review_display
 
-            llm = build_llm(LLMClientConfig.from_env())
+            llm = build_llm(LLMClientConfig.from_config())
             self._review_graph = build_review_graph(
                 llm,
                 ContextCollector(self),
@@ -89,7 +89,7 @@ class AIReviewer:
             from jumper_extension.adapters.ai_reviewer.agent.graph import build_resume_graph
             from jumper_extension.adapters.ai_reviewer.llm.client import LLMClientConfig, build_llm
 
-            llm = build_llm(LLMClientConfig.from_env())
+            llm = build_llm(LLMClientConfig.from_config())
             self._resume_graph = build_resume_graph(llm, shell)
         return self._resume_graph
 

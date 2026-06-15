@@ -98,6 +98,14 @@ class PlotsConfig(BaseModel):
     subsets: dict[str, dict[str, MetricConfig]]
 
 
+class AIConfig(BaseModel):
+    base_url: str = "https://llm.scads.ai/v1"
+    model: str = "MiniMaxAI/MiniMax-M2.7"
+    max_tokens: int = 8000
+    timeout: float = 120.0
+    api_key_env: str = "JUMPER_AI_API_KEY"
+
+
 class PythonCollectorsConfig(BaseModel):
     collectors: dict[str, dict]
 
@@ -114,4 +122,5 @@ class CollectorsConfig(BaseModel):
 class AppConfig(BaseModel):
     settings: SettingsConfig = Field(default_factory=SettingsConfig)
     plots: PlotsConfig
+    ai: AIConfig = Field(default_factory=AIConfig)
     collectors: CollectorsConfig
