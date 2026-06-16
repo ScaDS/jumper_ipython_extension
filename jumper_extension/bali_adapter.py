@@ -3,6 +3,7 @@ from typing import List, Dict, Tuple, Any
 import numpy as np
 from itables import show
 import logging
+import os
 from jumper_extension.bali_hook import BaliResultsParser
 from jumper_extension.core.messages import EXTENSION_INFO_MESSAGES, ExtensionInfoCode
 
@@ -45,7 +46,8 @@ class BaliAdapter:
         Refresh BALI segments from disk for the given process ID.
         """
         segments = self.parser.collect_all_bali_segments(pid)
-
+        with open("segments.txt", "w") as file:
+            file.write(str(segments))
         # Build DataFrame directly from segments and align to canonical column order
         df = pd.DataFrame(segments)
         self._segments_df = df.reindex(columns=self._segments_df.columns)
@@ -117,7 +119,7 @@ class BaliAdapter:
             powers = np.asarray(values["gpu_power_avg"], dtype=float)
             if len(times) < 2:
                 return 0.0
-            return float(np.trapz(powers, times))
+            return float(np.trapezoid(powers, times))
 
         def _safe_div(a, b):
             return a / b if b else None
@@ -284,7 +286,7 @@ class BaliVisualizationMixin:
     def __init__(self, *args, bali_adapter=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.bali_adapter = bali_adapter or BaliAdapter()
-        self._compressed_bali_segments = []
+        self._compressed_bali_segments = None
         self._cached_bali_segments = None
 
     def _load_bali_segments(self) -> List[Dict]:
@@ -296,8 +298,12 @@ class BaliVisualizationMixin:
             bali_pid = getattr(self.monitor, "bali_pid_directory", None) \
                 or getattr(self.monitor, "pid", None)
             if bali_pid is None:
-                self._cached_bali_segments = []
-                return self._cached_bali_segments
+                bali_pid = os.getpid()
+                #self._cached_bali_segments = None
+                #return self._cached_bali_segments
+
+            logger.info(f"BALI PID used: {bali_pid}")
+
             self._cached_bali_segments = self.bali_adapter.get_segments_for_visualization(
                 bali_pid)
             logging.debug("cached segments: %s", self._cached_bali_segments)
