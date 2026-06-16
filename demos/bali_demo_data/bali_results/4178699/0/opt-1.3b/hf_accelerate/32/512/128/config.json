@@ -1,0 +1,44 @@
+{
+    "model_name": "facebook/opt-1.3b",
+    "tokenizer": null,
+    "tokenizer_init_config": {
+        "padding": "max_length",
+        "padding_side": "left",
+        "truncation": "only_first"
+    },
+    "trust_remote_code": false,
+    "frameworks": [
+        "hf_accelerate"
+    ],
+    "tokenize_config": {
+        "return_tensors": "pt",
+        "padding": "max_length",
+        "truncation": true
+    },
+    "data": "BALI/bali/data/prompts.txt",
+    "num_samples": 512,
+    "batch_size": 32,
+    "input_len": 512,
+    "output_len": 128,
+    "dtype": "float16",
+    "warm_up_reps": 0,
+    "repeats": 1,
+    "num_gpus": 1,
+    "generate_from_token": true,
+    "random_tokens": false,
+    "output_dir": "bali_results/4178699/0/opt-1.3b/hf_accelerate/32/512/128",
+    "config_file": "/tmp/tmpa7tiijap.json",
+    "save_slurm_config": false,
+    "loglevel": "info",
+    "token_latencies": false,
+    "compression_config": {
+        "model": "",
+        "rate": 0.5
+    },
+    "open_llm_backend": "vllm",
+    "generation_config": {
+        "do_sample": true,
+        "max_token": 100,
+        "max_new_tokens": 100
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "hf_accelerate": {
+        "0": {
+            "total_time": 67.39371744170785,
+            "output_shape": [
+                600,
+                128
+            ],
+            "batch_size": 150,
+            "generate_from_token": true,
+            "random_tokens": false,
+            "setup_time": 2.678650375455618,
+            "tokenize_time": 0.3657752387225628,
+            "token_transfer_time": 0.0010560564696788788,
+            "generation_time": 64.34929182752967,
+            "time_per_token": 0.0008426441024251593,
+            "token_per_sec": 1186.7406383335087,
+            "num_output_token": 76800,
+            "sequences/s": 9.271411236980537,
+            "start_timestamp": 11781775.061903803,
+            "start_timestamp_absolute": 1773402939.8076375,
+            "end_timestamp": 11781842.455621244,
+            "setup_timestamp": 11781777.740554178,
+            "tokenize_timestamp": 11781778.106329417
+        }
+    }
+}
