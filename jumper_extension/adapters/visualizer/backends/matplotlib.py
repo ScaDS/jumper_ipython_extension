@@ -12,7 +12,9 @@ from ipywidgets import widgets, Layout
 from jumper_extension.adapters.visualizer.visualizer import PerformanceVisualizer
 from jumper_extension.utilities import get_available_levels
 from jumper_extension.logo import jumper_colors
+import logging
 
+logger = logging.getLogger("extension")
 
 def is_ipympl_backend():
     try:
@@ -247,6 +249,7 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
         if not show_bali:
             return
         segments = self._load_bali_segments()
+
         if not segments:
             return
 

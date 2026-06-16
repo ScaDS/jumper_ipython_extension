@@ -16,7 +16,7 @@ class BaliResultsParser:
         )
         self.colormap_energy = mpl.colors.LinearSegmentedColormap.from_list(
             "yellow_to_red",
-            ['#EADFB4','#F6995C','#874C62']
+            ['#EADFB4','#874C62']
         )
 
     def _find_bali_directories(self, pid: int) -> List[str]:
@@ -52,8 +52,8 @@ class BaliResultsParser:
             framework_data = benchmark_data[framework]
 
             for iteration_key, iteration_data in framework_data.items():
-                start_time = iteration_data.get("start_time")
-                end_time = iteration_data.get("end_time")
+                start_time = iteration_data.get("start_timestamp")
+                end_time = iteration_data.get("end_timestamp")
                 # ``generation_time`` is the duration of the text-generation
                 # phase; ``tokenize_time`` and ``setup_time`` are also
                 # durations (not absolute timestamps).
@@ -114,8 +114,8 @@ class BaliResultsParser:
         segments = []
         if error_data:
             for framework, error_info in error_data.items():
-                start_time = error_info.get("start_time")
-                end_time = error_info.get("end_time")
+                start_time = error_info.get("start_timestamp")
+                end_time = error_info.get("end_timestamp")
                 
                 segments.append({
                     "start_time": start_time,
