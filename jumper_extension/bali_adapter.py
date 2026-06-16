@@ -300,7 +300,7 @@ class BaliVisualizationMixin:
                 return self._cached_bali_segments
             self._cached_bali_segments = self.bali_adapter.get_segments_for_visualization(
                 bali_pid)
-            logging.info(f"cached segments: {self._cached_bali_segments}")
+            logging.debug("cached segments: %s", self._cached_bali_segments)
         return self._cached_bali_segments
 
     def _invalidate_bali_cache(self):

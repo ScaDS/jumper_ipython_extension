@@ -57,8 +57,13 @@
     var ylim   = (((YLIMS[metric] || {})[level]) || {})[key] || [0, 1];
     var rng    = getCellRange(CID, MIN_CELL, MAX_CELL);
     var bndArr = (key === 'true') ? BND_T : BND_F;
-    var bnd    = buildBoundaryUpdates(bndArr, rng, ylim);
     var xRng   = xRangeForCells(bndArr, rng);
+
+    /* Detect the BALI dual subplot layout: when the figure carries a
+       second x/y axis pair the JS overlays each subplot with a different
+       BALI colormap (left: Tokens/Second, right: Tokens/Joule). */
+    var layoutSrc = figData.layout || {};
+    var isDual    = !!(layoutSrc.xaxis2 || layoutSrc.yaxis2);
 
     /* BALI overlays only make sense when idle periods are hidden, mirroring
        the matplotlib backend.  When active, replace the cell-boundary
@@ -72,22 +77,54 @@
       && BALI && BALI.segments && BALI.segments.length
     );
 
-    var shapes = bnd.shapes;
     var traces = (figData.data || []).slice();
-    if (showBali) {
-      var bali = buildBaliShapes(
-        BALI.segments, rng, ylim, metric, BALI_PWR
-      );
-      shapes = bali.shapes;
-      if (bali.hoverTrace) traces.push(bali.hoverTrace);
-    }
+    var shapes = [];
+    /* Preserve the figure's original annotations (these include subplot
+       titles emitted by ``make_subplots``).  Boundary annotations from
+       ``buildBoundaryUpdates`` get appended to this list. */
+    var baseAnnots = (layoutSrc.annotations || []).slice();
+    var annots = baseAnnots.slice();
+
+    var axisIndices = isDual ? [1, 2] : [1];
+    axisIndices.forEach(function (idx) {
+      var bnd = buildBoundaryUpdates(bndArr, rng, ylim, idx);
+      annots = annots.concat(bnd.annotations);
+      if (showBali) {
+        var mode = isDual
+          ? (idx === 1 ? 'tps' : 'tpj')
+          : undefined;
+        var bali = buildBaliShapes(
+          BALI.segments, rng, ylim, metric, BALI_PWR,
+          {
+            axisIndex:   idx,
+            colorMode:   mode,
+            /* Offset segment indices into the running layout.shapes array
+               so the hover handler can find the right rectangle. */
+            shapeOffset: shapes.length
+          }
+        );
+        shapes = shapes.concat(bali.shapes);
+        if (bali.hoverTraces && bali.hoverTraces.length) {
+          traces = traces.concat(bali.hoverTraces);
+        }
+      } else {
+        shapes = shapes.concat(bnd.shapes);
+      }
+    });
 
     /* Clone layout to avoid mutating the shared stored object */
-    var layout = JSON.parse(JSON.stringify(figData.layout || {}));
+    var layout = JSON.parse(JSON.stringify(layoutSrc));
     layout.shapes      = shapes;
-    layout.annotations = bnd.annotations;
+    layout.annotations = annots;
     layout.autosize    = true;
-    if (xRng) { layout.xaxis = layout.xaxis || {}; layout.xaxis.range = xRng; }
+    if (xRng) {
+      layout.xaxis = layout.xaxis || {};
+      layout.xaxis.range = xRng;
+      if (isDual) {
+        layout.xaxis2 = layout.xaxis2 || {};
+        layout.xaxis2.range = xRng;
+      }
+    }
 
     renderPlotInPanel(plotDiv, traces, layout);
   }
@@ -114,8 +151,18 @@
     var row    = document.createElement('div');
     row.className = 'jump-vis-panel-row';
 
+    /* In BALI dual-subplot mode each panel already spans two charts side by
+       side, so we only put one panel per row to keep each chart wide enough
+       to read.  Otherwise the legacy 2-panels-per-row layout is used. */
+    var dualLayout = (
+      typeof BALI !== 'undefined'
+      && BALI && Array.isArray(BALI.segments)
+      && BALI.segments.length > 0
+    );
+    var panelsPerRow = dualLayout ? 1 : 2;
+
     var pids = [];
-    for (var i = 0; i < 2 && panelCount < MAX; i++) {
+    for (var i = 0; i < panelsPerRow && panelCount < MAX; i++) {
       var pid    = CID + '-panel-' + panelCount;
       var metric = nextMetric();
       var defLev = (LEVS.indexOf('process') >= 0) ? 'process' : (LEVS[0] || 'process');

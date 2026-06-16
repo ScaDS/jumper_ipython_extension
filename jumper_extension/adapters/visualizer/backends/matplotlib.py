@@ -35,6 +35,7 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
         level="process",
         show_bali=False,
         custom_vmin_vmax=None,
+        bali_color_mode=None,
     ):
         """Plot a single metric using its configuration."""
         config = next(
@@ -141,7 +142,13 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
             self._draw_cell_boundaries(ax, cell_range, show_idle)
 
         self._draw_bali_segments(
-            ax, show_bali, show_idle, cell_range, custom_vmin_vmax, metric
+            ax,
+            show_bali,
+            show_idle,
+            cell_range,
+            custom_vmin_vmax,
+            metric,
+            bali_color_mode=bali_color_mode,
         )
 
     def _draw_cell_boundaries(self, ax, cell_range=None, show_idle=False):
@@ -242,8 +249,17 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
         cell_range=None,
         custom_vmin_vmax=None,
         metric=None,
+        bali_color_mode=None,
     ):
-        """Draw BALI segments as colored rectangles with click selection."""
+        """Draw BALI segments as colored rectangles with click selection.
+
+        ``bali_color_mode`` overrides the metric-based default colormap:
+
+        - ``"tps"`` forces tokens-per-second coloring
+        - ``"tpj"`` forces tokens-per-joule (energy efficiency) coloring
+        - ``None`` keeps the legacy rule (power metrics use tok/J, all
+          other metrics use tok/s).
+        """
         if not show_bali:
             return
         segments = self._load_bali_segments()
@@ -278,7 +294,12 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
         ax._bali_patches = []
         ax._bali_selected_patch = None
 
-        is_power_metric = metric in ("gpu_power_summary", "gpu_power")
+        if bali_color_mode == "tpj":
+            is_power_metric = True
+        elif bali_color_mode == "tps":
+            is_power_metric = False
+        else:
+            is_power_metric = metric in ("gpu_power_summary", "gpu_power")
         for s in draw_segments:
             if is_power_metric:
                 start, dur, tps, is_error = (
@@ -677,21 +698,22 @@ class InteractivePlotWrapper:
             return
 
         self.output_container.children += (
-            widgets.HBox(
-                [
-                    self._create_dropdown_plot_panel(),
-                    self._create_dropdown_plot_panel(),
-                ],
-            ),
+            self._create_dropdown_plot_panel(),
         )
-        self.panel_count += 2
+        self.panel_count += 1
 
         if self.panel_count >= self.max_panels:
             self.add_panel_button.disabled = True
 
     def _create_dropdown_plot_panel(self):
-        """Create metric and level dropdown + matplotlib figure panel with
-        persistent Axes."""
+        """Create metric and level dropdown + matplotlib figure panel.
+
+        When BALI overlays are active, the figure contains two side-by-side
+        Axes for the same metric/level: the left one uses the
+        tokens-per-second colormap, the right one uses the
+        tokens-per-joule (energy efficiency) colormap.  When BALI is off,
+        a single Axes is rendered to keep the standard view compact.
+        """
         metric_dropdown = widgets.Dropdown(
             options=self.labeled_options,
             value=self._get_next_metric(),
@@ -702,38 +724,66 @@ class InteractivePlotWrapper:
             value="process",
             description="Level:",
         )
-        fig, ax = plt.subplots(figsize=self.figsize, constrained_layout=True)
+        if self.show_bali:
+            base_w, base_h = self.figsize or (5, 3)
+            fig, axes = plt.subplots(
+                1,
+                2,
+                figsize=(base_w * 2, base_h),
+                constrained_layout=True,
+            )
+            ax_tps, ax_tpj = axes
+        else:
+            fig, ax_tps = plt.subplots(
+                figsize=self.figsize, constrained_layout=True
+            )
+            ax_tpj = None
         if not is_ipympl_backend():
             # Prevent automatic display of the figure outside the Output widget
             plt.close(fig)
         output = widgets.Output()
         selection_output = widgets.Output()
 
+        def _render_axis(ax, df, metric, level, color_mode):
+            ax.clear()
+            ax._bali_selection_output = selection_output
+            if df is None or df.empty:
+                return
+            self.plot_callback(
+                df,
+                metric,
+                self.cell_range,
+                self.show_idle,
+                ax,
+                level,
+                self.show_bali,
+                self.custom_vmin_vmax,
+                color_mode,
+            )
+            # Tag the subplot with which BALI colormap it represents.
+            if self.show_bali and color_mode in ("tps", "tpj"):
+                suffix = (
+                    " — BALI: Tokens/Second"
+                    if color_mode == "tps"
+                    else " — BALI: Tokens/Joule"
+                )
+                ax.set_title((ax.get_title() or "") + suffix)
+
         def update_plot():
             metric = metric_dropdown.value
             level = level_dropdown.value
             df = self.perfdata_by_level.get(level)
 
-            # Always clear the output and redraw the figure to ensure
-            # in-place updates
             output.clear_output(wait=True)
             selection_output.clear_output(wait=True)
             with output:
-                ax.clear()
-                # Provide a sink for BALI selection details
-                ax._bali_selection_output = selection_output
                 self._create_bali_colorbar()
                 if df is not None and not df.empty:
-                    self.plot_callback(
-                        df,
-                        metric,
-                        self.cell_range,
-                        self.show_idle,
-                        ax,
-                        level,
-                        self.show_bali,
-                        self.custom_vmin_vmax,
-                    )
+                    if self.show_bali and ax_tpj is not None:
+                        _render_axis(ax_tps, df, metric, level, "tps")
+                        _render_axis(ax_tpj, df, metric, level, "tpj")
+                    else:
+                        _render_axis(ax_tps, df, metric, level, None)
                     fig.canvas.draw_idle()
                     if not is_ipympl_backend():
                         display(fig)
@@ -752,7 +802,7 @@ class InteractivePlotWrapper:
             "metric_dropdown": metric_dropdown,
             "level_dropdown": level_dropdown,
             "figure": fig,
-            "axes": ax,
+            "axes": (ax_tps, ax_tpj) if ax_tpj is not None else (ax_tps,),
             "output": output,
             "update_plot": update_plot,
         }

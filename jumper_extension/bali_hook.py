@@ -52,8 +52,18 @@ class BaliResultsParser:
             framework_data = benchmark_data[framework]
 
             for iteration_key, iteration_data in framework_data.items():
-                start_time = iteration_data.get("start_time")
-                end_time = iteration_data.get("end_time")
+                # Older BALI exports stored timings under ``*_timestamp``
+                # keys; accept both spellings so historical runs replay.
+                start_time = (
+                    iteration_data.get("start_time")
+                    if iteration_data.get("start_time") is not None
+                    else iteration_data.get("start_timestamp")
+                )
+                end_time = (
+                    iteration_data.get("end_time")
+                    if iteration_data.get("end_time") is not None
+                    else iteration_data.get("end_timestamp")
+                )
                 # ``generation_time`` is the duration of the text-generation
                 # phase; ``tokenize_time`` and ``setup_time`` are also
                 # durations (not absolute timestamps).
@@ -140,7 +150,7 @@ class BaliResultsParser:
             return []
 
         segments = []
-        logger.info(f"\nBALI result_dirs to plot:{result_dirs}")
+        logger.debug("BALI result_dirs to plot: %s", result_dirs)
         for directory in result_dirs:
             for config_path in glob.glob(
                 os.path.join(directory, "*/*/*/*/*/config.json")

@@ -69,11 +69,14 @@ function attachPanelEvents(pid, onUpdate) {
  * @param {number[]} ylim      - [ymin, ymax] of the target figure axis
  * @returns {{ shapes: Object[], annotations: Object[] }}
  */
-function buildBoundaryUpdates(bndData, cellRange, ylim) {
+function buildBoundaryUpdates(bndData, cellRange, ylim, axisIndex) {
   var shapes = [], annots = [];
   var lo = cellRange[0], hi = cellRange[1];
   var ymin = ylim[0], ymax = ylim[1];
   var height = (ymax - ymin) || 1.0;
+  var suffix = (axisIndex && axisIndex > 1) ? String(axisIndex) : '';
+  var xref = 'x' + suffix;
+  var yref = 'y' + suffix;
 
   for (var i = 0; i < bndData.length; i++) {
     var b = bndData[i];
@@ -82,7 +85,7 @@ function buildBoundaryUpdates(bndData, cellRange, ylim) {
     shapes.push({
       type: 'rect',
       x0: b.x0, x1: b.x1, y0: ymin, y1: ymax,
-      xref: 'x', yref: 'y',
+      xref: xref, yref: yref,
       fillcolor: b.color, opacity: 0.4,
       line: { color: 'black', dash: 'dash', width: 1 },
       layer: 'below'
@@ -90,7 +93,7 @@ function buildBoundaryUpdates(bndData, cellRange, ylim) {
     annots.push({
       x: (b.x0 + b.x1) / 2,
       y: ymax - height * 0.1,
-      xref: 'x', yref: 'y',
+      xref: xref, yref: yref,
       text: '#' + b.cell_index,
       showarrow: false,
       font: { size: 10 },
@@ -139,17 +142,34 @@ function xRangeForCells(bndData, cellRange) {
  * @param {string[]} powerMetrics - metric keys that use the energy colormap
  * @returns {{ shapes: Object[], hoverTrace: Object|null }}
  */
-function buildBaliShapes(segments, cellRange, ylim, metric, powerMetrics) {
+function buildBaliShapes(segments, cellRange, ylim, metric, powerMetrics, opts) {
   var shapes = [];
+  var hoverTraces = [];
   if (!segments || !segments.length) {
-    return { shapes: shapes, hoverTrace: null };
+    return { shapes: shapes, hoverTraces: hoverTraces };
   }
+  opts = opts || {};
+  var axisIndex = opts.axisIndex || 1;
+  var suffix = axisIndex > 1 ? String(axisIndex) : '';
+  var xref = 'x' + suffix;
+  var yref = 'y' + suffix;
+  // ``shapeOffset`` is the index of the first BALI shape this call adds
+  // inside the overall layout.shapes array.  The renderer uses it so the
+  // hover handler can map a hovered scatter point back to the originating
+  // rectangle in layout.shapes and apply a glow effect.
+  var shapeOffset = opts.shapeOffset || 0;
+
   var lo = cellRange[0], hi = cellRange[1];
   var ymin = ylim[0], ymax = ylim[1];
-  var isPower = (powerMetrics || []).indexOf(metric) >= 0;
 
-  var hx = [], hy = [], htext = [], hcolor = [];
-  var yMid = (ymin + ymax) / 2;
+  // ``colorMode`` overrides the metric-based default: 'tps' forces the
+  // tokens-per-second colormap, 'tpj' forces tokens-per-joule.  Without an
+  // explicit mode we keep the legacy rule (GPU power metrics use energy).
+  var mode = opts.colorMode;
+  var isPower;
+  if (mode === 'tpj') isPower = true;
+  else if (mode === 'tps') isPower = false;
+  else isPower = (powerMetrics || []).indexOf(metric) >= 0;
 
   for (var i = 0; i < segments.length; i++) {
     var s = segments[i];
@@ -157,25 +177,35 @@ function buildBaliShapes(segments, cellRange, ylim, metric, powerMetrics) {
 
     var color = isPower ? s.color_energy : s.color_tokens;
     var isError = !!s.is_error || !color;
+    var rectShape;
     if (isError) {
-      shapes.push({
+      rectShape = {
         type: 'rect',
         x0: s.x0, x1: s.x1, y0: ymin, y1: ymax,
-        xref: 'x', yref: 'y',
+        xref: xref, yref: yref,
         fillcolor: 'rgba(0,0,0,0)',
         line: { color: 'gray', width: 1, dash: 'dot' },
         layer: 'below'
-      });
+      };
     } else {
-      shapes.push({
+      rectShape = {
         type: 'rect',
         x0: s.x0, x1: s.x1, y0: ymin, y1: ymax,
-        xref: 'x', yref: 'y',
+        xref: xref, yref: yref,
         fillcolor: color, opacity: 0.55,
         line: { color: 'gray', width: 1 },
         layer: 'below'
-      });
+      };
     }
+    var shapeIndex = shapeOffset + shapes.length;
+    /* Original style is stashed on the shape itself so the hover handler
+       can restore it after a glow-up. */
+    rectShape._bali_base = {
+      fillcolor: rectShape.fillcolor,
+      opacity:   rectShape.opacity != null ? rectShape.opacity : 1,
+      line:      JSON.parse(JSON.stringify(rectShape.line || {}))
+    };
+    shapes.push(rectShape);
 
     /* Hover text: assemble key/value lines from s.info */
     var lines = ['<b>BALI segment</b>'];
@@ -185,27 +215,45 @@ function buildBaliShapes(segments, cellRange, ylim, metric, powerMetrics) {
       if (v === null || v === undefined || v === '') return;
       lines.push(k + ': ' + v);
     });
-    hx.push((s.x0 + s.x1) / 2);
-    hy.push(yMid);
-    htext.push(lines.join('<br>'));
-    hcolor.push(isError ? 'gray' : color);
-  }
+    var hoverText = lines.join('<br>');
 
-  var hoverTrace = null;
-  if (hx.length) {
-    hoverTrace = {
+    /* Region hover: spread a grid of invisible markers across the
+       rectangle so plotly fires the hover anywhere inside, not just at a
+       single midpoint.  ``customdata`` carries the shape index so the
+       glow handler can light up the matching rectangle. */
+    var cols = 12, rows = 5;
+    var hx = [], hy = [], hcd = [];
+    for (var cx = 0; cx < cols; cx++) {
+      for (var cy = 0; cy < rows; cy++) {
+        var fx = (cx + 0.5) / cols;
+        var fy = (cy + 0.5) / rows;
+        hx.push(s.x0 + (s.x1 - s.x0) * fx);
+        hy.push(ymin + (ymax - ymin) * fy);
+        hcd.push(shapeIndex);
+      }
+    }
+    hoverTraces.push({
       type: 'scatter',
       mode: 'markers',
       x: hx,
       y: hy,
-      text: htext,
-      hovertemplate: '%{text}<extra></extra>',
-      marker: { size: 14, color: hcolor, opacity: 0.001 },
+      customdata: hcd,
+      marker: { size: 24, color: 'rgba(0,0,0,0)', opacity: 0 },
+      hoverinfo: 'text',
+      hovertemplate: hoverText + '<extra></extra>',
+      hoverlabel: {
+        bgcolor: 'rgba(255,255,255,0.95)',
+        bordercolor: isError ? 'gray' : color,
+        font: { color: '#111' }
+      },
       showlegend: false,
-      name: 'BALI'
-    };
+      name: '',
+      xaxis: xref,
+      yaxis: yref
+    });
   }
-  return { shapes: shapes, hoverTrace: hoverTrace };
+
+  return { shapes: shapes, hoverTraces: hoverTraces };
 }
 
 /* ── Plotly rendering ────────────────────────────────────────────────────── */
@@ -228,8 +276,66 @@ function renderPlotInPanel(plotDiv, traces, layout) {
     return;
   }
 
+  /* Stash per-shape baseline styles on the plot div so the glow handler
+     can restore them after a hover.  Read straight from the shape dicts
+     before plotly clones them internally. */
+  var baliBases = {};
+  if (layout && Array.isArray(layout.shapes)) {
+    for (var si = 0; si < layout.shapes.length; si++) {
+      var sh = layout.shapes[si];
+      if (sh && sh._bali_base) {
+        baliBases[si] = sh._bali_base;
+        delete sh._bali_base;  // keep plotly's input clean
+      }
+    }
+  }
+
+  function attachBaliGlow(div) {
+    /* Highlight the BALI shape under the cursor with a stronger border
+       and higher opacity for a subtle "glow up"; restore on unhover. */
+    if (!div || !div.on) return;
+    var lastIdx = -1;
+
+    function setHighlight(idx) {
+      var updates = {};
+      Object.keys(baliBases).forEach(function (key) {
+        var i    = parseInt(key, 10);
+        var base = baliBases[key];
+        if (i === idx) {
+          updates['shapes[' + i + '].opacity']    = 0.9;
+          updates['shapes[' + i + '].line.color'] = '#111';
+          updates['shapes[' + i + '].line.width'] = 2;
+        } else {
+          updates['shapes[' + i + '].opacity']    =
+            base.opacity != null ? base.opacity : 1;
+          updates['shapes[' + i + '].line.color'] =
+            (base.line && base.line.color) || 'gray';
+          updates['shapes[' + i + '].line.width'] =
+            (base.line && base.line.width) || 1;
+        }
+      });
+      if (Object.keys(updates).length) Plotly.relayout(div, updates);
+    }
+
+    div.on('plotly_hover', function (evt) {
+      if (!evt || !evt.points || !evt.points.length) return;
+      var p   = evt.points[0];
+      var cd  = p.customdata;
+      var idx = Array.isArray(cd) ? cd[0] : cd;
+      if (typeof idx !== 'number' || idx === lastIdx) return;
+      lastIdx = idx;
+      setHighlight(idx);
+    });
+    div.on('plotly_unhover', function () {
+      if (lastIdx < 0) return;
+      lastIdx = -1;
+      setHighlight(-1);
+    });
+  }
+
   function doPlot() {
-    Plotly.newPlot(plotDiv, traces, layout, { responsive: true, displayModeBar: true });
+    Plotly.newPlot(plotDiv, traces, layout, { responsive: true, displayModeBar: true })
+      .then(function () { attachBaliGlow(plotDiv); });
   }
 
   if (typeof window.Plotly !== 'undefined') {

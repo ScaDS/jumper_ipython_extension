@@ -181,23 +181,40 @@ def save_cell_history_to_disk(pid, cell_history):
 
 
 def load_perfdata_from_disk(pid, levels):
-    """Load performance data from disk by PID"""
+    """Load performance data from disk by PID.
+
+    Accepts both the current ``perfdata_<level>.csv`` filename and the
+    legacy ``perf_<level>.csv`` produced by older versions so previously
+    saved sessions remain replayable.
+    """
     perfdata_dir = f"perfdata_results/{pid}"
     perfdata_by_level = {}
 
     for level in levels:
-        filepath = os.path.join(perfdata_dir, f"perfdata_{level}.csv")
-        if os.path.exists(filepath):
-            perfdata_by_level[level] = pd.read_csv(filepath)
-        else:
-            perfdata_by_level[level] = pd.DataFrame()
+        candidates = [
+            os.path.join(perfdata_dir, f"perfdata_{level}.csv"),
+            os.path.join(perfdata_dir, f"perf_{level}.csv"),
+        ]
+        loaded = pd.DataFrame()
+        for filepath in candidates:
+            if os.path.exists(filepath):
+                loaded = pd.read_csv(filepath)
+                break
+        perfdata_by_level[level] = loaded
 
     return perfdata_by_level
 
 
 def load_cell_history_from_disk(pid):
-    """Load cell history from disk by PID"""
-    filepath = f"perfdata_results/{pid}/cell_history.json"
+    """Load cell history from disk by PID.
+
+    Accepts both the current ``cell_history.json`` filename and the
+    legacy ``cell_history.csv`` produced by exported sessions so
+    previously saved runs remain replayable via ``--from-disk``.
+    """
+    perfdata_dir = f"perfdata_results/{pid}"
+    json_path = os.path.join(perfdata_dir, "cell_history.json")
+    csv_path = os.path.join(perfdata_dir, "cell_history.csv")
     expected_columns = [
         "cell_index",
         "raw_cell",
@@ -208,23 +225,42 @@ def load_cell_history_from_disk(pid):
         "wallclock_start_time",
         "wallclock_end_time",
     ]
-    if os.path.exists(filepath):
-        with open(filepath, "r") as f:
+
+    df = None
+    if os.path.exists(json_path):
+        with open(json_path, "r") as f:
             data = json.load(f)
         df = pd.DataFrame(data)
-        # Make sure expected columns exist so downstream code that
-        # dereferences ``cell_index`` etc. does not blow up with KeyError
-        # for files written before a column was introduced or for empty
-        # histories.
-        for column in expected_columns:
-            if column not in df.columns:
-                df[column] = pd.Series(dtype="float64")
-        if not df.empty:
-            df["cell_index"] = pd.to_numeric(
-                df["cell_index"], errors="coerce"
-            ).fillna(0).astype(int)
-        return df
-    return pd.DataFrame(columns=expected_columns)
+    elif os.path.exists(csv_path):
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            logger.warning(
+                f"[JUmPER]: Failed to read legacy cell history "
+                f"{csv_path}: {e}"
+            )
+            df = None
+
+    if df is None:
+        return pd.DataFrame(columns=expected_columns)
+
+    # Older exports used ``index`` as the cell identifier column.  Rename
+    # it so downstream code that expects ``cell_index`` keeps working.
+    if "cell_index" not in df.columns and "index" in df.columns:
+        df = df.rename(columns={"index": "cell_index"})
+
+    # Make sure expected columns exist so downstream code that
+    # dereferences ``cell_index`` etc. does not blow up with KeyError
+    # for files written before a column was introduced or for empty
+    # histories.
+    for column in expected_columns:
+        if column not in df.columns:
+            df[column] = pd.Series(dtype="float64")
+    if not df.empty:
+        df["cell_index"] = pd.to_numeric(
+            df["cell_index"], errors="coerce"
+        ).fillna(0).astype(int)
+    return df
 
 
 def find_latest_pid_on_disk(base_dir: str = "perfdata_results"):
@@ -277,9 +313,41 @@ def save_monitor_metadata_to_disk(pid, monitor):
 
 
 def load_monitor_metadata_from_disk(pid):
-    """Load monitor metadata from disk"""
-    filepath = f"perfdata_results/{pid}/monitor_metadata.json"
-    if os.path.exists(filepath):
-        with open(filepath, "r") as f:
+    """Load monitor metadata from disk.
+
+    Accepts both the current ``monitor_metadata.json`` and the legacy
+    ``manifest.json`` written by exported sessions. From the manifest we
+    extract the relevant fields from the ``monitor`` section so the
+    disk-based visualizer can be initialized just like for native runs.
+    """
+    perfdata_dir = f"perfdata_results/{pid}"
+    meta_path = os.path.join(perfdata_dir, "monitor_metadata.json")
+    if os.path.exists(meta_path):
+        with open(meta_path, "r") as f:
             return json.load(f)
+
+    manifest_path = os.path.join(perfdata_dir, "manifest.json")
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r") as f:
+                manifest = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning(
+                f"[JUmPER]: Failed to read legacy manifest "
+                f"{manifest_path}: {e}"
+            )
+            return None
+        monitor_info = manifest.get("monitor", {}) or {}
+        return {
+            "num_cpus": int(monitor_info.get("num_cpus", 0) or 0),
+            "num_system_cpus": int(
+                monitor_info.get(
+                    "num_system_cpus", monitor_info.get("num_cpus", 0)
+                ) or 0
+            ),
+            "num_gpus": int(monitor_info.get("num_gpus", 0) or 0),
+            "gpu_memory": float(monitor_info.get("gpu_memory", 0.0) or 0.0),
+            "start_time": monitor_info.get("start_time", 0) or 0,
+            "memory_limits": monitor_info.get("memory_limits", {}) or {},
+        }
     return None

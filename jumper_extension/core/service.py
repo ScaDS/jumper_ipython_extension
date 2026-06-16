@@ -42,11 +42,11 @@ from jumper_extension.utilities import (
     save_cell_history_to_disk,
     save_monitor_metadata_to_disk,
     load_cell_history_from_disk,
+    load_monitor_metadata_from_disk,
+    load_perfdata_from_disk,
     find_latest_pid_on_disk,
 )
-from jumper_extension.adapters.visualizer.backends.disk import (
-    DiskPerformanceVisualizer,
-)
+from jumper_extension.monitor.common import OfflinePerformanceMonitor
 
 
 logger = logging.getLogger("extension")
@@ -337,17 +337,105 @@ class PerfmonitorService:
         self.monitor.stop()
         self.settings.monitoring.running = False
 
+    @staticmethod
+    def _infer_monitor_metadata(perfdata_by_level, cell_history_df):
+        """Reconstruct minimal monitor metadata from on-disk artifacts.
+
+        Used by ``_plot_from_disk`` when neither ``monitor_metadata.json``
+        nor ``manifest.json`` is present.  Counts CPU / GPU columns to
+        size summary plots correctly and recovers a sensible ``start_time``
+        from the earliest perfdata sample so time axes line up with the
+        cell history.
+        """
+        import re
+
+        # Per-level CPU count: use the largest cpu_util_<N> index seen.
+        def _count_prefixed(df, prefix):
+            if df is None or df.empty:
+                return 0
+            pattern = re.compile(rf"^{re.escape(prefix)}(\d+)$")
+            indices = [
+                int(m.group(1))
+                for col in df.columns
+                for m in [pattern.match(str(col))]
+                if m
+            ]
+            return (max(indices) + 1) if indices else 0
+
+        process_df = perfdata_by_level.get("process", pd.DataFrame())
+        user_df = perfdata_by_level.get("user", pd.DataFrame())
+        system_df = perfdata_by_level.get("system", pd.DataFrame())
+
+        ref_df = next(
+            (df for df in (process_df, user_df, system_df) if df is not None and not df.empty),
+            pd.DataFrame(),
+        )
+
+        num_cpus = _count_prefixed(process_df, "cpu_util_") or \
+            _count_prefixed(user_df, "cpu_util_") or 0
+        num_system_cpus = _count_prefixed(system_df, "cpu_util_") or num_cpus
+        num_gpus = _count_prefixed(ref_df, "gpu_util_")
+
+        # Approximate GPU memory capacity from observed maxima so the
+        # memory plot's y-axis has a usable upper bound.
+        gpu_memory = 0.0
+        if num_gpus and not ref_df.empty:
+            mem_cols = [
+                c for c in ref_df.columns
+                if str(c).startswith("gpu_mem_") and str(c) != "gpu_mem_avg"
+            ]
+            try:
+                observed = ref_df[mem_cols].to_numpy().max() if mem_cols else 0.0
+                gpu_memory = float(observed) if observed > 0 else 80.0
+            except Exception:  # noqa: BLE001
+                gpu_memory = 80.0
+
+        # Earliest perfdata "time" gives a usable start_time so the
+        # visualizer's ``time -= start_time`` produces small relative
+        # values rather than huge absolute perf_counter timestamps.
+        start_time = 0
+        try:
+            candidates = []
+            for df in perfdata_by_level.values():
+                if df is not None and not df.empty and "time" in df.columns:
+                    candidates.append(float(df["time"].iloc[0]))
+            if (
+                cell_history_df is not None
+                and not cell_history_df.empty
+                and "start_time" in cell_history_df.columns
+            ):
+                candidates.append(float(cell_history_df["start_time"].min()))
+            if candidates:
+                start_time = min(candidates)
+        except Exception:  # noqa: BLE001 - defensive default
+            start_time = 0
+
+        return {
+            "num_cpus": num_cpus,
+            "num_system_cpus": num_system_cpus,
+            "num_gpus": num_gpus,
+            "gpu_memory": gpu_memory,
+            "start_time": start_time,
+            "memory_limits": {
+                level: 100.0 for level in get_available_levels()
+            },
+        }
+
     def _plot_from_disk(
         self,
         pid: int,
         metrics: Optional[List[str]] = None,
         cell_range: Optional[Tuple[int, int]] = None,
+        backend: Optional[str] = None,
     ) -> None:
         """Replay a previously saved session from disk.
 
-        Uses :class:`DiskPerformanceVisualizer` (matplotlib backend) to
-        render perfdata, cell history and BALI segments that were
-        persisted under ``perfdata_results/<pid>/``.
+        Loads perfdata, cell history and monitor metadata persisted under
+        ``perfdata_results/<pid>/`` into an :class:`OfflinePerformanceMonitor`
+        and renders them through the selected visualizer backend
+        (``matplotlib`` or ``plotly``). BALI segments under
+        ``bali_results/<pid>/`` are picked up via the visualizer's BALI
+        mixin (which reads ``monitor.pid``).
         """
         # Without an explicit PID: use the *current* process PID. This is
         # the right default for the typical workflow where the user runs
@@ -369,13 +457,85 @@ class PerfmonitorService:
         temp_cell_history = CellHistory()
         temp_cell_history.data = cell_history_data
 
+        perfdata_by_level = load_perfdata_from_disk(
+            pid, get_available_levels()
+        )
+        if not any(not df.empty for df in perfdata_by_level.values()):
+            logger.warning(
+                f"No performance data found on disk for PID {pid}."
+            )
+            return
+
+        metadata = load_monitor_metadata_from_disk(pid)
+        if metadata is None:
+            logger.info(
+                f"No monitor metadata found for PID {pid}; "
+                "inferring hardware layout from perfdata."
+            )
+            metadata = self._infer_monitor_metadata(
+                perfdata_by_level, cell_history_data
+            )
+
+        # Build an offline monitor that satisfies MonitorProtocol so any
+        # backend (matplotlib / plotly) can plot it without modifications.
+        offline_manifest = {
+            "monitor": {
+                "interval": 1.0,
+                "start_time": metadata.get("start_time", 0),
+                "num_cpus": metadata.get("num_cpus", 0),
+                "num_system_cpus": metadata.get(
+                    "num_system_cpus", metadata.get("num_cpus", 0)
+                ),
+                "num_gpus": metadata.get("num_gpus", 0),
+                "gpu_memory": metadata.get("gpu_memory", 0.0),
+                "memory_limits": metadata.get("memory_limits", {}),
+            }
+        }
+        offline_monitor = OfflinePerformanceMonitor(
+            manifest=offline_manifest,
+            perf_dfs=perfdata_by_level,
+            source=f"perfdata_results/{pid}",
+        )
+        # The BALI visualization mixin reads ``monitor.pid`` to locate
+        # ``bali_results/<pid>/`` when the monitor isn't BALI-aware.
+        offline_monitor.pid = pid
+
+        # Select backend (honor explicit --backend, fall back to settings).
+        selected_backend = (
+            (backend or self.settings.visualizer_backend) or "matplotlib"
+        )
+        selected_backend = selected_backend.strip().lower()
+
         # Reuse the service's BALI adapter (if any) so cached segments and
         # color scales stay consistent across plots.
-        bali_adapter = getattr(self, "bali_adapter", None)
-        visualizer = DiskPerformanceVisualizer(
-            pid, temp_cell_history, bali_adapter=bali_adapter
+        bali_adapter = getattr(self.visualizer, "bali_adapter", None)
+        visualizer = build_performance_visualizer(
+            temp_cell_history,
+            plots_disabled=False,
+            plots_disabled_reason="Plotting not available.",
+            backend=selected_backend,
+            bali_adapter=bali_adapter,
         )
-        visualizer.plot(metric_subsets=metrics, cell_range=cell_range)
+        visualizer.attach(offline_monitor)
+
+        # Default to the full cell range so BALI segments from earlier
+        # cells are included on the initial render.
+        if cell_range is None:
+            try:
+                valid_cells = temp_cell_history.view()
+                if len(valid_cells) > 0:
+                    cell_range = (
+                        int(valid_cells["cell_index"].min()),
+                        int(valid_cells["cell_index"].max()),
+                    )
+            except Exception:  # noqa: BLE001 - defensive default
+                cell_range = None
+
+        visualizer.plot(
+            metric_subsets=metrics,
+            cell_range=cell_range,
+            show_bali=True,
+        )
 
     def plot_performance(
         self,
@@ -449,6 +609,7 @@ class PerfmonitorService:
                 pid=from_disk,
                 metrics=metrics,
                 cell_range=cell_range,
+                backend=backend,
             )
             return
 

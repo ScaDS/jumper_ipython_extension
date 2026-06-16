@@ -228,10 +228,17 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         ylim,
         cell_range=None,
         show_idle=False,
+        axis_index=None,
     ):
         y_min, y_max = ylim
         height = (y_max - y_min) or 1.0
-        axis_suffix = "" if row == 1 else str(row)
+        # ``axis_index`` lets callers using ``make_subplots`` reach
+        # arbitrary subplots (e.g. row=1, col=2 → axis index "2") since
+        # Plotly axes are numbered globally, not per-row.
+        if axis_index is None:
+            axis_suffix = "" if row == 1 else str(row)
+        else:
+            axis_suffix = "" if axis_index == 1 else str(axis_index)
         xref = f"x{axis_suffix}"
         yref = f"y{axis_suffix}"
 
@@ -394,19 +401,87 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         show_idle=False,
         level="process",
         include_boundaries=True,
+        bali_dual=False,
     ):
+        """Build one Plotly figure for ``metric``.
+
+        When ``bali_dual`` is True the figure is laid out as a 1×2 subplot
+        carrying the **same** traces in both columns; main.js renders BALI
+        segment shapes on the left subplot using the tokens-per-second
+        colormap and on the right subplot using the tokens-per-joule
+        (energy-efficiency) colormap.
+        """
         metric_plot = self._build_metric_plot(
             df, metric, show_idle=show_idle, level=level
         )
         if not metric_plot:
             return None
 
-        fig = go.Figure()
-        for trace in metric_plot["traces"]:
-            fig.add_trace(trace)
+        base_title = metric_plot["title"]
+        ylim = metric_plot["ylim"]
+
+        if bali_dual:
+            fig = make_subplots(
+                rows=1,
+                cols=2,
+                shared_yaxes=True,
+                horizontal_spacing=0.05,
+                subplot_titles=(
+                    "BALI background: Tokens/Second",
+                    "BALI background: Tokens/Joule",
+                ),
+            )
+            for trace in metric_plot["traces"]:
+                fig.add_trace(trace, row=1, col=1)
+                # Duplicate trace into the second column without doubling
+                # the legend entries.
+                dup = dict(trace) if isinstance(trace, dict) else trace.to_plotly_json()
+                dup["showlegend"] = False
+                fig.add_trace(dup, row=1, col=2)
+            fig.update_xaxes(showgrid=True, title_text="Time (seconds)")
+            fig.update_yaxes(showgrid=True, range=list(ylim))
+            if include_boundaries:
+                # Cell boundaries appear identically in both columns.
+                self._draw_cell_boundaries_plotly(
+                    fig,
+                    row=1,
+                    ylim=ylim,
+                    cell_range=cell_range,
+                    show_idle=show_idle,
+                    axis_index=1,
+                )
+                self._draw_cell_boundaries_plotly(
+                    fig,
+                    row=1,
+                    ylim=ylim,
+                    cell_range=cell_range,
+                    show_idle=show_idle,
+                    axis_index=2,
+                )
+        else:
+            fig = go.Figure()
+            for trace in metric_plot["traces"]:
+                fig.add_trace(trace)
+            fig.update_xaxes(showgrid=True)
+            fig.update_yaxes(showgrid=True, range=list(ylim))
+            if include_boundaries:
+                self._draw_cell_boundaries_plotly(
+                    fig,
+                    row=1,
+                    ylim=ylim,
+                    cell_range=cell_range,
+                    show_idle=show_idle,
+                )
 
         fig.update_layout(
-            title=metric_plot["title"],
+            title=dict(
+                text=f"<b>{base_title}</b>",
+                x=0.5,
+                xanchor="center",
+                y=0.98,
+                yanchor="top",
+                font=dict(size=14),
+            ),
             xaxis_title="Time (seconds)",
             template="plotly_white",
             legend=dict(
@@ -417,22 +492,14 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                 x=0.5,
                 bgcolor="rgba(255,255,255,0.8)",
             ),
-            margin=dict(l=24, r=8, t=45, b=35),
-            # Keep width container-driven, but use a compact height close to
-            # former matplotlib proportions.
-            height=max(220, int(self.figsize[1] * 105)),
+            # Leave more headroom for the centered title + subplot subtitles
+            # in dual mode.
+            margin=dict(l=24, r=8, t=70 if bali_dual else 50, b=35),
+            # Keep width container-driven, but use a compact height close
+            # to former matplotlib proportions.
+            height=max(240, int(self.figsize[1] * 105)),
             autosize=True,
         )
-        fig.update_xaxes(showgrid=True)
-        fig.update_yaxes(showgrid=True, range=list(metric_plot["ylim"]))
-        if include_boundaries:
-            self._draw_cell_boundaries_plotly(
-                fig,
-                row=1,
-                ylim=metric_plot["ylim"],
-                cell_range=cell_range,
-                show_idle=show_idle,
-            )
         return fig
 
     def _render_direct_plot(
@@ -561,6 +628,21 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         ``_compressed_cell_boundaries`` (gated on the ``show_idle`` flag inside
         ``_get_plotly_cell_boundaries``).
         """
+        # BALI overlays use the compressed (no-idle) cell boundaries.  They
+        # are only meaningful when idle periods are hidden, matching the
+        # matplotlib backend.  We need the *compressed* perfdata for the
+        # primary level so that ``add_llm_performance_info`` integrates
+        # GPU power in the same time domain as the segments.
+        primary_level = get_available_levels()[0]
+        reference_perfdata = (perfdata_no_idle or {}).get(primary_level)
+        bali = self._compute_bali_segments_json(
+            full_range, reference_perfdata
+        )
+        # If we have BALI segments, every metric panel is duplicated into a
+        # 1×2 subplot so the JS layer can paint a Tokens/Second background
+        # on the left and a Tokens/Joule background on the right.
+        bali_dual = bool(bali.get("segments"))
+
         figures = {}  # metric → level → key → dict|None
         ylims   = {}  # metric → level → key → [ymin, ymax]
         all_levels = set(
@@ -583,11 +665,14 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
                         ylims[metric][level][key]   = [0, 1]
                         continue
                     try:
+                        # BALI overlays are only drawn in the no-idle view,
+                        # so only the "false" figures need the dual layout.
                         fig = self._build_single_metric_figure(
                             df, metric, full_range,
                             show_idle=(key == "true"),
                             level=level,
                             include_boundaries=False,
+                            bali_dual=(bali_dual and key == "false"),
                         )
                         if fig is not None:
                             fd = json.loads(fig.to_json())
@@ -611,16 +696,6 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         boundaries_true = self._compute_cell_boundaries_json(
             full_range, show_idle=True
         )
-        # BALI overlays use the compressed (no-idle) cell boundaries.  They
-        # are only meaningful when idle periods are hidden, matching the
-        # matplotlib backend.  We need the *compressed* perfdata for the
-        # primary level so that ``add_llm_performance_info`` integrates
-        # GPU power in the same time domain as the segments.
-        primary_level = get_available_levels()[0]
-        reference_perfdata = (perfdata_no_idle or {}).get(primary_level)
-        bali = self._compute_bali_segments_json(
-            full_range, reference_perfdata
-        )
 
         return {
             "figures":          figures,
@@ -628,6 +703,7 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
             "boundaries_false": boundaries_false,
             "boundaries_true":  boundaries_true,
             "bali":             bali,
+            "bali_dual":        bali_dual,
         }
 
     def _create_interactive_wrapper(
@@ -653,8 +729,15 @@ class PlotlyPerformanceVisualizer(PerformanceVisualizer):
         level=None,
         save_jpeg=None,
         pickle_file=None,
+        show_bali=True,
     ):
-        """Plot performance metrics using a self-contained pure HTML/JS output."""
+        """Plot performance metrics using a self-contained pure HTML/JS output.
+
+        ``show_bali`` is accepted for API parity with the matplotlib backend
+        but is effectively always honored: the Plotly UI always computes
+        BALI overlays and exposes a toggle to hide them.
+        """
+        del show_bali  # plotly UI always renders BALI with a JS toggle
         metrics_missing = not metric_subsets
         if metrics_missing:
             metric_subsets = ("cpu", "mem", "io")
