@@ -340,7 +340,7 @@ class MatplotlibPerformanceVisualizer(PerformanceVisualizer):
                 "Input Length": s.get("input_len", "n/a"),
                 "Output Length": s.get("output_len", "n/a"),
                 "Output Tokens per Second": (
-                    f"{tps:.2f}" if tps else "NaN"
+                    f"{s.get('tokens_per_sec'):.2f}" if tps else "NaN"
                 ),
                 "Segment Throughput (Tok/s)": s.get(
                     "segment_throughput", "n/a"
