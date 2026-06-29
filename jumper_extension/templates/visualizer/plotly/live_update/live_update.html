@@ -1,3 +1,9 @@
 {% for panel_id, data_json, layout_json, config_json in updates %}
-<script>Plotly.react("{{ panel_id }}", {{ data_json | safe }}, {{ layout_json | safe }}, {{ config_json | safe }});</script>
+<script>(function(){
+  var el = document.getElementById("{{ panel_id }}");
+  if (!el) return;
+  var ph = el.querySelector(".jumper-live-initializing");
+  if (ph) ph.remove();
+  Plotly.react(el, {{ data_json | safe }}, {{ layout_json | safe }}, {{ config_json | safe }});
+})();</script>
 {% endfor %}

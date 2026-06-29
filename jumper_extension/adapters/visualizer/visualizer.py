@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import List, runtime_checkable, Protocol, Optional, Tuple
 
 import plotly.graph_objects as go
-from IPython.display import display, HTML
+import plotly.io as pio
+from plotly.subplots import make_subplots
+from plotly.utils import PlotlyJSONEncoder
+from IPython.display import display, update_display, HTML, Javascript
 from jinja2 import Environment, FileSystemLoader
 from ipywidgets import widgets, Layout
 
@@ -761,63 +764,131 @@ class PerformanceVisualizer:
 
         # -- Fixed panel IDs — stable for the entire live session ---------- #
         panel_ids = {m: f"jumper-live-{session_id}-{m}" for m in default_metrics}
-        grid_id = f"jumper-live-grid-{session_id}"
-        update_id = f"jumper-live-update-{session_id}"
         grid_css = (template_dir / "live_grid" / "live_grid.css").read_text(encoding="utf-8")
 
-        # Skeleton grid displayed once — the Plotly divs stay in DOM for the
-        # whole session so Plotly.react() updates them in-place each tick.
-        init_html = (
-            f"<style>{grid_css}</style>\n"
-            + env.get_template("live_grid/live_grid.html").render(
-                ncols=ncols,
-                panels=[(panel_ids[m], label_map.get(m, m)) for m in default_metrics],
-            )
+        # -- Persistent grid scaffold + Plotly loader ---------------------- #
+        # We render the panel <div>s once via display(HTML(...)). Subsequent
+        # refreshes only push small <script>Plotly.react("<panel_id>", …)
+        # </script> payloads through an ipywidgets.Output below the grid.
+        # Plotly.react diffs against the existing trace arrays and patches
+        # what changed in place — no DOM teardown, no event-handler churn,
+        # and roughly 10–50× cheaper than repeated Plotly.newPlot calls.
+        plotly_loader = (
+            "<script>\n"
+            "(function(){\n"
+            "  if(typeof window.Plotly!=='undefined')return;\n"
+            "  var s=document.createElement('script');\n"
+            "  s.src='https://cdn.plot.ly/plotly-2.35.2.min.js';\n"
+            "  s.charset='utf-8';\n"
+            "  document.head.appendChild(s);\n"
+            "})();\n"
+            "</script>"
         )
-        display(HTML(init_html), display_id=grid_id)
-        # Initialise the script-update slot before the first update=True call.
-        display(HTML(""), display_id=update_id)
+        grid_html = env.get_template("live_grid/live_grid.html").render(
+            ncols=ncols,
+            panels=[(panel_ids[m], label_map.get(m, m)) for m in default_metrics],
+        )
+        display(HTML(
+            f"{plotly_loader}\n<style>{grid_css}</style>\n{grid_html}"
+        ))
+
+        # ipywidgets.Output below the grid receives the per-tick update
+        # scripts. Reassigning ``output.outputs = (...)`` is atomic and
+        # works from background threads (no parent_header is required —
+        # the Output widget has its own Comm channel).
+        output = widgets.Output()
+        display(output)
+
+        update_template = env.get_template("live_update/live_update.html")
+        config_json = json.dumps({
+            "responsive": True,
+            "displayModeBar": True,
+            "displaylogo": False,
+        })
+        panel_height = max(220, int(self.figsize[1] * 105))
+        # Decimation target per trace. The sliding window keeps full
+        # resolution up to this many points; beyond that we stride-sample.
+        max_points_per_trace = 400
+
+        def _decimate_traces(fig):
+            """Stride-decimate trace x/y arrays to keep payloads small."""
+            for tr in fig.data:
+                x = getattr(tr, "x", None)
+                y = getattr(tr, "y", None)
+                if x is None or y is None:
+                    continue
+                try:
+                    n = len(x)
+                except TypeError:
+                    continue
+                if n <= max_points_per_trace:
+                    continue
+                step = max(1, n // max_points_per_trace)
+                tr.x = x[::step]
+                tr.y = y[::step]
+
+        def _placeholder_layout(metric):
+            return dict(
+                template="plotly_white",
+                title=label_map.get(metric, metric) + " — waiting for data…",
+                margin=dict(l=50, r=16, t=45, b=40),
+                height=panel_height,
+                xaxis=dict(title="Time (seconds)"),
+                uirevision="live",
+            )
+
+        def _build_panel_payload(metric):
+            """Return (data_json, layout_json) for one panel."""
+            try:
+                fig = self._build_live_figure(metric, level, window_seconds)
+            except Exception:
+                logger.debug(
+                    "Live plot build error for %s", metric, exc_info=True
+                )
+                fig = None
+            if fig is None:
+                return "[]", json.dumps(_placeholder_layout(metric))
+            _decimate_traces(fig)
+            # Stable uirevision keeps user pan/zoom across refreshes.
+            fig.update_layout(uirevision="live", height=panel_height)
+            payload = fig.to_plotly_json()
+            return (
+                json.dumps(payload.get("data", []), cls=PlotlyJSONEncoder),
+                json.dumps(payload.get("layout", {}), cls=PlotlyJSONEncoder),
+            )
+
+        def _emit():
+            try:
+                updates = [
+                    (panel_ids[m], *_build_panel_payload(m))
+                    + (config_json,)
+                    for m in default_metrics
+                ]
+                # ``updates`` items are 4-tuples (panel_id, data, layout, config).
+                html = update_template.render(updates=updates)
+                output.outputs = (
+                    {
+                        "output_type": "display_data",
+                        "data": {"text/html": html},
+                        "metadata": {},
+                    },
+                )
+            except Exception:
+                logger.debug("Live plot refresh error", exc_info=True)
+
+        # Initial render.
+        _emit()
 
         # -- Background thread --------------------------------------------- #
-        def _render_update():
-            """Build Plotly.react() script tags for each panel via template.
-
-            Plotly.react() updates the existing chart in-place; if the div has
-            no chart yet (first call) it initialises one like newPlot(), so no
-            separate first-render path is needed.
-            """
-            updates = []
-            for metric in default_metrics:
-                try:
-                    fig = self._build_live_figure(metric, level, window_seconds)
-                    if fig is None:
-                        continue
-                    fig_dict = fig.to_dict()
-                    updates.append((
-                        panel_ids[metric],
-                        json.dumps(fig_dict["data"]),
-                        json.dumps(fig_dict["layout"]),
-                        json.dumps({"responsive": True, "displayModeBar": True}),
-                    ))
-                except Exception:
-                    logger.debug("Live plot update error for %s", metric, exc_info=True)
-            return env.get_template("live_update/live_update.html").render(updates=updates)
-
         def _live_loop():
             try:
                 while not stop_event.is_set():
-                    try:
-                        display(HTML(_render_update()), display_id=update_id, update=True)
-                    except Exception:
-                        logger.debug("Live plot grid update error", exc_info=True)
                     if not self.monitor.running:
                         break
                     stop_event.wait(update_interval)
+                    _emit()
             finally:
-                try:
-                    display(HTML(_render_update()), display_id=update_id, update=True)
-                except Exception:
-                    pass
+                _emit()
 
         thread = threading.Thread(target=_live_loop, daemon=True)
         thread.start()

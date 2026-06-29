@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper_wrapper_kernel"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Jupyter kernel that wraps other kernels with jumper-extension support"
 readme = {text = "Jumper Wrapper Kernel - A Jupyter kernel that wraps other kernels with jumper-extension support. See https://github.com/ScaDS/jumper_jupyter_performance for full documentation.", content-type = "text/plain"}
 license = {text = "MIT"}
