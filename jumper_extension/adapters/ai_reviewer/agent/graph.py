@@ -54,3 +54,14 @@ def build_resume_graph(llm: BaseChatModel, shell: Any) -> Any:
     graph.add_edge("apply_suggestion", END)
 
     return graph.compile()
+
+
+if __name__ == "__main__":
+    review_graph = build_review_graph(llm=None, collector=None, review_display=None)
+    resume_graph = build_resume_graph(llm=None, shell=None)
+
+    print("=== Review Graph ===")
+    print(review_graph.get_graph().draw_ascii())
+    print()
+    print("=== Resume Graph ===")
+    print(resume_graph.get_graph().draw_ascii())
