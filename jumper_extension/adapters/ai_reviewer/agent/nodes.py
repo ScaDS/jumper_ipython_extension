@@ -1,3 +1,4 @@
+import difflib
 import logging
 from typing import Any
 
@@ -95,12 +96,38 @@ def display_results_node(state: OptimizationState, review_display: AIReviewDispl
     return state
 
 
+def _other_options_as_diffs(
+    cell_code: str,
+    suggestions: list[Suggestion],
+    chosen_index: int,
+) -> str:
+    parts = []
+    for i, s in enumerate(suggestions):
+        if i == chosen_index:
+            continue
+        diff_lines = difflib.unified_diff(
+            cell_code.splitlines(),
+            s.code.splitlines(),
+            fromfile="original",
+            tofile=f"option {i + 1}",
+            lineterm="",
+        )
+        parts.append(f"Option {i + 1} — {s.title}:\n" + "\n".join(diff_lines))
+    return "\n\n".join(parts)
+
+
 def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #3: rewrite the chosen suggestion per the custom instruction."""
-    suggestion = state["suggestions"][state["chosen_index"]]
+    chosen = state["suggestions"][state["chosen_index"]]
+    other_diffs = _other_options_as_diffs(
+        state["cell_code"],
+        state["suggestions"],
+        state["chosen_index"],
+    )
     user_prompt = (
         f"Original bottleneck analysis:\n{state['analysis']}\n\n"
-        f"Suggested code:\n{suggestion.code}\n\n"
+        + (f"Other proposed options (as diffs vs original cell code):\n{other_diffs}\n\n" if other_diffs else "")
+        + f"Selected option (Option {state['chosen_index'] + 1} — {chosen.title}) — full code:\n{chosen.code}\n\n"
         f"Custom instruction:\n{state['custom_instruction']}"
     )
     response = llm.invoke([

@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from jumper_extension.adapters.ai_reviewer.agent.nodes import (
+    _other_options_as_diffs,
     _should_refine,
     analyze_bottlenecks_node,
     apply_suggestion_node,
@@ -114,9 +115,37 @@ def test_refine_suggestion_node_sets_refined_code_from_llm_response():
     result = refine_suggestion_node(state, llm)
 
     assert result["refined_code"] == "work_multiprocessed(n)"
-    messages = llm.invoke.call_args[0][0]
-    assert "work_vectorized(n)" in messages[1].content
-    assert "use multiprocessing" in messages[1].content
+    prompt = llm.invoke.call_args[0][0][1].content
+    assert "work_vectorized(n)" in prompt        # chosen full code
+    assert "use multiprocessing" in prompt       # custom instruction
+    assert "Option 2" in prompt                  # other option present as diff
+    assert "Parallelize" in prompt
+
+
+def test_other_options_as_diffs_skips_chosen_and_returns_unified_diff():
+    suggestions = [
+        Suggestion(title="Vectorize", description="", code="x = np.array(data)"),
+        Suggestion(title="Cache", description="", code="x = cached(data)"),
+    ]
+
+    result = _other_options_as_diffs(
+        cell_code="x = list(data)",
+        suggestions=suggestions,
+        chosen_index=0,
+    )
+
+    assert "Option 1" not in result
+    assert "Option 2 — Cache" in result
+    assert "-x = list(data)" in result
+    assert "+x = cached(data)" in result
+
+
+def test_other_options_as_diffs_returns_empty_string_for_single_suggestion():
+    suggestions = [Suggestion(title="Only", description="", code="x = 1")]
+
+    result = _other_options_as_diffs("x = 0", suggestions, chosen_index=0)
+
+    assert result == ""
 
 
 def test_apply_suggestion_node_sets_next_input_to_chosen_suggestion_when_not_refined():
