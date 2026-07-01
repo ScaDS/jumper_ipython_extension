@@ -105,6 +105,13 @@ class AIConfig(BaseModel):
     model: str = "MiniMaxAI/MiniMax-M2.7"
     max_tokens: int = 8000
     timeout: float = 120.0
+    max_retries: int = 2
+    streaming: bool = False
+    temperature: float | None = None
+    top_p: float | None = None
+    seed: int | None = None
+    enable_thinking: bool | None = None
+    extra_body: dict = Field(default_factory=dict)
     api_key_env: str = "JUMPER_AI_API_KEY"
 
 
