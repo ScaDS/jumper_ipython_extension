@@ -73,7 +73,9 @@ def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> O
     """LLM call #2: produce a structured list of optimization suggestions."""
     user_prompt = (
         f"Bottleneck analysis:\n{state['analysis']}\n\n"
-        f"Cell source code:\n{state['cell_code']}"
+        f"Cell source code:\n{state['cell_code']}\n\n"
+        f"Hardware: {state['hardware_info']}\n"
+        f"Available libraries: {state['env_info']}"
     )
     structured_llm = llm.with_structured_output(_SuggestionListSchema)
     response = structured_llm.invoke([

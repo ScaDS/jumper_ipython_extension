@@ -1,10 +1,27 @@
+import importlib.metadata
 import pandas as pd
 
 from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.adapters.data.node import NodeInfo
 from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState
+from jumper_extension.config.loader import load_config
 
 _EXCLUDED_SUMMARY_COLUMNS = {"time", "cell_index"}
+
+
+def collect_env_info(packages: list[str]) -> dict[str, str]:
+    """Return ``{package_name: version}`` for each installed package in *packages*.
+
+    Absent packages are omitted entirely, keeping the payload sent to the
+    LLM as short as possible.
+    """
+    result: dict[str, str] = {}
+    for pkg in packages:
+        try:
+            result[pkg] = importlib.metadata.version(pkg)
+        except importlib.metadata.PackageNotFoundError:
+            pass
+    return result
 
 
 class ContextCollector:
@@ -40,6 +57,7 @@ class ContextCollector:
             perf_summary=self._summarize_perfdata(ctx["perfdata"]),
             hardware_info=self._hardware_info(hardware),
             perf_tags=[str(tag_score.tag) for tag_score in ctx["tags_model"]],
+            env_info=collect_env_info(load_config().ai.known_packages),
             analysis="",
             suggestions=[],
             chosen_index=None,

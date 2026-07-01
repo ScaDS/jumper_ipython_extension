@@ -113,6 +113,7 @@ class AIConfig(BaseModel):
     enable_thinking: bool | None = None
     extra_body: dict = Field(default_factory=dict)
     api_key_env: str = "JUMPER_AI_API_KEY"
+    known_packages: list[str] = Field(default_factory=list)
 
 
 class PythonCollectorsConfig(BaseModel):

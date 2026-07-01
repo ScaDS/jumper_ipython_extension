@@ -72,6 +72,7 @@ def test_generate_suggestions_node_builds_suggestions_from_structured_output():
     state = empty_state(run_id="abc123")
     state["cell_code"] = "x = compute()"
     state["analysis"] = "CPU is the bottleneck."
+    state["env_info"] = {"numpy": "1.26.0", "torch": "2.3.0"}
 
     structured_response = SimpleNamespace(suggestions=[
         SimpleNamespace(title="Vectorize", description="Use numpy", code="x = vectorized()"),
@@ -88,6 +89,10 @@ def test_generate_suggestions_node_builds_suggestions_from_structured_output():
         Suggestion(title="Vectorize", description="Use numpy", code="x = vectorized()"),
         Suggestion(title="Cache", description="Memoize results", code="x = cached()"),
     ]
+    prompt = structured_llm.invoke.call_args[0][0][1].content
+    assert "Available libraries" in prompt
+    assert "numpy" in prompt
+    assert "torch" in prompt
 
 
 def test_display_results_node_delegates_to_review_display_and_keeps_state():
