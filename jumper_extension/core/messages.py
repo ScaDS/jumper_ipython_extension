@@ -136,7 +136,7 @@ _BASE_EXTENSION_INFO_MESSAGES = {
     ExtensionInfoCode.IMPORTED_SESSION_RESOURCES: ("Showing resources from imported session: {source}"),
     ExtensionInfoCode.AI_REVIEW_NOT_AVAILABLE: (
         "AI review is not available: {reason}. Install the optional "
-        "dependencies with: pip install jumper-extension[ai]"
+        "dependencies with: {install_cmd}"
     ),
 }
 

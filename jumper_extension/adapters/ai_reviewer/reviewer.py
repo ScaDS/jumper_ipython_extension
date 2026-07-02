@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 from typing import Any, Optional, Protocol, Tuple, runtime_checkable
 
@@ -16,6 +17,24 @@ logger = logging.getLogger("extension")
 _AI_EXTRAS_MISSING_REASON = (
     "optional dependencies (langgraph, langchain-openai) are not installed"
 )
+
+
+def _ai_extras_install_cmd() -> str:
+    """Install command for the ``[ai]`` extras.
+
+    Source checkouts must reinstall from their own dir (the wheel lacks the
+    reviewer); we detect one via the project's ``pyproject.toml``. Quoted so
+    ``[ai]`` survives shells that glob brackets (zsh).
+    """
+    root = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        if os.path.isfile(os.path.join(root, "pyproject.toml")):
+            return f"pip install -e '{root}[ai]'"
+        parent = os.path.dirname(root)
+        if parent == root:
+            break
+        root = parent
+    return "pip install 'jumper-extension[ai]'"
 
 
 @runtime_checkable
@@ -190,7 +209,8 @@ class UnavailableAIReviewer:
     def _warn(self) -> None:
         logger.info(
             EXTENSION_INFO_MESSAGES[ExtensionInfoCode.AI_REVIEW_NOT_AVAILABLE].format(
-                reason=self._reason
+                reason=self._reason,
+                install_cmd=_ai_extras_install_cmd(),
             )
         )
 
