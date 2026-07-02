@@ -180,4 +180,7 @@ jumper_collector
 # Benchmark results
 jumper_extension/monitor/benchmark/results/
 
+# Large demo model weights / sample assets (too big for git)
+demos/resources/
+
 # End of https://www.toptal.com/developers/gitignore/api/python
