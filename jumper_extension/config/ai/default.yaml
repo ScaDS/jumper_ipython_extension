@@ -1,5 +1,50 @@
 base_url: https://llm.scads.ai/v1
 model: MiniMaxAI/MiniMax-M2.7
-max_tokens: 8000
-timeout: 120.0
+max_tokens: 16000
+timeout: 520.0
+max_retries: 2
+streaming: true
+temperature: null
+top_p: null
+seed: null
+enable_thinking: false
+# arbitrary vLLM passthrough (top_k, min_p, repetition_penalty, guided_*, ...)
+extra_body: {}
 api_key_env: JUMPER_AI_API_KEY
+
+known_packages:
+  # arrays / numerics
+  - numpy
+  - scipy
+  - pandas
+  - polars
+  - pyarrow
+  # ML / DL
+  - torch
+  - tensorflow
+  - jax
+  - jaxlib
+  - scikit-learn
+  - xgboost
+  - lightgbm
+  - catboost
+  - transformers
+  - accelerate
+  - datasets
+  - peft
+  # GPU compute
+  - cupy-cuda11x
+  - cupy-cuda12x
+  - cupy
+  - cuml
+  - cudf
+  - pynvml
+  - triton
+  # parallelism / JIT
+  - numba
+  - joblib
+  - dask
+  - ray
+  # viz
+  - matplotlib
+  - plotly

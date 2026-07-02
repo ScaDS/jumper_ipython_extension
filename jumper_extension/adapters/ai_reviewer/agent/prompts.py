@@ -57,7 +57,7 @@ notebook cell. The user now wants that suggestion adjusted according to a
 custom instruction.
 
 Other options are shown as unified diffs vs the original cell code so you
-can incorporate their changes if the instruction refers to them.
+can incorporate their changes ONLY if the instruction explicitly refers to them.
 
 Rewrite the suggested code so it follows the user's instruction while still
 addressing the original bottleneck analysis. Respond with the complete
