@@ -1,0 +1,27 @@
+id: optimization_strategy
+header: Optimization strategy
+kind: single
+allow_note: true                      # key `n` attaches a free-text note to any option
+
+options:
+  - id: faster
+    label: Just make it faster
+    default: true
+    description: Agent figures out the bottlenecks and suggests several options.
+    effect:
+      overrides: {}
+
+  - id: parallelization
+    label: Focus on parallelization
+    description: Agent focuses on GPU under-use and threading/multiprocessing libraries.
+    effect:
+      overrides:
+        gpu_offload: true
+        parallel_analysis_hint: true
+
+  - id: custom
+    label: Explain what you need
+    description: Free-form instruction to the agent.
+    require_note: true
+    effect:
+      overrides: {}
