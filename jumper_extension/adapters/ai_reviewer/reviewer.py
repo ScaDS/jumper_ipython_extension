@@ -47,6 +47,8 @@ class AIReviewerProtocol(Protocol):
         shell: Any,
         cell_range: Optional[Tuple[int, int]] = None,
         level: str = "process",
+        strategy: str = "faster",
+        note: str = "",
     ) -> None: ...
 
     def resume(
@@ -54,7 +56,7 @@ class AIReviewerProtocol(Protocol):
         shell: Any,
         run_id: str,
         select: int,
-        refine: str = "",
+        note: str = "",
     ) -> None: ...
 
 
@@ -117,14 +119,17 @@ class AIReviewer:
         shell: Any,
         cell_range: Optional[Tuple[int, int]] = None,
         level: str = "process",
+        strategy: str = "faster",
+        note: str = "",
     ) -> None:
         """Run the AI-powered performance review on a fresh cell selection.
 
-        Collects the cell code and performance context, asks the LLM to
-        identify the bottleneck and propose optimizations, then displays
-        the numbered options together with ``--resume`` commands. The
-        resulting state is kept in memory under a short run id so a
-        follow-up ``resume`` call can apply one of the suggestions.
+        The chosen ``strategy`` resolves to a set of overrides that steer
+        both which context sources are gathered and which prompt rules
+        apply; ``note`` is a free-text instruction folded into the
+        prompt. Collects the cell code and performance context, asks the
+        LLM to identify the bottleneck and propose optimizations, then
+        displays the numbered options together with ``--resume`` commands.
         """
         if not self.monitor.running:
             logger.warning(
@@ -133,12 +138,22 @@ class AIReviewer:
             return
 
         from jumper_extension.adapters.ai_reviewer.agent.state import empty_state
+        from jumper_extension.adapters.ai_reviewer.strategy import get_strategy
+
+        resolved = get_strategy(strategy)
+        if resolved.require_note and not note:
+            logger.warning(
+                f"[JUmPER]: strategy '{strategy}' requires a --note instruction"
+            )
+            return
 
         run_id = uuid.uuid4().hex[:8]
         initial_state = empty_state(
             run_id=run_id,
             cell_range=cell_range,
             level=level,
+            overrides=resolved.overrides,
+            note=note,
         )
         final_state = self._get_review_graph().invoke(initial_state)
         self._pending_reviews[run_id] = final_state
@@ -148,15 +163,15 @@ class AIReviewer:
         shell: Any,
         run_id: str,
         select: int,
-        refine: str = "",
+        note: str = "",
     ) -> None:
         """Apply a previously suggested optimization, optionally refined.
 
         Loads the state stored under ``run_id`` by a prior ``review``
         run, marks suggestion ``select`` as chosen and runs the resume
-        graph: if ``refine`` is provided, the suggestion is rewritten
-        per the custom instruction first; either way the resulting code
-        is placed into the next cell via ``shell.set_next_input``.
+        graph: if ``note`` is provided, the suggestion is rewritten per
+        that instruction first; either way the resulting code is placed
+        into the next cell via ``shell.set_next_input``.
         """
         state = self._pending_reviews.get(run_id)
         if state is None:
@@ -173,7 +188,7 @@ class AIReviewer:
         resume_state = {
             **state,
             "chosen_index": select - 1,
-            "custom_instruction": refine,
+            "note": note,
             "refined_code": None,
         }
         final_state = self._get_resume_graph(shell).invoke(resume_state)
@@ -194,6 +209,8 @@ class UnavailableAIReviewer:
         shell: Any,
         cell_range: Optional[Tuple[int, int]] = None,
         level: str = "process",
+        strategy: str = "faster",
+        note: str = "",
     ) -> None:
         self._warn()
 
@@ -202,7 +219,7 @@ class UnavailableAIReviewer:
         shell: Any,
         run_id: str,
         select: int,
-        refine: str = "",
+        note: str = "",
     ) -> None:
         self._warn()
 

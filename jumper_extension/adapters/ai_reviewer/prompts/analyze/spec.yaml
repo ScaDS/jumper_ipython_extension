@@ -1,13 +1,16 @@
 given:
-  - id: an_cell_source
+  - id: code
     enabled: true
     text: Source code of a notebook cell
-  - id: perf_tags
+  - id: tags
     enabled: true
     text: Performance classification tags JUmPER assigned to it
-  - id: metrics_summary
+  - id: perf
     enabled: true
-    text: Summary of the measured CPU/GPU/memory metrics, and a description of the available hardware
+    text: Summary of the measured CPU/GPU/memory metrics
+  - id: hardware
+    enabled: true
+    text: Description of the available hardware
 
 hints:
   - id: parallel_analysis_hint

@@ -60,5 +60,12 @@ include = ["jumper_extension*"]
 "jumper_extension.config.collectors.python" = ["*.yaml"]
 "jumper_extension.templates.report" = ["*.html", "*.css"]
 "jumper_extension.templates.ai_review" = ["*.html", "*.css"]
+"jumper_extension.adapters.ai_reviewer.prompts" = [
+    "analyze/*.md", "analyze/*.yaml",
+    "suggest/*.md", "suggest/*.yaml",
+    "refine/*.md", "refine/*.yaml",
+    "fragments/*.md",
+]
+"jumper_extension.adapters.ai_reviewer.strategy" = ["*.yaml"]
 "jumper_extension.templates.visualizer.plotly" = ["**/*"]
 "jumper_extension.monitor.backends.native_c" = ["collector.c", "Makefile", "jumper_collector"]

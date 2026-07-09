@@ -95,17 +95,12 @@ def test_collect_builds_optimization_state_from_context():
     collector = ContextCollector(reviewer)
 
     with patch("jumper_extension.adapters.ai_reviewer.context.collector.collect_env_info", return_value={}):
-        state = collector.collect(cell_range=(2, 3), level="user")
+        collected = collector.collect(cell_range=(2, 3), level="user")
 
     reviewer.reporter.build_context.assert_called_once_with((2, 3), "user")
-    assert state["cell_range"] == (2, 3)
-    assert state["level"] == "user"
-    assert state["cell_code"] == "x = 1\n---\ny = slow(x)"
-    assert state["perf_tags"] == ["cpu_bound", "normal"]
-    assert state["analysis"] == ""
-    assert state["suggestions"] == []
-    assert state["chosen_index"] is None
-    assert state["applied"] is False
+    assert collected["cell_range"] == (2, 3)
+    assert collected["cell_code"] == "x = 1\n---\ny = slow(x)"
+    assert collected["perf_tags"] == ["cpu_bound", "normal"]
 
 
 def test_collect_includes_env_info_in_state():

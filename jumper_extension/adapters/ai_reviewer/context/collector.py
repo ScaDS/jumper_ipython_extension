@@ -3,10 +3,20 @@ import pandas as pd
 
 from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.adapters.data.node import NodeInfo
-from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState
 from jumper_extension.config.loader import load_config
 
 _EXCLUDED_SUMMARY_COLUMNS = {"time", "cell_index"}
+
+# Context sources the strategy can toggle. Each id maps to the OptimizationState
+# field it fills; disabled sources are left empty. Adding a source = add an entry
+# here plus a branch in ``_build_sources`` and a ``given`` item with the same id.
+_SOURCE_FIELDS = {
+    "code": ("cell_code", ""),
+    "perf": ("perf_summary", {}),
+    "hardware": ("hardware_info", {}),
+    "tags": ("perf_tags", []),
+    "packages": ("env_info", {}),
+}
 
 
 def collect_env_info(packages: list[str]) -> dict[str, str]:
@@ -28,43 +38,38 @@ class ContextCollector:
     """Gathers cell code, performance data and hardware info for the AI review agent.
 
     Reuses :meth:`PerformanceReporter.build_context`, which already
-    assembles cell source code, performance metrics and tags. No shell
-    reference is needed here - that is only required by the
-    ``apply_suggestion`` node.
-
-    Reads ``reporter``/``monitor`` off the attached :class:`AIReviewer`
-    so the live, currently-attached monitor is always used (mirrors how
-    :class:`PerformanceReporter`/:class:`PerformanceVisualizer` track
-    the monitor through ``attach``).
+    assembles cell source code, performance metrics and tags. Which
+    sources are actually included is controlled by the strategy's
+    ``overrides`` map (``id -> enabled``); disabled sources are left
+    empty so both the prompt and the LLM payload stay consistent.
     """
 
     def __init__(self, reviewer):
         self.reviewer = reviewer
 
-    def collect(self, cell_range=None, level: str = "process") -> OptimizationState | None:
+    def collect(self, cell_range=None, level: str = "process", overrides: dict | None = None) -> dict | None:
+        overrides = overrides or {}
         ctx = self.reviewer.reporter.build_context(cell_range, level)
         if ctx is None:
             return None
 
         hardware = aggregate_node_info(self.reviewer.monitor.nodes.hardware)
-        cell_code = "\n---\n".join(ctx["filtered_cells"]["raw_cell"])
+        sources = self._build_sources(ctx, hardware)
 
-        return OptimizationState(
-            run_id="",
-            cell_range=ctx["cell_range"],
-            level=level,
-            cell_code=cell_code,
-            perf_summary=self._summarize_perfdata(ctx["perfdata"]),
-            hardware_info=self._hardware_info(hardware),
-            perf_tags=[str(tag_score.tag) for tag_score in ctx["tags_model"]],
-            env_info=collect_env_info(load_config().ai.known_packages),
-            analysis="",
-            suggestions=[],
-            chosen_index=None,
-            custom_instruction="",
-            refined_code=None,
-            applied=False,
-        )
+        collected = {"cell_range": ctx["cell_range"]}
+        for source_id, (field, empty) in _SOURCE_FIELDS.items():
+            enabled = overrides.get(source_id, True)
+            collected[field] = sources[source_id] if enabled else empty
+        return collected
+
+    def _build_sources(self, ctx: dict, hardware: NodeInfo) -> dict:
+        return {
+            "code": "\n---\n".join(ctx["filtered_cells"]["raw_cell"]),
+            "perf": self._summarize_perfdata(ctx["perfdata"]),
+            "hardware": self._hardware_info(hardware),
+            "tags": [str(tag_score.tag) for tag_score in ctx["tags_model"]],
+            "packages": collect_env_info(load_config().ai.context.known_packages),
+        }
 
     @staticmethod
     def _summarize_perfdata(perfdata: pd.DataFrame) -> dict:

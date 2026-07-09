@@ -257,9 +257,13 @@ class PerfmonitorMagics(Magics):
         ranked optimization options, then displays them together with
         a run id and ``--resume`` commands.
 
+        The ``--strategy`` option steers a fresh run (which context
+        sources are gathered and which prompt rules apply); ``--note``
+        adds a free-text instruction.
+
         Resume run: applies suggestion ``--select N`` from a previous
         ``--resume RUN_ID`` review - optionally rewriting it first via
-        ``--refine "custom instruction"`` - and places the resulting
+        ``--note "instruction"`` - and places the resulting
         code into the next cell.
 
         Args:
@@ -277,13 +281,17 @@ class PerfmonitorMagics(Magics):
 
                 %perfmonitor_ai_review --cell 2:5 --level user
 
+            Focus on parallelization::
+
+                %perfmonitor_ai_review --strategy parallelization
+
             Apply the first suggestion from a previous run::
 
                 %perfmonitor_ai_review --resume abc123 --select 1
 
             Apply a refined version of the second suggestion::
 
-                %perfmonitor_ai_review --resume abc123 --select 2 --refine "use multiprocessing instead of joblib"
+                %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"
         """
         self.magic_adapter.perfmonitor_ai_review(line, self.shell)
 

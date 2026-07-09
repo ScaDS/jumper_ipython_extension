@@ -83,11 +83,20 @@ def build_perfreport_parser() -> argparse.ArgumentParser:
 
 def build_ai_review_parser() -> argparse.ArgumentParser:
     """Build an ArgumentParser for the perfmonitor_ai_review command."""
+    from jumper_extension.adapters.ai_reviewer.strategy import strategy_ids
+
+    ai_context = load_config().ai.context
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
         "--cell",
         type=str,
         help="Cell index or range to analyze (e.g., 5, 2:8, :5)"
+    )
+    parser.add_argument(
+        "--strategy",
+        default=ai_context.strategy,
+        choices=strategy_ids(),
+        help="Review strategy steering context sources and prompt rules",
     )
     parser.add_argument(
         "--level",
@@ -108,10 +117,10 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
         help="1-based index of the suggestion to apply (required with --resume)",
     )
     parser.add_argument(
-        "--refine",
+        "--note",
         type=str,
         default="",
-        help="Custom instruction used to rewrite the chosen suggestion before applying it",
+        help="Free-text instruction; steers the suggestions, or rewrites the chosen one on --resume",
     )
     return parser
 

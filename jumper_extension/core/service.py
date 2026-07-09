@@ -857,6 +857,8 @@ class PerfmonitorService:
         shell: Any,
         cell_range: Optional[Tuple[int, int]] = None,
         level: str = "process",
+        strategy: str = "faster",
+        note: str = "",
     ) -> None:
         """Run the AI-powered performance review on a fresh cell selection.
 
@@ -880,23 +882,30 @@ class PerfmonitorService:
         Examples:
             >>> service.ai_review(shell)
             >>> service.ai_review(shell, cell_range=(2, 4), level="user")
+            >>> service.ai_review(shell, strategy="parallelization")
         """
-        self.ai_reviewer.review(shell, cell_range=cell_range, level=level)
+        self.ai_reviewer.review(
+            shell,
+            cell_range=cell_range,
+            level=level,
+            strategy=strategy,
+            note=note,
+        )
 
     def ai_review_resume(
         self,
         shell: Any,
         run_id: str,
         select: int,
-        refine: str = "",
+        note: str = "",
     ) -> None:
         """Apply a previously suggested optimization, optionally refined.
 
         Delegates to the attached :attr:`ai_reviewer`, which loads the
         state stored under ``run_id`` by a prior ``%perfmonitor_ai_review``
         run, marks suggestion ``select`` as chosen and runs the resume
-        workflow: if ``refine`` is provided, the suggestion is rewritten
-        per the custom instruction first; either way the resulting code
+        workflow: if ``note`` is provided, the suggestion is rewritten
+        per that instruction first; either way the resulting code
         is placed into the next cell via ``shell.set_next_input``.
 
         Args:
@@ -904,8 +913,8 @@ class PerfmonitorService:
             run_id: Identifier of a pending review (see the resume
                 commands printed by ``%perfmonitor_ai_review``).
             select: 1-based index of the suggestion to apply.
-            refine: Optional custom instruction used to rewrite the
-                chosen suggestion before applying it.
+            note: Optional instruction used to rewrite the chosen
+                suggestion before applying it.
 
         Returns:
             None
@@ -916,10 +925,10 @@ class PerfmonitorService:
             ...     shell,
             ...     "abc123",
             ...     select=2,
-            ...     refine="use multiprocessing instead of joblib",
+            ...     note="use multiprocessing instead of joblib",
             ... )
         """
-        self.ai_reviewer.resume(shell, run_id, select=select, refine=refine)
+        self.ai_reviewer.resume(shell, run_id, select=select, note=note)
 
     def close(self) -> None:
         """Stop monitoring and release resources held by the service.
@@ -1092,7 +1101,7 @@ class PerfmonitorMagicAdapter:
                 shell,
                 run_id=args.resume,
                 select=args.select,
-                refine=args.refine,
+                note=args.note,
             )
             return
 
@@ -1106,6 +1115,8 @@ class PerfmonitorMagicAdapter:
             shell,
             cell_range=cell_range,
             level=args.level,
+            strategy=args.strategy,
+            note=args.note,
         )
 
     def perfmonitor_export_perfdata(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:
@@ -1153,8 +1164,8 @@ class PerfmonitorMagicAdapter:
             "perfmonitor_start [interval] [--monitor TYPE] -- start monitoring (default: 1s, monitor=default)",
             "perfmonitor_stop -- stop monitoring",
             "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
-            "perfmonitor_ai_review [--cell RANGE] [--level LEVEL] -- LLM-powered optimization"
-            " suggestions; resume with --resume RUN_ID --select N [--refine TEXT]",
+            "perfmonitor_ai_review [--cell RANGE] [--level LEVEL] [--strategy S] [--note TEXT]"
+            " -- LLM-powered optimization suggestions; resume with --resume RUN_ID --select N [--note TEXT]",
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
             "perfmonitor_enable_perfreports [--level LEVEL] [--interval INTERVAL] [--text] -- enable auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",

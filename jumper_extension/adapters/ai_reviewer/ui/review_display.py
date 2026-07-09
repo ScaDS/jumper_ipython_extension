@@ -56,7 +56,7 @@ def _resume_commands(run_id: str, n_suggestions: int) -> list[str]:
     if n_suggestions:
         commands.append(
             f'%perfmonitor_ai_review --resume {run_id} --select 1 '
-            f'--refine "use multiprocessing instead of joblib"'
+            f'--note "use multiprocessing instead of joblib"'
         )
     return commands
 

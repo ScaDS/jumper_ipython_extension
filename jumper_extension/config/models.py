@@ -100,7 +100,8 @@ class PlotsConfig(BaseModel):
     subsets: dict[str, dict[str, MetricConfig]]
 
 
-class AIConfig(BaseModel):
+class AILLMConfig(BaseModel):
+    """LLM client parameters for the AI reviewer."""
     base_url: str = "https://llm.scads.ai/v1"
     model: str = "MiniMaxAI/MiniMax-M2.7"
     max_tokens: int = 8000
@@ -113,7 +114,17 @@ class AIConfig(BaseModel):
     enable_thinking: bool | None = None
     extra_body: dict = Field(default_factory=dict)
     api_key_env: str = "JUMPER_AI_API_KEY"
+
+
+class AIContextConfig(BaseModel):
+    """Context-gathering parameters: default strategy and known packages."""
+    strategy: str = "faster"
     known_packages: list[str] = Field(default_factory=list)
+
+
+class AIConfig(BaseModel):
+    llm: AILLMConfig = Field(default_factory=AILLMConfig)
+    context: AIContextConfig = Field(default_factory=AIContextConfig)
 
 
 class PythonCollectorsConfig(BaseModel):

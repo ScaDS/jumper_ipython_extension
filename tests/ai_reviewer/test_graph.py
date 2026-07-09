@@ -48,7 +48,7 @@ def test_review_graph_collects_analyzes_suggests_and_displays():
     assert review_display.display.call_args[0][0]["run_id"] == "abc123"
 
 
-def _resume_state(custom_instruction=""):
+def _resume_state(note=""):
     state = empty_state(run_id="abc123")
     state["cell_code"] = "for i in range(n):\n    work(i)"
     state["analysis"] = "The loop is CPU-bound."
@@ -56,7 +56,7 @@ def _resume_state(custom_instruction=""):
         Suggestion(title="Vectorize", description="Use numpy", code="x = vectorized()"),
     ]
     state["chosen_index"] = 0
-    state["custom_instruction"] = custom_instruction
+    state["note"] = note
     return state
 
 
@@ -65,7 +65,7 @@ def test_resume_graph_applies_suggestion_directly_without_refine():
     shell = Mock()
 
     graph = build_resume_graph(llm, shell)
-    final_state = graph.invoke(_resume_state(custom_instruction=""))
+    final_state = graph.invoke(_resume_state(note=""))
 
     llm.invoke.assert_not_called()
     shell.set_next_input.assert_called_once_with("x = vectorized()")
@@ -78,7 +78,7 @@ def test_resume_graph_refines_then_applies_suggestion():
     shell = Mock()
 
     graph = build_resume_graph(llm, shell)
-    final_state = graph.invoke(_resume_state(custom_instruction="use multiprocessing"))
+    final_state = graph.invoke(_resume_state(note="use multiprocessing"))
 
     llm.invoke.assert_called_once()
     shell.set_next_input.assert_called_once_with("x = vectorized_parallel()")

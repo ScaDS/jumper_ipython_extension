@@ -106,7 +106,7 @@ def test_resume_invokes_graph_with_chosen_index_and_stores_result():
     reviewer._pending_reviews["abc123"] = {
         "suggestions": [Mock(), Mock()],
         "chosen_index": None,
-        "custom_instruction": "",
+        "note": "",
         "refined_code": None,
     }
 
@@ -116,11 +116,11 @@ def test_resume_invokes_graph_with_chosen_index_and_stores_result():
     reviewer._get_resume_graph = Mock(return_value=fake_graph)
     shell = Mock()
 
-    reviewer.resume(shell, run_id="abc123", select=2, refine="use multiprocessing")
+    reviewer.resume(shell, run_id="abc123", select=2, note="use multiprocessing")
 
     reviewer._get_resume_graph.assert_called_once_with(shell)
     resume_state = fake_graph.invoke.call_args[0][0]
     assert resume_state["chosen_index"] == 1
-    assert resume_state["custom_instruction"] == "use multiprocessing"
+    assert resume_state["note"] == "use multiprocessing"
     assert resume_state["refined_code"] is None
     assert reviewer._pending_reviews["abc123"] == final_state

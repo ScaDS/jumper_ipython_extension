@@ -6,17 +6,15 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from jumper_extension.adapters.ai_reviewer.agent.prompts import (
-    ANALYZE_SYSTEM_PROMPT,
-    REFINE_SYSTEM_PROMPT,
-    SUGGEST_SYSTEM_PROMPT,
-)
 from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState, Suggestion
 from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
+from jumper_extension.adapters.ai_reviewer.prompts import PromptLibrary
 from jumper_extension.adapters.ai_reviewer.ui.review_display import AIReviewDisplay
 from jumper_extension.core.messages import EXTENSION_ERROR_MESSAGES, ExtensionErrorCode
 
 logger = logging.getLogger("extension")
+
+_prompts = PromptLibrary.load()
 
 
 class _SuggestionSchema(BaseModel):
@@ -42,46 +40,58 @@ class _SuggestionListSchema(BaseModel):
 def collect_context_node(state: OptimizationState, collector: ContextCollector) -> OptimizationState:
     """Populate *state* with cell code, performance data, tags and hardware info.
 
-    The incoming ``cell_range``/``level`` describe what to collect; the
-    collector resolves ``cell_range`` (e.g. ``None`` -> last non-short cell)
-    and returns it alongside the gathered data.
+    The strategy's ``overrides`` decide which context sources are gathered;
+    disabled sources come back empty.
     """
-    collected = collector.collect(state["cell_range"], state["level"])
+    collected = collector.collect(state["cell_range"], state["level"], state["overrides"])
     if collected is None:
         logger.warning(EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_PERFORMANCE_DATA])
         return state
 
-    # collected["run_id"] is a placeholder; keep the run_id assigned by the service
-    return {**state, **collected, "run_id": state["run_id"]}
+    # collected carries only context data; keep the run identity and the
+    # strategy inputs that drive the rest of the graph.
+    return {
+        **state,
+        **collected,
+        "run_id": state["run_id"],
+        "overrides": state["overrides"],
+        "note": state["note"],
+    }
 
 
 def analyze_bottlenecks_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #1: produce a short bottleneck narrative for the cell."""
-    user_prompt = (
-        f"Cell source code:\n{state['cell_code']}\n\n"
-        f"Performance tags: {', '.join(state['perf_tags']) or 'none'}\n"
-        f"Performance summary (mean/max per metric): {state['perf_summary']}\n"
-        f"Hardware: {state['hardware_info']}"
-    )
+    lines = []
+    if state["cell_code"]:
+        lines.append(f"Cell source code:\n{state['cell_code']}")
+    if state["perf_tags"]:
+        lines.append(f"Performance tags: {', '.join(state['perf_tags'])}")
+    if state["perf_summary"]:
+        lines.append(f"Performance summary (mean/max per metric): {state['perf_summary']}")
+    if state["hardware_info"]:
+        lines.append(f"Hardware: {state['hardware_info']}")
+
     response = llm.invoke([
-        SystemMessage(content=ANALYZE_SYSTEM_PROMPT),
-        HumanMessage(content=user_prompt),
+        SystemMessage(content=_prompts.render("analyze", state["overrides"], state["note"])),
+        HumanMessage(content="\n\n".join(lines)),
     ])
     return {**state, "analysis": response.content}
 
 
 def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #2: produce a structured list of optimization suggestions."""
-    user_prompt = (
-        f"Bottleneck analysis:\n{state['analysis']}\n\n"
-        f"Cell source code:\n{state['cell_code']}\n\n"
-        f"Hardware: {state['hardware_info']}\n"
-        f"Available libraries: {state['env_info']}"
-    )
+    lines = [f"Bottleneck analysis:\n{state['analysis']}"]
+    if state["cell_code"]:
+        lines.append(f"Cell source code:\n{state['cell_code']}")
+    if state["hardware_info"]:
+        lines.append(f"Hardware: {state['hardware_info']}")
+    if state["env_info"]:
+        lines.append(f"Available libraries: {state['env_info']}")
+
     structured_llm = llm.with_structured_output(_SuggestionListSchema)
     response = structured_llm.invoke([
-        SystemMessage(content=SUGGEST_SYSTEM_PROMPT),
-        HumanMessage(content=user_prompt),
+        SystemMessage(content=_prompts.render("suggest", state["overrides"], state["note"])),
+        HumanMessage(content="\n\n".join(lines)),
     ])
     suggestions = [
         Suggestion(title=item.title, description=item.description, code=item.code)
@@ -117,7 +127,7 @@ def _other_options_as_diffs(
 
 
 def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
-    """LLM call #3: rewrite the chosen suggestion per the custom instruction."""
+    """LLM call #3: rewrite the chosen suggestion per the ``--note`` instruction."""
     chosen = state["suggestions"][state["chosen_index"]]
     other_diffs = _other_options_as_diffs(
         state["cell_code"],
@@ -128,10 +138,10 @@ def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> Opti
         f"Original bottleneck analysis:\n{state['analysis']}\n\n"
         + (f"Other proposed options (as diffs vs original cell code):\n{other_diffs}\n\n" if other_diffs else "")
         + f"Selected option (Option {state['chosen_index'] + 1} — {chosen.title}) — full code:\n{chosen.code}\n\n"
-        f"Custom instruction:\n{state['custom_instruction']}"
+        f"Custom instruction:\n{state['note']}"
     )
     response = llm.invoke([
-        SystemMessage(content=REFINE_SYSTEM_PROMPT),
+        SystemMessage(content=_prompts.render("refine", state["overrides"], state["note"])),
         HumanMessage(content=user_prompt),
     ])
     return {**state, "refined_code": response.content}
@@ -147,4 +157,4 @@ def apply_suggestion_node(state: OptimizationState, shell: Any) -> OptimizationS
 
 def _should_refine(state: OptimizationState) -> str:
     """Conditional-edge router for the resume graph."""
-    return "refine" if state["custom_instruction"] else "apply"
+    return "refine" if state["note"] else "apply"

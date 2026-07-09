@@ -35,7 +35,7 @@ def test_collect_context_node_merges_collected_data_and_keeps_run_id():
 
     result = collect_context_node(state, collector)
 
-    collector.collect.assert_called_once_with((1, 2), "user")
+    collector.collect.assert_called_once_with((1, 2), "user", {})
     assert result["run_id"] == "abc123"
     assert result["cell_code"] == "x = 1"
 
@@ -107,7 +107,7 @@ def test_display_results_node_delegates_to_review_display_and_keeps_state():
 
 
 def test_refine_suggestion_node_sets_refined_code_from_llm_response():
-    state = _state_with_suggestions(chosen_index=0, custom_instruction="use multiprocessing")
+    state = _state_with_suggestions(chosen_index=0, note="use multiprocessing")
 
     llm = Mock()
     llm.invoke = Mock(return_value=SimpleNamespace(content="work_multiprocessed(n)"))
@@ -167,6 +167,6 @@ def test_apply_suggestion_node_prefers_refined_code_when_present():
     shell.set_next_input.assert_called_once_with("work_refined(n)")
 
 
-def test_should_refine_routes_based_on_custom_instruction():
-    assert _should_refine(_state_with_suggestions(custom_instruction="use multiprocessing")) == "refine"
-    assert _should_refine(_state_with_suggestions(custom_instruction="")) == "apply"
+def test_should_refine_routes_based_on_note():
+    assert _should_refine(_state_with_suggestions(note="use multiprocessing")) == "refine"
+    assert _should_refine(_state_with_suggestions(note="")) == "apply"

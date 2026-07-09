@@ -1,0 +1,29 @@
+# Review strategies selected via `--strategy`. Each `effect` has two buckets,
+# both extensible: `overrides` toggles prompt items, `context` toggles context
+# sources gathered by the collector (code / tags / perf / hardware / packages).
+
+strategies:
+  - id: faster
+    name: Just make it faster
+    description: Agent figures out the bottlenecks and suggests several options.
+    effect:
+      overrides: {}
+      context: {}
+
+  - id: parallelization
+    name: Focus on parallelization
+    description: Agent focuses on GPU under-use and threading/multiprocessing libraries.
+    effect:
+      overrides:
+        gpu_offload: true
+        parallel_analysis_hint: true
+      context:
+        packages: true
+
+  - id: custom
+    name: Explain what you need
+    description: Free-form instruction to the agent (requires --note).
+    require_note: true
+    effect:
+      overrides: {}
+      context: {}

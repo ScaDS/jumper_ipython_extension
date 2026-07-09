@@ -28,21 +28,21 @@ class LLMClientConfig:
     @classmethod
     def from_config(cls) -> "LLMClientConfig":
         """Build a config from AppConfig.ai; the API key comes from the
-        environment variable named by ``ai.api_key_env``."""
-        ai = load_config().ai
+        environment variable named by ``ai.llm.api_key_env``."""
+        llm = load_config().ai.llm
         return cls(
-            base_url=ai.base_url,
-            api_key=os.environ.get(ai.api_key_env, ""),
-            model=ai.model,
-            max_tokens=ai.max_tokens,
-            timeout=ai.timeout,
-            max_retries=ai.max_retries,
-            streaming=ai.streaming,
-            temperature=ai.temperature,
-            top_p=ai.top_p,
-            seed=ai.seed,
-            enable_thinking=ai.enable_thinking,
-            extra_body=ai.extra_body,
+            base_url=llm.base_url,
+            api_key=os.environ.get(llm.api_key_env, ""),
+            model=llm.model,
+            max_tokens=llm.max_tokens,
+            timeout=llm.timeout,
+            max_retries=llm.max_retries,
+            streaming=llm.streaming,
+            temperature=llm.temperature,
+            top_p=llm.top_p,
+            seed=llm.seed,
+            enable_thinking=llm.enable_thinking,
+            extra_body=llm.extra_body,
         )
 
 

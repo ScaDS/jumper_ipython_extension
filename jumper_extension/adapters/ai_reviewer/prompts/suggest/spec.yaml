@@ -1,14 +1,14 @@
 given:
-  - id: cell_source
+  - id: code
     enabled: true
     text: Cell source code
-  - id: bottleneck_analysis
+  - id: analysis
     enabled: true
     text: Bottleneck analysis
   - id: hardware
     enabled: true
     text: Description of the available hardware
-  - id: libraries
+  - id: packages
     enabled: true
     text: Preinstalled libraries
 
