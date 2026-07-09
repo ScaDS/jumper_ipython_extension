@@ -35,6 +35,12 @@ def _synthetic_state(strategy: str, note: str) -> OptimizationState:
         "cpu": {"mean": 82.0, "max": 99.0},
         "memory": {"mean": 1.2, "max": 1.5},
     }
+    state["raw_perf"] = {
+        "time": [0.0, 0.5, 1.0, 1.5, 2.0],
+        "cell_index": [1, 1, 1, 1, 1],
+        "cpu": [14.0, 71.0, 92.0, 99.0, 88.0],
+        "memory": [1.0, 1.1, 1.2, 1.2, 1.2],
+    }
     state["hardware_info"] = {
         "num_cpus": 8,
         "num_gpus": 1,
@@ -60,9 +66,9 @@ def _synthetic_state(strategy: str, note: str) -> OptimizationState:
     ]
     state["chosen_index"] = 0
 
-    # Mirror the collector: a strategy disabling a context source empties its field.
-    for source_id, (field, empty) in _SOURCE_FIELDS.items():
-        if overrides.get(source_id, True) is False:
+    # Mirror the collector: honor each source's default, empty the disabled ones.
+    for source_id, (field, empty, default) in _SOURCE_FIELDS.items():
+        if overrides.get(source_id, default) is False:
             state[field] = empty
     return state
 

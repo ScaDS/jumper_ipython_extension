@@ -8,6 +8,12 @@ given:
   - id: perf
     enabled: true
     text: Summary of the measured CPU/GPU/memory metrics
+  - id: raw_perf
+    enabled: false
+    text: >-
+      Raw per-timestep metric arrays behind the %perfmonitor_plot charts - the same
+      time series the plots are drawn from, given as {column: [values]} arrays (time,
+      cell_index, and one array per metric)
   - id: hardware
     enabled: true
     text: Description of the available hardware

@@ -7,15 +7,17 @@ from jumper_extension.config.loader import load_config
 
 _EXCLUDED_SUMMARY_COLUMNS = {"time", "cell_index"}
 
-# Context sources the strategy can toggle. Each id maps to the OptimizationState
-# field it fills; disabled sources are left empty. Adding a source = add an entry
-# here plus a branch in ``_build_sources`` and a ``given`` item with the same id.
+# Context sources the strategy can toggle: id -> (state field, empty value,
+# default enabled). Disabled sources are left empty and not even built. Adding a
+# source = add an entry here plus a builder in ``_build_sources`` and a ``given``
+# item with the same id (matching the default here).
 _SOURCE_FIELDS = {
-    "code": ("cell_code", ""),
-    "perf": ("perf_summary", {}),
-    "hardware": ("hardware_info", {}),
-    "tags": ("perf_tags", []),
-    "packages": ("env_info", {}),
+    "code": ("cell_code", "", True),
+    "perf": ("perf_summary", {}, True),
+    "raw_perf": ("raw_perf", {}, False),
+    "hardware": ("hardware_info", {}, True),
+    "tags": ("perf_tags", [], True),
+    "packages": ("env_info", {}, True),
 }
 
 
@@ -54,21 +56,23 @@ class ContextCollector:
             return None
 
         hardware = aggregate_node_info(self.reviewer.monitor.nodes.hardware)
-        sources = self._build_sources(ctx, hardware)
+        builders = self._build_sources(ctx, hardware)
 
         collected = {"cell_range": ctx["cell_range"]}
-        for source_id, (field, empty) in _SOURCE_FIELDS.items():
-            enabled = overrides.get(source_id, True)
-            collected[field] = sources[source_id] if enabled else empty
+        for source_id, (field, empty, default) in _SOURCE_FIELDS.items():
+            enabled = overrides.get(source_id, default)
+            collected[field] = builders[source_id]() if enabled else empty
         return collected
 
     def _build_sources(self, ctx: dict, hardware: NodeInfo) -> dict:
+        """Map source id -> zero-arg builder, invoked only when the source is enabled."""
         return {
-            "code": "\n---\n".join(ctx["filtered_cells"]["raw_cell"]),
-            "perf": self._summarize_perfdata(ctx["perfdata"]),
-            "hardware": self._hardware_info(hardware),
-            "tags": [str(tag_score.tag) for tag_score in ctx["tags_model"]],
-            "packages": collect_env_info(load_config().ai.context.known_packages),
+            "code": lambda: "\n---\n".join(ctx["filtered_cells"]["raw_cell"]),
+            "perf": lambda: self._summarize_perfdata(ctx["perfdata"]),
+            "raw_perf": lambda: ctx["perfdata"].to_dict(orient="list"),
+            "hardware": lambda: self._hardware_info(hardware),
+            "tags": lambda: [str(tag_score.tag) for tag_score in ctx["tags_model"]],
+            "packages": lambda: collect_env_info(load_config().ai.context.known_packages),
         }
 
     @staticmethod

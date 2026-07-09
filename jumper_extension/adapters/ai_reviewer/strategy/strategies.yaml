@@ -27,3 +27,11 @@ strategies:
     effect:
       overrides: {}
       context: {}
+
+  - id: deep
+    name: Deep analysis with raw metrics
+    description: Also feeds the full raw per-timestep metric arrays (the %perfmonitor_plot data) to the model.
+    effect:
+      overrides: {}
+      context:
+        raw_perf: true

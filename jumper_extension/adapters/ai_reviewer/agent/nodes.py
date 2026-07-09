@@ -68,6 +68,8 @@ def build_analyze_messages(state: OptimizationState) -> list[BaseMessage]:
         lines.append(f"Performance tags: {', '.join(state['perf_tags'])}")
     if state["perf_summary"]:
         lines.append(f"Performance summary (mean/max per metric): {state['perf_summary']}")
+    if state["raw_perf"]:
+        lines.append(f"Raw metric arrays behind the plots (per timestep): {state['raw_perf']}")
     if state["hardware_info"]:
         lines.append(f"Hardware: {state['hardware_info']}")
     return [

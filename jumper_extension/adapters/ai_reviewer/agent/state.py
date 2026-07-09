@@ -19,6 +19,7 @@ class OptimizationState(TypedDict):
     note: str
     cell_code: str
     perf_summary: dict
+    raw_perf: dict
     hardware_info: dict
     perf_tags: list[str]
     env_info: dict
@@ -45,6 +46,7 @@ def empty_state(
         note=note,
         cell_code="",
         perf_summary={},
+        raw_perf={},
         hardware_info={},
         perf_tags=[],
         env_info={},
