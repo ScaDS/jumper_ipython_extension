@@ -6,6 +6,7 @@ from jumper_extension.adapters.ai_reviewer.reviewer import (
     AIReviewer,
     AIReviewerProtocol,
     UnavailableAIReviewer,
+    _ai_extras_install_cmd,
     build_ai_reviewer,
 )
 from jumper_extension.monitor.common import UnavailablePerformanceMonitor
@@ -37,7 +38,7 @@ def test_unavailable_ai_reviewer_logs_install_hint_for_review_and_resume(caplog)
     reviewer.review(shell=Mock())
     reviewer.resume(shell=Mock(), run_id="abc123", select=1)
 
-    assert caplog.text.count("pip install jumper-extension[ai]") == 2
+    assert caplog.text.count(_ai_extras_install_cmd()) == 2
 
 
 def test_ai_reviewer_starts_unattached_and_binds_monitor_via_attach():
