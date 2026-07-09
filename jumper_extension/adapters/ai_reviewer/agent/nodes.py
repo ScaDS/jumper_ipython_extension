@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState, Suggestion
@@ -59,8 +59,8 @@ def collect_context_node(state: OptimizationState, collector: ContextCollector) 
     }
 
 
-def analyze_bottlenecks_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
-    """LLM call #1: produce a short bottleneck narrative for the cell."""
+def build_analyze_messages(state: OptimizationState) -> list[BaseMessage]:
+    """Exact ``[system, human]`` messages sent to the LLM for the analyze step."""
     lines = []
     if state["cell_code"]:
         lines.append(f"Cell source code:\n{state['cell_code']}")
@@ -70,16 +70,20 @@ def analyze_bottlenecks_node(state: OptimizationState, llm: BaseChatModel) -> Op
         lines.append(f"Performance summary (mean/max per metric): {state['perf_summary']}")
     if state["hardware_info"]:
         lines.append(f"Hardware: {state['hardware_info']}")
-
-    response = llm.invoke([
+    return [
         SystemMessage(content=_prompts.render("analyze", state["overrides"], state["note"])),
         HumanMessage(content="\n\n".join(lines)),
-    ])
+    ]
+
+
+def analyze_bottlenecks_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
+    """LLM call #1: produce a short bottleneck narrative for the cell."""
+    response = llm.invoke(build_analyze_messages(state))
     return {**state, "analysis": response.content}
 
 
-def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
-    """LLM call #2: produce a structured list of optimization suggestions."""
+def build_suggest_messages(state: OptimizationState) -> list[BaseMessage]:
+    """Exact ``[system, human]`` messages sent to the LLM for the suggest step."""
     lines = [f"Bottleneck analysis:\n{state['analysis']}"]
     if state["cell_code"]:
         lines.append(f"Cell source code:\n{state['cell_code']}")
@@ -87,12 +91,16 @@ def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> O
         lines.append(f"Hardware: {state['hardware_info']}")
     if state["env_info"]:
         lines.append(f"Available libraries: {state['env_info']}")
-
-    structured_llm = llm.with_structured_output(_SuggestionListSchema)
-    response = structured_llm.invoke([
+    return [
         SystemMessage(content=_prompts.render("suggest", state["overrides"], state["note"])),
         HumanMessage(content="\n\n".join(lines)),
-    ])
+    ]
+
+
+def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
+    """LLM call #2: produce a structured list of optimization suggestions."""
+    structured_llm = llm.with_structured_output(_SuggestionListSchema)
+    response = structured_llm.invoke(build_suggest_messages(state))
     suggestions = [
         Suggestion(title=item.title, description=item.description, code=item.code)
         for item in response.suggestions
@@ -126,8 +134,8 @@ def _other_options_as_diffs(
     return "\n\n".join(parts)
 
 
-def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
-    """LLM call #3: rewrite the chosen suggestion per the ``--note`` instruction."""
+def build_refine_messages(state: OptimizationState) -> list[BaseMessage]:
+    """Exact ``[system, human]`` messages sent to the LLM for the refine step."""
     chosen = state["suggestions"][state["chosen_index"]]
     other_diffs = _other_options_as_diffs(
         state["cell_code"],
@@ -140,10 +148,15 @@ def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> Opti
         + f"Selected option (Option {state['chosen_index'] + 1} — {chosen.title}) — full code:\n{chosen.code}\n\n"
         f"Custom instruction:\n{state['note']}"
     )
-    response = llm.invoke([
+    return [
         SystemMessage(content=_prompts.render("refine", state["overrides"], state["note"])),
         HumanMessage(content=user_prompt),
-    ])
+    ]
+
+
+def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
+    """LLM call #3: rewrite the chosen suggestion per the ``--note`` instruction."""
+    response = llm.invoke(build_refine_messages(state))
     return {**state, "refined_code": response.content}
 
 
