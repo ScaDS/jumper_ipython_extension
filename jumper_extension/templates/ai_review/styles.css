@@ -14,6 +14,49 @@
   margin: 0;
 }
 
+.ai-reasoning {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.ai-reasoning > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.ai-reasoning-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: none;
+}
+
+.ai-reasoning-preview {
+  color: var(--muted);
+  opacity: 0.75;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-reasoning[open] > summary .ai-reasoning-preview {
+  display: none;
+}
+
+.ai-reasoning-body {
+  color: var(--muted);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
 .ai-option-card {
   border: 1px solid var(--border);
   border-radius: 10px;

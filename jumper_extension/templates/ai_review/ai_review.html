@@ -27,6 +27,12 @@
       <section class="ai-analysis">
         <div class="ai-section-title">Analysis</div>
         <p class="ai-analysis-text">{{ analysis }}</p>
+        {% if analysis_reasoning %}
+        <details class="ai-reasoning">
+          <summary><span class="ai-reasoning-label">Reasoning</span><span class="ai-reasoning-preview">{{ reasoning_preview }}</span></summary>
+          <div class="ai-reasoning-body">{{ analysis_reasoning }}</div>
+        </details>
+        {% endif %}
       </section>
 
       <section class="ai-options">

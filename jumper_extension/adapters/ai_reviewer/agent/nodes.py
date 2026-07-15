@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState, Suggestion
 from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
+from jumper_extension.adapters.ai_reviewer.llm.reasoning import split_reasoning
 from jumper_extension.adapters.ai_reviewer.prompts import PromptLibrary
 from jumper_extension.adapters.ai_reviewer.ui.review_display import AIReviewDisplay
 from jumper_extension.core.messages import EXTENSION_ERROR_MESSAGES, ExtensionErrorCode
@@ -81,7 +82,8 @@ def build_analyze_messages(state: OptimizationState) -> list[BaseMessage]:
 def analyze_bottlenecks_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #1: produce a short bottleneck narrative for the cell."""
     response = llm.invoke(build_analyze_messages(state))
-    return {**state, "analysis": response.content}
+    analysis, reasoning = split_reasoning(response.content)
+    return {**state, "analysis": analysis, "analysis_reasoning": reasoning}
 
 
 def build_suggest_messages(state: OptimizationState) -> list[BaseMessage]:
@@ -159,7 +161,8 @@ def build_refine_messages(state: OptimizationState) -> list[BaseMessage]:
 def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #3: rewrite the chosen suggestion per the ``--note`` instruction."""
     response = llm.invoke(build_refine_messages(state))
-    return {**state, "refined_code": response.content}
+    refined_code, _ = split_reasoning(response.content)
+    return {**state, "refined_code": refined_code}
 
 
 def apply_suggestion_node(state: OptimizationState, shell: Any) -> OptimizationState:

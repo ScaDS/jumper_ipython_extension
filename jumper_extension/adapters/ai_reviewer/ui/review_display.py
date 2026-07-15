@@ -48,6 +48,12 @@ def _format_tags(perf_tags: list[str]) -> list[dict]:
     return [{"name": tag.upper(), "slug": tag} for tag in perf_tags]
 
 
+def _reasoning_preview(reasoning: str, limit: int = 140) -> str:
+    """First-line preview of the reasoning, shown in the collapsed spoiler summary."""
+    snippet = " ".join(reasoning.split())
+    return snippet if len(snippet) <= limit else snippet[:limit].rstrip() + "…"
+
+
 def _resume_commands(run_id: str, n_suggestions: int) -> list[str]:
     commands = [
         f"%perfmonitor_ai_review --resume {run_id} --select {index}"
@@ -122,9 +128,12 @@ class AIReviewDisplayer:
         except Exception:
             inline_styles = ""
 
+        analysis_reasoning = state.get("analysis_reasoning", "")
         html = template.render(
             run_id=run_id,
             analysis=state["analysis"],
+            analysis_reasoning=analysis_reasoning,
+            reasoning_preview=_reasoning_preview(analysis_reasoning),
             tags=tags,
             options=options,
             resume_commands=_resume_commands(run_id, len(state["suggestions"])),

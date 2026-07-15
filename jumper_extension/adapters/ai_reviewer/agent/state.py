@@ -24,6 +24,7 @@ class OptimizationState(TypedDict):
     perf_tags: list[str]
     env_info: dict
     analysis: str
+    analysis_reasoning: str
     suggestions: list[Suggestion]
     chosen_index: int | None
     refined_code: str | None
@@ -51,6 +52,7 @@ def empty_state(
         perf_tags=[],
         env_info={},
         analysis="",
+        analysis_reasoning="",
         suggestions=[],
         chosen_index=None,
         refined_code=None,
