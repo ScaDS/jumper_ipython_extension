@@ -2,12 +2,19 @@ given:
   - id: code
     enabled: true
     text: Source code of a notebook cell
+  - id: timing
+    enabled: true
+    text: >-
+      Wall-clock execution time of the cell(s), total and per cell, including
+      interpreter and magic overhead - measured exactly, unlike the sampled metrics
   - id: tags
     enabled: true
     text: Performance classification tags JUmPER assigned to it
   - id: perf
     enabled: true
-    text: Summary of the measured CPU/GPU/memory metrics
+    text: >-
+      Summary of the measured CPU/GPU/memory metrics - overall, and broken down per
+      cell when several cells are under review
   - id: raw_perf
     enabled: false
     text: >-

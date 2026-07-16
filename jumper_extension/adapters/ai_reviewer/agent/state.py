@@ -18,6 +18,7 @@ class OptimizationState(TypedDict):
     overrides: dict
     note: str
     cell_code: str
+    timing_info: dict
     perf_summary: dict
     raw_perf: dict
     hardware_info: dict
@@ -46,6 +47,7 @@ def empty_state(
         overrides=overrides or {},
         note=note,
         cell_code="",
+        timing_info={},
         perf_summary={},
         raw_perf={},
         hardware_info={},

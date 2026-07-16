@@ -6,6 +6,7 @@ from jumper_extension.adapters.ai_reviewer.agent.nodes import (
     _should_refine,
     analyze_bottlenecks_node,
     apply_suggestion_node,
+    build_analyze_messages,
     collect_context_node,
     display_results_node,
     generate_suggestions_node,
@@ -54,7 +55,7 @@ def test_analyze_bottlenecks_node_sets_analysis_from_llm_response():
     state = empty_state(run_id="abc123")
     state["cell_code"] = "x = compute()"
     state["perf_tags"] = ["cpu_bound"]
-    state["perf_summary"] = {"cpu": {"mean": 80.0, "max": 99.0}}
+    state["perf_summary"] = {"overall": {"cpu": {"mean": 80.0, "max": 99.0}}}
     state["hardware_info"] = {"num_cpus": 8}
 
     llm = Mock()
@@ -67,6 +68,58 @@ def test_analyze_bottlenecks_node_sets_analysis_from_llm_response():
     messages = llm.invoke.call_args[0][0]
     assert "x = compute()" in messages[1].content
     assert "cpu_bound" in messages[1].content
+
+
+def test_analyze_prompt_reports_each_cell_duration_over_a_range():
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "x = load()\n---\ny = slow(x)"
+    state["timing_info"] = {
+        "total_duration_s": 5.0,
+        "per_cell_duration_s": {2: 1.0, 3: 4.0},
+    }
+
+    messages = build_analyze_messages(state)
+
+    human = messages[1].content
+    assert "total: 5.0s" in human
+    assert "cell 2: 1.0s" in human
+    assert "cell 3: 4.0s" in human
+
+
+def test_analyze_prompt_breaks_metrics_down_per_cell_over_a_range():
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "x = load()\n---\ny = slow(x)"
+    state["perf_summary"] = {
+        "overall": {"cpu": {"mean": 50.0, "max": 90.0}},
+        "per_cell": {
+            2: {"cpu": {"mean": 10.0, "max": 10.0}},
+            3: {"cpu": {"mean": 90.0, "max": 90.0}},
+        },
+    }
+
+    human = build_analyze_messages(state)[1].content
+
+    assert "cell 2: {'cpu': {'mean': 10.0, 'max': 10.0}}" in human
+    assert "cell 3: {'cpu': {'mean': 90.0, 'max': 90.0}}" in human
+
+
+def test_analyze_prompt_omits_per_cell_metrics_for_a_single_cell():
+    state = empty_state(run_id="abc123")
+    state["perf_summary"] = {"overall": {"cpu": {"mean": 80.0, "max": 99.0}}}
+
+    human = build_analyze_messages(state)[1].content
+
+    assert "overall: {'cpu': {'mean': 80.0, 'max': 99.0}}" in human
+    assert "Per cell" not in human
+
+
+def test_analyze_prompt_omits_timing_when_not_collected():
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "x = compute()"
+
+    messages = build_analyze_messages(state)
+
+    assert "Execution time" not in messages[1].content
 
 
 def test_generate_suggestions_node_builds_suggestions_from_structured_output():

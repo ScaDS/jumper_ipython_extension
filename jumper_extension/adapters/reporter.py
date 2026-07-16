@@ -32,8 +32,26 @@ class ReportBuilder:
         self.min_duration = None
         self.analyzer = analyzer
 
-    def prepare_report_data(self, cell_range, level):
+    def prepare_report_data(
+        self,
+        cell_range,
+        level,
+        compress_idle: bool = False,
+        attach_cell_index: bool = False,
+    ):
         """Prepare all necessary data for performance reporting.
+
+        Args:
+            cell_range: Range of cells to report on, or None to resolve the
+                last non-short cell.
+            level: Performance level to read samples at.
+            compress_idle: Drop samples taken between the cells of the range,
+                keeping only the ones measured while a cell was running. Off by
+                default, which keeps one window from the first cell's start to
+                the last cell's end - idle gaps included.
+            attach_cell_index: Label each sample with the ``cell_index`` it was
+                measured under, so metrics stay attributable to a single cell
+                across a multi-cell range.
 
         Returns:
             dict: Dictionary containing filtered_cells, perfdata, ranked_tags,
@@ -50,9 +68,14 @@ class ReportBuilder:
         start_idx, end_idx = cell_range
         filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
 
-        perfdata = self.monitor.nodes.view(level=level)
+        perfdata = self.monitor.nodes.view(
+            level=level,
+            cell_history=self.cell_history if attach_cell_index else None,
+        )
         perfdata = filter_perfdata(
-            filtered_cells, perfdata, compress_idle=False
+            filtered_cells,
+            perfdata,
+            compress_idle=compress_idle,
         )
 
         # Check if non-empty, otherwise print results
@@ -350,12 +373,21 @@ class PerformanceReporter:
         ``raw_cell`` holding the cell source code), ``perfdata``, and
         ``tags_model``.
 
+        Unlike the printed report, the agent asks for idle-compressed and
+        cell-labelled samples: an LLM reasoning about a range of cells must
+        not see one blended average diluted by the pauses between them.
+
         Returns:
             dict | None: ``{filtered_cells, perfdata, tags_model,
             total_duration, cell_range}``, or ``None`` if no data is
             available for the requested range.
         """
-        return self.printer.prepare_report_data(cell_range, level)
+        return self.printer.prepare_report_data(
+            cell_range,
+            level,
+            compress_idle=True,
+            attach_cell_index=True,
+        )
 
     def print(self, cell_range=None, level="process"):
         """Print performance report"""

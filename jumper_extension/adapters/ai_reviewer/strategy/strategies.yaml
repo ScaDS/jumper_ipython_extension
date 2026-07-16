@@ -1,6 +1,6 @@
 # Review strategies selected via `--strategy`. Each `effect` has two buckets,
 # both extensible: `overrides` toggles prompt items, `context` toggles context
-# sources gathered by the collector (code / tags / perf / hardware / packages).
+# sources gathered by the collector (code / timing / tags / perf / hardware / packages).
 
 strategies:
   - id: faster

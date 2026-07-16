@@ -13,6 +13,7 @@ _EXCLUDED_SUMMARY_COLUMNS = {"time", "cell_index"}
 # item with the same id (matching the default here).
 _SOURCE_FIELDS = {
     "code": ("cell_code", "", True),
+    "timing": ("timing_info", {}, True),
     "perf": ("perf_summary", {}, True),
     "raw_perf": ("raw_perf", {}, False),
     "hardware": ("hardware_info", {}, True),
@@ -68,6 +69,7 @@ class ContextCollector:
         """Map source id -> zero-arg builder, invoked only when the source is enabled."""
         return {
             "code": lambda: "\n---\n".join(ctx["filtered_cells"]["raw_cell"]),
+            "timing": lambda: self._timing_info(ctx),
             "perf": lambda: self._summarize_perfdata(ctx["perfdata"]),
             "raw_perf": lambda: ctx["perfdata"].to_dict(orient="list"),
             "hardware": lambda: self._hardware_info(hardware),
@@ -76,8 +78,52 @@ class ContextCollector:
         }
 
     @staticmethod
-    def _summarize_perfdata(perfdata: pd.DataFrame) -> dict:
-        """Reduce the metrics DataFrame to a {metric: {mean, max}} summary."""
+    def _timing_info(ctx: dict) -> dict:
+        """Wall-clock durations of the reviewed cells, per cell and in total.
+
+        Measured by ``CellHistory`` hooks around each cell, so - unlike the
+        sampled metrics behind ``perf`` - this stays exact for cells too short
+        for the monitor to sample. Keyed by ``cell_index`` to keep durations
+        attributable when the review covers a range of cells; ``cell_code``
+        joins those cells in the same order.
+        """
+        cells = ctx["filtered_cells"]
+        return {
+            "total_duration_s": round(float(ctx["total_duration"]), 4),
+            "per_cell_duration_s": {
+                int(row.cell_index): round(float(row.duration), 4)
+                for row in cells.itertuples(index=False)
+            },
+        }
+
+    @classmethod
+    def _summarize_perfdata(cls, perfdata: pd.DataFrame) -> dict:
+        """Reduce the metrics DataFrame to an ``overall`` {metric: {mean, max}}
+        summary, plus the same per cell.
+
+        Over a range, a single average hides the very thing the review looks
+        for: one hot cell blended with quiet neighbours reads as unremarkable.
+        ``per_cell`` keeps each cell's metrics separate, keyed by the same
+        ``cell_index`` as ``timing_info`` so the two line up. It is omitted for
+        a single-cell range, where it would just repeat ``overall``.
+        """
+        summary = {"overall": cls._summarize_frame(perfdata)}
+        if "cell_index" not in perfdata.columns:
+            return summary
+
+        groups = perfdata.groupby("cell_index")
+        if len(groups) < 2:
+            return summary
+
+        summary["per_cell"] = {
+            int(cell_index): cls._summarize_frame(group)
+            for cell_index, group in groups
+        }
+        return summary
+
+    @staticmethod
+    def _summarize_frame(perfdata: pd.DataFrame) -> dict:
+        """Reduce one metrics frame to a {metric: {mean, max}} summary."""
         summary = {}
         for column in perfdata.select_dtypes(include="number").columns:
             if column in _EXCLUDED_SUMMARY_COLUMNS:

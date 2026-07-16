@@ -30,10 +30,16 @@ def _synthetic_state(strategy: str, note: str) -> OptimizationState:
         "import numpy as np\n"
         "result = sum(np.sqrt(i) for i in range(10_000_000))"
     )
+    state["timing_info"] = {
+        "total_duration_s": 2.13,
+        "per_cell_duration_s": {1: 2.13},
+    }
     state["perf_tags"] = ["cpu_bound"]
     state["perf_summary"] = {
-        "cpu": {"mean": 82.0, "max": 99.0},
-        "memory": {"mean": 1.2, "max": 1.5},
+        "overall": {
+            "cpu": {"mean": 82.0, "max": 99.0},
+            "memory": {"mean": 1.2, "max": 1.5},
+        },
     }
     state["raw_perf"] = {
         "time": [0.0, 0.5, 1.0, 1.5, 2.0],

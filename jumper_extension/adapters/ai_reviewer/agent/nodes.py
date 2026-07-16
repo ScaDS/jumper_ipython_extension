@@ -60,15 +60,43 @@ def collect_context_node(state: OptimizationState, collector: ContextCollector) 
     }
 
 
+def _format_timing(timing: dict) -> str:
+    """Render durations so each one stays tied to the cell it was measured on."""
+    per_cell = ", ".join(
+        f"cell {index}: {duration}s"
+        for index, duration in timing["per_cell_duration_s"].items()
+    )
+    return (
+        "Execution time, wall-clock including interpreter and magic overhead - "
+        f"total: {timing['total_duration_s']}s; "
+        f"per cell, in the same order as the source code above - {per_cell}"
+    )
+
+
+def _format_perf_summary(perf_summary: dict) -> str:
+    """Render metrics so a range's per-cell breakdown stays readable."""
+    lines = [f"Performance summary (mean/max per metric) - overall: {perf_summary['overall']}"]
+    per_cell = perf_summary.get("per_cell")
+    if per_cell:
+        lines.append("Per cell, in the same order as the source code above:")
+        lines.extend(
+            f"  cell {index}: {metrics}"
+            for index, metrics in per_cell.items()
+        )
+    return "\n".join(lines)
+
+
 def build_analyze_messages(state: OptimizationState) -> list[BaseMessage]:
     """Exact ``[system, human]`` messages sent to the LLM for the analyze step."""
     lines = []
     if state["cell_code"]:
         lines.append(f"Cell source code:\n{state['cell_code']}")
+    if state["timing_info"]:
+        lines.append(_format_timing(state["timing_info"]))
     if state["perf_tags"]:
         lines.append(f"Performance tags: {', '.join(state['perf_tags'])}")
     if state["perf_summary"]:
-        lines.append(f"Performance summary (mean/max per metric): {state['perf_summary']}")
+        lines.append(_format_perf_summary(state["perf_summary"]))
     if state["raw_perf"]:
         lines.append(f"Raw metric arrays behind the plots (per timestep): {state['raw_perf']}")
     if state["hardware_info"]:
