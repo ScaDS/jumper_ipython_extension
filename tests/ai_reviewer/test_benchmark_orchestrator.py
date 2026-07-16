@@ -35,7 +35,7 @@ def _runner(behaviour, log=None):
 def _orchestrator(behaviour, fix_fn=None, log=None, **kwargs):
     return BenchmarkOrchestrator(
         runner=_runner(behaviour, log),
-        fix_fn=fix_fn or (lambda code, error: code),
+        fix_fn=fix_fn or (lambda code, error, label: code),
         runs=kwargs.pop("runs", 2),
         fix_attempts=kwargs.pop("fix_attempts", 3),
         **kwargs,
@@ -62,7 +62,7 @@ def test_a_failing_variant_is_repaired_and_then_measured():
     def behaviour(code):
         return 4.0 if code == "base" else (1.0 if code == "fixed" else "ValueError: boom")
 
-    orchestrator = _orchestrator(behaviour, fix_fn=lambda code, error: "fixed")
+    orchestrator = _orchestrator(behaviour, fix_fn=lambda code, error, label: "fixed")
 
     results = orchestrator.run("base", [("1", "broken")])
 
@@ -74,7 +74,7 @@ def test_a_failing_variant_is_repaired_and_then_measured():
 def test_a_variant_is_given_up_on_after_its_fix_attempts():
     fix_calls = []
 
-    def fix(code, error):
+    def fix(code, error, label):
         fix_calls.append(error)
         return code
 
@@ -95,7 +95,7 @@ def test_a_syntax_error_is_repaired_without_ever_being_run():
     log = []
     orchestrator = _orchestrator(
         lambda code: 4.0 if code == "base" else 1.0,
-        fix_fn=lambda code, error: "y = 1",
+        fix_fn=lambda code, error, label: "y = 1",
         log=log,
     )
 
@@ -124,8 +124,8 @@ def _diverging_runner(behaviour, diverging_codes: set):
 def test_a_diverging_variant_is_repaired_rather_than_just_flagged():
     fix_calls = []
 
-    def fix(code, error):
-        fix_calls.append(error)
+    def fix(code, error, label):
+        fix_calls.append((label, error))
         return "correct"
 
     orchestrator = BenchmarkOrchestrator(
@@ -139,13 +139,14 @@ def test_a_diverging_variant_is_repaired_rather_than_just_flagged():
     assert results["1"].correctness == fingerprint.MATCH
     assert results["1"].attempts == 2
     assert orchestrator.final_code["1"] == "correct"
-    assert "no longer computes the same result" in fix_calls[0]
+    assert fix_calls[0][0] == "option 1/1"
+    assert "no longer computes the same result" in fix_calls[0][1]
 
 
 def test_an_unrepairable_divergence_keeps_the_measurement_it_did_get():
     orchestrator = BenchmarkOrchestrator(
         runner=_diverging_runner(lambda code: 4.0 if code == "base" else 0.1, {"cheat"}),
-        fix_fn=lambda code, error: "cheat",  # the model never fixes it
+        fix_fn=lambda code, error, label: "cheat",  # the model never fixes it
         runs=2,
         fix_attempts=2,
     )

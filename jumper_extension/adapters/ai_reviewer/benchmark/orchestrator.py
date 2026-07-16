@@ -43,7 +43,7 @@ class BenchmarkOrchestrator:
     def __init__(
         self,
         runner: BenchmarkRunner,
-        fix_fn: Callable[[str, str], str],
+        fix_fn: Callable[[str, str, str], str],
         runs: int = 3,
         fix_attempts: int = 3,
         timeout_factor: float = 10.0,
@@ -211,9 +211,21 @@ class BenchmarkOrchestrator:
         if candidate.attempts_left <= 0:
             return False
         candidate.attempts_left -= 1
-        future = pool.submit(self.fix_fn, candidate.code, candidate.error)
+        future = pool.submit(
+            self.fix_fn,
+            candidate.code,
+            candidate.error,
+            self._label_of(candidate),
+        )
         repairing[future] = candidate
         return True
+
+    def _label_of(self, candidate: _Candidate) -> str:
+        """How this candidate is named to the user, so logs line up with the card."""
+        position = self._position.get(candidate.label)
+        if position is None:
+            return f"option {candidate.label}"
+        return f"option {position}/{self.progress.total_variants}"
 
     def _syntax_ok(self, candidate: _Candidate) -> bool:
         try:

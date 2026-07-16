@@ -1,6 +1,8 @@
 import difflib
 import logging
-from typing import Any
+import warnings
+from contextlib import contextmanager
+from typing import Any, Iterator
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -165,12 +167,32 @@ def build_suggest_messages(state: OptimizationState) -> list[BaseMessage]:
     ]
 
 
+@contextmanager
+def _muted_parsed_field_warning() -> Iterator[None]:
+    """Mute a cosmetic pydantic warning raised while parsing structured output.
+
+    The openai SDK builds ``ParsedChatCompletionMessage[None]`` bypassing
+    validation, so serializing it warns that ``parsed`` holds a model where
+    the generic says ``None``. The parse itself succeeds; only this one
+    serializer warning is muted, and only for the duration of the call.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Pydantic serializer warnings",
+            category=UserWarning,
+            module="pydantic.main",
+        )
+        yield
+
+
 def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #2: produce a structured list of optimization suggestions."""
     structured_llm = llm.with_structured_output(_SuggestionListSchema)
     messages = build_suggest_messages(state)
     _log_request(state["run_id"], "suggest", messages)
-    response = structured_llm.invoke(messages)
+    with _muted_parsed_field_warning():
+        response = structured_llm.invoke(messages)
     _log_reply(state["run_id"], "suggest", response)
     suggestions = [
         Suggestion(
@@ -249,13 +271,18 @@ def build_fix_messages(code: str, error: str, overrides: dict) -> list[BaseMessa
 
 
 def make_fix_fn(state: OptimizationState, llm: BaseChatModel):
-    """A ``code, error -> fixed code`` callable for the benchmark orchestrator."""
+    """A ``code, error, label -> fixed code`` callable for the orchestrator.
 
-    def fix(code: str, error: str) -> str:
+    *label* names the option being repaired: repairs run concurrently, so
+    without it the log holds interleaved rounds no one can tell apart.
+    """
+
+    def fix(code: str, error: str, label: str = "") -> str:
+        step = f"fix {label}".strip()
         messages = build_fix_messages(code, error, state["overrides"])
-        _log_request(state["run_id"], "fix", messages)
+        _log_request(state["run_id"], step, messages)
         response = llm.invoke(messages)
-        _log_reply(state["run_id"], "fix", response.content)
+        _log_reply(state["run_id"], step, response.content)
         fixed, _ = split_reasoning(response.content)
         return strip_code_fences(fixed)
 

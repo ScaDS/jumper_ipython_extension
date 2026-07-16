@@ -135,7 +135,7 @@ class _ListHandler(logging.Handler):
         self._records.append(record.getMessage())
 
 
-def _run_analyze_capturing_prompts(level: int | None) -> list[str]:
+def _run_analyze_capturing_prompts(level: int) -> list[str]:
     state = empty_state(run_id="abc123")
     state["cell_code"] = "x = compute()"
     llm = Mock()
@@ -146,8 +146,7 @@ def _run_analyze_capturing_prompts(level: int | None) -> list[str]:
     prompt_logger.addHandler(handler)
     extension_logger = logging.getLogger("extension")
     previous = extension_logger.level
-    if level is not None:
-        extension_logger.setLevel(level)
+    extension_logger.setLevel(level)
     try:
         analyze_bottlenecks_node(state, llm)
     finally:
@@ -156,8 +155,8 @@ def _run_analyze_capturing_prompts(level: int | None) -> list[str]:
     return records
 
 
-def test_prompts_are_not_logged_at_the_default_level():
-    assert _run_analyze_capturing_prompts(level=None) == []
+def test_prompts_are_not_logged_below_debug():
+    assert _run_analyze_capturing_prompts(level=logging.INFO) == []
 
 
 def test_prompts_and_reply_are_logged_once_debug_is_enabled():
