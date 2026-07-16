@@ -6,9 +6,8 @@ from typing import TypedDict
 class Suggestion:
     """A single optimization suggestion proposed by the LLM.
 
-    ``code`` rewrites exactly one cell: ``target_cell_index`` names which one
-    when the review spans a range, and is None when a single cell was reviewed
-    and there is nothing to disambiguate.
+    ``code`` rewrites exactly one cell; ``target_cell_index`` names which one
+    over a range, and is None when a single cell was reviewed.
     """
     title: str
     description: str
@@ -42,9 +41,8 @@ class OptimizationState(TypedDict):
 def original_code(state: OptimizationState, suggestion: Suggestion) -> str:
     """The code *suggestion* rewrites: its target cell, or the whole selection.
 
-    Diffs and the applied result must line up with the one cell being rewritten,
-    never with the marked-up join of a range - otherwise every other cell in the
-    range reads as deleted.
+    Diffing against the marked-up join of a range instead would read as if every
+    other cell were deleted.
     """
     index = suggestion.target_cell_index
     if index is None:

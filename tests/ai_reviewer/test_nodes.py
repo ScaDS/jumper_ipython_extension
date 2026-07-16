@@ -256,8 +256,7 @@ def test_other_options_as_diffs_anchors_to_the_cell_the_option_targets():
 
     assert "-y = slow(x)" in result
     assert "+y = cached(x)" in result
-    # The other cells of the range are untouched by this option, so they must
-    # not show up as deletions - nor may the markers leak into the diff.
+    # Cells this option leaves alone must not read as deletions.
     assert "-x = load()" not in result
     assert "cell 2 ---" not in result
 

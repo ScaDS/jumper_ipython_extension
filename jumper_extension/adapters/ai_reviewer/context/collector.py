@@ -7,8 +7,8 @@ from jumper_extension.config.loader import load_config
 
 _EXCLUDED_SUMMARY_COLUMNS = {"time", "cell_index"}
 
-# Header prefixed to each cell's source when a review spans several cells, so
-# per-cell durations and metrics can name the block they belong to.
+# Prefixed to each cell's source when a review spans several cells, so per-cell
+# durations and metrics can name the block they belong to.
 _CELL_MARKER = "# --- cell {index} ---"
 
 # Context sources the strategy can toggle: id -> (state field, empty value,
@@ -63,9 +63,8 @@ class ContextCollector:
         hardware = aggregate_node_info(self.reviewer.monitor.nodes.hardware)
         builders = self._build_sources(ctx, hardware)
 
-        # cell_sources is bookkeeping, not context: it never reaches the LLM,
-        # but apply and the diffs need each cell's original code to line up with
-        # the one cell a suggestion targets. Hence it ignores the source toggles.
+        # cell_sources never reaches the LLM - apply and the diffs need it - so
+        # it ignores the source toggles.
         collected = {
             "cell_range": ctx["cell_range"],
             "cell_sources": self._cell_sources(ctx["filtered_cells"]),
@@ -99,14 +98,9 @@ class ContextCollector:
     def _cell_code(cells: pd.DataFrame) -> str:
         """Join the reviewed cells, each marked with its ``cell_index``.
 
-        The marker is what ties a per-cell duration or metric back to the code
-        that produced it; without it the model can only guess which block of a
-        range is the slow one.
-
-        A single-cell review has nothing to disambiguate, so its code is passed
-        through verbatim: this string is also what ``suggest`` rewrites and what
-        the suggestion diffs are taken against, and a marker there would show up
-        as a line the user never wrote - or get echoed back into the notebook.
+        A single cell is passed through verbatim: this string is also what
+        ``suggest`` rewrites and what the diffs are taken against, so a marker
+        there would surface as a line the user never wrote.
         """
         if len(cells) == 1:
             return cells.iloc[0]["raw_cell"]
@@ -119,11 +113,8 @@ class ContextCollector:
     def _timing_info(ctx: dict) -> dict:
         """Wall-clock durations of the reviewed cells, per cell and in total.
 
-        Measured by ``CellHistory`` hooks around each cell, so - unlike the
-        sampled metrics behind ``perf`` - this stays exact for cells too short
-        for the monitor to sample. Keyed by ``cell_index`` to keep durations
-        attributable when the review covers a range of cells; ``cell_code``
-        joins those cells in the same order.
+        Measured by ``CellHistory`` hooks, so - unlike the sampled metrics
+        behind ``perf`` - these stay exact for cells too short to sample.
         """
         cells = ctx["filtered_cells"]
         return {
@@ -139,11 +130,9 @@ class ContextCollector:
         """Reduce the metrics DataFrame to an ``overall`` {metric: {mean, max}}
         summary, plus the same per cell.
 
-        Over a range, a single average hides the very thing the review looks
-        for: one hot cell blended with quiet neighbours reads as unremarkable.
-        ``per_cell`` keeps each cell's metrics separate, keyed by the same
-        ``cell_index`` as ``timing_info`` so the two line up. It is omitted for
-        a single-cell range, where it would just repeat ``overall``.
+        Over a range, a single average blends a hot cell with quiet neighbours
+        into something unremarkable. ``per_cell`` is omitted for one cell, where
+        it would just repeat ``overall``.
         """
         summary = {"overall": cls._summarize_frame(perfdata)}
         if "cell_index" not in perfdata.columns:

@@ -45,13 +45,11 @@ class ReportBuilder:
             cell_range: Range of cells to report on, or None to resolve the
                 last non-short cell.
             level: Performance level to read samples at.
-            compress_idle: Drop samples taken between the cells of the range,
-                keeping only the ones measured while a cell was running. Off by
-                default, which keeps one window from the first cell's start to
-                the last cell's end - idle gaps included.
+            compress_idle: Keep only samples measured while a cell was running.
+                Off by default: one window from the first cell's start to the
+                last cell's end, idle gaps included.
             attach_cell_index: Label each sample with the ``cell_index`` it was
-                measured under, so metrics stay attributable to a single cell
-                across a multi-cell range.
+                measured under.
 
         Returns:
             dict: Dictionary containing filtered_cells, perfdata, ranked_tags,
@@ -374,8 +372,8 @@ class PerformanceReporter:
         ``tags_model``.
 
         Unlike the printed report, the agent asks for idle-compressed and
-        cell-labelled samples: an LLM reasoning about a range of cells must
-        not see one blended average diluted by the pauses between them.
+        cell-labelled samples, so a range does not blend into one average
+        diluted by the pauses between its cells.
 
         Returns:
             dict | None: ``{filtered_cells, perfdata, tags_model,

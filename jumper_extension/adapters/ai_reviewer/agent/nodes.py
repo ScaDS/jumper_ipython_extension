@@ -19,8 +19,7 @@ from jumper_extension.core.messages import EXTENSION_ERROR_MESSAGES, ExtensionEr
 
 logger = logging.getLogger("extension")
 
-# Full prompts and replies, written to their own file. Silent until the
-# "extension" logger is raised to DEBUG; see logging_config.
+# Silent until the "extension" logger is raised to DEBUG; see logging_config.
 prompt_logger = logging.getLogger("extension.ai_prompts")
 
 _prompts = PromptLibrary.load()
