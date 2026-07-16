@@ -16,6 +16,7 @@ from jumper_extension.adapters.ai_reviewer.benchmark.models import (
     BenchmarkResult,
     RunOutcome,
 )
+from jumper_extension.adapters.ai_reviewer.benchmark.progress import BenchmarkProgress
 from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner, median_of
 
 logger = logging.getLogger("extension")
@@ -50,6 +51,8 @@ class BenchmarkOrchestrator:
         self.timeout_factor = timeout_factor
         # label -> the code that was actually measured, once repairs settled
         self.final_code: dict[str, str] = {}
+        self.progress = BenchmarkProgress(0, self.runs)
+        self._position: dict[str, int] = {}
 
     def run(self, baseline_code: str, variants: list[tuple[str, str]]) -> dict:
         """Benchmark *baseline_code*, then each ``(label, code)`` variant.
@@ -58,7 +61,15 @@ class BenchmarkOrchestrator:
         ``BASELINE_LABEL``. An empty dict means the baseline itself would not
         run, which leaves nothing to compare against.
         """
-        baseline_runs = self._measure(baseline_code, BASELINE_LABEL, timeout=None)
+        self.progress = BenchmarkProgress(len(variants), self.runs)
+        self._position = {label: index for index, (label, _) in enumerate(variants, start=1)}
+
+        baseline_runs = self._measure(
+            baseline_code,
+            BASELINE_LABEL,
+            timeout=None,
+            on_run=self.progress.baseline_run,
+        )
         if isinstance(baseline_runs, RunOutcome):
             logger.warning(
                 "[JUmPER]: the cell under review did not replay cleanly, so there is "
@@ -67,6 +78,7 @@ class BenchmarkOrchestrator:
             return {}
 
         duration, metrics = median_of(baseline_runs)
+        self.progress.baseline_done(duration, _walls(baseline_runs))
         baseline = BenchmarkResult(
             label=BASELINE_LABEL,
             status=OK,
@@ -79,6 +91,7 @@ class BenchmarkOrchestrator:
 
         results = {BASELINE_LABEL: baseline}
         results.update(self._benchmark_variants(variants, timeout, duration, prints))
+        self.progress.finished()
         return results
 
     def _benchmark_variants(
@@ -105,16 +118,37 @@ class BenchmarkOrchestrator:
             while pending or repairing:
                 if pending:
                     candidate = pending.pop(0)
-                    outcome = self._measure(candidate.code, candidate.label, timeout)
+                    position = self._position[candidate.label]
+                    outcome = self._measure(
+                        candidate.code,
+                        candidate.label,
+                        timeout,
+                        on_run=lambda index: self.progress.variant_run(position, index),
+                    )
                     if isinstance(outcome, list):
                         self.final_code[candidate.label] = candidate.code
-                        results[candidate.label] = self._verdict(
+                        verdict = self._verdict(
                             candidate, outcome, baseline_duration, baseline_prints
+                        )
+                        results[candidate.label] = verdict
+                        self.progress.variant_done(
+                            position,
+                            _summarize(verdict),
+                            _walls(outcome),
+                            outstanding=len(pending) + len(repairing),
                         )
                     else:
                         candidate.error = outcome.error
-                        if not self._submit_fix(candidate, pool, repairing):
+                        if self._submit_fix(candidate, pool, repairing):
+                            self.progress.variant_failed(
+                                position,
+                                outcome.error,
+                                candidate.attempts,
+                                self.fix_attempts,
+                            )
+                        else:
                             results[candidate.label] = _failed(candidate)
+                            self.progress.variant_gave_up(position, self.fix_attempts)
                     continue
 
                 done, _ = wait(list(repairing), return_when=FIRST_COMPLETED)
@@ -146,10 +180,12 @@ class BenchmarkOrchestrator:
             candidate.error = f"{error.__class__.__name__}: {error}"
             return False
 
-    def _measure(self, code: str, label: str, timeout: float | None):
+    def _measure(self, code: str, label: str, timeout: float | None, on_run=None):
         """Time *code* ``runs`` times, or return the outcome that stopped it."""
         outcomes = []
         for index in range(self.runs):
+            if on_run is not None:
+                on_run(index)
             outcome = self.runner.run_once(code, tag=f"{label}_{index}", timeout=timeout)
             if not outcome.ok:
                 return outcome
@@ -183,6 +219,27 @@ class BenchmarkOrchestrator:
             correctness=correctness,
             differing_names=differing,
         )
+
+
+def _walls(outcomes: list[RunOutcome]) -> list[float]:
+    return [outcome.wall_s for outcome in outcomes if outcome.wall_s]
+
+
+def _summarize(verdict: BenchmarkResult) -> str:
+    """The one-line gist of a measured variant, for the progress log."""
+    parts = [f"{verdict.duration_s}s"]
+    if verdict.speedup:
+        parts.append(
+            f"{verdict.speedup}x faster" if verdict.speedup >= 1
+            else f"{round(1 / verdict.speedup, 2)}x slower"
+        )
+    if verdict.correctness == fingerprint.DIFFERS:
+        parts.append("but results differ")
+    elif verdict.correctness == fingerprint.UNVERIFIED:
+        parts.append("results unverified")
+    if verdict.attempts > 1:
+        parts.append(f"repaired {verdict.attempts - 1}x")
+    return ", ".join(parts)
 
 
 def _fixed_code(future: Future, candidate: _Candidate) -> str | None:
