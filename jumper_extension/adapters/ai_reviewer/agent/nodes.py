@@ -12,7 +12,7 @@ from jumper_extension.adapters.ai_reviewer.agent.state import (
     original_code,
 )
 from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
-from jumper_extension.adapters.ai_reviewer.llm.reasoning import split_reasoning
+from jumper_extension.adapters.ai_reviewer.llm.reasoning import split_reasoning, strip_code_fences
 from jumper_extension.adapters.ai_reviewer.prompts import PromptLibrary
 from jumper_extension.adapters.ai_reviewer.ui.review_display import AIReviewDisplay
 from jumper_extension.core.messages import EXTENSION_ERROR_MESSAGES, ExtensionErrorCode
@@ -238,6 +238,73 @@ def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> Opti
     _log_reply(state["run_id"], "refine", response.content)
     refined_code, _ = split_reasoning(response.content)
     return {**state, "refined_code": refined_code}
+
+
+def build_fix_messages(code: str, error: str, overrides: dict) -> list[BaseMessage]:
+    """Exact ``[system, human]`` messages asking the LLM to repair a variant."""
+    return [
+        SystemMessage(content=_prompts.render("fix", overrides, None)),
+        HumanMessage(content=f"Cell source code:\n{code}\n\nIt failed with:\n{error}"),
+    ]
+
+
+def make_fix_fn(state: OptimizationState, llm: BaseChatModel):
+    """A ``code, error -> fixed code`` callable for the benchmark orchestrator."""
+
+    def fix(code: str, error: str) -> str:
+        messages = build_fix_messages(code, error, state["overrides"])
+        _log_request(state["run_id"], "fix", messages)
+        response = llm.invoke(messages)
+        _log_reply(state["run_id"], "fix", response.content)
+        fixed, _ = split_reasoning(response.content)
+        return strip_code_fences(fixed)
+
+    return fix
+
+
+def benchmark_suggestions_node(
+    state: OptimizationState,
+    llm: BaseChatModel,
+    build_orchestrator,
+) -> OptimizationState:
+    """Replay the reviewed cell and every suggestion, and score them.
+
+    Only a single-cell review can be benchmarked: over a range each suggestion
+    rewrites a different cell, and every one of those would need its own prefix
+    and its own baseline to compare against.
+    """
+    if not state["benchmark"] or not state["suggestions"]:
+        return state
+
+    sources = state["cell_sources"]
+    if len(sources) != 1:
+        logger.warning(
+            "[JUmPER]: --benchmark measures one cell, but this review covers "
+            f"{len(sources)}; skipping the benchmark."
+        )
+        return state
+
+    target_index, baseline_code = next(iter(sources.items()))
+    orchestrator = build_orchestrator(state, make_fix_fn(state, llm), target_index)
+    if orchestrator is None:
+        return state
+
+    variants = [
+        (str(index), suggestion.code)
+        for index, suggestion in enumerate(state["suggestions"], start=1)
+    ]
+    results = orchestrator.run(baseline_code, variants)
+
+    # Repairs rewrite the code, so what gets applied is what was measured.
+    for index, suggestion in enumerate(state["suggestions"], start=1):
+        fixed = orchestrator.final_code.get(str(index))
+        if fixed:
+            suggestion.code = fixed
+    return {**state, "benchmarks": results}
+
+
+def _should_benchmark(state: OptimizationState) -> str:
+    return "benchmark" if state["benchmark"] else "display"
 
 
 def apply_suggestion_node(state: OptimizationState, shell: Any) -> OptimizationState:

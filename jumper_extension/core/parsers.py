@@ -105,6 +105,28 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
         help="Performance level",
     )
     parser.add_argument(
+        "--benchmark",
+        action="store_true",
+        help=(
+            "Run every suggestion, repair what fails and report a measured verdict. "
+            "Replays the whole session per run - expect it to be slow"
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-runs",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Timed replays per suggestion; the first is dropped as warm-up",
+    )
+    parser.add_argument(
+        "--fix-attempts",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Repair rounds before a failing suggestion is reported as failed",
+    )
+    parser.add_argument(
         "--resume",
         type=str,
         metavar="RUN_ID",

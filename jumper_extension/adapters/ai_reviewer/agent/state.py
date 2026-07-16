@@ -30,6 +30,9 @@ class OptimizationState(TypedDict):
     hardware_info: dict
     perf_tags: list[str]
     env_info: dict
+    benchmark: bool
+    benchmark_options: dict
+    benchmarks: dict
     analysis: str
     analysis_reasoning: str
     suggestions: list[Suggestion]
@@ -56,6 +59,8 @@ def empty_state(
     level: str = "process",
     overrides: dict | None = None,
     note: str = "",
+    benchmark: bool = False,
+    benchmark_options: dict | None = None,
 ) -> OptimizationState:
     """Build a fresh, blank :class:`OptimizationState` for a new graph run."""
     return OptimizationState(
@@ -64,6 +69,9 @@ def empty_state(
         level=level,
         overrides=overrides or {},
         note=note,
+        benchmark=benchmark,
+        benchmark_options=benchmark_options or {},
+        benchmarks={},
         cell_code="",
         cell_sources={},
         timing_info={},

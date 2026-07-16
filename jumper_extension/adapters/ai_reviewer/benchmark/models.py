@@ -1,0 +1,43 @@
+import dataclasses
+
+OK = "ok"
+FAILED = "failed"
+TIMEOUT = "timeout"
+
+
+@dataclasses.dataclass
+class RunOutcome:
+    """One replay of a cell: either it produced numbers, or it did not."""
+    status: str
+    duration_s: float | None = None
+    wall_s: float | None = None
+    metrics: dict = dataclasses.field(default_factory=dict)
+    fingerprints: dict = dataclasses.field(default_factory=dict)
+    error: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.status == OK
+
+
+@dataclasses.dataclass
+class BenchmarkResult:
+    """What the benchmark concluded about one suggestion (or the baseline).
+
+    ``duration_s`` and ``metrics`` are medians over the timed runs; the first
+    run is dropped as warm-up. ``speedup`` is relative to the baseline, and is
+    None for the baseline itself.
+    """
+    label: str
+    status: str
+    attempts: int = 1
+    duration_s: float | None = None
+    metrics: dict = dataclasses.field(default_factory=dict)
+    speedup: float | None = None
+    correctness: str = ""
+    differing_names: list[str] = dataclasses.field(default_factory=list)
+    error: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.status == OK

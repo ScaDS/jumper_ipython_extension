@@ -4,6 +4,7 @@ import uuid
 from typing import Any, Optional, Protocol, Tuple, runtime_checkable
 
 from jumper_extension.adapters.reporter import PerformanceReporter
+from jumper_extension.config.loader import load_config
 from jumper_extension.core.messages import (
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
@@ -49,7 +50,11 @@ class AIReviewerProtocol(Protocol):
         level: str = "process",
         strategy: str = "faster",
         note: str = "",
+        benchmark: bool = False,
+        benchmark_options: Optional[dict] = None,
     ) -> None: ...
+
+    def benchmark(self, run_id: str, benchmark_options: Optional[dict] = None) -> None: ...
 
     def resume(
         self,
@@ -79,6 +84,7 @@ class AIReviewer:
         self._pending_reviews: dict[str, dict] = {}
         self._review_graph = None
         self._resume_graph = None
+        self._benchmark_graph = None
 
     def attach(self, monitor: MonitorProtocol) -> None:
         """Attach started PerformanceMonitor."""
@@ -101,8 +107,81 @@ class AIReviewer:
                 llm,
                 ContextCollector(self),
                 build_ai_review_display(),
+                self.build_orchestrator,
             )
         return self._review_graph
+
+    def _get_benchmark_graph(self):
+        """Lazily build (and cache) the graph behind ``--resume --benchmark``."""
+        if self._benchmark_graph is None:
+            from jumper_extension.adapters.ai_reviewer.agent.graph import build_benchmark_graph
+            from jumper_extension.adapters.ai_reviewer.llm.client import LLMClientConfig, build_llm
+            from jumper_extension.adapters.ai_reviewer.ui.review_display import build_ai_review_display
+
+            llm = build_llm(LLMClientConfig.from_config())
+            self._benchmark_graph = build_benchmark_graph(
+                llm,
+                build_ai_review_display(),
+                self.build_orchestrator,
+            )
+        return self._benchmark_graph
+
+    def build_orchestrator(self, state, fix_fn, target_index: int):
+        """Wire a benchmark for the cell at *target_index*, or None if impossible.
+
+        The prefix is every cell before the target: the cell only means anything
+        with the state its predecessors built, and a replay that skipped them
+        would push the repair loop into inventing the missing data.
+        """
+        from jumper_extension.adapters.ai_reviewer.benchmark.orchestrator import BenchmarkOrchestrator
+        from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner
+
+        prefix_cells = self._prefix_cells(target_index)
+        if prefix_cells is None:
+            return None
+
+        defaults = load_config().ai.benchmark
+        options = state["benchmark_options"]
+        runs = options.get("runs") or defaults.runs
+        fix_attempts = options.get("fix_attempts") or defaults.fix_attempts
+        runner = BenchmarkRunner(
+            prefix_cells=prefix_cells,
+            interval=defaults.interval,
+            level=state["level"],
+        )
+        logger.info(
+            f"[JUmPER]: benchmarking {len(state['suggestions'])} suggestion(s) against cell "
+            f"{target_index}; each replays {len(prefix_cells)} preceding cell(s) "
+            f"{runs} time(s). This can take a while."
+        )
+        return BenchmarkOrchestrator(
+            runner=runner,
+            fix_fn=fix_fn,
+            runs=runs,
+            fix_attempts=fix_attempts,
+            timeout_factor=defaults.timeout_factor,
+        )
+
+    def _prefix_cells(self, target_index: int) -> Optional[list]:
+        """Every cell executed before *target_index*, as the replay needs them."""
+        history = self.reporter.printer.cell_history.view()
+        if history is None or history.empty:
+            logger.warning("[JUmPER]: no cell history to replay for the benchmark")
+            return None
+
+        cells = []
+        for row in history.itertuples(index=False):
+            index = int(row.cell_index)
+            if index >= target_index:
+                break
+            cells.append(
+                {
+                    "index": index,
+                    "raw_cell": row.raw_cell,
+                    "cell_magics": list(getattr(row, "cell_magics", None) or []),
+                }
+            )
+        return cells
 
     def _get_resume_graph(self, shell: Any):
         """Lazily build (and cache) the resume AI review graph."""
@@ -121,6 +200,8 @@ class AIReviewer:
         level: str = "process",
         strategy: str = "faster",
         note: str = "",
+        benchmark: bool = False,
+        benchmark_options: Optional[dict] = None,
     ) -> None:
         """Run the AI-powered performance review on a fresh cell selection.
 
@@ -154,8 +235,33 @@ class AIReviewer:
             level=level,
             overrides=resolved.overrides,
             note=note,
+            benchmark=benchmark,
+            benchmark_options=benchmark_options,
         )
         final_state = self._get_review_graph().invoke(initial_state)
+        self._pending_reviews[run_id] = final_state
+
+    def benchmark(self, run_id: str, benchmark_options: Optional[dict] = None) -> None:
+        """Replay and time the suggestions of a review that already ran.
+
+        Benchmarking costs far more than the review itself, so it is a separate
+        decision: look at the options first, then spend the machine time.
+        """
+        state = self._pending_reviews.get(run_id)
+        if state is None:
+            logger.warning(f"[JUmPER]: No pending AI review found for run_id '{run_id}'")
+            return
+        if not self.monitor.running:
+            logger.warning(
+                EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
+            )
+            return
+
+        final_state = self._get_benchmark_graph().invoke({
+            **state,
+            "benchmark": True,
+            "benchmark_options": benchmark_options or {},
+        })
         self._pending_reviews[run_id] = final_state
 
     def resume(
@@ -211,7 +317,12 @@ class UnavailableAIReviewer:
         level: str = "process",
         strategy: str = "faster",
         note: str = "",
+        benchmark: bool = False,
+        benchmark_options: Optional[dict] = None,
     ) -> None:
+        self._warn()
+
+    def benchmark(self, run_id: str, benchmark_options: Optional[dict] = None) -> None:
         self._warn()
 
     def resume(

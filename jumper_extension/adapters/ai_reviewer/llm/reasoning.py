@@ -7,6 +7,15 @@ _THINK_RE = re.compile(r"<(?:mm:)?think>(.*?)</(?:mm:)?think>", re.DOTALL | re.I
 _OPEN_THINK_RE = re.compile(r"<(?:mm:)?think>", re.IGNORECASE)
 
 
+_FENCE_RE = re.compile(r"^\s*```[^\n]*\n(.*?)\n?\s*```\s*$", re.DOTALL)
+
+
+def strip_code_fences(text: str) -> str:
+    """Unwrap a ```-fenced block, which models add however firmly asked not to."""
+    match = _FENCE_RE.match(text)
+    return match.group(1) if match else text
+
+
 def _content_to_text(content: str | list) -> str:
     """Flatten LangChain message content (str or list of blocks) to plain text."""
     if isinstance(content, str):

@@ -1,0 +1,209 @@
+"""Replay one cell in a fresh process and read back what it cost.
+
+Each run is its own interpreter: the prefix rebuilds the state the cell needs,
+and nothing a variant mutates can leak into the next one. Results come back as
+a session export, which is then read through the very same reporter the live
+review uses, so a variant's metrics are comparable with the baseline's by
+construction rather than by convention.
+"""
+import contextlib
+import logging
+import os
+import statistics
+import subprocess
+import sys
+import tempfile
+import time
+
+import pandas as pd
+
+from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
+from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT, RunOutcome
+from jumper_extension.adapters.ai_reviewer.benchmark.script import build_script
+from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
+from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.adapters.reporter import build_performance_reporter
+from jumper_extension.adapters.session import SessionImporter
+from jumper_extension.monitor.common import OfflinePerformanceMonitor
+
+logger = logging.getLogger("extension")
+
+_ERROR_TAIL_CHARS = 4000
+
+
+class BenchmarkRunner:
+    """Runs replay scripts and turns their session exports into numbers."""
+
+    def __init__(
+        self,
+        prefix_cells: list[dict],
+        interval: float,
+        level: str = "process",
+        work_dir: str | None = None,
+    ):
+        self.prefix_cells = prefix_cells
+        self.interval = interval
+        self.level = level
+        self._work_dir = work_dir or tempfile.mkdtemp(prefix="jumper-benchmark-")
+
+    @property
+    def work_dir(self) -> str:
+        return self._work_dir
+
+    def run_once(self, code: str, tag: str, timeout: float | None = None) -> RunOutcome:
+        """Replay the prefix plus *code* once, timing the last cell."""
+        session_path = os.path.join(self._work_dir, f"{tag}_session.zip")
+        fingerprint_path = os.path.join(self._work_dir, f"{tag}_fingerprint.json")
+        script_path = build_script(
+            prefix_cells=self.prefix_cells,
+            target_code=code,
+            interval=self.interval,
+            fingerprint_names=fingerprint.assigned_names(code),
+            session_path=session_path,
+            fingerprint_path=fingerprint_path,
+            output_path=os.path.join(self._work_dir, f"{tag}.py"),
+        )
+
+        for stale in (session_path, fingerprint_path):
+            if os.path.exists(stale):
+                os.remove(stale)
+
+        started = time.perf_counter()
+        try:
+            completed = subprocess.run(
+                [sys.executable, script_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=self._work_dir,
+            )
+        except subprocess.TimeoutExpired:
+            return RunOutcome(
+                status=TIMEOUT,
+                error=f"Exceeded the {timeout:.0f}s budget and was killed.",
+            )
+        wall = time.perf_counter() - started
+
+        if completed.returncode != 0:
+            return RunOutcome(status=FAILED, error=_tail(completed.stderr))
+        if not os.path.exists(session_path):
+            return RunOutcome(
+                status=FAILED,
+                error=f"The run produced no session export.\n{_tail(completed.stderr)}",
+            )
+        outcome = self._read_outcome(session_path, fingerprint_path)
+        outcome.wall_s = round(wall, 4)
+        return outcome
+
+    def _read_outcome(self, session_path: str, fingerprint_path: str) -> RunOutcome:
+        """Read the exported session through the live review's own analysis path.
+
+        Duration and metrics come from different places on purpose. The hooks
+        time every cell exactly, but the sampler only catches cells that outlive
+        its interval - and a good optimization is precisely the one that stops
+        being sampled. Missing metrics must not read as a failed run.
+        """
+        target_index = len(self.prefix_cells)
+        importer = SessionImporter(logger)
+        work_dir, cleanup = importer._prepare_work_directory(session_path)
+        try:
+            manifest = importer._load_manifest(work_dir)
+            perf_dfs = importer._load_performance_data(work_dir)
+            cell_history = CellHistory()
+            cell_history.data = pd.read_csv(os.path.join(work_dir, "cell_history.csv"))
+
+            duration = _target_duration(cell_history.data, target_index)
+            if duration is None:
+                return RunOutcome(
+                    status=FAILED,
+                    error="The run left no history entry for the cell under test.",
+                )
+
+            monitor = OfflinePerformanceMonitor(
+                manifest=manifest,
+                perf_dfs=perf_dfs,
+                source=session_path,
+            )
+            reporter = build_performance_reporter(cell_history, display_disabled=True)
+            reporter.attach(monitor)
+            with _quiet():
+                context = reporter.build_context((target_index, target_index), self.level)
+        finally:
+            if cleanup:
+                _remove_tree(work_dir)
+
+        metrics = (
+            ContextCollector._summarize_perfdata(context["perfdata"])["overall"]
+            if context is not None
+            else {}
+        )
+        prints = fingerprint.load(fingerprint_path) if os.path.exists(fingerprint_path) else {}
+        return RunOutcome(
+            status=OK,
+            duration_s=duration,
+            metrics=metrics,
+            fingerprints=prints,
+        )
+
+
+def _target_duration(cells: pd.DataFrame, target_index: int) -> float | None:
+    """Exact wall-clock of the cell under test, straight from the hooks."""
+    if cells.empty or "cell_index" not in cells.columns:
+        return None
+    rows = cells[cells["cell_index"] == target_index]
+    if rows.empty:
+        return None
+    # Microseconds, not milliseconds: a good optimization can land well under
+    # 1ms, and coarser rounding would collapse it to zero and lose the speedup.
+    return round(float(rows.iloc[-1]["duration"]), 6)
+
+
+@contextlib.contextmanager
+def _quiet():
+    """Mute the reporter's "no performance data" warning for one call.
+
+    A cell too fast to sample is an expected outcome here - we report it as
+    missing metrics rather than letting it print once per run.
+    """
+    extension_logger = logging.getLogger("extension")
+    previous = extension_logger.level
+    extension_logger.setLevel(logging.ERROR)
+    try:
+        yield
+    finally:
+        extension_logger.setLevel(previous)
+
+
+def median_of(outcomes: list[RunOutcome]) -> tuple[float, dict]:
+    """Median duration and per-metric medians, after dropping the warm-up run.
+
+    The first run pays for imports, JIT and cold caches, which says nothing
+    about the code itself; the median of the rest resists the odd GC pause.
+    """
+    timed = outcomes[1:] if len(outcomes) > 1 else outcomes
+    duration = statistics.median(outcome.duration_s for outcome in timed)
+
+    metrics: dict = {}
+    for name in timed[0].metrics:
+        for statistic in ("mean", "max"):
+            values = [
+                outcome.metrics[name][statistic]
+                for outcome in timed
+                if name in outcome.metrics
+            ]
+            metrics.setdefault(name, {})[statistic] = round(statistics.median(values), 4)
+    return round(duration, 6), metrics
+
+
+def _tail(text: str) -> str:
+    text = (text or "").strip()
+    return text[-_ERROR_TAIL_CHARS:]
+
+
+def _remove_tree(path: str) -> None:
+    import shutil
+
+    try:
+        shutil.rmtree(path)
+    except Exception:
+        pass

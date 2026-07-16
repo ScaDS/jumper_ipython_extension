@@ -859,6 +859,8 @@ class PerfmonitorService:
         level: str = "process",
         strategy: str = "faster",
         note: str = "",
+        benchmark: bool = False,
+        benchmark_options: Optional[dict] = None,
     ) -> None:
         """Run the AI-powered performance review on a fresh cell selection.
 
@@ -890,7 +892,21 @@ class PerfmonitorService:
             level=level,
             strategy=strategy,
             note=note,
+            benchmark=benchmark,
+            benchmark_options=benchmark_options,
         )
+
+    def ai_review_benchmark(self, run_id: str, benchmark_options: Optional[dict] = None) -> None:
+        """Replay and time the suggestions of a review that already ran.
+
+        Args:
+            run_id: Identifier printed by a previous ``%perfmonitor_ai_review``.
+            benchmark_options: Per-run overrides for the ``ai.benchmark`` config.
+
+        Examples:
+            >>> service.ai_review_benchmark("abc123")
+        """
+        self.ai_reviewer.benchmark(run_id, benchmark_options=benchmark_options)
 
     def ai_review_resume(
         self,
@@ -941,6 +957,12 @@ class PerfmonitorService:
         """
         if self.monitor:
             self.monitor.stop()
+
+
+def _benchmark_options(args) -> dict:
+    """Per-run benchmark overrides; absent flags fall back to the config."""
+    options = {"runs": args.benchmark_runs, "fix_attempts": args.fix_attempts}
+    return {key: value for key, value in options.items() if value is not None}
 
 
 class PerfmonitorMagicAdapter:
@@ -1091,7 +1113,15 @@ class PerfmonitorMagicAdapter:
         if not args:
             return
 
+        benchmark_options = _benchmark_options(args)
+
         if args.resume:
+            if args.benchmark:
+                self.service.ai_review_benchmark(
+                    args.resume,
+                    benchmark_options=benchmark_options,
+                )
+                return
             if args.select is None:
                 logger.warning(
                     EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.SELECT_REQUIRED_FOR_RESUME]
@@ -1117,6 +1147,8 @@ class PerfmonitorMagicAdapter:
             level=args.level,
             strategy=args.strategy,
             note=args.note,
+            benchmark=args.benchmark,
+            benchmark_options=benchmark_options,
         )
 
     def perfmonitor_export_perfdata(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:

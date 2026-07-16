@@ -55,6 +55,47 @@ def _target_label(suggestion) -> str:
     return f" (cell {suggestion.target_cell_index})"
 
 
+_CORRECTNESS_NOTES = {
+    "differs": "but its results differ from the original - treat the speedup as unearned",
+    "unverified": "results could not be compared",
+}
+
+
+def verdict_line(state: OptimizationState, index: int) -> str:
+    """One-line measured verdict for option *index*, empty when not benchmarked."""
+    result = state.get("benchmarks", {}).get(str(index))
+    if result is None:
+        return ""
+
+    if not result.ok:
+        return (
+            f"Verdict: failed to run after {result.attempts} attempt(s) - "
+            f"{_first_line(result.error)}"
+        )
+
+    parts = [f"Verdict: {result.speedup}x faster" if (result.speedup or 0) >= 1
+             else f"Verdict: {round(1 / result.speedup, 2)}x slower" if result.speedup
+             else "Verdict: measured"]
+    parts.append(f"{result.duration_s}s vs {_baseline_duration(state)}s")
+    note = _CORRECTNESS_NOTES.get(result.correctness)
+    if note:
+        names = ", ".join(result.differing_names)
+        parts.append(f"{note}{f' ({names})' if names else ''}")
+    if result.attempts > 1:
+        parts.append(f"repaired after {result.attempts - 1} failed attempt(s)")
+    return " - ".join(parts)
+
+
+def _baseline_duration(state: OptimizationState):
+    baseline = state.get("benchmarks", {}).get("baseline")
+    return baseline.duration_s if baseline else "?"
+
+
+def _first_line(text: str) -> str:
+    lines = [line for line in (text or "").splitlines() if line.strip()]
+    return lines[-1] if lines else "no error reported"
+
+
 def _reasoning_preview(reasoning: str, limit: int = 140) -> str:
     """First-line preview of the reasoning, shown in the collapsed spoiler summary."""
     snippet = " ".join(reasoning.split())
@@ -91,6 +132,9 @@ class AIReviewPrinter:
         for index, suggestion in enumerate(state["suggestions"], start=1):
             print(f"Option {index} — {suggestion.title}{_target_label(suggestion)}")
             print(f"  {suggestion.description}")
+            verdict = verdict_line(state, index)
+            if verdict:
+                print(f"  {verdict}")
             for line in _diff_lines(original_code(state, suggestion), suggestion.code):
                 print(f"  {line['text']}")
             print()
@@ -117,6 +161,7 @@ class AIReviewDisplayer:
                 "index": index,
                 "title": f"{suggestion.title}{_target_label(suggestion)}",
                 "description": suggestion.description,
+                "verdict": verdict_line(state, index),
                 "diff": _diff_lines(original_code(state, suggestion), suggestion.code),
                 "resume_command": f"%perfmonitor_ai_review --resume {run_id} --select {index}",
             }

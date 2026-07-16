@@ -13,6 +13,17 @@ llm:
   extra_body: {}
   api_key_env: JUMPER_AI_API_KEY
 
+benchmark:
+  # Timed replays per suggestion; the first is dropped as warm-up.
+  runs: 3
+  # LLM repair rounds before a suggestion is reported as failed.
+  fix_attempts: 3
+  # Sampling interval for benchmark replays, finer than the live monitor's so
+  # that a fast variant still yields metrics.
+  interval: 0.05
+  # A variant is killed past this multiple of the baseline duration.
+  timeout_factor: 10.0
+
 context:
   strategy: faster
 

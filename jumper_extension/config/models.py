@@ -122,9 +122,21 @@ class AIContextConfig(BaseModel):
     known_packages: list[str] = Field(default_factory=list)
 
 
+class AIBenchmarkConfig(BaseModel):
+    """Parameters for replaying and timing the suggestions of a review."""
+    runs: int = 3
+    fix_attempts: int = 3
+    # Finer than the live monitor's: a successful optimization is often too
+    # short to be sampled at 1s, and would come back with no metrics at all.
+    interval: float = 0.05
+    # Kill a variant once it exceeds this multiple of the baseline duration.
+    timeout_factor: float = 10.0
+
+
 class AIConfig(BaseModel):
     llm: AILLMConfig = Field(default_factory=AILLMConfig)
     context: AIContextConfig = Field(default_factory=AIContextConfig)
+    benchmark: AIBenchmarkConfig = Field(default_factory=AIBenchmarkConfig)
 
 
 class PythonCollectorsConfig(BaseModel):
