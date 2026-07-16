@@ -1,9 +1,11 @@
+import logging
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 from jumper_extension.adapters.ai_reviewer.agent.nodes import (
     _other_options_as_diffs,
     _should_refine,
+    prompt_logger,
     analyze_bottlenecks_node,
     apply_suggestion_node,
     build_analyze_messages,
@@ -120,6 +122,51 @@ def test_analyze_prompt_omits_timing_when_not_collected():
     messages = build_analyze_messages(state)
 
     assert "Execution time" not in messages[1].content
+
+
+class _ListHandler(logging.Handler):
+    """Collect formatted prompt-log messages without touching the real file."""
+
+    def __init__(self, records: list[str]):
+        super().__init__()
+        self._records = records
+
+    def emit(self, record):
+        self._records.append(record.getMessage())
+
+
+def _run_analyze_capturing_prompts(level: int | None) -> list[str]:
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "x = compute()"
+    llm = Mock()
+    llm.invoke = Mock(return_value=SimpleNamespace(content="CPU is the bottleneck."))
+
+    records: list[str] = []
+    handler = _ListHandler(records)
+    prompt_logger.addHandler(handler)
+    extension_logger = logging.getLogger("extension")
+    previous = extension_logger.level
+    if level is not None:
+        extension_logger.setLevel(level)
+    try:
+        analyze_bottlenecks_node(state, llm)
+    finally:
+        extension_logger.setLevel(previous)
+        prompt_logger.removeHandler(handler)
+    return records
+
+
+def test_prompts_are_not_logged_at_the_default_level():
+    assert _run_analyze_capturing_prompts(level=None) == []
+
+
+def test_prompts_and_reply_are_logged_once_debug_is_enabled():
+    records = _run_analyze_capturing_prompts(level=logging.DEBUG)
+
+    joined = "\n".join(records)
+    assert "x = compute()" in joined              # the request as sent
+    assert "CPU is the bottleneck." in joined     # the reply as received
+    assert "abc123" in joined                     # keyed by run_id
 
 
 def test_generate_suggestions_node_builds_suggestions_from_structured_output():

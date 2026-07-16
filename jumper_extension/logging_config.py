@@ -52,6 +52,14 @@ LOGGING = {
             "filename": os.path.join(LOGGING_DIR, "error.log"),
             "formatter": "verbose",
         },
+        "ai_prompts_file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOGGING_DIR, "ai_prompts.log"),
+            "formatter": "verbose",
+            # Created on the first prompt actually logged, not on import.
+            "delay": True,
+        },
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
@@ -75,6 +83,15 @@ LOGGING = {
             "handlers": ["console", "debug_file", "info_file", "error_file"],
             "level": "INFO",
             "propagate": True,
+        },
+        # Full LLM prompts and replies of the AI reviewer. Deliberately carries
+        # no level of its own: it inherits "extension"'s, so raising that to
+        # DEBUG turns prompt logging on. propagate is off to keep these out of
+        # the console and debug.log - a single prompt runs to hundreds of lines,
+        # and the console handler would put every one of them in the notebook.
+        "extension.ai_prompts": {
+            "handlers": ["ai_prompts_file"],
+            "propagate": False,
         },
     },
 }

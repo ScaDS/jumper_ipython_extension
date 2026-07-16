@@ -19,7 +19,30 @@ from jumper_extension.core.messages import EXTENSION_ERROR_MESSAGES, ExtensionEr
 
 logger = logging.getLogger("extension")
 
+# Full prompts and replies, written to their own file. Silent until the
+# "extension" logger is raised to DEBUG; see logging_config.
+prompt_logger = logging.getLogger("extension.ai_prompts")
+
 _prompts = PromptLibrary.load()
+
+
+def _log_request(run_id: str, step: str, messages: list[BaseMessage]) -> None:
+    """Record the exact messages *step* sends to the LLM."""
+    if not prompt_logger.isEnabledFor(logging.DEBUG):
+        return
+    for message in messages:
+        prompt_logger.debug(
+            "run %s | %s | %s:\n%s",
+            run_id,
+            step,
+            message.__class__.__name__,
+            message.content,
+        )
+
+
+def _log_reply(run_id: str, step: str, reply) -> None:
+    """Record what the LLM replied to *step*, verbatim."""
+    prompt_logger.debug("run %s | %s | reply:\n%s", run_id, step, reply)
 
 
 class _SuggestionSchema(BaseModel):
@@ -120,7 +143,10 @@ def build_analyze_messages(state: OptimizationState) -> list[BaseMessage]:
 
 def analyze_bottlenecks_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #1: produce a short bottleneck narrative for the cell."""
-    response = llm.invoke(build_analyze_messages(state))
+    messages = build_analyze_messages(state)
+    _log_request(state["run_id"], "analyze", messages)
+    response = llm.invoke(messages)
+    _log_reply(state["run_id"], "analyze", response.content)
     analysis, reasoning = split_reasoning(response.content)
     return {**state, "analysis": analysis, "analysis_reasoning": reasoning}
 
@@ -143,7 +169,10 @@ def build_suggest_messages(state: OptimizationState) -> list[BaseMessage]:
 def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #2: produce a structured list of optimization suggestions."""
     structured_llm = llm.with_structured_output(_SuggestionListSchema)
-    response = structured_llm.invoke(build_suggest_messages(state))
+    messages = build_suggest_messages(state)
+    _log_request(state["run_id"], "suggest", messages)
+    response = structured_llm.invoke(messages)
+    _log_reply(state["run_id"], "suggest", response)
     suggestions = [
         Suggestion(
             title=item.title,
@@ -204,7 +233,10 @@ def build_refine_messages(state: OptimizationState) -> list[BaseMessage]:
 
 def refine_suggestion_node(state: OptimizationState, llm: BaseChatModel) -> OptimizationState:
     """LLM call #3: rewrite the chosen suggestion per the ``--note`` instruction."""
-    response = llm.invoke(build_refine_messages(state))
+    messages = build_refine_messages(state)
+    _log_request(state["run_id"], "refine", messages)
+    response = llm.invoke(messages)
+    _log_reply(state["run_id"], "refine", response.content)
     refined_code, _ = split_reasoning(response.content)
     return {**state, "refined_code": refined_code}
 
