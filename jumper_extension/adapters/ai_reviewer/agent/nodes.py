@@ -68,8 +68,7 @@ def _format_timing(timing: dict) -> str:
     )
     return (
         "Execution time, wall-clock including interpreter and magic overhead - "
-        f"total: {timing['total_duration_s']}s; "
-        f"per cell, in the same order as the source code above - {per_cell}"
+        f"total: {timing['total_duration_s']}s; per cell - {per_cell}"
     )
 
 
@@ -78,7 +77,7 @@ def _format_perf_summary(perf_summary: dict) -> str:
     lines = [f"Performance summary (mean/max per metric) - overall: {perf_summary['overall']}"]
     per_cell = perf_summary.get("per_cell")
     if per_cell:
-        lines.append("Per cell, in the same order as the source code above:")
+        lines.append("Per cell:")
         lines.extend(
             f"  cell {index}: {metrics}"
             for index, metrics in per_cell.items()

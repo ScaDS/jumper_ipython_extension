@@ -7,6 +7,10 @@ from jumper_extension.config.loader import load_config
 
 _EXCLUDED_SUMMARY_COLUMNS = {"time", "cell_index"}
 
+# Header prefixed to each cell's source when a review spans several cells, so
+# per-cell durations and metrics can name the block they belong to.
+_CELL_MARKER = "# --- cell {index} ---"
+
 # Context sources the strategy can toggle: id -> (state field, empty value,
 # default enabled). Disabled sources are left empty and not even built. Adding a
 # source = add an entry here plus a builder in ``_build_sources`` and a ``given``
@@ -68,7 +72,7 @@ class ContextCollector:
     def _build_sources(self, ctx: dict, hardware: NodeInfo) -> dict:
         """Map source id -> zero-arg builder, invoked only when the source is enabled."""
         return {
-            "code": lambda: "\n---\n".join(ctx["filtered_cells"]["raw_cell"]),
+            "code": lambda: self._cell_code(ctx["filtered_cells"]),
             "timing": lambda: self._timing_info(ctx),
             "perf": lambda: self._summarize_perfdata(ctx["perfdata"]),
             "raw_perf": lambda: ctx["perfdata"].to_dict(orient="list"),
@@ -76,6 +80,26 @@ class ContextCollector:
             "tags": lambda: [str(tag_score.tag) for tag_score in ctx["tags_model"]],
             "packages": lambda: collect_env_info(load_config().ai.context.known_packages),
         }
+
+    @staticmethod
+    def _cell_code(cells: pd.DataFrame) -> str:
+        """Join the reviewed cells, each marked with its ``cell_index``.
+
+        The marker is what ties a per-cell duration or metric back to the code
+        that produced it; without it the model can only guess which block of a
+        range is the slow one.
+
+        A single-cell review has nothing to disambiguate, so its code is passed
+        through verbatim: this string is also what ``suggest`` rewrites and what
+        the suggestion diffs are taken against, and a marker there would show up
+        as a line the user never wrote - or get echoed back into the notebook.
+        """
+        if len(cells) == 1:
+            return cells.iloc[0]["raw_cell"]
+        return "\n".join(
+            f"{_CELL_MARKER.format(index=int(row.cell_index))}\n{row.raw_cell}"
+            for row in cells.itertuples(index=False)
+        )
 
     @staticmethod
     def _timing_info(ctx: dict) -> dict:

@@ -103,8 +103,21 @@ def test_collect_builds_optimization_state_from_context():
 
     reviewer.reporter.build_context.assert_called_once_with((2, 3), "user")
     assert collected["cell_range"] == (2, 3)
-    assert collected["cell_code"] == "x = 1\n---\ny = slow(x)"
+    assert collected["cell_code"] == (
+        "# --- cell 2 ---\nx = 1\n# --- cell 3 ---\ny = slow(x)"
+    )
     assert collected["perf_tags"] == ["cpu_bound", "normal"]
+
+
+def test_collect_leaves_a_single_cell_source_verbatim():
+    context = _make_context(cell_range=(2, 2))
+    context["filtered_cells"] = context["filtered_cells"].iloc[:1]
+    collector = ContextCollector(_make_reviewer(build_context_result=context))
+
+    with patch("jumper_extension.adapters.ai_reviewer.context.collector.collect_env_info", return_value={}):
+        collected = collector.collect(cell_range=(2, 2))
+
+    assert collected["cell_code"] == "x = 1"
 
 
 def test_collect_includes_env_info_in_state():

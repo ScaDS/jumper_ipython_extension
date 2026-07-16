@@ -1,7 +1,9 @@
 given:
   - id: code
     enabled: true
-    text: Source code of a notebook cell
+    text: >-
+      Source code of a notebook cell - or of several, each preceded by a
+      "# --- cell N ---" marker naming the cell the per-cell numbers below refer to
   - id: timing
     enabled: true
     text: >-
