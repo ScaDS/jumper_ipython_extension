@@ -31,6 +31,10 @@ class _Candidate:
         self.attempts_left = attempts_left
         self.attempts = 1
         self.error = ""
+        # The last version that actually ran, kept so exhausted repairs fall
+        # back on a real measurement instead of throwing it away.
+        self.last_verdict: BenchmarkResult | None = None
+        self.last_code = ""
 
 
 class BenchmarkOrchestrator:
@@ -125,17 +129,37 @@ class BenchmarkOrchestrator:
                         timeout,
                         on_run=lambda index: self.progress.variant_run(position, index),
                     )
+                    outstanding = len(pending) + len(repairing)
                     if isinstance(outcome, list):
-                        self.final_code[candidate.label] = candidate.code
                         verdict = self._verdict(
                             candidate, outcome, baseline_duration, baseline_prints
                         )
-                        results[candidate.label] = verdict
+                        candidate.last_verdict = verdict
+                        candidate.last_code = candidate.code
+
+                        # A wrong answer is worth repairing too: it costs the
+                        # review more than a crash, since nothing else catches it.
+                        if verdict.correctness == fingerprint.DIFFERS:
+                            candidate.error = fingerprint.describe_divergence(
+                                baseline_prints,
+                                outcome[-1].fingerprints,
+                                verdict.differing_names,
+                            )
+                            if self._submit_fix(candidate, pool, repairing):
+                                self.progress.variant_diverged(
+                                    position,
+                                    verdict.differing_names,
+                                    candidate.attempts,
+                                    self.fix_attempts,
+                                )
+                                continue
+
+                        self._settle(results, candidate, verdict)
                         self.progress.variant_done(
                             position,
                             _summarize(verdict),
                             _walls(outcome),
-                            outstanding=len(pending) + len(repairing),
+                            outstanding=outstanding,
                         )
                     else:
                         candidate.error = outcome.error
@@ -147,7 +171,7 @@ class BenchmarkOrchestrator:
                                 self.fix_attempts,
                             )
                         else:
-                            results[candidate.label] = _failed(candidate)
+                            self._settle(results, candidate)
                             self.progress.variant_gave_up(position, self.fix_attempts)
                     continue
 
@@ -156,12 +180,31 @@ class BenchmarkOrchestrator:
                     candidate = repairing.pop(future)
                     fixed = _fixed_code(future, candidate)
                     if fixed is None:
-                        results[candidate.label] = _failed(candidate)
+                        self._settle(results, candidate)
                         continue
                     candidate.code = fixed
                     candidate.attempts += 1
                     pending.append(candidate)
         return results
+
+    def _settle(
+        self,
+        results: dict,
+        candidate: _Candidate,
+        verdict: BenchmarkResult | None = None,
+    ) -> None:
+        """Record what a candidate is finally worth.
+
+        Once repairs are spent, a version that ran - even one whose results
+        drifted - beats reporting nothing: the numbers are real, and the card
+        says plainly that the speedup was not earned.
+        """
+        final = verdict or candidate.last_verdict
+        if final is None:
+            results[candidate.label] = _failed(candidate)
+            return
+        self.final_code[candidate.label] = candidate.last_code or candidate.code
+        results[candidate.label] = final
 
     def _submit_fix(self, candidate: _Candidate, pool: ThreadPoolExecutor, repairing: dict) -> bool:
         """Queue a repair for *candidate*; False once its attempts are spent."""

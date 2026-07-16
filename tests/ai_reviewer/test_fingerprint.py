@@ -57,6 +57,30 @@ def test_compare_all_reports_which_names_diverged():
     assert fp.compare_all(baseline, variant) == (fp.DIFFERS, ["y"])
 
 
+def test_divergence_report_names_the_dtype_that_changed_the_answer():
+    # The real case: inheriting the input's int dtype turns reciprocals to zeros.
+    values = np.arange(1, 1001)
+    original = 1.0 / values
+    wrong = np.reciprocal(values)
+
+    baseline = {"result": fp.fingerprint(original)}
+    variant = {"result": fp.fingerprint(wrong)}
+    verdict, names = fp.compare_all(baseline, variant)
+
+    report = fp.describe_divergence(baseline, variant, names)
+
+    assert verdict == fp.DIFFERS
+    assert "float64" in report and "int64" in report
+    assert "no longer computes the same result" in report
+    assert "result:" in report
+
+
+def test_divergence_report_says_when_a_value_was_not_produced_at_all():
+    report = fp.describe_divergence({"y": fp.fingerprint(1.0)}, {}, ["y"])
+
+    assert "not produced" in report
+
+
 def test_compare_all_is_unverified_when_a_name_is_missing():
     baseline = {"y": fp.fingerprint(10.0)}
 

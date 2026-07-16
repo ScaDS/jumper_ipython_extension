@@ -106,27 +106,57 @@ def test_a_syntax_error_is_repaired_without_ever_being_run():
     assert log[0][1].startswith(BASELINE_LABEL)  # but only the baseline ran before
 
 
-def test_a_faster_but_different_result_is_flagged_rather_than_praised():
-    def behaviour(code):
-        return 4.0 if code == "base" else 0.1
-
+def _diverging_runner(behaviour, diverging_codes: set):
+    """A runner whose *diverging_codes* come back with the wrong fingerprint."""
     runner = _runner(behaviour)
     original = runner.run_once
 
     def run_once(code, tag, timeout=None):
         outcome = original(code, tag, timeout)
-        if code == "cheat":
+        if code in diverging_codes:
             outcome.fingerprints = {"y": {"kind": "scalar", "value": 1.0}}
         return outcome
 
     runner.run_once = run_once
-    orchestrator = BenchmarkOrchestrator(runner=runner, fix_fn=lambda c, e: c, runs=2)
+    return runner
+
+
+def test_a_diverging_variant_is_repaired_rather_than_just_flagged():
+    fix_calls = []
+
+    def fix(code, error):
+        fix_calls.append(error)
+        return "correct"
+
+    orchestrator = BenchmarkOrchestrator(
+        runner=_diverging_runner(lambda code: 4.0 if code == "base" else 1.0, {"cheat"}),
+        fix_fn=fix,
+        runs=2,
+    )
 
     results = orchestrator.run("base", [("1", "cheat")])
 
+    assert results["1"].correctness == fingerprint.MATCH
+    assert results["1"].attempts == 2
+    assert orchestrator.final_code["1"] == "correct"
+    assert "no longer computes the same result" in fix_calls[0]
+
+
+def test_an_unrepairable_divergence_keeps_the_measurement_it_did_get():
+    orchestrator = BenchmarkOrchestrator(
+        runner=_diverging_runner(lambda code: 4.0 if code == "base" else 0.1, {"cheat"}),
+        fix_fn=lambda code, error: "cheat",  # the model never fixes it
+        runs=2,
+        fix_attempts=2,
+    )
+
+    results = orchestrator.run("base", [("1", "cheat")])
+
+    # Reporting nothing would be worse: the numbers are real, and the verdict
+    # already says the speedup is unearned.
+    assert results["1"].status == OK
     assert results["1"].speedup == 40.0
     assert results["1"].correctness == fingerprint.DIFFERS
-    assert results["1"].differing_names == ["y"]
 
 
 def test_timeout_budget_covers_the_prefix_and_room_to_be_slow():

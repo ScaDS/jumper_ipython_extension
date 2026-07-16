@@ -67,6 +67,19 @@ class BenchmarkProgress:
             f"({_first_line(error)}); repairing ({attempt}/{attempts})"
         )
 
+    def variant_diverged(
+        self,
+        position: int,
+        names: list[str],
+        attempt: int,
+        attempts: int,
+    ) -> None:
+        changed = f" ({', '.join(names)})" if names else ""
+        logger.info(
+            f"[JUmPER]: benchmark: option {position}/{self.total_variants} ran but its "
+            f"results differ{changed}; repairing ({attempt}/{attempts})"
+        )
+
     def variant_gave_up(self, position: int, attempts: int) -> None:
         self.failed += 1
         logger.info(

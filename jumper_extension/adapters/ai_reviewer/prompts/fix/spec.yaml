@@ -5,8 +5,9 @@ given:
   - id: error
     enabled: true
     text: >-
-      Error it failed with - a traceback, or a note that it was killed for running
-      far longer than the code it replaces
+      What went wrong - a traceback, a note that it was killed for running far longer
+      than the code it replaces, or a report that it ran but computed a different
+      result than the original
 
 rules:
   - id: keep_idea
@@ -14,6 +15,13 @@ rules:
     text: >-
       Fix the failure without abandoning the optimization: if the idea cannot work here
       at all, fall back to the closest variant that does.
+  - id: match_original
+    enabled: true
+    text: >-
+      The rewrite must produce what the original produced. Mind the dtype an
+      intermediate buffer is created with and the integer-vs-float semantics of the
+      operations on it - inheriting an input's dtype is a common way to silently
+      change the answer.
   - id: no_fabrication
     enabled: true
     text: >-

@@ -155,6 +155,39 @@ def _compare_arrays(baseline: dict, variant: dict, rel_tol: float) -> str:
     return MATCH
 
 
+def describe_divergence(baseline: dict, variant: dict, names: list[str]) -> str:
+    """Explain how a variant's results drifted, in terms a model can act on."""
+    lines = [
+        "Your rewrite ran without error, but it no longer computes the same "
+        "result as the original.",
+        "",
+        "These are statistical signatures of the values each version left behind. "
+        "They are compared with a tolerance, so a small floating-point difference "
+        "from reordering arithmetic would have passed - this did not:",
+    ]
+    for name in names:
+        lines.append(f"  {name}:")
+        lines.append(f"    original: {_describe(baseline.get(name))}")
+        lines.append(f"    yours:    {_describe(variant.get(name))}")
+    return "\n".join(lines)
+
+
+def _describe(print_: dict | None) -> str:
+    if not print_:
+        return "not produced"
+    kind = print_.get("kind")
+    if kind == "scalar":
+        return f"{print_['value']}"
+    if kind == "text":
+        return f"text of {print_['len']} chars"
+    if kind == "frame":
+        return f"dataframe {print_['shape']}, columns {print_['columns']}"
+    stats = " ".join(
+        f"{stat}={print_[stat]}" for stat in ("mean", "std", "min", "max") if stat in print_
+    )
+    return f"array shape={print_['shape']} dtype={print_['dtype']}{f' {stats}' if stats else ''}"
+
+
 def compare_all(baseline: dict, variant: dict, rel_tol: float = REL_TOL) -> tuple[str, list[str]]:
     """Verdict over every captured name, plus the names that diverged."""
     if not baseline:
