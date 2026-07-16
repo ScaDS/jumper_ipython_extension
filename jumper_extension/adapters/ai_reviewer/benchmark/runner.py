@@ -76,6 +76,7 @@ class BenchmarkRunner:
                 text=True,
                 timeout=timeout,
                 cwd=self._work_dir,
+                env=self._child_env(),
             )
         except subprocess.TimeoutExpired:
             return RunOutcome(
@@ -94,6 +95,16 @@ class BenchmarkRunner:
         outcome = self._read_outcome(session_path, fingerprint_path)
         outcome.wall_s = round(wall, 4)
         return outcome
+
+    def _child_env(self) -> dict:
+        """Keep each replay's own logs beside its session export.
+
+        A replay is a fresh interpreter, so it opens a log directory of its own;
+        left alone, a single benchmark would scatter a dozen of them across the
+        user's home. Here they land next to the script and zip they describe,
+        which is where anyone debugging a failed replay would look.
+        """
+        return {**os.environ, "JUMPER_LOG_DIR": self._work_dir}
 
     def _read_outcome(self, session_path: str, fingerprint_path: str) -> RunOutcome:
         """Read the exported session through the live review's own analysis path.
