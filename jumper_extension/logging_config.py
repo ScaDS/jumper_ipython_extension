@@ -8,10 +8,22 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # Use JUMPER_LOG_DIR environment variable, defaulting to home directory
 BASE_LOGGING_DIR = Path(os.environ.get("JUMPER_LOG_DIR", Path.home()))
-# Create a timestamped subdirectory for this session
+# Named per session; created only once something is actually logged into it.
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 LOGGING_DIR = BASE_LOGGING_DIR / f"jumper_logs_{timestamp}"
-os.makedirs(LOGGING_DIR, exist_ok=True)
+
+
+class LazyFileHandler(logging.FileHandler):
+    """A FileHandler that creates its directory when the first record lands.
+
+    Paired with ``delay``, this keeps a bare ``import jumper_extension`` - or a
+    benchmark replay that logs nothing - from leaving behind a directory of
+    empty files.
+    """
+
+    def _open(self):
+        os.makedirs(os.path.dirname(self.baseFilename), exist_ok=True)
+        return super()._open()
 
 
 class IgnoreErrorFilter(logging.Filter):
@@ -36,28 +48,30 @@ LOGGING = {
     "handlers": {
         "info_file": {
             "level": "INFO",
-            "class": "logging.FileHandler",
+            "class": "jumper_extension.logging_config.LazyFileHandler",
             "filename": os.path.join(LOGGING_DIR, "info.log"),
             "formatter": "verbose",
+            "delay": True,
         },
         "debug_file": {
             "level": "DEBUG",
-            "class": "logging.FileHandler",
+            "class": "jumper_extension.logging_config.LazyFileHandler",
             "filename": os.path.join(LOGGING_DIR, "debug.log"),
             "formatter": "verbose",
+            "delay": True,
         },
         "error_file": {
             "level": "ERROR",
-            "class": "logging.FileHandler",
+            "class": "jumper_extension.logging_config.LazyFileHandler",
             "filename": os.path.join(LOGGING_DIR, "error.log"),
             "formatter": "verbose",
+            "delay": True,
         },
         "ai_prompts_file": {
             "level": "DEBUG",
-            "class": "logging.FileHandler",
+            "class": "jumper_extension.logging_config.LazyFileHandler",
             "filename": os.path.join(LOGGING_DIR, "ai_prompts.log"),
             "formatter": "verbose",
-            # Create the file on the first prompt logged, not on import.
             "delay": True,
         },
         "console": {
@@ -81,7 +95,7 @@ LOGGING = {
     "loggers": {
         "extension": {
             "handlers": ["console", "debug_file", "info_file", "error_file"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": True,
         },
         # No level of its own: inherits "extension"'s, so raising that to DEBUG
