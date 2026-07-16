@@ -252,7 +252,12 @@ class SubprocessPerformanceMonitor:
         )
 
     def _cleanup_at_exit(self) -> None:
+        # Interpreter teardown: shut the collector down without stop()'s
+        # user-facing logging, whose streams may already be closed.
+        self.running = False
         self._kill_process()
+        if self._reader_thread is not None:
+            self._reader_thread.join(timeout=5.0)
 
     def _kill_process(self) -> None:
         if self._process and self._process.poll() is None:
