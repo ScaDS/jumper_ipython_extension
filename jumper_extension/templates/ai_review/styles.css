@@ -90,6 +90,52 @@
   line-height: 1.4;
 }
 
+/* Measured verdict, shown only with --benchmark. Tone follows correctness, not
+   speed: a variant that got fast by computing something else reads as bad. */
+.ai-verdict {
+  --verdict: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--verdict);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--verdict) 8%, transparent);
+  font-size: 12px;
+}
+
+.ai-verdict--good {
+  --verdict: var(--vscode-charts-green, var(--jp-success-color1, #15803d));
+}
+
+.ai-verdict--warn {
+  --verdict: var(--vscode-charts-yellow, var(--jp-warn-color1, #b45309));
+}
+
+.ai-verdict--bad {
+  --verdict: var(--vscode-charts-red, var(--jp-error-color1, #b91c1c));
+}
+
+.ai-verdict-headline {
+  color: var(--verdict);
+  font-weight: 650;
+}
+
+.ai-verdict-detail {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-verdict-note {
+  color: var(--muted);
+}
+
+.ai-verdict-note::before {
+  content: "· ";
+}
+
 .ai-diff > summary {
   cursor: pointer;
   color: var(--muted);

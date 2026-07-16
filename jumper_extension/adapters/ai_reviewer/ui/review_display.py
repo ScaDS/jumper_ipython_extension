@@ -6,6 +6,7 @@ from IPython.display import HTML, display
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState, original_code
+from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
 from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
     ExtensionInfoCode,
@@ -55,35 +56,66 @@ def _target_label(suggestion) -> str:
     return f" (cell {suggestion.target_cell_index})"
 
 
-_CORRECTNESS_NOTES = {
-    "differs": "but its results differ from the original - treat the speedup as unearned",
-    "unverified": "results could not be compared",
-}
+def verdict_of(state: OptimizationState, index: int) -> dict | None:
+    """What the benchmark measured for option *index*, or None if it never ran.
+
+    A speedup is only good news when the results still match, so correctness
+    drives the tone: an option that got fast by computing something else must
+    not look like the winner.
+    """
+    result = state.get("benchmarks", {}).get(str(index))
+    if result is None:
+        return None
+
+    if not result.ok:
+        return {
+            "headline": f"Failed after {result.attempts} attempt(s)",
+            "tone": "bad",
+            "detail": _first_line(result.error),
+            "notes": [],
+        }
+
+    notes = []
+    tone = "good"
+    if result.correctness == fingerprint.DIFFERS:
+        names = ", ".join(result.differing_names)
+        notes.append(
+            f"its results differ from the original{f' ({names})' if names else ''} - "
+            "the speedup is unearned"
+        )
+        tone = "bad"
+    elif result.correctness == fingerprint.UNVERIFIED:
+        notes.append("results could not be compared")
+        tone = "warn"
+    if result.attempts > 1:
+        notes.append(f"repaired after {result.attempts - 1} failed attempt(s)")
+
+    headline, slower = _headline(result.speedup)
+    if slower and tone == "good":
+        tone = "warn"
+    return {
+        "headline": headline,
+        "tone": tone,
+        "detail": f"{result.duration_s}s vs {_baseline_duration(state)}s",
+        "notes": notes,
+    }
+
+
+def _headline(speedup: float | None) -> tuple[str, bool]:
+    if not speedup:
+        return "Measured", False
+    if speedup >= 1:
+        return f"{speedup}x faster", False
+    return f"{round(1 / speedup, 2)}x slower", True
 
 
 def verdict_line(state: OptimizationState, index: int) -> str:
-    """One-line measured verdict for option *index*, empty when not benchmarked."""
-    result = state.get("benchmarks", {}).get(str(index))
-    if result is None:
+    """The same verdict as one line, for the text report."""
+    verdict = verdict_of(state, index)
+    if verdict is None:
         return ""
-
-    if not result.ok:
-        return (
-            f"Verdict: failed to run after {result.attempts} attempt(s) - "
-            f"{_first_line(result.error)}"
-        )
-
-    parts = [f"Verdict: {result.speedup}x faster" if (result.speedup or 0) >= 1
-             else f"Verdict: {round(1 / result.speedup, 2)}x slower" if result.speedup
-             else "Verdict: measured"]
-    parts.append(f"{result.duration_s}s vs {_baseline_duration(state)}s")
-    note = _CORRECTNESS_NOTES.get(result.correctness)
-    if note:
-        names = ", ".join(result.differing_names)
-        parts.append(f"{note}{f' ({names})' if names else ''}")
-    if result.attempts > 1:
-        parts.append(f"repaired after {result.attempts - 1} failed attempt(s)")
-    return " - ".join(parts)
+    parts = [f"Verdict: {verdict['headline']}", verdict["detail"], *verdict["notes"]]
+    return " - ".join(part for part in parts if part)
 
 
 def _baseline_duration(state: OptimizationState):
@@ -161,7 +193,7 @@ class AIReviewDisplayer:
                 "index": index,
                 "title": f"{suggestion.title}{_target_label(suggestion)}",
                 "description": suggestion.description,
-                "verdict": verdict_line(state, index),
+                "verdict": verdict_of(state, index),
                 "diff": _diff_lines(original_code(state, suggestion), suggestion.code),
                 "resume_command": f"%perfmonitor_ai_review --resume {run_id} --select {index}",
             }
