@@ -106,6 +106,29 @@ def test_a_syntax_error_is_repaired_without_ever_being_run():
     assert log[0][1].startswith(BASELINE_LABEL)  # but only the baseline ran before
 
 
+def test_a_repair_that_returns_broken_syntax_costs_no_replay():
+    executed = []
+
+    def behaviour(code):
+        executed.append(code)
+        return 4.0 if code == "base" else 1.0
+
+    repairs = iter(["def still_broken(:", "y = 1"])
+    orchestrator = _orchestrator(
+        behaviour,
+        fix_fn=lambda code, error, label: next(repairs),
+        fix_attempts=3,
+    )
+
+    orchestrator.run("base", [("1", "def broken(:")])
+
+    # The variant went through three versions; the two that could not compile
+    # were repaired without ever reaching a process.
+    assert "def broken(:" not in executed
+    assert "def still_broken(:" not in executed
+    assert orchestrator.final_code["1"] == "y = 1"
+
+
 def _diverging_runner(behaviour, diverging_codes: set):
     """A runner whose *diverging_codes* come back with the wrong fingerprint."""
     runner = _runner(behaviour)

@@ -110,19 +110,17 @@ class BenchmarkOrchestrator:
         repairing: dict[Future, _Candidate] = {}
 
         with ThreadPoolExecutor(max_workers=max(1, len(pending))) as pool:
-            # Syntax is checkable for free, so broken code never costs a replay.
-            runnable = []
-            for candidate in pending:
-                if self._syntax_ok(candidate):
-                    runnable.append(candidate)
-                elif not self._submit_fix(candidate, pool, repairing):
-                    results[candidate.label] = _failed(candidate)
-            pending = runnable
-
             while pending or repairing:
                 if pending:
                     candidate = pending.pop(0)
                     position = self._position[candidate.label]
+
+                    # Syntax is checkable for free, so broken code never costs a
+                    # replay - whether it came from the model or from a repair.
+                    if not self._syntax_ok(candidate):
+                        self._reject(results, candidate, position, pool, repairing)
+                        continue
+
                     outcome = self._measure(
                         candidate.code,
                         candidate.label,
@@ -163,16 +161,7 @@ class BenchmarkOrchestrator:
                         )
                     else:
                         candidate.error = outcome.error
-                        if self._submit_fix(candidate, pool, repairing):
-                            self.progress.variant_failed(
-                                position,
-                                outcome.error,
-                                candidate.attempts,
-                                self.fix_attempts,
-                            )
-                        else:
-                            self._settle(results, candidate)
-                            self.progress.variant_gave_up(position, self.fix_attempts)
+                        self._reject(results, candidate, position, pool, repairing)
                     continue
 
                 done, _ = wait(list(repairing), return_when=FIRST_COMPLETED)
@@ -186,6 +175,26 @@ class BenchmarkOrchestrator:
                     candidate.attempts += 1
                     pending.append(candidate)
         return results
+
+    def _reject(
+        self,
+        results: dict,
+        candidate: _Candidate,
+        position: int,
+        pool: ThreadPoolExecutor,
+        repairing: dict,
+    ) -> None:
+        """Hand a candidate that did not work back for repair, or give up on it."""
+        if self._submit_fix(candidate, pool, repairing):
+            self.progress.variant_failed(
+                position,
+                candidate.error,
+                candidate.attempts,
+                self.fix_attempts,
+            )
+        else:
+            self._settle(results, candidate)
+            self.progress.variant_gave_up(position, self.fix_attempts)
 
     def _settle(
         self,
