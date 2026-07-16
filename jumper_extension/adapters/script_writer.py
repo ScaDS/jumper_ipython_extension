@@ -10,6 +10,71 @@ from jumper_extension.adapters.cell_history import CellHistory
 logger = logging.getLogger("extension")
 
 
+def is_pure_magic_cell(raw_cell: str) -> bool:
+    """True when every non-empty line of *raw_cell* is a line magic."""
+    non_empty_lines = [line for line in raw_cell.splitlines() if line.strip()]
+    return bool(non_empty_lines) and all(
+        line.lstrip().startswith("%") for line in non_empty_lines
+    )
+
+
+def transform_cell_code(raw_cell: str, cell_magics: List[str]) -> str:
+    """
+    Replace captured magic commands with magic_adapter calls while keeping
+    the rest of the code intact.
+    """
+    if not raw_cell:
+        return ""
+
+    # Build a lookup from magic line prefix to magic_adapter call string
+    # We rely on CellHistory.cell_magics entries having the original magic lines (e.g. "%perfmonitor_start 1.0")
+    replacements = {}
+    for magic in cell_magics:
+        # Normalize leading '%'
+        stripped_no_pct = magic[1:] if magic.startswith("%") else magic
+        parts = stripped_no_pct.split(maxsplit=1)
+        cmd = parts[0]
+        args = parts[1] if len(parts) > 1 else ""
+        # construct a Python call to the magic_adapter method
+        # prefer passing the whole "line" string of arguments
+        if args:
+            call = f"magic_adapter.{cmd}({args!r})"
+        else:
+            # Methods generally accept a single 'line' argument; pass empty string for uniformity
+            call = f'magic_adapter.{cmd}("")'
+        # map original magic literal (with or without %) to replacement
+        replacements[magic] = call
+        # also allow matching without the leading '%', just in case
+        replacements[stripped_no_pct] = call
+
+    # Now transform the cell line by line
+    out_lines: List[str] = []
+    for line in raw_cell.splitlines():
+        lstrip = line.lstrip()
+        # Only attempt replacement if line starts with a magic marker
+        if lstrip.startswith("%"):
+            # Exact match by full line (common for bare magic lines)
+            rep = replacements.get(lstrip)
+            if rep is None:
+                # Try by the first token
+                key = lstrip.split("#", 1)[0].strip()  # drop trailing inline comments if any
+                rep = replacements.get(key)
+            if rep is None:
+                # As a fallback, try to parse and replace if it's one of captured commands
+                token = lstrip[1:].split(maxsplit=1)[0]
+                for k, v in replacements.items():
+                    if k.lstrip("%").split(maxsplit=1)[0] == token:
+                        rep = v
+                        break
+            if rep is not None:
+                # keep original indentation
+                indent = line[: len(line) - len(lstrip)]
+                out_lines.append(f"{indent}{rep}")
+                continue
+        out_lines.append(line)
+    return "\n".join(out_lines)
+
+
 class NotebookScriptWriter:
     """
     Class for writing notebook content to a Python script.
@@ -182,8 +247,7 @@ class NotebookScriptWriter:
                 f.write("print('-' * 13 + ' Cell output ' + '-' * 14)\n")
                 cell_magics = cell.get("cell_magics") or []
                 # compute should_skip_report: True if cell contains only line magics (non-empty lines start with '%')
-                non_empty_lines = [ln for ln in raw_cell.splitlines() if ln.strip()]
-                is_pure_magic = bool(non_empty_lines) and all(ln.lstrip().startswith("%") for ln in non_empty_lines)
+                is_pure_magic = is_pure_magic_cell(raw_cell)
                 f.write(
                     "magic_adapter.on_pre_run_cell("
                     f"raw_cell, "
@@ -192,7 +256,7 @@ class NotebookScriptWriter:
                     ")\n"
                 )
                 f.write("# --- Cell content ---\n")
-                transformed = self._transform_cell_code(
+                transformed = transform_cell_code(
                     raw_cell,
                     cell_magics
                 )
@@ -236,59 +300,3 @@ class NotebookScriptWriter:
             return f"magic_adapter.perfmonitor_start({str(interval)!r})\n"
 
         return ""
-
-    def _transform_cell_code(self, raw_cell: str, cell_magics: List[str]) -> str:
-        """
-        Replace captured magic commands with magic_adapter calls while keeping
-        the rest of the code intact.
-        """
-        if not raw_cell:
-            return ""
-
-        # Build a lookup from magic line prefix to magic_adapter call string
-        # We rely on CellHistory.cell_magics entries having the original magic lines (e.g. "%perfmonitor_start 1.0")
-        replacements = {}
-        for magic in cell_magics:
-            # Normalize leading '%'
-            stripped_no_pct = magic[1:] if magic.startswith("%") else magic
-            parts = stripped_no_pct.split(maxsplit=1)
-            cmd = parts[0]
-            args = parts[1] if len(parts) > 1 else ""
-            # construct a Python call to the magic_adapter method
-            # prefer passing the whole "line" string of arguments
-            if args:
-                call = f"magic_adapter.{cmd}({args!r})"
-            else:
-                # Methods generally accept a single 'line' argument; pass empty string for uniformity
-                call = f'magic_adapter.{cmd}("")'
-            # map original magic literal (with or without %) to replacement
-            replacements[magic] = call
-            # also allow matching without the leading '%', just in case
-            replacements[stripped_no_pct] = call
-
-        # Now transform the cell line by line
-        out_lines: List[str] = []
-        for line in raw_cell.splitlines():
-            lstrip = line.lstrip()
-            # Only attempt replacement if line starts with a magic marker
-            if lstrip.startswith("%"):
-                # Exact match by full line (common for bare magic lines)
-                rep = replacements.get(lstrip)
-                if rep is None:
-                    # Try by the first token
-                    key = lstrip.split("#", 1)[0].strip()  # drop trailing inline comments if any
-                    rep = replacements.get(key)
-                if rep is None:
-                    # As a fallback, try to parse and replace if it's one of captured commands
-                    token = lstrip[1:].split(maxsplit=1)[0]
-                    for k, v in replacements.items():
-                        if k.lstrip("%").split(maxsplit=1)[0] == token:
-                            rep = v
-                            break
-                if rep is not None:
-                    # keep original indentation
-                    indent = line[: len(line) - len(lstrip)]
-                    out_lines.append(f"{indent}{rep}")
-                    continue
-            out_lines.append(line)
-        return "\n".join(out_lines)
