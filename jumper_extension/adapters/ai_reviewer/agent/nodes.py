@@ -6,7 +6,11 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState, Suggestion
+from jumper_extension.adapters.ai_reviewer.agent.state import (
+    OptimizationState,
+    Suggestion,
+    original_code,
+)
 from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
 from jumper_extension.adapters.ai_reviewer.llm.reasoning import split_reasoning
 from jumper_extension.adapters.ai_reviewer.prompts import PromptLibrary
@@ -28,6 +32,14 @@ class _SuggestionSchema(BaseModel):
             "as properly formatted multi-line Python (real newlines between "
             "statements, PEP 8 style) - never a semicolon-joined one-liner"
         )
+    )
+    target_cell_index: int | None = Field(
+        default=None,
+        description=(
+            "Index of the single cell this rewrite replaces, matching one of the "
+            "'# --- cell N ---' markers in the source. Null when only one cell is "
+            "under review"
+        ),
     )
 
 
@@ -133,7 +145,12 @@ def generate_suggestions_node(state: OptimizationState, llm: BaseChatModel) -> O
     structured_llm = llm.with_structured_output(_SuggestionListSchema)
     response = structured_llm.invoke(build_suggest_messages(state))
     suggestions = [
-        Suggestion(title=item.title, description=item.description, code=item.code)
+        Suggestion(
+            title=item.title,
+            description=item.description,
+            code=item.code,
+            target_cell_index=item.target_cell_index,
+        )
         for item in response.suggestions
     ]
     return {**state, "suggestions": suggestions}
@@ -146,7 +163,7 @@ def display_results_node(state: OptimizationState, review_display: AIReviewDispl
 
 
 def _other_options_as_diffs(
-    cell_code: str,
+    state: OptimizationState,
     suggestions: list[Suggestion],
     chosen_index: int,
 ) -> str:
@@ -155,7 +172,7 @@ def _other_options_as_diffs(
         if i == chosen_index:
             continue
         diff_lines = difflib.unified_diff(
-            cell_code.splitlines(),
+            original_code(state, s).splitlines(),
             s.code.splitlines(),
             fromfile="original",
             tofile=f"option {i + 1}",
@@ -169,7 +186,7 @@ def build_refine_messages(state: OptimizationState) -> list[BaseMessage]:
     """Exact ``[system, human]`` messages sent to the LLM for the refine step."""
     chosen = state["suggestions"][state["chosen_index"]]
     other_diffs = _other_options_as_diffs(
-        state["cell_code"],
+        state,
         state["suggestions"],
         state["chosen_index"],
     )

@@ -63,7 +63,13 @@ class ContextCollector:
         hardware = aggregate_node_info(self.reviewer.monitor.nodes.hardware)
         builders = self._build_sources(ctx, hardware)
 
-        collected = {"cell_range": ctx["cell_range"]}
+        # cell_sources is bookkeeping, not context: it never reaches the LLM,
+        # but apply and the diffs need each cell's original code to line up with
+        # the one cell a suggestion targets. Hence it ignores the source toggles.
+        collected = {
+            "cell_range": ctx["cell_range"],
+            "cell_sources": self._cell_sources(ctx["filtered_cells"]),
+        }
         for source_id, (field, empty, default) in _SOURCE_FIELDS.items():
             enabled = overrides.get(source_id, default)
             collected[field] = builders[source_id]() if enabled else empty
@@ -79,6 +85,14 @@ class ContextCollector:
             "hardware": lambda: self._hardware_info(hardware),
             "tags": lambda: [str(tag_score.tag) for tag_score in ctx["tags_model"]],
             "packages": lambda: collect_env_info(load_config().ai.context.known_packages),
+        }
+
+    @staticmethod
+    def _cell_sources(cells: pd.DataFrame) -> dict[int, str]:
+        """Map ``cell_index`` -> that cell's source, verbatim and unmarked."""
+        return {
+            int(row.cell_index): row.raw_cell
+            for row in cells.itertuples(index=False)
         }
 
     @staticmethod

@@ -1,7 +1,9 @@
 given:
   - id: code
     enabled: true
-    text: Cell source code
+    text: >-
+      Cell source code - or, when several cells were reviewed, all of them, each
+      preceded by a "# --- cell N ---" marker
   - id: analysis
     enabled: true
     text: Bottleneck analysis
@@ -22,13 +24,23 @@ rules:
       Each option must contain:
         - "title": a short (3-6 word) name for the optimization technique
         - "description": one or two sentences explaining what changes and why it helps
-        - "code": the COMPLETE rewritten cell source code implementing the suggestion
+        - "code": the COMPLETE rewritten source of ONE cell implementing the suggestion
+        - "target_cell_index": the index of that cell, matching a "# --- cell N ---"
+          marker; null when only one cell was reviewed
   - id: focused_rewrite
     enabled: true
     text: >-
       Keep each suggested rewrite focused on a single optimization idea, runnable as a
       standalone notebook cell, and as close to the original code as possible outside of
       the optimized section.
+  - id: single_cell_target
+    enabled: true
+    text: >-
+      Each option must rewrite exactly one cell, replacing it in place - the marked cells
+      around it stay untouched, so never merge several cells into one and never include
+      the "# --- cell N ---" markers in the returned code. When the fix would span several
+      cells, target the one that dominates the measured time and explain the rest in the
+      description.
   - id: preserve_comments
     enabled: true
     text: Do not modify comments in code regions unrelated to the optimization.

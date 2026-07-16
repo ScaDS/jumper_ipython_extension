@@ -4,10 +4,16 @@ from typing import TypedDict
 
 @dataclass
 class Suggestion:
-    """A single optimization suggestion proposed by the LLM."""
+    """A single optimization suggestion proposed by the LLM.
+
+    ``code`` rewrites exactly one cell: ``target_cell_index`` names which one
+    when the review spans a range, and is None when a single cell was reviewed
+    and there is nothing to disambiguate.
+    """
     title: str
     description: str
     code: str
+    target_cell_index: int | None = None
 
 
 class OptimizationState(TypedDict):
@@ -18,6 +24,7 @@ class OptimizationState(TypedDict):
     overrides: dict
     note: str
     cell_code: str
+    cell_sources: dict
     timing_info: dict
     perf_summary: dict
     raw_perf: dict
@@ -30,6 +37,19 @@ class OptimizationState(TypedDict):
     chosen_index: int | None
     refined_code: str | None
     applied: bool
+
+
+def original_code(state: OptimizationState, suggestion: Suggestion) -> str:
+    """The code *suggestion* rewrites: its target cell, or the whole selection.
+
+    Diffs and the applied result must line up with the one cell being rewritten,
+    never with the marked-up join of a range - otherwise every other cell in the
+    range reads as deleted.
+    """
+    index = suggestion.target_cell_index
+    if index is None:
+        return state["cell_code"]
+    return state["cell_sources"].get(index, state["cell_code"])
 
 
 def empty_state(
@@ -47,6 +67,7 @@ def empty_state(
         overrides=overrides or {},
         note=note,
         cell_code="",
+        cell_sources={},
         timing_info={},
         perf_summary={},
         raw_perf={},

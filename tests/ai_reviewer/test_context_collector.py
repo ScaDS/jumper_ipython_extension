@@ -109,6 +109,27 @@ def test_collect_builds_optimization_state_from_context():
     assert collected["perf_tags"] == ["cpu_bound", "normal"]
 
 
+def test_collect_keeps_each_cell_source_verbatim_for_apply():
+    reviewer = _make_reviewer(build_context_result=_make_context())
+    collector = ContextCollector(reviewer)
+
+    with patch("jumper_extension.adapters.ai_reviewer.context.collector.collect_env_info", return_value={}):
+        collected = collector.collect(cell_range=(2, 3))
+
+    assert collected["cell_sources"] == {2: "x = 1", 3: "y = slow(x)"}
+
+
+def test_collect_keeps_cell_sources_even_when_code_source_disabled():
+    reviewer = _make_reviewer(build_context_result=_make_context())
+    collector = ContextCollector(reviewer)
+
+    with patch("jumper_extension.adapters.ai_reviewer.context.collector.collect_env_info", return_value={}):
+        collected = collector.collect(overrides={"code": False})
+
+    assert collected["cell_code"] == ""
+    assert collected["cell_sources"] == {2: "x = 1", 3: "y = slow(x)"}
+
+
 def test_collect_leaves_a_single_cell_source_verbatim():
     context = _make_context(cell_range=(2, 2))
     context["filtered_cells"] = context["filtered_cells"].iloc[:1]

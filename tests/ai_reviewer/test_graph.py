@@ -7,8 +7,8 @@ from jumper_extension.adapters.ai_reviewer.agent.state import Suggestion, empty_
 
 def _make_review_llm(analysis="The loop is CPU-bound.", suggestions=None):
     suggestions = suggestions or [
-        SimpleNamespace(title="Vectorize", description="Use numpy", code="x = vectorized()"),
-        SimpleNamespace(title="Cache", description="Memoize results", code="x = cached()"),
+        SimpleNamespace(title="Vectorize", description="Use numpy", code="x = vectorized()", target_cell_index=None),
+        SimpleNamespace(title="Cache", description="Memoize results", code="x = cached()", target_cell_index=None),
     ]
     structured_llm = Mock()
     structured_llm.invoke = Mock(return_value=SimpleNamespace(suggestions=suggestions))

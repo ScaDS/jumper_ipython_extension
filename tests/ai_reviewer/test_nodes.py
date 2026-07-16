@@ -129,8 +129,8 @@ def test_generate_suggestions_node_builds_suggestions_from_structured_output():
     state["env_info"] = {"numpy": "1.26.0", "torch": "2.3.0"}
 
     structured_response = SimpleNamespace(suggestions=[
-        SimpleNamespace(title="Vectorize", description="Use numpy", code="x = vectorized()"),
-        SimpleNamespace(title="Cache", description="Memoize results", code="x = cached()"),
+        SimpleNamespace(title="Vectorize", description="Use numpy", code="x = vectorized()", target_cell_index=None),
+        SimpleNamespace(title="Cache", description="Memoize results", code="x = cached()", target_cell_index=None),
     ])
     structured_llm = Mock()
     structured_llm.invoke = Mock(return_value=structured_response)
@@ -181,8 +181,11 @@ def test_other_options_as_diffs_skips_chosen_and_returns_unified_diff():
         Suggestion(title="Cache", description="", code="x = cached(data)"),
     ]
 
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "x = list(data)"
+
     result = _other_options_as_diffs(
-        cell_code="x = list(data)",
+        state,
         suggestions=suggestions,
         chosen_index=0,
     )
@@ -193,10 +196,32 @@ def test_other_options_as_diffs_skips_chosen_and_returns_unified_diff():
     assert "+x = cached(data)" in result
 
 
+def test_other_options_as_diffs_anchors_to_the_cell_the_option_targets():
+    suggestions = [
+        Suggestion(title="Chosen", description="", code="x = load_fast()", target_cell_index=2),
+        Suggestion(title="Cache", description="", code="y = cached(x)", target_cell_index=3),
+    ]
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "# --- cell 2 ---\nx = load()\n# --- cell 3 ---\ny = slow(x)"
+    state["cell_sources"] = {2: "x = load()", 3: "y = slow(x)"}
+
+    result = _other_options_as_diffs(state, suggestions, chosen_index=0)
+
+    assert "-y = slow(x)" in result
+    assert "+y = cached(x)" in result
+    # The other cells of the range are untouched by this option, so they must
+    # not show up as deletions - nor may the markers leak into the diff.
+    assert "-x = load()" not in result
+    assert "cell 2 ---" not in result
+
+
 def test_other_options_as_diffs_returns_empty_string_for_single_suggestion():
     suggestions = [Suggestion(title="Only", description="", code="x = 1")]
 
-    result = _other_options_as_diffs("x = 0", suggestions, chosen_index=0)
+    state = empty_state(run_id="abc123")
+    state["cell_code"] = "x = 0"
+
+    result = _other_options_as_diffs(state, suggestions, chosen_index=0)
 
     assert result == ""
 

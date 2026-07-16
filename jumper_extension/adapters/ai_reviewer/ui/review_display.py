@@ -5,7 +5,7 @@ from pathlib import Path
 from IPython.display import HTML, display
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState
+from jumper_extension.adapters.ai_reviewer.agent.state import OptimizationState, original_code
 from jumper_extension.core.messages import (
     EXTENSION_INFO_MESSAGES,
     ExtensionInfoCode,
@@ -48,6 +48,13 @@ def _format_tags(perf_tags: list[str]) -> list[dict]:
     return [{"name": tag.upper(), "slug": tag} for tag in perf_tags]
 
 
+def _target_label(suggestion) -> str:
+    """Name the cell an option rewrites; empty for a single-cell review."""
+    if suggestion.target_cell_index is None:
+        return ""
+    return f" (cell {suggestion.target_cell_index})"
+
+
 def _reasoning_preview(reasoning: str, limit: int = 140) -> str:
     """First-line preview of the reasoning, shown in the collapsed spoiler summary."""
     snippet = " ".join(reasoning.split())
@@ -82,9 +89,9 @@ class AIReviewPrinter:
         print()
 
         for index, suggestion in enumerate(state["suggestions"], start=1):
-            print(f"Option {index} — {suggestion.title}")
+            print(f"Option {index} — {suggestion.title}{_target_label(suggestion)}")
             print(f"  {suggestion.description}")
-            for line in _diff_lines(state["cell_code"], suggestion.code):
+            for line in _diff_lines(original_code(state, suggestion), suggestion.code):
                 print(f"  {line['text']}")
             print()
 
@@ -108,9 +115,9 @@ class AIReviewDisplayer:
         options = [
             {
                 "index": index,
-                "title": suggestion.title,
+                "title": f"{suggestion.title}{_target_label(suggestion)}",
                 "description": suggestion.description,
-                "diff": _diff_lines(state["cell_code"], suggestion.code),
+                "diff": _diff_lines(original_code(state, suggestion), suggestion.code),
                 "resume_command": f"%perfmonitor_ai_review --resume {run_id} --select {index}",
             }
             for index, suggestion in enumerate(state["suggestions"], start=1)
