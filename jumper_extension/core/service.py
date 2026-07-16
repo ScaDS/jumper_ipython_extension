@@ -1033,8 +1033,8 @@ class PerfmonitorMagicAdapter:
             return
 
         cell_range = None
-        if args.cell:
-            cell_range = self._parse_cell_range(args.cell)
+        if args.cells:
+            cell_range = self._parse_cell_range(args.cells)
             if cell_range is None:
                 return
 
@@ -1074,8 +1074,8 @@ class PerfmonitorMagicAdapter:
             return
 
         cell_range = None
-        if args.cell:
-            cell_range = self._parse_cell_range(args.cell)
+        if args.cells:
+            cell_range = self._parse_cell_range(args.cells)
             if cell_range is None:
                 return
 
@@ -1106,8 +1106,8 @@ class PerfmonitorMagicAdapter:
             return
 
         cell_range = None
-        if args.cell:
-            cell_range = self._parse_cell_range(args.cell)
+        if args.cells:
+            cell_range = self._parse_cell_range(args.cells)
             if cell_range is None:
                 return
 
@@ -1163,8 +1163,8 @@ class PerfmonitorMagicAdapter:
             "show_cell_history -- show interactive table of cell execution history",
             "perfmonitor_start [interval] [--monitor TYPE] -- start monitoring (default: 1s, monitor=default)",
             "perfmonitor_stop -- stop monitoring",
-            "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
-            "perfmonitor_ai_review [--cell RANGE] [--level LEVEL] [--strategy S] [--note TEXT]"
+            "perfmonitor_perfreport [--cells RANGE] [--level LEVEL] -- show report",
+            "perfmonitor_ai_review [--cells RANGE] [--level LEVEL] [--strategy S] [--note TEXT]"
             " -- LLM-powered optimization suggestions; resume with --resume RUN_ID --select N [--note TEXT]",
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
             "perfmonitor_enable_perfreports [--level LEVEL] [--interval INTERVAL] [--text] -- enable auto-reports",

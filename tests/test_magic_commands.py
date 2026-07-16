@@ -95,7 +95,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
 
     # Test invalid cell
-    magics.perfmonitor_plot("--cell invalid")
+    magics.perfmonitor_plot("--cells invalid")
 
     # Test empty data
     with patch.object(
@@ -125,7 +125,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
     ), patch.object(magics.magic_adapter.service.visualizer, "plot"), patch.object(
         magics.magic_adapter.service.monitor, "start_time", 0.0
     ):
-        magics.perfmonitor_plot("--cell 0")
+        magics.perfmonitor_plot("--cells 0")
 
     magics.perfmonitor_stop("")
 
@@ -135,7 +135,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
     magics = PerfmonitorMagics(ipython, build_perfmonitor_magic_adapter())
     magics.perfmonitor_start("")
 
-    # Add one executed cell so --cell 0 is valid and filter_perfdata has range
+    # Add one executed cell so --cells 0 is valid and filter_perfdata has range
     cell_info = type("Info", (), {"raw_cell": "x = 1"})()
     magics.pre_run_cell(cell_info)
     magics.post_run_cell(type("Result", (), {"result": None})())
@@ -162,7 +162,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
         PlotlyPerformanceVisualizer, "_render_direct_plot"
     ) as mock_plotly_render:
         magics.perfmonitor_plot(
-            "--backend plotly --metrics cpu_summary --level process --cell 0"
+            "--backend plotly --metrics cpu_summary --level process --cells 0"
         )
         assert isinstance(service.visualizer, PlotlyPerformanceVisualizer)
         assert service.state.visualizer_backend == "plotly"
@@ -172,7 +172,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
     with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         PlotlyPerformanceVisualizer, "_render_direct_plot"
     ) as mock_plotly_default_render:
-        magics.perfmonitor_plot("--metrics cpu_summary --level process --cell 0")
+        magics.perfmonitor_plot("--metrics cpu_summary --level process --cells 0")
         assert isinstance(service.visualizer, PlotlyPerformanceVisualizer)
         assert mock_plotly_default_render.called
 
@@ -180,7 +180,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
         MatplotlibPerformanceVisualizer, "_render_direct_plot"
     ) as mock_matplotlib_render:
         magics.perfmonitor_plot(
-            "--backend matplotlib --metrics cpu_summary --level process --cell 0"
+            "--backend matplotlib --metrics cpu_summary --level process --cells 0"
         )
         assert isinstance(service.visualizer, MatplotlibPerformanceVisualizer)
         assert service.state.visualizer_backend == "matplotlib"
@@ -190,7 +190,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
     with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         MatplotlibPerformanceVisualizer, "_render_direct_plot"
     ) as mock_matplotlib_default_render:
-        magics.perfmonitor_plot("--metrics cpu_summary --level process --cell 0")
+        magics.perfmonitor_plot("--metrics cpu_summary --level process --cells 0")
         assert isinstance(service.visualizer, MatplotlibPerformanceVisualizer)
         assert mock_matplotlib_default_render.called
 
@@ -207,7 +207,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
 
     # Test invalid cell for perfreport command
-    magics.perfmonitor_perfreport("--cell invalid")
+    magics.perfmonitor_perfreport("--cells invalid")
 
     # Add cell to history
     with patch("time.time", side_effect=[1.0, 2.0]):
@@ -242,7 +242,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
         magics.magic_adapter.service.reporter.print(
             (0, 0)
         )  # Custom cell marks (use integer indices)
-        magics.perfmonitor_perfreport("--cell 0")  # Via command
+        magics.perfmonitor_perfreport("--cells 0")  # Via command
 
     # Test with missing columns
     df_partial = pd.DataFrame(

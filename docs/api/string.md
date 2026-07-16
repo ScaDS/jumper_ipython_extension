@@ -31,7 +31,7 @@ from jumper_extension.core.service import build_perfmonitor_magic_adapter
 
 adapter = build_perfmonitor_magic_adapter()
 adapter.perfmonitor_start("1.0")
-adapter.perfmonitor_perfreport("--cell 2:5 --level user")
+adapter.perfmonitor_perfreport("--cells 2:5 --level user")
 adapter.perfmonitor_export_perfdata("--file perf.csv --level system")
 ```
 

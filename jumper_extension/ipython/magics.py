@@ -233,7 +233,7 @@ class PerfmonitorMagics(Magics):
 
         Args:
             line: Raw argument string, for example
-                ``"--cell 2:5 --level system"``.
+                ``"--cells 2:5 --level system"``.
         Returns:
             None
 
@@ -244,7 +244,7 @@ class PerfmonitorMagics(Magics):
 
             Show a report for cells 2–5 at system level::
 
-                %perfmonitor_perfreport --cell 2:5 --level system
+                %perfmonitor_perfreport --cells 2:5 --level system
         """
         self.magic_adapter.perfmonitor_perfreport(line)
 
@@ -267,7 +267,7 @@ class PerfmonitorMagics(Magics):
         code into the next cell.
 
         Args:
-            line: Raw argument string, such as ``"--cell 5 --level
+            line: Raw argument string, such as ``"--cells 5 --level
                 process"`` or ``"--resume abc123 --select 1"``.
         Returns:
             None
@@ -279,7 +279,7 @@ class PerfmonitorMagics(Magics):
 
             Analyze a specific cell range::
 
-                %perfmonitor_ai_review --cell 2:5 --level user
+                %perfmonitor_ai_review --cells 2:5 --level user
 
             Focus on parallelization::
 

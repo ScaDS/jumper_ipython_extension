@@ -42,11 +42,11 @@ Show an aggregate report for the current session:
 
 ```python
 %perfmonitor_perfreport
-%perfmonitor_perfreport --cell 2:5 --level user
+%perfmonitor_perfreport --cells 2:5 --level user
 ```
 
 - Without arguments, the report covers all cells executed so far.
-- `--cell RANGE` restricts the analysis to specific cells (for example `5`, `2:8`, `:5`, or `3:`).
+- `--cells RANGE` restricts the analysis to specific cells (for example `5`, `2:8`, `:5`, or `3:`).
 - `--level LEVEL` selects the monitoring scope: `process`, `user`, `system`, or `slurm` (if available).
   The default shown here comes from the global configuration — see
   [Configuration](../guides/configuration.md).
@@ -71,7 +71,7 @@ You can also use a direct, non-widget mode and export results:
 
 ```python
 %perfmonitor_plot --metrics cpu_summary,memory
-%perfmonitor_plot --metrics cpu_summary --level user --cell 2:5
+%perfmonitor_plot --metrics cpu_summary --level user --cells 2:5
 %perfmonitor_plot --metrics cpu_summary,memory --save-jpeg performance_analysis.jpg
 %perfmonitor_plot --metrics cpu_summary --level user --pickle analysis_data.pkl
 ```

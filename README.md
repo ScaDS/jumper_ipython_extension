@@ -102,7 +102,7 @@ Try it yourself:
 3. **View performance report**:
    ```python
    %perfmonitor_perfreport
-   %perfmonitor_perfreport --cell 2:5 --level user
+   %perfmonitor_perfreport --cells 2:5 --level user
    ```
 
    Will print aggregate performance report for entire notebook execution so far:
@@ -121,7 +121,7 @@ Try it yourself:
    ```
 
    Options:
-   - `--cell RANGE`: Specify cell range (e.g., `5`, `2:8`, `:5`)
+   - `--cells RANGE`: Specify cell range (e.g., `5`, `2:8`, `:5`)
    - `--level LEVEL`: Choose monitoring level (`process`, `user`, `system`, `slurm`)
 
 4. **Plot performance data**:
@@ -144,7 +144,7 @@ You can also run `%perfmonitor_plot` in a direct (non-widget) mode and save or e
 
 - **Choose monitoring level and cell range:**
   ```python
-  %perfmonitor_plot --metrics cpu_summary --level user --cell 2:5
+  %perfmonitor_plot --metrics cpu_summary --level user --cells 2:5
   ```
 
 - **Save the plot as JPEG:**
@@ -161,7 +161,7 @@ You can also run `%perfmonitor_plot` in a direct (non-widget) mode and save or e
 Notes:
 - `--metrics` accepts a comma-separated list of metric keys (see [Available Metric Keys](#available-metric-keys) below).
 - `--level` supports the same levels as reports: `process` (default), `user`, `system`, and `slurm` (if available).
-- `--cell` supports formats like `5`, `2:8`, `:5`, `3:`. Negative indices are supported (e.g., `-3:-1`).
+- `--cells` supports formats like `5`, `2:8`, `:5`, `3:`. Negative indices are supported (e.g., `-3:-1`).
 
 ### Live plotting mode
 
@@ -336,8 +336,8 @@ The extension supports four different levels of metric collection, each providin
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
 | `%perfmonitor_stop` | Stop monitoring |
-| `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
-| `%perfmonitor_plot [--metrics LIST] [--cell RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE] [--live [INTERVAL WINDOW]]` | Interactive plot with widgets; direct plotting of selected metrics; live updating plots; optional export to JPEG or pickle |
+| `%perfmonitor_perfreport [--cells RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
+| `%perfmonitor_plot [--metrics LIST] [--cells RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE] [--live [INTERVAL WINDOW]]` | Interactive plot with widgets; direct plotting of selected metrics; live updating plots; optional export to JPEG or pickle |
 | `%cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |

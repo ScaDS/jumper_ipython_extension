@@ -63,7 +63,7 @@ def build_perfreport_parser() -> argparse.ArgumentParser:
     perfreports = load_config().settings.perfreports
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
-        "--cell",
+        "--cells",
         type=str,
         help="Cell index or range (e.g., 5, 2:8, :5)"
     )
@@ -88,7 +88,7 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
     ai_context = load_config().ai.context
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
-        "--cell",
+        "--cells",
         type=str,
         help="Cell index or range to analyze (e.g., 5, 2:8, :5)"
     )
@@ -133,7 +133,7 @@ def build_perfmonitor_plot_parser() -> argparse.ArgumentParser:
         help="Comma-separated list of metrics to plot directly"
     )
     parser.add_argument(
-        "--cell",
+        "--cells",
         type=str,
         help="Cell index or range (e.g., 5, 2:8, :5)"
     )
