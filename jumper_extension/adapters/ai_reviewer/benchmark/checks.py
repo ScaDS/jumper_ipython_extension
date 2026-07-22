@@ -13,16 +13,14 @@ from dataclasses import dataclass
 from jumper_extension.adapters.ai_reviewer.language import (
     RUN,
     VALIDATE_SYNTAX,
-    VERIFY_RESULTS,
     LanguageAdapter,
 )
 
 logger = logging.getLogger("extension")
 
-_NAMES = ("validate_syntax", "verify_results", "run")
+_NAMES = ("validate_syntax", "run")
 _CAPABILITY = {
     "validate_syntax": VALIDATE_SYNTAX,
-    "verify_results": VERIFY_RESULTS,
     "run": RUN,
 }
 
@@ -37,7 +35,6 @@ class Decision:
 @dataclass
 class CheckPlan:
     validate_syntax: Decision
-    verify_results: Decision
     run: Decision
 
 
@@ -45,7 +42,6 @@ def all_active() -> CheckPlan:
     """The default plan: every step on. Used when no plan is injected."""
     return CheckPlan(
         validate_syntax=Decision(True),
-        verify_results=Decision(True),
         run=Decision(True),
     )
 
@@ -64,13 +60,6 @@ def resolve_checks(
     enabled.update(overrides or {})
 
     decisions = {name: _decide(name, enabled[name], adapter) for name in _NAMES}
-
-    # Verifying results means fingerprinting what an execution produced; with no
-    # timed run there is nothing to fingerprint, so it cannot stand on its own.
-    if decisions["verify_results"].active and not decisions["run"].active:
-        decisions["verify_results"] = Decision(
-            False, "requires the timed run, which is not running"
-        )
 
     _log_plan(adapter, decisions)
     return CheckPlan(**decisions)

@@ -14,11 +14,12 @@ no-capability fallback.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-# The three benchmark steps an adapter may implement, matching the configurable
+# The two benchmark steps an adapter may implement, matching the configurable
 # check levels (ai.benchmark.checks). A step whose capability is absent is
-# skipped with a warning unless the user turned it off deliberately.
+# skipped with a warning unless the user turned it off deliberately. RUN covers
+# the timed replay and the result fingerprinting together: there is nothing to
+# fingerprint without an execution, and capturing it is cheap next to the run.
 VALIDATE_SYNTAX = "validate_syntax"
-VERIFY_RESULTS = "verify_results"
 RUN = "run"
 
 
@@ -68,7 +69,7 @@ class LanguageAdapter(ABC):
 
     Concrete adapters set ``language`` (matched case-insensitively against the
     ``language`` recorded on each cell) and ``caps`` (the subset of
-    ``VALIDATE_SYNTAX`` / ``VERIFY_RESULTS`` / ``RUN`` they actually implement).
+    ``VALIDATE_SYNTAX`` / ``RUN`` they actually implement).
     """
     language: str = ""
     caps: frozenset[str] = frozenset()

@@ -22,12 +22,11 @@ def test_r_language_resolves_to_the_r_adapter():
 
 
 def test_run_is_not_claimed_yet():
-    # 5a exposes no timed run; that is Phase 5b.
-    from jumper_extension.adapters.ai_reviewer.language import RUN, VERIFY_RESULTS
+    # 5a exposes no timed run (and so no result verification); that is Phase 5b.
+    from jumper_extension.adapters.ai_reviewer.language import RUN
 
     adapter = get_adapter("r")
     assert RUN not in adapter.caps
-    assert VERIFY_RESULTS not in adapter.caps
 
 
 def test_capability_drops_when_rscript_is_missing():

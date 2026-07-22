@@ -126,7 +126,7 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Repair rounds before a failing suggestion is reported as failed",
     )
-    _CHECK_NAMES = ("validate_syntax", "verify_results", "run")
+    _CHECK_NAMES = ("validate_syntax", "run")
     parser.add_argument(
         "--check",
         action="append",

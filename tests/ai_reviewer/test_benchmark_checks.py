@@ -7,7 +7,6 @@ from jumper_extension.adapters.ai_reviewer.benchmark.checks import (
 from jumper_extension.adapters.ai_reviewer.language import (
     RUN,
     VALIDATE_SYNTAX,
-    VERIFY_RESULTS,
     LanguageAdapter,
     ReplayArtifact,
     SyntaxResult,
@@ -30,7 +29,7 @@ class _Adapter(LanguageAdapter):
         return ReplayArtifact(script_path="", command=[])
 
 
-_ALL_CAPS = {VALIDATE_SYNTAX, VERIFY_RESULTS, RUN}
+_ALL_CAPS = {VALIDATE_SYNTAX, RUN}
 
 
 def _config(**overrides):
@@ -41,7 +40,6 @@ def test_all_active_turns_every_step_on():
     plan = all_active()
 
     assert plan.validate_syntax.active
-    assert plan.verify_results.active
     assert plan.run.active
 
 
@@ -49,7 +47,6 @@ def test_config_enabled_and_adapter_capable_runs_every_step():
     plan = resolve_checks(_Adapter("python", _ALL_CAPS), _config(), overrides=None)
 
     assert plan.validate_syntax.active
-    assert plan.verify_results.active
     assert plan.run.active
 
 
@@ -67,7 +64,7 @@ def test_step_disabled_in_config_is_skipped_without_warning(caplog):
 
 
 def test_enabled_step_without_capability_is_skipped_with_warning(caplog):
-    # R that can validate syntax but cannot run yet: run + verify degrade.
+    # R that can validate syntax but cannot run yet: the run step degrades.
     adapter = _Adapter("r", {VALIDATE_SYNTAX})
     with caplog.at_level(logging.WARNING, logger="extension"):
         plan = resolve_checks(adapter, _config(), overrides=None)
@@ -78,17 +75,17 @@ def test_enabled_step_without_capability_is_skipped_with_warning(caplog):
     assert any("benchmark run skipped" in r.message for r in caplog.records)
 
 
-def test_verify_results_needs_the_timed_run():
-    # run turned off deliberately -> verify cannot stand on its own.
+def test_run_can_be_turned_off_leaving_only_the_syntax_gate():
+    # The syntax gate stands on its own; disabling run is silent (deliberate).
     plan = resolve_checks(
         _Adapter("python", _ALL_CAPS),
         _config(run=False),
         overrides=None,
     )
 
+    assert plan.validate_syntax.active
     assert not plan.run.active
-    assert not plan.verify_results.active
-    assert "requires the timed run" in plan.verify_results.reason
+    assert plan.run.reason == ""
 
 
 def test_every_check_status_is_logged_at_debug_even_when_off(caplog):
@@ -101,7 +98,6 @@ def test_every_check_status_is_logged_at_debug_even_when_off(caplog):
 
     debug = [r.message for r in caplog.records if r.levelno == logging.DEBUG]
     assert any("check validate_syntax for 'python': skipped (disabled)" in m for m in debug)
-    assert any("check verify_results for 'python': active" in m for m in debug)
     assert any("check run for 'python': active" in m for m in debug)
 
 
@@ -109,8 +105,8 @@ def test_overrides_win_over_config():
     plan = resolve_checks(
         _Adapter("python", _ALL_CAPS),
         _config(),
-        overrides={"verify_results": False},
+        overrides={"run": False},
     )
 
     assert plan.validate_syntax.active
-    assert not plan.verify_results.active
+    assert not plan.run.active

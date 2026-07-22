@@ -3,7 +3,6 @@ import pytest
 from jumper_extension.adapters.ai_reviewer.language import (
     RUN,
     VALIDATE_SYNTAX,
-    VERIFY_RESULTS,
     CapabilityNotSupported,
     FallbackAdapter,
     LanguageAdapter,
@@ -19,7 +18,7 @@ from jumper_extension.adapters.ai_reviewer.language import registry
 
 class _StubAdapter(LanguageAdapter):
     language = "stub"
-    caps = frozenset({VALIDATE_SYNTAX, VERIFY_RESULTS})
+    caps = frozenset({VALIDATE_SYNTAX})
 
     def validate_syntax(self, code):
         return SyntaxResult(ok=True)
@@ -85,7 +84,6 @@ def test_supports_reflects_declared_caps():
     adapter = _StubAdapter()
 
     assert adapter.supports(VALIDATE_SYNTAX)
-    assert adapter.supports(VERIFY_RESULTS)
     assert not adapter.supports(RUN)
 
 

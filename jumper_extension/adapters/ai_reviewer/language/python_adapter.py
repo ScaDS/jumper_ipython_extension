@@ -13,7 +13,6 @@ from jumper_extension.adapters.ai_reviewer.benchmark.script import build_script
 from jumper_extension.adapters.ai_reviewer.language.base import (
     RUN,
     VALIDATE_SYNTAX,
-    VERIFY_RESULTS,
     LanguageAdapter,
     ReplayArtifact,
     ReplayRequest,
@@ -24,7 +23,7 @@ from jumper_extension.adapters.ai_reviewer.language.base import (
 class PythonAdapter(LanguageAdapter):
     """Python cells: full support for every benchmark step."""
     language = "python"
-    caps = frozenset({VALIDATE_SYNTAX, VERIFY_RESULTS, RUN})
+    caps = frozenset({VALIDATE_SYNTAX, RUN})
 
     def validate_syntax(self, code: str) -> SyntaxResult:
         try:

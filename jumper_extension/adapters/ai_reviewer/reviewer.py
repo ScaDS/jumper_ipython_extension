@@ -153,7 +153,6 @@ class AIReviewer:
             interval=defaults.interval,
             level=state["level"],
             adapter=adapter,
-            checks=checks,
         )
         logger.info(
             f"[JUmPER]: benchmarking {len(state['suggestions'])} suggestion(s) against cell "

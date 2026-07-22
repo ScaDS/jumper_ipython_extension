@@ -129,10 +129,9 @@ class AIBenchmarkChecksConfig(BaseModel):
     """
     # Static parse check gating a suggestion before any replay.
     validate_syntax: bool = True
-    # Fingerprint + compare a variant's results against the baseline's. Needs
-    # ``run`` (there is nothing to fingerprint without an execution).
-    verify_results: bool = True
-    # The timed replay itself - the measurement the benchmark exists for.
+    # The timed replay, plus fingerprinting and comparing each variant's results
+    # against the baseline's. The two are one step: there is nothing to
+    # fingerprint without an execution, and capturing it is cheap next to the run.
     run: bool = True
 
 

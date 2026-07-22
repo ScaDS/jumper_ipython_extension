@@ -7,7 +7,6 @@ no-capability fallback for anything unregistered.
 from jumper_extension.adapters.ai_reviewer.language.base import (
     RUN,
     VALIDATE_SYNTAX,
-    VERIFY_RESULTS,
     CapabilityNotSupported,
     LanguageAdapter,
     ReplayArtifact,
@@ -33,7 +32,6 @@ register_adapter(RAdapter())
 __all__ = [
     "RUN",
     "VALIDATE_SYNTAX",
-    "VERIFY_RESULTS",
     "CapabilityNotSupported",
     "LanguageAdapter",
     "ReplayArtifact",

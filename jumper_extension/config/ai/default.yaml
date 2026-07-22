@@ -29,8 +29,7 @@ benchmark:
   # --skip-check / --check.
   checks:
     validate_syntax: true   # static parse gate before any replay
-    verify_results: true    # fingerprint + compare results vs baseline (needs run)
-    run: true               # the timed replay itself
+    run: true               # timed replay + fingerprint/compare results vs baseline
 
 context:
   strategy: faster

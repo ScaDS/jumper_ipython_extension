@@ -1000,7 +1000,7 @@ def _check_overrides(args) -> dict:
     skip = getattr(args, "skip_check", None)
     overrides: dict = {}
     if check:
-        for name in ("validate_syntax", "verify_results", "run"):
+        for name in ("validate_syntax", "run"):
             overrides[name] = name in check
     for name in skip or []:
         overrides[name] = False
