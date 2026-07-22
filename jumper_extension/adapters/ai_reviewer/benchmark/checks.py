@@ -71,7 +71,29 @@ def resolve_checks(
         decisions["verify_results"] = Decision(
             False, "requires the timed run, which is not running"
         )
+
+    _log_plan(adapter, decisions)
     return CheckPlan(**decisions)
+
+
+def _log_plan(adapter: LanguageAdapter, decisions: dict) -> None:
+    """Record every step's final status at debug level - on or off, always.
+
+    The warnings above only fire for a step that was asked for but cannot run;
+    this is the complete picture, so a debug log alone shows exactly what the
+    benchmark did and why for a given cell.
+    """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    for name in _NAMES:
+        decision = decisions[name]
+        if decision.active:
+            status = "active"
+        elif decision.reason:
+            status = f"skipped ({decision.reason})"
+        else:
+            status = "skipped (disabled)"
+        logger.debug(f"[JUmPER]: benchmark check {name} for {adapter.language!r}: {status}")
 
 
 def _decide(name: str, enabled: bool, adapter: LanguageAdapter) -> Decision:

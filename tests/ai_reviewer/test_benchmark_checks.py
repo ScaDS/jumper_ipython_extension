@@ -91,6 +91,20 @@ def test_verify_results_needs_the_timed_run():
     assert "requires the timed run" in plan.verify_results.reason
 
 
+def test_every_check_status_is_logged_at_debug_even_when_off(caplog):
+    with caplog.at_level(logging.DEBUG, logger="extension"):
+        resolve_checks(
+            _Adapter("python", _ALL_CAPS),
+            _config(validate_syntax=False),
+            overrides=None,
+        )
+
+    debug = [r.message for r in caplog.records if r.levelno == logging.DEBUG]
+    assert any("check validate_syntax for 'python': skipped (disabled)" in m for m in debug)
+    assert any("check verify_results for 'python': active" in m for m in debug)
+    assert any("check run for 'python': active" in m for m in debug)
+
+
 def test_overrides_win_over_config():
     plan = resolve_checks(
         _Adapter("python", _ALL_CAPS),
