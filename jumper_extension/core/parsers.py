@@ -126,6 +126,24 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Repair rounds before a failing suggestion is reported as failed",
     )
+    _CHECK_NAMES = ("validate_syntax", "verify_results", "run")
+    parser.add_argument(
+        "--check",
+        action="append",
+        choices=_CHECK_NAMES,
+        metavar="STEP",
+        help=(
+            "Run only these benchmark steps (repeatable); the rest are turned off. "
+            f"Steps: {', '.join(_CHECK_NAMES)}"
+        ),
+    )
+    parser.add_argument(
+        "--skip-check",
+        action="append",
+        choices=_CHECK_NAMES,
+        metavar="STEP",
+        help="Turn off a benchmark step (repeatable); overrides config and --check",
+    )
     parser.add_argument(
         "--resume",
         type=str,

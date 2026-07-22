@@ -23,6 +23,14 @@ benchmark:
   interval: 0.05
   # A variant is killed past this multiple of the baseline duration.
   timeout_factor: 10.0
+  # Which benchmark steps run. Each is also gated by adapter capability: a step
+  # enabled here but unsupported for the cell's language is skipped with a
+  # warning; one set false is skipped silently. Override per-run with
+  # --skip-check / --check.
+  checks:
+    validate_syntax: true   # static parse gate before any replay
+    verify_results: true    # fingerprint + compare results vs baseline (needs run)
+    run: true               # the timed replay itself
 
 context:
   strategy: faster

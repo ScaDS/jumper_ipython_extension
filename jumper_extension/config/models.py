@@ -122,6 +122,20 @@ class AIContextConfig(BaseModel):
     known_packages: list[str] = Field(default_factory=list)
 
 
+class AIBenchmarkChecksConfig(BaseModel):
+    """Which benchmark steps run. Each is also gated by adapter capability: a
+    step enabled here but unsupported for the cell's language is skipped with a
+    warning; one turned off here is skipped silently.
+    """
+    # Static parse check gating a suggestion before any replay.
+    validate_syntax: bool = True
+    # Fingerprint + compare a variant's results against the baseline's. Needs
+    # ``run`` (there is nothing to fingerprint without an execution).
+    verify_results: bool = True
+    # The timed replay itself - the measurement the benchmark exists for.
+    run: bool = True
+
+
 class AIBenchmarkConfig(BaseModel):
     """Parameters for replaying and timing the suggestions of a review."""
     runs: int = 3
@@ -131,6 +145,7 @@ class AIBenchmarkConfig(BaseModel):
     interval: float = 0.05
     # Kill a variant once it exceeds this multiple of the baseline duration.
     timeout_factor: float = 10.0
+    checks: AIBenchmarkChecksConfig = Field(default_factory=AIBenchmarkChecksConfig)
 
 
 class AIConfig(BaseModel):

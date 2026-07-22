@@ -11,16 +11,20 @@ import logging
 import os
 import statistics
 import subprocess
-import sys
 import tempfile
 import time
 
 import pandas as pd
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
+from jumper_extension.adapters.ai_reviewer.benchmark.checks import CheckPlan, all_active
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT, RunOutcome
-from jumper_extension.adapters.ai_reviewer.benchmark.script import build_script
 from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
+from jumper_extension.adapters.ai_reviewer.language import (
+    LanguageAdapter,
+    ReplayRequest,
+    get_adapter,
+)
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.adapters.reporter import build_performance_reporter
 from jumper_extension.adapters.session import SessionImporter
@@ -40,11 +44,18 @@ class BenchmarkRunner:
         interval: float,
         level: str = "process",
         work_dir: str | None = None,
+        adapter: LanguageAdapter | None = None,
+        checks: CheckPlan | None = None,
     ):
         self.prefix_cells = prefix_cells
         self.interval = interval
         self.level = level
         self._work_dir = work_dir or tempfile.mkdtemp(prefix="jumper-benchmark-")
+        # The target cell's language decides how a replay is built and launched;
+        # defaults to Python so direct constructors keep their old behaviour.
+        self.adapter = adapter or get_adapter("python")
+        # Defaults to every step on; controls whether results are fingerprinted.
+        self.checks = checks or all_active()
 
     @property
     def work_dir(self) -> str:
@@ -54,14 +65,20 @@ class BenchmarkRunner:
         """Replay the prefix plus *code* once, timing the last cell."""
         session_path = os.path.join(self._work_dir, f"{tag}_session.zip")
         fingerprint_path = os.path.join(self._work_dir, f"{tag}_fingerprint.json")
-        script_path = build_script(
-            prefix_cells=self.prefix_cells,
-            target_code=code,
-            interval=self.interval,
-            fingerprint_names=fingerprint.assigned_names(code),
-            session_path=session_path,
-            fingerprint_path=fingerprint_path,
-            output_path=os.path.join(self._work_dir, f"{tag}.py"),
+        # Only fingerprint outputs when results are being verified; otherwise the
+        # replay captures nothing and correctness comes back UNVERIFIED.
+        output_names = self.adapter.output_names(code) if self.checks.verify_results.active else []
+        artifact = self.adapter.render_replay(
+            ReplayRequest(
+                prefix_cells=self.prefix_cells,
+                target_code=code,
+                interval=self.interval,
+                output_names=output_names,
+                session_path=session_path,
+                fingerprint_path=fingerprint_path,
+                output_path=os.path.join(self._work_dir, tag),
+                work_dir=self._work_dir,
+            )
         )
 
         for stale in (session_path, fingerprint_path):
@@ -71,7 +88,7 @@ class BenchmarkRunner:
         started = time.perf_counter()
         try:
             completed = subprocess.run(
-                [sys.executable, script_path],
+                artifact.command,
                 capture_output=True,
                 text=True,
                 timeout=timeout,

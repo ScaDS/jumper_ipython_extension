@@ -22,6 +22,10 @@ logger = logging.getLogger("extension")
 
 class CellHistory:
     def __init__(self):
+        # NOTE: this list doubles as the "required columns" schema for loading
+        # exported history, so keep optional row-only fields (cell_magics,
+        # language) OUT of it - adding them would reject older CSV/JSON exports
+        # that predate the field. They still ride along in every live row.
         self._columns = [
             "cell_index",
             "raw_cell",
@@ -38,11 +42,17 @@ class CellHistory:
         }
         self.current_cell = None
 
-    def start_cell(self, raw_cell: str, cell_magics: List[str]):
+    def start_cell(
+        self,
+        raw_cell: str,
+        cell_magics: List[str],
+        language: str = "python",
+    ):
         self.current_cell = {
             "cell_index": len(self.data),
             "cell_magics": cell_magics,
             "raw_cell": raw_cell,
+            "language": language,
             "start_time": time.perf_counter(),
             "end_time": None,
             "duration": None,

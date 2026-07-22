@@ -16,8 +16,10 @@ from jumper_extension.adapters.ai_reviewer.benchmark.models import (
     BenchmarkResult,
     RunOutcome,
 )
+from jumper_extension.adapters.ai_reviewer.benchmark.checks import CheckPlan, all_active
 from jumper_extension.adapters.ai_reviewer.benchmark.progress import BenchmarkProgress
 from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner, median_of
+from jumper_extension.adapters.ai_reviewer.language import LanguageAdapter, get_adapter
 
 logger = logging.getLogger("extension")
 
@@ -47,9 +49,16 @@ class BenchmarkOrchestrator:
         runs: int = 3,
         fix_attempts: int = 3,
         timeout_factor: float = 10.0,
+        adapter: LanguageAdapter | None = None,
+        checks: CheckPlan | None = None,
     ):
         self.runner = runner
         self.fix_fn = fix_fn
+        # Defaults to Python so direct constructors (and tests) keep working;
+        # build_orchestrator passes the target cell's actual adapter.
+        self.adapter = adapter or get_adapter("python")
+        # Defaults to every step on, so nothing is skipped unless asked.
+        self.checks = checks or all_active()
         self.runs = max(1, runs)
         self.fix_attempts = max(1, fix_attempts)
         self.timeout_factor = timeout_factor
@@ -65,6 +74,14 @@ class BenchmarkOrchestrator:
         ``BASELINE_LABEL``. An empty dict means the baseline itself would not
         run, which leaves nothing to compare against.
         """
+        if not self.checks.run.active:
+            # No timed replay: the only thing left worth measuring is gone, so
+            # there is nothing to compare. resolve_checks already warned why.
+            logger.info(
+                "[JUmPER]: benchmark timed run is off; nothing to measure or compare."
+            )
+            return {}
+
         self.progress = BenchmarkProgress(len(variants), self.runs)
         self._position = {label: index for index, (label, _) in enumerate(variants, start=1)}
 
@@ -237,12 +254,13 @@ class BenchmarkOrchestrator:
         return f"option {position}/{self.progress.total_variants}"
 
     def _syntax_ok(self, candidate: _Candidate) -> bool:
-        try:
-            compile(candidate.code, "<suggestion>", "exec")
+        if not self.checks.validate_syntax.active:
             return True
-        except SyntaxError as error:
-            candidate.error = f"{error.__class__.__name__}: {error}"
-            return False
+        result = self.adapter.validate_syntax(candidate.code)
+        if result.ok:
+            return True
+        candidate.error = result.error
+        return False
 
     def _measure(self, code: str, label: str, timeout: float | None, on_run=None):
         """Time *code* ``runs`` times, or return the outcome that stopped it."""

@@ -133,21 +133,27 @@ class AIReviewer:
         with the state its predecessors built, and a replay that skipped them
         would push the repair loop into inventing the missing data.
         """
+        from jumper_extension.adapters.ai_reviewer.benchmark.checks import resolve_checks
         from jumper_extension.adapters.ai_reviewer.benchmark.orchestrator import BenchmarkOrchestrator
         from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner
+        from jumper_extension.adapters.ai_reviewer.language import get_adapter
 
         prefix_cells = self._prefix_cells(target_index)
         if prefix_cells is None:
             return None
 
+        adapter = get_adapter(self._cell_language(target_index))
         defaults = load_config().ai.benchmark
         options = state["benchmark_options"]
+        checks = resolve_checks(adapter, defaults.checks, options.get("checks"))
         runs = options.get("runs") or defaults.runs
         fix_attempts = options.get("fix_attempts") or defaults.fix_attempts
         runner = BenchmarkRunner(
             prefix_cells=prefix_cells,
             interval=defaults.interval,
             level=state["level"],
+            adapter=adapter,
+            checks=checks,
         )
         logger.info(
             f"[JUmPER]: benchmarking {len(state['suggestions'])} suggestion(s) against cell "
@@ -160,7 +166,21 @@ class AIReviewer:
             runs=runs,
             fix_attempts=fix_attempts,
             timeout_factor=defaults.timeout_factor,
+            adapter=adapter,
+            checks=checks,
         )
+
+    def _cell_language(self, index: int) -> str:
+        """Language recorded for the cell at *index*; Python for legacy rows."""
+        from jumper_extension.adapters.ai_reviewer.language import resolve_language
+
+        history = self.reporter.printer.cell_history.view()
+        if history is None or history.empty or "language" not in history.columns:
+            return "python"
+        rows = history[history["cell_index"] == index]
+        if rows.empty:
+            return "python"
+        return resolve_language(rows.iloc[-1]["language"])
 
     def _prefix_cells(self, target_index: int) -> Optional[list]:
         """Every cell executed before *target_index*, as the replay needs them."""
@@ -179,6 +199,7 @@ class AIReviewer:
                     "index": index,
                     "raw_cell": row.raw_cell,
                     "cell_magics": list(getattr(row, "cell_magics", None) or []),
+                    "language": getattr(row, "language", None) or "python",
                 }
             )
         return cells

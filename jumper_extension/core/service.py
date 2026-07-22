@@ -149,7 +149,7 @@ class PerfmonitorService:
             should_skip_report: Whether automatic reporting should be
                 skipped for this cell.
         """
-        self.cell_history.start_cell(raw_cell, cell_magics)
+        self.cell_history.start_cell(raw_cell, cell_magics, _active_language())
         self._skip_report = should_skip_report
 
     def on_post_run_cell(self, result):
@@ -959,10 +959,52 @@ class PerfmonitorService:
             self.monitor.stop()
 
 
+def _active_language() -> str:
+    """Language of the cell about to run, as reported by the wrapped kernel.
+
+    Under the JUmPER wrapper kernel this is the wrapped kernel's
+    ``language_info['name']`` (e.g. ``"R"``); reachable via ``shell.kernel``
+    because ipykernel builds the shell with ``kernel=self``. Anywhere without a
+    kernel (terminal IPython, tests) it falls back to ``"python"``, which is
+    also what legacy history rows carry.
+    """
+    try:
+        from IPython import get_ipython
+
+        shell = get_ipython()
+        kernel = getattr(shell, "kernel", None)
+        language = getattr(kernel, "language", None)
+        return str(language).lower() if language else "python"
+    except Exception:
+        return "python"
+
+
 def _benchmark_options(args) -> dict:
     """Per-run benchmark overrides; absent flags fall back to the config."""
     options = {"runs": args.benchmark_runs, "fix_attempts": args.fix_attempts}
-    return {key: value for key, value in options.items() if value is not None}
+    resolved = {key: value for key, value in options.items() if value is not None}
+    checks = _check_overrides(args)
+    if checks:
+        resolved["checks"] = checks
+    return resolved
+
+
+def _check_overrides(args) -> dict:
+    """Turn --check / --skip-check into forced {step: on/off} overrides.
+
+    ``--check`` is a whitelist: name the steps to keep, the rest go off.
+    ``--skip-check`` then turns individual steps off, winning over both the
+    whitelist and the config.
+    """
+    check = getattr(args, "check", None)
+    skip = getattr(args, "skip_check", None)
+    overrides: dict = {}
+    if check:
+        for name in ("validate_syntax", "verify_results", "run"):
+            overrides[name] = name in check
+    for name in skip or []:
+        overrides[name] = False
+    return overrides
 
 
 class PerfmonitorMagicAdapter:
