@@ -1,11 +1,17 @@
 from unittest.mock import Mock
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
+from jumper_extension.adapters.ai_reviewer.benchmark.checks import CheckPlan, Decision
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, RunOutcome
 from jumper_extension.adapters.ai_reviewer.benchmark.orchestrator import (
     BASELINE_LABEL,
     BenchmarkOrchestrator,
 )
+
+
+def _syntax_only_checks() -> CheckPlan:
+    """run off, validate_syntax on - the standalone syntax-check plan."""
+    return CheckPlan(validate_syntax=Decision(True), run=Decision(False))
 
 _PRINTS = {"y": {"kind": "scalar", "value": 42.0}}
 
@@ -181,6 +187,64 @@ def test_an_unrepairable_divergence_keeps_the_measurement_it_did_get():
     assert results["1"].status == OK
     assert results["1"].speedup == 40.0
     assert results["1"].correctness == fingerprint.DIFFERS
+
+
+def test_syntax_only_mode_validates_without_running_anything():
+    log = []
+    orchestrator = _orchestrator(
+        lambda code: 1.0,
+        log=log,
+        checks=_syntax_only_checks(),
+    )
+
+    results = orchestrator.run("base", [("1", "y = 1")])
+
+    assert log == []  # not even the baseline was replayed
+    assert BASELINE_LABEL not in results  # nothing to compare against
+    assert results["1"].status == OK
+    assert results["1"].correctness == fingerprint.UNVERIFIED
+    assert results["1"].duration_s is None
+    assert orchestrator.final_code["1"] == "y = 1"
+
+
+def test_syntax_only_mode_repairs_a_broken_suggestion_without_running_it():
+    log = []
+    orchestrator = _orchestrator(
+        lambda code: 1.0,
+        fix_fn=lambda code, error, label: "y = 1",
+        log=log,
+        checks=_syntax_only_checks(),
+    )
+
+    results = orchestrator.run("base", [("1", "def broken(:")])
+
+    assert log == []  # the fix was checked statically, never executed
+    assert results["1"].status == OK
+    assert results["1"].attempts == 2
+    assert orchestrator.final_code["1"] == "y = 1"
+
+
+def test_syntax_only_mode_gives_up_on_an_unfixable_suggestion():
+    orchestrator = _orchestrator(
+        lambda code: 1.0,
+        fix_fn=lambda code, error, label: "def still_broken(:",
+        fix_attempts=2,
+        checks=_syntax_only_checks(),
+    )
+
+    results = orchestrator.run("base", [("1", "def broken(:")])
+
+    assert results["1"].status == FAILED
+    assert "1" not in orchestrator.final_code
+
+
+def test_nothing_runs_when_every_check_is_off():
+    orchestrator = _orchestrator(
+        lambda code: 1.0,
+        checks=CheckPlan(validate_syntax=Decision(False), run=Decision(False)),
+    )
+
+    assert orchestrator.run("base", [("1", "y = 1")]) == {}
 
 
 def test_timeout_budget_covers_the_prefix_and_room_to_be_slow():

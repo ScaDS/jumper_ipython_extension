@@ -7,6 +7,7 @@ variant's fix travel while another is being timed costs the measurement nothing.
 """
 import logging
 from concurrent.futures import Future, ThreadPoolExecutor, wait, FIRST_COMPLETED
+from functools import partial
 from typing import Callable
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
@@ -68,20 +69,30 @@ class BenchmarkOrchestrator:
         self._position: dict[str, int] = {}
 
     def run(self, baseline_code: str, variants: list[tuple[str, str]]) -> dict:
-        """Benchmark *baseline_code*, then each ``(label, code)`` variant.
+        """Score each ``(label, code)`` variant the best the active checks allow.
 
-        Returns ``{label: BenchmarkResult}``; the baseline is under
-        ``BASELINE_LABEL``. An empty dict means the baseline itself would not
-        run, which leaves nothing to compare against.
+        With the timed run on, this measures *baseline_code* and every variant
+        and compares their results, returning ``{label: BenchmarkResult}`` with
+        the baseline under ``BASELINE_LABEL``. With the run turned off but
+        ``validate_syntax`` still on, it falls back to a syntax-only pass that
+        still repairs broken suggestions - just without timing or comparison,
+        and without a baseline entry. With neither active there is nothing to
+        do. An empty dict also means the baseline itself would not run, leaving
+        nothing to compare against.
         """
-        if not self.checks.run.active:
-            # No timed replay: the only thing left worth measuring is gone, so
-            # there is nothing to compare. resolve_checks already warned why.
-            logger.info(
-                "[JUmPER]: benchmark timed run is off; nothing to measure or compare."
-            )
-            return {}
+        if self.checks.run.active:
+            return self._run_timed(baseline_code, variants)
+        if self.checks.validate_syntax.active:
+            return self._run_syntax_only(variants)
+        # Both the run and the syntax gate are off: resolve_checks already
+        # explained why, and there is genuinely nothing left to do here.
+        logger.info(
+            "[JUmPER]: benchmark has no active checks; nothing to measure or verify."
+        )
+        return {}
 
+    def _run_timed(self, baseline_code: str, variants: list[tuple[str, str]]) -> dict:
+        """The full benchmark: measure the baseline, then time and verify each variant."""
         self.progress = BenchmarkProgress(len(variants), self.runs)
         self._position = {label: index for index, (label, _) in enumerate(variants, start=1)}
 
@@ -111,17 +122,55 @@ class BenchmarkOrchestrator:
         timeout = self._timeout_from(baseline_runs, duration)
 
         results = {BASELINE_LABEL: baseline}
-        results.update(self._benchmark_variants(variants, timeout, duration, prints))
+        results.update(
+            self._drive(
+                variants,
+                partial(
+                    self._process_timed,
+                    timeout=timeout,
+                    baseline_duration=duration,
+                    baseline_prints=prints,
+                ),
+            )
+        )
         self.progress.finished()
         return results
 
-    def _benchmark_variants(
-        self,
-        variants: list[tuple[str, str]],
-        timeout: float,
-        baseline_duration: float,
-        baseline_prints: dict,
-    ) -> dict:
+    def _run_syntax_only(self, variants: list[tuple[str, str]]) -> dict:
+        """Check each suggestion parses, repairing what does not - no timing.
+
+        The timed run is off, so there is nothing to measure or fingerprint, but
+        a broken suggestion can still be caught and handed to the same repair
+        loop. Each surviving variant is reported OK with ``UNVERIFIED``
+        correctness and its valid (possibly repaired) code in ``final_code``;
+        ones that never parse are reported FAILED.
+        """
+        logger.info(
+            f"[JUmPER]: benchmark: validating the syntax of {len(variants)} "
+            "suggestion(s), with the timed run off."
+        )
+        self.progress = BenchmarkProgress(len(variants), self.runs)
+        self._position = {label: index for index, (label, _) in enumerate(variants, start=1)}
+
+        results = self._drive(variants, self._process_syntax)
+
+        valid = sum(1 for result in results.values() if result.ok)
+        logger.info(
+            f"[JUmPER]: benchmark: syntax validated - {valid} valid, "
+            f"{len(results) - valid} unfixable."
+        )
+        return results
+
+    def _drive(self, variants: list[tuple[str, str]], process: Callable) -> dict:
+        """Run *process* over each variant, draining repairs the shared way.
+
+        Every mode differs only in what it does with a fresh candidate; the
+        repair round-trip - fold a returned fix back into the queue, or settle a
+        candidate whose repair produced nothing - is identical, so it lives here
+        once. *process* is called as ``process(results, candidate, pending,
+        repairing, pool)`` and is responsible for settling the candidate or
+        submitting it for repair.
+        """
         results: dict = {}
         pending = [_Candidate(label, code, self.fix_attempts) for label, code in variants]
         repairing: dict[Future, _Candidate] = {}
@@ -129,56 +178,7 @@ class BenchmarkOrchestrator:
         with ThreadPoolExecutor(max_workers=max(1, len(pending))) as pool:
             while pending or repairing:
                 if pending:
-                    candidate = pending.pop(0)
-                    position = self._position[candidate.label]
-
-                    # Syntax is checkable for free, so broken code never costs a
-                    # replay - whether it came from the model or from a repair.
-                    if not self._syntax_ok(candidate):
-                        self._reject(results, candidate, position, pool, repairing)
-                        continue
-
-                    outcome = self._measure(
-                        candidate.code,
-                        candidate.label,
-                        timeout,
-                        on_run=lambda index: self.progress.variant_run(position, index),
-                    )
-                    outstanding = len(pending) + len(repairing)
-                    if isinstance(outcome, list):
-                        verdict = self._verdict(
-                            candidate, outcome, baseline_duration, baseline_prints
-                        )
-                        candidate.last_verdict = verdict
-                        candidate.last_code = candidate.code
-
-                        # A wrong answer is worth repairing too: it costs the
-                        # review more than a crash, since nothing else catches it.
-                        if verdict.correctness == fingerprint.DIFFERS:
-                            candidate.error = fingerprint.describe_divergence(
-                                baseline_prints,
-                                outcome[-1].fingerprints,
-                                verdict.differing_names,
-                            )
-                            if self._submit_fix(candidate, pool, repairing):
-                                self.progress.variant_diverged(
-                                    position,
-                                    verdict.differing_names,
-                                    candidate.attempts,
-                                    self.fix_attempts,
-                                )
-                                continue
-
-                        self._settle(results, candidate, verdict)
-                        self.progress.variant_done(
-                            position,
-                            _summarize(verdict),
-                            _walls(outcome),
-                            outstanding=outstanding,
-                        )
-                    else:
-                        candidate.error = outcome.error
-                        self._reject(results, candidate, position, pool, repairing)
+                    process(results, pending.pop(0), pending, repairing, pool)
                     continue
 
                 done, _ = wait(list(repairing), return_when=FIRST_COMPLETED)
@@ -192,6 +192,89 @@ class BenchmarkOrchestrator:
                     candidate.attempts += 1
                     pending.append(candidate)
         return results
+
+    def _process_timed(
+        self,
+        results: dict,
+        candidate: _Candidate,
+        pending: list,
+        repairing: dict,
+        pool: ThreadPoolExecutor,
+        *,
+        timeout: float,
+        baseline_duration: float,
+        baseline_prints: dict,
+    ) -> None:
+        """Time one candidate against the baseline, repairing a crash or a divergence."""
+        position = self._position[candidate.label]
+
+        # Syntax is checkable for free, so broken code never costs a replay -
+        # whether it came from the model or from a repair.
+        if not self._syntax_ok(candidate):
+            self._reject(results, candidate, position, pool, repairing)
+            return
+
+        outcome = self._measure(
+            candidate.code,
+            candidate.label,
+            timeout,
+            on_run=lambda index: self.progress.variant_run(position, index),
+        )
+        outstanding = len(pending) + len(repairing)
+        if isinstance(outcome, list):
+            verdict = self._verdict(candidate, outcome, baseline_duration, baseline_prints)
+            candidate.last_verdict = verdict
+            candidate.last_code = candidate.code
+
+            # A wrong answer is worth repairing too: it costs the review more
+            # than a crash, since nothing else catches it.
+            if verdict.correctness == fingerprint.DIFFERS:
+                candidate.error = fingerprint.describe_divergence(
+                    baseline_prints,
+                    outcome[-1].fingerprints,
+                    verdict.differing_names,
+                )
+                if self._submit_fix(candidate, pool, repairing):
+                    self.progress.variant_diverged(
+                        position,
+                        verdict.differing_names,
+                        candidate.attempts,
+                        self.fix_attempts,
+                    )
+                    return
+
+            self._settle(results, candidate, verdict)
+            self.progress.variant_done(
+                position,
+                _summarize(verdict),
+                _walls(outcome),
+                outstanding=outstanding,
+            )
+        else:
+            candidate.error = outcome.error
+            self._reject(results, candidate, position, pool, repairing)
+
+    def _process_syntax(
+        self,
+        results: dict,
+        candidate: _Candidate,
+        pending: list,
+        repairing: dict,
+        pool: ThreadPoolExecutor,
+    ) -> None:
+        """Parse one candidate, repairing it if it does not - never running it."""
+        position = self._position[candidate.label]
+        if self._syntax_ok(candidate):
+            self.final_code[candidate.label] = candidate.code
+            results[candidate.label] = BenchmarkResult(
+                label=candidate.label,
+                status=OK,
+                attempts=candidate.attempts,
+                correctness=fingerprint.UNVERIFIED,
+            )
+            self.progress.variant_validated(position, candidate.attempts)
+        else:
+            self._reject(results, candidate, position, pool, repairing)
 
     def _reject(
         self,

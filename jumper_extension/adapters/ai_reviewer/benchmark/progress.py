@@ -61,6 +61,14 @@ class BenchmarkProgress:
             f"{self._remaining(outstanding, prefix='; ', suffix=' left')}"
         )
 
+    def variant_validated(self, position: int, attempts: int) -> None:
+        """A suggestion parsed (syntax-only mode: no timing to report)."""
+        repaired = f" (repaired {attempts - 1}x)" if attempts > 1 else ""
+        logger.info(
+            f"[JUmPER]: benchmark: option {position}/{self.total_variants} "
+            f"syntax valid{repaired}"
+        )
+
     def variant_failed(self, position: int, error: str, attempt: int, attempts: int) -> None:
         logger.info(
             f"[JUmPER]: benchmark: option {position}/{self.total_variants} failed "

@@ -75,6 +75,19 @@ def verdict_of(state: OptimizationState, index: int) -> dict | None:
             "notes": [],
         }
 
+    # No timed run (e.g. --check validate_syntax): nothing was measured or
+    # compared, so report only that the code parses, plus any repair it took.
+    if result.duration_s is None:
+        notes = []
+        if result.attempts > 1:
+            notes.append(f"repaired after {result.attempts - 1} failed attempt(s)")
+        return {
+            "headline": "Syntax valid",
+            "tone": "warn",
+            "detail": "not timed",
+            "notes": notes,
+        }
+
     notes = []
     tone = "good"
     if result.correctness == fingerprint.DIFFERS:
