@@ -68,6 +68,19 @@ def _names_vector(names: list[str]) -> str:
     return "c(" + ", ".join(_r_string(name) for name in names) + ")"
 
 
+def _strip_magic_lines(code: str) -> str:
+    """Drop IPython/wrapper magic lines (``%...``) from a replayed cell.
+
+    Under the wrapper kernel a pure-magic cell (``%wrap_kernel``,
+    ``%perfmonitor_fast_setup``, ...) is run locally and never forwarded to R,
+    so it carries no R state and replaying it as R would be a syntax error. R
+    never begins a statement with ``%`` (it only appears in infix operators like
+    ``%*%``, mid-expression), so a leading ``%`` unambiguously marks a magic.
+    """
+    kept = [line for line in code.splitlines() if not line.lstrip().startswith("%")]
+    return "\n".join(kept)
+
+
 def build_r_script(
     prefix_cells: list[dict],
     target_code: str,
@@ -85,8 +98,11 @@ def build_r_script(
     """
     parts = [_HELPER]
     for cell in prefix_cells:
+        body = _strip_magic_lines(cell["raw_cell"])
+        if not body.strip():
+            continue  # a pure-magic cell contributes no R state
         parts.append(f"\n# --- cell {cell['index']} ---\n")
-        parts.append(cell["raw_cell"])
+        parts.append(body)
         parts.append("\n")
     parts.append("\n# --- cell under test ---\n")
     parts.append(".jumper_start <- as.numeric(Sys.time())\n")

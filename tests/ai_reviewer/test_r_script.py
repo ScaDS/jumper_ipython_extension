@@ -35,6 +35,33 @@ def test_build_r_script_writes_prefix_target_markers_and_fingerprints(tmp_path):
     assert 'c("y")' in text
 
 
+def test_strip_magic_lines_drops_only_magics():
+    code = "%wrap_kernel ir\nx <- 1\n  %perfmonitor_fast_setup\ny <- !FALSE"
+    # Magic lines go; real R (including a leading logical NOT) stays.
+    assert r_script._strip_magic_lines(code) == "x <- 1\ny <- !FALSE"
+
+
+def test_build_r_script_skips_pure_magic_prefix_cells(tmp_path):
+    path = build_r_script(
+        prefix_cells=[
+            {"index": 0, "raw_cell": "%wrap_kernel ir\n%perfmonitor_fast_setup"},
+            {"index": 1, "raw_cell": "base <- 10"},
+        ],
+        target_code="y <- base + 1",
+        output_names=["y"],
+        markers_path=str(tmp_path / "m.json"),
+        fingerprint_path=str(tmp_path / "f.json"),
+        output_path=str(tmp_path / "s.R"),
+    )
+    text = open(path, encoding="utf-8").read()
+    # The magic cell leaves no trace; the real R prefix survives.
+    assert "%wrap_kernel" not in text
+    assert "%perfmonitor_fast_setup" not in text
+    assert "base <- 10" in text
+    assert "# --- cell 0 ---" not in text
+    assert "# --- cell 1 ---" in text
+
+
 def test_build_r_script_only_fingerprints_cell_bindings(tmp_path):
     # Names are looked up in the global env with inherits = FALSE, so a name
     # that shadows a base-R object is never fingerprinted unless the cell bound it.
