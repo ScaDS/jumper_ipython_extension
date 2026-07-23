@@ -21,18 +21,19 @@ def test_r_language_resolves_to_the_r_adapter():
     assert isinstance(get_adapter("R"), RAdapter)
 
 
-def test_run_is_not_claimed_yet():
-    # 5a exposes no timed run (and so no result verification); that is Phase 5b.
+def test_run_is_claimed_when_rscript_present():
     from jumper_extension.adapters.ai_reviewer.language import RUN
 
-    adapter = get_adapter("r")
-    assert RUN not in adapter.caps
+    assert RUN in RAdapter(rscript="/usr/bin/Rscript").caps
 
 
 def test_capability_drops_when_rscript_is_missing():
+    from jumper_extension.adapters.ai_reviewer.language import RUN
+
     adapter = RAdapter(rscript="")
 
     assert adapter.caps == frozenset()
+    assert RUN not in adapter.caps
     with pytest.raises(CapabilityNotSupported):
         adapter.validate_syntax("x <- 1")
 
@@ -88,18 +89,74 @@ def test_output_names_skips_commented_and_dedupes():
     assert RAdapter().output_names(code) == ["a"]
 
 
-# --- render_replay is deferred to 5b ---
+# --- render_replay (Design B) ---
 
-def test_render_replay_is_not_implemented_yet():
-    request = ReplayRequest(
-        prefix_cells=[],
-        target_code="x <- 1",
+def _request(tmp_path, target_code="x <- 1", output_names=None, prefix_cells=None):
+    return ReplayRequest(
+        prefix_cells=prefix_cells if prefix_cells is not None else [],
+        target_code=target_code,
         interval=0.05,
-        output_names=[],
-        session_path="s",
-        fingerprint_path="f",
-        output_path="o",
-        work_dir="w",
+        output_names=output_names if output_names is not None else [],
+        session_path=str(tmp_path / "s.zip"),
+        fingerprint_path=str(tmp_path / "f.json"),
+        output_path=str(tmp_path / "o"),
+        work_dir=str(tmp_path),
     )
+
+
+def test_render_replay_raises_without_rscript(tmp_path):
     with pytest.raises(CapabilityNotSupported):
-        RAdapter().render_replay(request)
+        RAdapter(rscript="").render_replay(_request(tmp_path))
+
+
+def test_render_replay_builds_a_harness_command(tmp_path):
+    artifact = RAdapter(rscript="/usr/bin/Rscript").render_replay(_request(tmp_path))
+
+    # The command drives the shared harness, which launches Rscript on the
+    # generated script; perfmonitor and the export live in the harness, not here.
+    assert artifact.script_path.endswith(".R")
+    assert "jumper_extension.adapters.ai_reviewer.benchmark.harness" in artifact.command
+    assert "--run" in artifact.command
+    run_index = artifact.command.index("--run")
+    assert "/usr/bin/Rscript" in artifact.command[run_index + 1]
+    assert artifact.script_path in artifact.command[run_index + 1]
+
+
+@_needs_r
+def test_end_to_end_r_replay_times_and_fingerprints(tmp_path):
+    from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner
+
+    runner = BenchmarkRunner(
+        prefix_cells=[{"index": 0, "raw_cell": "base <- 5", "cell_magics": []}],
+        interval=0.05,
+        adapter=RAdapter(),
+        work_dir=str(tmp_path),
+    )
+    outcome = runner.run_once(
+        "v <- c(1.0, 2.0, 3.0, 4.0)\ns <- base + sum(v)\nSys.sleep(0.15)",
+        tag="run0",
+        timeout=30,
+    )
+
+    assert outcome.ok
+    assert outcome.duration_s > 0
+    # Fingerprints are captured on the R side in the shared schema.
+    assert outcome.fingerprints["s"]["kind"] == "scalar"
+    assert outcome.fingerprints["v"]["kind"] == "array"
+    assert outcome.fingerprints["v"]["shape"] == [4]
+
+
+@_needs_r
+def test_end_to_end_r_replay_reports_a_failing_cell(tmp_path):
+    from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner
+
+    runner = BenchmarkRunner(
+        prefix_cells=[],
+        interval=0.05,
+        adapter=RAdapter(),
+        work_dir=str(tmp_path),
+    )
+    outcome = runner.run_once("stop('boom')", tag="bad", timeout=30)
+
+    assert not outcome.ok
+    assert outcome.error

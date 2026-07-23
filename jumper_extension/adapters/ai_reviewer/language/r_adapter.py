@@ -1,19 +1,26 @@
-"""The R half of the benchmark's language-static seams (Phase 5a).
+"""The R half of the benchmark's language seams (Design B).
 
 R cells reach the benchmark through the JUmPER wrapper kernel. This adapter
-provides the two seams that need no running replay: a syntax gate (R's own
-parser, shelled out through ``Rscript``) and best-effort extraction of the names
-a cell assigns. Replaying R in a fresh runtime and fingerprinting R values is
-Phase 5b; until then the adapter claims no ``RUN`` capability, so the benchmark
-degrades to a warning instead of executing R through the Python machinery.
+provides the three seams that depend on the language: a syntax gate (R's own
+parser, shelled out through ``Rscript``), best-effort extraction of the names a
+cell assigns, and - under Design B - a replay that runs prefix + target in a
+fresh R runtime. The replay does not touch perfmonitor or the session export:
+``render_replay`` hands the shared harness an ``Rscript`` command, and the
+generated R script only brackets the target with epoch markers and dumps output
+fingerprints. Everything language-neutral (profiling, session export, reading
+the result back) stays in the harness and the shared runner.
 """
+import json
 import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
+from pathlib import Path
 
 from jumper_extension.adapters.ai_reviewer.language.base import (
+    RUN,
     VALIDATE_SYNTAX,
     CapabilityNotSupported,
     LanguageAdapter,
@@ -21,6 +28,9 @@ from jumper_extension.adapters.ai_reviewer.language.base import (
     ReplayRequest,
     SyntaxResult,
 )
+from jumper_extension.adapters.ai_reviewer.language.r_script import build_r_script
+
+_HARNESS_MODULE = "jumper_extension.adapters.ai_reviewer.benchmark.harness"
 
 _PARSE_TIMEOUT_S = 20.0
 
@@ -33,16 +43,18 @@ _ASSIGN_FN = re.compile(r"""\bassign\s*\(\s*["']([^"']+)["']""")
 
 
 class RAdapter(LanguageAdapter):
-    """R cells: syntax gate and assigned-name extraction (no timed run yet)."""
+    """R cells: syntax gate, assigned-name extraction, and a harness-run replay."""
     language = "r"
 
     def __init__(self, rscript: str | None = None):
         # None means "auto-detect"; an explicit value (including "") is honoured,
         # so callers and tests can force the no-R path.
         self._rscript = shutil.which("Rscript") if rscript is None else rscript
-        # Without R there is no parser to gate with, so drop the capability and
-        # let the benchmark warn honestly rather than pretend to validate.
-        self.caps = frozenset({VALIDATE_SYNTAX}) if self._rscript else frozenset()
+        # Both real seams need Rscript; without it drop every capability and let
+        # the benchmark warn honestly rather than pretend it could run R.
+        self.caps = (
+            frozenset({VALIDATE_SYNTAX, RUN}) if self._rscript else frozenset()
+        )
 
     def validate_syntax(self, code: str) -> SyntaxResult:
         if not self._rscript:
@@ -90,9 +102,45 @@ class RAdapter(LanguageAdapter):
         return list(dict.fromkeys(names))
 
     def render_replay(self, request: ReplayRequest) -> ReplayArtifact:
-        raise CapabilityNotSupported(
-            "R replay is not implemented yet (Phase 5b): benchmark cannot run R cells"
+        if not self._rscript:
+            raise CapabilityNotSupported("Rscript not found: cannot run R cells")
+
+        markers_path = f"{request.output_path}.markers.json"
+        script_path = build_r_script(
+            prefix_cells=request.prefix_cells,
+            target_code=request.target_code,
+            output_names=request.output_names,
+            markers_path=markers_path,
+            fingerprint_path=request.fingerprint_path,
+            output_path=f"{request.output_path}.R",
         )
+        # Kept so the exported session shows the cell under test, matching the
+        # Python path; the harness reads it only to fill the target row.
+        target_code_file = f"{request.output_path}.target.R"
+        Path(target_code_file).write_text(request.target_code, encoding="utf-8")
+
+        command = [
+            sys.executable,
+            "-m",
+            _HARNESS_MODULE,
+            "--run",
+            json.dumps([self._rscript, script_path]),
+            "--session",
+            request.session_path,
+            "--markers",
+            markers_path,
+            "--interval",
+            str(request.interval),
+            "--prefix-count",
+            str(len(request.prefix_cells)),
+            "--work-dir",
+            request.work_dir,
+            "--target-code-file",
+            target_code_file,
+            "--language",
+            "r",
+        ]
+        return ReplayArtifact(script_path=script_path, command=command)
 
 
 def _statements(code: str) -> list[str]:
