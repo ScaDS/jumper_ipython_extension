@@ -38,10 +38,11 @@ strategies:
         raw_perf: true
 
   - id: r_clean
-    name: R without Python bias
+    name: R specific strategy
     description: Keep suggestions idiomatic R - drops the Python/PEP8 style rule and applies the R style rule instead.
     effect:
       overrides:
         pep8_multiline: false
         r_style: true
-      context: {}
+      context:
+        packages: false
