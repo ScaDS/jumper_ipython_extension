@@ -11,6 +11,8 @@ something else is caught the same way a Python one is.
 """
 from pathlib import Path
 
+from jumper_extension.adapters.script_writer import is_pure_magic_cell
+
 # Base-R fingerprint helper, kept dependency-free (no jsonlite): it emits the
 # same {"kind": ...} objects fingerprint.py produces for Python values. Baseline
 # and variants are always the same language, so R's sample sd only has to agree
@@ -68,17 +70,6 @@ def _names_vector(names: list[str]) -> str:
     return "c(" + ", ".join(_r_string(name) for name in names) + ")"
 
 
-def _strip_magic_lines(code: str) -> str:
-    """Drop IPython/wrapper magic lines (``%...``) from a replayed cell.
-
-    Under the wrapper kernel a pure-magic cell (``%wrap_kernel``,
-    ``%perfmonitor_fast_setup``, ...) is run locally and never forwarded to R,
-    so it carries no R state and replaying it as R would be a syntax error. R
-    never begins a statement with ``%`` (it only appears in infix operators like
-    ``%*%``, mid-expression), so a leading ``%`` unambiguously marks a magic.
-    """
-    kept = [line for line in code.splitlines() if not line.lstrip().startswith("%")]
-    return "\n".join(kept)
 
 
 def build_r_script(
@@ -98,11 +89,14 @@ def build_r_script(
     """
     parts = [_HELPER]
     for cell in prefix_cells:
-        body = _strip_magic_lines(cell["raw_cell"])
-        if not body.strip():
-            continue  # a pure-magic cell contributes no R state
+        # A pure-magic cell (%wrap_kernel, %perfmonitor_fast_setup, ...) is run
+        # locally by the wrapper and never forwarded to R, so it holds no R state
+        # and replaying it as R would be a syntax error. The Python replay skips
+        # such cells the same way (via is_pure_magic_cell).
+        if is_pure_magic_cell(cell["raw_cell"]):
+            continue
         parts.append(f"\n# --- cell {cell['index']} ---\n")
-        parts.append(body)
+        parts.append(cell["raw_cell"])
         parts.append("\n")
     parts.append("\n# --- cell under test ---\n")
     parts.append(".jumper_start <- as.numeric(Sys.time())\n")

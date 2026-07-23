@@ -35,12 +35,6 @@ def test_build_r_script_writes_prefix_target_markers_and_fingerprints(tmp_path):
     assert 'c("y")' in text
 
 
-def test_strip_magic_lines_drops_only_magics():
-    code = "%wrap_kernel ir\nx <- 1\n  %perfmonitor_fast_setup\ny <- !FALSE"
-    # Magic lines go; real R (including a leading logical NOT) stays.
-    assert r_script._strip_magic_lines(code) == "x <- 1\ny <- !FALSE"
-
-
 def test_build_r_script_skips_pure_magic_prefix_cells(tmp_path):
     path = build_r_script(
         prefix_cells=[
