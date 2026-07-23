@@ -89,6 +89,25 @@ def test_output_names_skips_commented_and_dedupes():
     assert RAdapter().output_names(code) == ["a"]
 
 
+def test_output_names_ignores_bindings_inside_function_bodies():
+    # `n` and `s` are locals of the helper, not cell outputs; capturing them lets
+    # a same-named global from an earlier cell poison verification.
+    code = "\n".join(
+        [
+            "pairwise_dist <- function(X) {",
+            "  n <- nrow(X)",
+            "  s <- 0",
+            "  D <- matrix(0, n, n)",
+            "  D",
+            "}",
+            "D <- pairwise_dist(X)",
+            "neighbors <- t(apply(D, 1, order))[, 2:6]",
+        ]
+    )
+
+    assert RAdapter().output_names(code) == ["D", "neighbors"]
+
+
 def test_output_names_excludes_function_definitions():
     # A helper is not a data result; only D and neighbors should be fingerprinted.
     code = "\n".join(

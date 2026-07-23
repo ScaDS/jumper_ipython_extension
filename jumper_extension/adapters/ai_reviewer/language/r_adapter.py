@@ -91,11 +91,20 @@ class RAdapter(LanguageAdapter):
 
     def output_names(self, code: str) -> list[str]:
         names: list[str] = []
+        depth = 0
         for statement in _statements(code):
+            start_depth = depth
+            depth += _net_braces(statement)
+            # Only assignments at the top level of the cell are outputs. Names
+            # bound inside a function or block body (`n <- nrow(X)` within a
+            # helper) are locals, not results - and worse, a same-named global
+            # from an earlier cell would then fingerprint a value the variants
+            # never produce, poisoning verification (see fingerprint.compare_all).
+            if start_depth != 0:
+                continue
             left = _LEFT.match(statement)
             # A `name <- function(...)` binding is a helper, not a data result;
-            # it cannot be fingerprinted, so leave it out rather than let its
-            # empty signature muddy the verification (see fingerprint.compare_all).
+            # it cannot be fingerprinted, so leave it out too.
             if left and not statement[left.end():].lstrip().startswith("function"):
                 names.append(left.group(1))
             right = _RIGHT.search(statement)
@@ -152,6 +161,23 @@ def _statements(code: str) -> list[str]:
     for line in code.splitlines():
         statements.extend(_strip_comment(line).split(";"))
     return statements
+
+
+def _net_braces(text: str) -> int:
+    """Net ``{`` minus ``}`` outside string literals, to track block nesting."""
+    depth = 0
+    in_single = in_double = False
+    for char in text:
+        if char == "'" and not in_double:
+            in_single = not in_single
+        elif char == '"' and not in_single:
+            in_double = not in_double
+        elif not in_single and not in_double:
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+    return depth
 
 
 def _strip_comment(line: str) -> str:
