@@ -189,13 +189,23 @@ def _describe(print_: dict | None) -> str:
 
 
 def compare_all(baseline: dict, variant: dict, rel_tol: float = REL_TOL) -> tuple[str, list[str]]:
-    """Verdict over every captured name, plus the names that diverged."""
+    """Verdict over every captured name, plus the names that diverged.
+
+    A name with no baseline signature (``None`` - e.g. a function or other
+    unsummarisable binding) carries no verification signal, so it is skipped
+    rather than dragging an otherwise-verified result down to UNVERIFIED. The
+    result is UNVERIFIED only when nothing in the baseline could be compared.
+    """
     if not baseline:
         return UNVERIFIED, []
 
     differing = []
     verdict = MATCH
+    compared = 0
     for name, expected in baseline.items():
+        if not expected:
+            continue  # unsummarisable baseline value: no signal, do not poison
+        compared += 1
         result = compare(expected, variant.get(name), rel_tol)
         if result == DIFFERS:
             differing.append(name)
@@ -203,4 +213,6 @@ def compare_all(baseline: dict, variant: dict, rel_tol: float = REL_TOL) -> tupl
             verdict = UNVERIFIED
     if differing:
         return DIFFERS, differing
+    if compared == 0:
+        return UNVERIFIED, []
     return verdict, []

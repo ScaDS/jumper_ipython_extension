@@ -89,6 +89,19 @@ def test_output_names_skips_commented_and_dedupes():
     assert RAdapter().output_names(code) == ["a"]
 
 
+def test_output_names_excludes_function_definitions():
+    # A helper is not a data result; only D and neighbors should be fingerprinted.
+    code = "\n".join(
+        [
+            "pairwise_dist <- function(X) { X }",
+            "D <- pairwise_dist(X)",
+            "neighbors <- order(D)",
+        ]
+    )
+
+    assert RAdapter().output_names(code) == ["D", "neighbors"]
+
+
 # --- render_replay (Design B) ---
 
 def _request(tmp_path, target_code="x <- 1", output_names=None, prefix_cells=None):

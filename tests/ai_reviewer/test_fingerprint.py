@@ -88,3 +88,16 @@ def test_compare_all_is_unverified_when_a_name_is_missing():
 
     assert verdict == fp.UNVERIFIED
     assert differing == []
+
+
+def test_compare_all_ignores_unsummarisable_baseline_names():
+    # A helper (function) has no signature; its presence must not stop the real
+    # data outputs from verifying as a match.
+    baseline = {"f": None, "D": fp.fingerprint(10.0)}
+    variant = {"D": fp.fingerprint(10.0)}
+
+    assert fp.compare_all(baseline, variant) == (fp.MATCH, [])
+
+
+def test_compare_all_is_unverified_when_nothing_is_summarisable():
+    assert fp.compare_all({"f": None, "g": None}, {}) == (fp.UNVERIFIED, [])

@@ -93,7 +93,10 @@ class RAdapter(LanguageAdapter):
         names: list[str] = []
         for statement in _statements(code):
             left = _LEFT.match(statement)
-            if left:
+            # A `name <- function(...)` binding is a helper, not a data result;
+            # it cannot be fingerprinted, so leave it out rather than let its
+            # empty signature muddy the verification (see fingerprint.compare_all).
+            if left and not statement[left.end():].lstrip().startswith("function"):
                 names.append(left.group(1))
             right = _RIGHT.search(statement)
             if right:
