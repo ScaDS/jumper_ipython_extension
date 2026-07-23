@@ -34,6 +34,9 @@ rules:
   - id: pep8_multiline
     enabled: true
     fragment: pep8_multiline.md
+  - id: r_style
+    enabled: false
+    fragment: r_style.md
 
 user_note:
   id: user_note
