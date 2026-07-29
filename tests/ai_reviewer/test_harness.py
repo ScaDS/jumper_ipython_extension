@@ -1,4 +1,4 @@
-"""Tests for the language-agnostic benchmark replay harness (Design B spine)."""
+"""Tests for the shared measurement spine and the R replay harness on top of it."""
 import json
 import os
 import sys
@@ -8,7 +8,7 @@ import zipfile
 import pandas as pd
 import pytest
 
-from jumper_extension.adapters.ai_reviewer.benchmark import harness
+from jumper_extension.adapters.ai_reviewer.benchmark import harness, measure
 
 
 def _read_cell_history(session_zip: str) -> pd.DataFrame:
@@ -17,8 +17,8 @@ def _read_cell_history(session_zip: str) -> pd.DataFrame:
             return pd.read_csv(handle)
 
 
-def testsynthesize_history_places_target_at_prefix_index():
-    df = harness.synthesize_history(
+def test_synthesize_history_places_target_at_prefix_index():
+    df = measure.synthesize_history(
         prefix_count=3,
         target_code="y <- 1",
         language="r",
@@ -39,8 +39,8 @@ def testsynthesize_history_places_target_at_prefix_index():
     assert target["wallclock_start_time"] == pytest.approx(1000.0)
 
 
-def testsynthesize_history_prefix_rows_are_inert_placeholders():
-    df = harness.synthesize_history(
+def test_synthesize_history_prefix_rows_are_inert_placeholders():
+    df = measure.synthesize_history(
         prefix_count=2,
         target_code="z <- 2",
         language="r",
@@ -53,9 +53,9 @@ def testsynthesize_history_prefix_rows_are_inert_placeholders():
     assert (prefix["cell_index"] == [0, 1]).all()
 
 
-def testclock_offset_maps_epoch_to_perf_counter():
+def test_clock_offset_maps_epoch_to_perf_counter():
     # The offset added to an epoch second should land near the perf_counter now.
-    offset = harness.clock_offset()
+    offset = measure.clock_offset()
     import time
 
     mapped = time.time() + offset

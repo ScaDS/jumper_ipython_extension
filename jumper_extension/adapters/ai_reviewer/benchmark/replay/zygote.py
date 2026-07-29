@@ -1,32 +1,29 @@
-"""Run the prefix once, then fork a child per measurement.
+"""Hold the prefix state, and hand out forked copies of it on request.
 
 The prefix is the same for every run of a benchmark, so paying for it on each of
 the ``(1 + variants) x runs`` measurements is the single largest cost the
 benchmark has. This process pays it once: it executes the prefix, keeps the
 resulting state resident, and forks a child per measurement. A child inherits
 that state whole - every object, every import, every JIT-compiled function - and
-dies with its mutations, so isolation is preserved for free.
+dies with its mutations, so no measurement can leak into the next.
 
-The measurement layout mirrors ``harness.py``: this process owns perfmonitor and
-samples itself plus its children, the child brackets the target cell with epoch
-timestamps, and the marks are mapped onto the sampler's clock afterwards. What
-differs is only where the state comes from.
+**Nothing here monitors anything.** That is the point of the process boundary
+above it: a monitor runs a sampler thread, and only the forking thread survives
+a ``fork()``, so a lock held by a vanished thread would stay locked forever in
+the child. The supervisor owns the monitor and the session export; this process
+keeps as few threads as the prefix leaves it with, and does the forking.
 
-Three things make the fork safe to read back:
+What still lives here is what only the holder of the state can do:
 
-* **The protocol has an fd of its own.** Responses go to a pipe passed in as
-  ``--response-fd``, never to stdout: the extension logs a line to stdout the
-  moment it is imported, long before any code here could claim the stream, and
-  a prefix cell that prints would corrupt it just as easily.
-* **The child exits through ``os._exit``**, skipping atexit handlers and the
-  interpreter teardown that a forked copy has no business running.
-* **A forked child does not always run at the parent's speed**, and both ways it
-  can differ are silent. ``probe_fork`` measures each of them across a real fork
-  and refuses the mode rather than reporting timings from a machine the notebook
-  never ran on.
-
-The GPU is the other refusal: a CUDA context cannot be used after a fork, so a
-prefix that initialized one rules this mode out entirely.
+* run the prefix, once, against an adapter whose magics are inert - a prefix
+  cell calling ``%perfmonitor_start`` must not start a sampler in the very
+  process this design exists to keep thread-free;
+* decide whether this machine may be forked at all (``probe_fork``,
+  ``gpu_blocker``);
+* fork, wait, and kill on timeout;
+* in the child: walk the inherited pages, run the cell, write epoch marks and
+  output fingerprints, and leave through ``os._exit`` without running teardown
+  that belongs to the process it was copied from.
 """
 import argparse
 import json
@@ -38,12 +35,8 @@ import traceback
 from pathlib import Path
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
-from jumper_extension.adapters.ai_reviewer.benchmark.harness import (
-    clock_offset,
-    synthesize_history,
-)
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT
-from jumper_extension.core.service import build_perfmonitor_magic_adapter
+from jumper_extension.adapters.ai_reviewer.benchmark.replay.link import JsonLink
 
 # How often the parent checks on a running child. Only the wall time of a
 # measurement is affected; the cell itself is timed by its own epoch marks.
@@ -59,18 +52,43 @@ _PROBE_MIN_S = 0.05
 _PROBE_REPEATS = 5
 # The memory arm streams an array the child inherited rather than one it made:
 # reading copy-on-write memory can cost far more than reading your own, and a
-# matmul is too compute-bound to notice. 64MB is past every cache, so the number
-# is bandwidth and nothing else.
+# matmul is too compute-bound to notice. 64MB is past most last-level caches,
+# though not the largest server ones.
 _PROBE_BYTES = 64 * 1024 * 1024
+
+_PAGE = 4096
+
+
+class InertMagicAdapter:
+    """Accepts the magic calls a replayed prefix makes, and does nothing.
+
+    The prefix runs here only to build state. Monitoring, reporting and session
+    export belong to the supervisor, and a prefix cell calling
+    ``%perfmonitor_start`` must not start a sampler thread in the process that
+    is about to fork.
+
+    Unknown names still raise, so a cell using a magic the real adapter does not
+    have fails here exactly as it would in a full replay - parity between the
+    modes matters more than swallowing the error would be convenient.
+    """
+
+    def __getattr__(self, name: str):
+        from jumper_extension.core.service import PerfmonitorMagicAdapter
+
+        if not hasattr(PerfmonitorMagicAdapter, name):
+            raise AttributeError(name)
+        return _accept_anything
+
+
+def _accept_anything(*args, **kwargs):
+    return None
 
 
 def _best_matmul(matrix) -> float:
     """Fastest of several identical matmuls, after one discarded warm-up.
 
-    The warm-up matters on the child's side: the first parallel section after a
-    fork is where a pool gets rebuilt, and that one-off cost is not what this is
-    trying to measure. The minimum, not the mean, because the question is what
-    the machine can do, not what it happened to do while something else ran.
+    The minimum, not the mean, because the question is what the machine can do,
+    not what it happened to do while something else ran.
     """
     matrix @ matrix
     best = float("inf")
@@ -81,8 +99,8 @@ def _best_matmul(matrix) -> float:
     return best
 
 
-def _probe_matrix(numpy):
-    """A matmul big enough to be worth timing, and how long the parent takes on it.
+def _probe_matrix(numpy) -> tuple:
+    """A matmul big enough to be worth timing, and the parent's time on it.
 
     A dedicated Generator, never the global one: the zygote's RNG state is
     inherited by every child, and perturbing it here would make a fork's results
@@ -111,19 +129,16 @@ def _first_stream(array) -> float:
     return time.perf_counter() - started
 
 
-_PAGE = 4096
-
-
 def prefault(maps_path: str = "/proc/self/maps") -> int:
     """Resolve this child's inherited pages before anything is timed.
 
     A fork leaves the child's copy-on-write pages unresolved, and the first read
-    of each one costs far more than a later read: measured here, a child summing
-    an inherited 160MB array took 13.0ms against its parent's 6.8ms, and 7.1ms
-    once the pages had been walked first. That penalty scales with how much of
-    the prefix's data a cell touches, so it falls hardest on the fast vectorized
-    rewrites a review is looking for - understating their speedup by more than
-    half. Walking the pages here moves the cost outside the measured window.
+    of each one costs far more than a later read: measured on one machine, a
+    child summing an inherited 160MB array took 13.0ms against its parent's
+    6.8ms, and 7.1ms once the pages had been walked first. The penalty scales
+    with how much of the prefix's data a cell touches, so it falls hardest on the
+    fast vectorized rewrites a review is looking for. Walking the pages here
+    moves the cost outside the measured window.
 
     One strided pass per region rather than a Python loop over pages: the work is
     the kernel's either way, and the loop tripled it. Returns the pages touched.
@@ -206,9 +221,7 @@ def probe_fork(work_dir: str) -> dict:
     not survive the fork - only the forking thread does, and a BLAS pool rebuilt
     at one thread produces plausible, badly wrong numbers. *memory* catches the
     slower path a child can be put on when it reads pages it inherited instead of
-    pages it allocated; measured on one machine here, an inherited 160MB array
-    summed at 13.3ms in a child against 7.1ms in its parent, while the same child
-    summed its *own* fresh array at 6.8ms.
+    pages it allocated.
 
     Both arms run in a single forked child against data the parent made, which is
     the situation every measurement is in.
@@ -218,13 +231,13 @@ def probe_fork(work_dir: str) -> dict:
     except Exception:
         return {"ok": True, "detail": "numpy is absent, so there is nothing to compare"}
 
-    matrix, _ = _probe_matrix(numpy)
+    matrix, compute_parent = _probe_matrix(numpy)
     # arange, never zeros: a calloc'd array is served from the shared zero page
     # until something writes to it, so reading it touches no real memory at all
     # and the arm reports a flat 1.00x no matter what the machine does.
     array = numpy.arange(_PROBE_BYTES // 8, dtype=numpy.float64)
     subjects = {"compute": matrix, "memory": array}
-    parent = {name: measure(subjects[name]) for name, measure, _, _ in _ARMS}
+    parent = {"compute": compute_parent, "memory": _first_stream(array)}
 
     path = os.path.join(work_dir, "fork_probe.json")
     _unlink(path)
@@ -238,17 +251,15 @@ def probe_fork(work_dir: str) -> dict:
             result = {name: measure(subjects[name]) for name, measure, _, _ in _ARMS}
             result["prefault_s"] = time.perf_counter() - started
             result["prefault_pages"] = pages
-            with open(path, "w") as handle:
-                json.dump(result, handle)
+            _write(path, json.dumps(result))
         except BaseException:
             pass
         os._exit(0)
     os.waitpid(pid, 0)
 
-    if not os.path.exists(path):
+    child = _read_json(path)
+    if child is None:
         return {"ok": False, "detail": "the probe child died before it could report"}
-    with open(path) as handle:
-        child = json.load(handle)
 
     seen = []
     for name, _, tolerance, consequence in _ARMS:
@@ -299,36 +310,14 @@ def gpu_blocker() -> str:
 class Zygote:
     """Holds the prefix state and hands out forked copies of it."""
 
-    def __init__(
-        self,
-        prefix_script: str,
-        interval: float,
-        prefix_count: int,
-        language: str,
-        work_dir: str,
-        response_fd: int,
-    ):
+    def __init__(self, prefix_script: str, work_dir: str, link: JsonLink):
         self.prefix_script = prefix_script
-        self.interval = interval
-        self.prefix_count = prefix_count
-        self.language = language
         self.work_dir = work_dir
-        self.adapter = build_perfmonitor_magic_adapter(
-            plots_disabled=True,
-            plots_disabled_reason="Plotting disabled in the benchmark zygote.",
-            display_disabled=True,
-            display_disabled_reason="Display disabled in the benchmark zygote.",
-        )
-        # The prefix runs as __main__ against the adapter the magics were
-        # rewritten to call, exactly as the full replay's script does.
-        self.namespace = {"__name__": "__main__", "magic_adapter": self.adapter}
-        self._protocol = os.fdopen(response_fd, "w")
-
-    def respond(self, payload: dict):
-        self._protocol.write(json.dumps(payload) + "\n")
-        # Flushed on every response, so the buffer is empty at fork time and no
-        # child can inherit half a message and write it out a second time.
-        self._protocol.flush()
+        self.link = link
+        # The prefix runs as __main__ against the adapter its magics were
+        # rewritten to call, exactly as the full replay's script does - except
+        # that here the adapter does nothing.
+        self.namespace = {"__name__": "__main__", "magic_adapter": InertMagicAdapter()}
 
     def start(self) -> dict:
         """Run the prefix, then report whether this machine may be forked at all."""
@@ -337,8 +326,8 @@ class Zygote:
             exec(compile(source, self.prefix_script, "exec"), self.namespace)
         except BaseException:
             # User code, not the strategy: the caller falls back to the full
-            # replay, which will reach the same error through its own path and
-            # report it as the failed baseline it is.
+            # replay, which reaches the same error through its own path and
+            # reports it as the failed baseline it is.
             return {"ok": False, "reason": f"the prefix did not run:\n{traceback.format_exc()}"}
 
         blocker = gpu_blocker()
@@ -351,65 +340,31 @@ class Zygote:
         return {"ok": True, "detail": probe["detail"]}
 
     def serve(self):
-        """Answer replay requests until stdin closes or a stop arrives."""
-        while True:
-            line = sys.stdin.readline()
-            if not line:
-                return
-            line = line.strip()
-            if not line:
-                continue
-            request = json.loads(line)
-            if request.get("cmd") == "stop":
-                return
-            self.respond(self.replay(request))
+        """Fork a child per request until the supervisor stops asking."""
+        for request in self.link.requests_until_closed():
+            self.link.answer(self.fork_once(request))
 
-    def replay(self, request: dict) -> dict:
-        """Fork one child, time it under the monitor, and export its session."""
+    def fork_once(self, request: dict) -> dict:
+        """Fork one child to run the cell, and say how it went.
+
+        No timing beyond the kill budget happens here: the child writes its own
+        epoch marks, and the supervisor - which owns the sampler clock - is what
+        turns them into a measurement.
+        """
         code = Path(request["code_path"]).read_text(encoding="utf-8")
-        markers_path = request["markers_path"]
         error_path = request["error_path"]
-        for stale in (markers_path, error_path):
+        for stale in (request["markers_path"], error_path):
             _unlink(stale)
 
-        self.adapter.perfmonitor_start(str(self.interval))
-        offset = clock_offset()
-        started = time.perf_counter()
-        try:
-            pid = os.fork()
-            if pid == 0:
-                self._run_child(code, request)  # never returns
-            status, error = self._await(pid, request.get("timeout"), error_path)
-        finally:
-            self.adapter.perfmonitor_stop("")
-        wall = round(time.perf_counter() - started, 4)
-
-        if status != OK:
-            return {"status": status, "error": error, "wall_s": wall}
-        if not os.path.exists(markers_path):
-            return {
-                "status": FAILED,
-                "error": "The run left no timing marks for the cell under test.",
-                "wall_s": wall,
-            }
-
-        with open(markers_path) as handle:
-            markers = json.load(handle)
-        self.adapter.service.cell_history.data = synthesize_history(
-            prefix_count=self.prefix_count,
-            target_code=code,
-            language=self.language,
-            start_epoch=float(markers["start"]),
-            end_epoch=float(markers["end"]),
-            offset=offset,
-        )
-        self.adapter.export_session(request["session_path"])
-        return {"status": OK, "wall_s": wall}
+        pid = os.fork()
+        if pid == 0:
+            self._run_child(code, request)  # never returns
+        return self._await(pid, request.get("timeout"), error_path)
 
     def _run_child(self, code: str, request: dict):
         """Run the target cell in the inherited state, then leave without cleanup."""
         try:
-            self._protocol.close()  # the parent's stream is none of the child's business
+            self.link.close()  # the supervisor's stream is none of the child's business
         except BaseException:
             pass
         try:
@@ -433,10 +388,13 @@ class Zygote:
             start = time.time()
             exec(compiled, self.namespace)
             end = time.time()
-            with open(request["markers_path"], "w") as handle:
-                json.dump({"start": start, "end": end}, handle)
+            _write(request["markers_path"], json.dumps({"start": start, "end": end}))
             # After the end mark on purpose: fingerprinting is not the cell's cost.
-            fingerprint.dump(request["output_names"], self.namespace, request["fingerprint_path"])
+            fingerprint.dump(
+                request["output_names"],
+                self.namespace,
+                request["fingerprint_path"],
+            )
         except BaseException:
             _write(request["error_path"], traceback.format_exc())
             _flush_std()
@@ -446,7 +404,7 @@ class Zygote:
         # interpreter teardown that belong to the process it was copied from.
         os._exit(0)
 
-    def _await(self, pid: int, timeout: float | None, error_path: str) -> tuple[str, str]:
+    def _await(self, pid: int, timeout: float | None, error_path: str) -> dict:
         """Wait for the child, killing it once its budget is spent."""
         deadline = time.perf_counter() + timeout if timeout else None
         while True:
@@ -456,17 +414,20 @@ class Zygote:
             if deadline is not None and time.perf_counter() > deadline:
                 os.kill(pid, signal.SIGKILL)
                 os.waitpid(pid, 0)
-                return TIMEOUT, f"Exceeded the {timeout:.0f}s budget and was killed."
+                return {
+                    "status": TIMEOUT,
+                    "error": f"Exceeded the {timeout:.0f}s budget and was killed.",
+                }
             time.sleep(_POLL_S)
 
         if os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0:
-            return OK, ""
+            return {"status": OK}
         detail = _read(error_path)
         if detail:
-            return FAILED, detail
+            return {"status": FAILED, "error": detail}
         if os.WIFSIGNALED(status):
-            return FAILED, f"The run was killed by signal {os.WTERMSIG(status)}."
-        return FAILED, f"The run exited with status {os.WEXITSTATUS(status)}."
+            return {"status": FAILED, "error": f"The run was killed by signal {os.WTERMSIG(status)}."}
+        return {"status": FAILED, "error": f"The run exited with status {os.WEXITSTATUS(status)}."}
 
 
 def _flush_std():
@@ -493,6 +454,14 @@ def _read(path: str) -> str:
         return ""
 
 
+def _read_json(path: str) -> dict | None:
+    try:
+        with open(path) as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return None
+
+
 def _unlink(path: str):
     try:
         os.remove(path)
@@ -503,15 +472,12 @@ def _unlink(path: str):
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="JUmPER benchmark fork zygote")
     parser.add_argument("--prefix-script", required=True)
-    parser.add_argument("--interval", type=float, required=True)
-    parser.add_argument("--prefix-count", type=int, required=True)
     parser.add_argument("--work-dir", required=True)
-    parser.add_argument("--language", default="python")
     parser.add_argument(
         "--response-fd",
         type=int,
         required=True,
-        help="inherited pipe the parent reads answers from; never stdout",
+        help="inherited pipe the supervisor reads answers from; never stdout",
     )
     return parser.parse_args(argv)
 
@@ -520,14 +486,11 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     zygote = Zygote(
         prefix_script=args.prefix_script,
-        interval=args.interval,
-        prefix_count=args.prefix_count,
-        language=args.language,
         work_dir=args.work_dir,
-        response_fd=args.response_fd,
+        link=JsonLink(sys.stdin, args.response_fd),
     )
     ready = zygote.start()
-    zygote.respond(ready)
+    zygote.link.answer(ready)
     if not ready["ok"]:
         return 0  # the reason is the answer; the caller falls back on its own
     zygote.serve()
