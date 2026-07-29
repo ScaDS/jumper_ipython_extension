@@ -85,16 +85,26 @@ def test_prefault_survives_an_unreadable_maps_file(tmp_path):
 
 
 @posix_only
-def test_probe_reports_both_arms(tmp_path):
+def test_probe_answers_with_thread_counts_not_timings(tmp_path):
+    """The verdict is structural on purpose.
+
+    An earlier version decided by comparing timings across a fork and refused a
+    healthy machine in 6 runs out of 20. Timings are still reported - they are
+    the only way an unknown slowdown would surface - but they must not be what
+    the answer turns on.
+    """
     pytest.importorskip("numpy")
 
     probe = probe_fork(str(tmp_path))
 
-    assert set(probe) == {"ok", "detail"}
     assert isinstance(probe["ok"], bool)
-    # Whatever the verdict, it has to say what was measured - a bare refusal
-    # leaves no way to tell a real degradation from a noisy machine.
-    assert probe["detail"]
+    if not probe["ok"]:
+        # A bare refusal leaves no way to tell degradation from a noisy machine.
+        assert probe["detail"]
+        return
+    assert "/" in probe["threads"], "reports what the child recovered of the parent's"
+    assert set(probe["timings"]) == {"compute", "memory"}
+    assert probe["page_cost_s"] >= 0.0
 
 
 @posix_only

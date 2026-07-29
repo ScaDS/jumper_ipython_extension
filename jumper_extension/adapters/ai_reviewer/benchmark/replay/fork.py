@@ -48,6 +48,11 @@ _STOP_TIMEOUT_S = 10.0
 # enforced where the cell runs.
 _RELAY_ALLOWANCE_S = 300.0
 
+# A measurement whose page faults plausibly cost this much of its own duration is
+# worth telling the user about: the distortion falls hardest on the fastest
+# rewrites, which are the ones a review exists to find.
+_FAULT_SHARE_WARNING = 0.1
+
 _RSS_CAVEAT = (
     "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed "
     "once instead of once per measurement. Timings are unaffected, but memory "
@@ -79,6 +84,10 @@ class ForkReplayStrategy(ReplayStrategy):
         self._channel = None
         self._log = None
         self._log_path = ""
+        # Seconds per page fault on this machine, measured by the probe. Zero
+        # means it could not be measured, and no fault warning is worth stating
+        # without it - a fault count on its own says nothing about a cell.
+        self._page_cost_s = 0.0
 
     def prepare(self) -> PrepareOutcome:
         if os.name != "posix":
@@ -102,7 +111,13 @@ class ForkReplayStrategy(ReplayStrategy):
         if not ready.get("ok"):
             return PrepareOutcome(False, ready.get("reason", "the supervisor refused to serve"))
 
-        logger.debug(f"[JUmPER]: benchmark fork probe: {ready.get('detail', '')}")
+        self._page_cost_s = float(ready.get("page_cost_s") or 0.0)
+        logger.debug(
+            f"[JUmPER]: benchmark fork probe: threads {ready.get('threads', '?')}, "
+            f"timings {ready.get('timings', {})}, "
+            f"{ready.get('walk_pages', 0)} pages walked per measurement in "
+            f"{ready.get('walk_s', 0)}s"
+        )
         logger.warning(_RSS_CAVEAT)
         return PrepareOutcome(True)
 
@@ -187,11 +202,45 @@ class ForkReplayStrategy(ReplayStrategy):
                 error="The run produced no session export.",
                 wall_s=wall,
             )
+        self._warn_if_distorted(response)
         return ReplayResult(
             status=OK,
             session_path=session_path,
             fingerprint_path=fingerprint_path,
             wall_s=wall,
+        )
+
+    def _warn_if_distorted(self, response: dict):
+        """Say so when a measurement was mostly the fork's cost, not the cell's.
+
+        A forked child pays for the memory it inherited the first time it touches
+        it, and for Python objects that is a real copy: merely *reading* a list
+        writes a reference count into a shared page. Measured here, an inherited
+        20-million-element list summed in 737ms against the 107ms it took on a
+        second pass. Walking the pages beforehand cannot prevent it - a copy is
+        exactly what walking avoids - so the honest thing is to say that this
+        particular number is inflated, and by roughly how much.
+
+        Stated as a share of the measurement rather than as a fault count,
+        because 20,000 faults decide everything for a 17ms cell and are nothing
+        for a ten-second one. The price of a fault is the one the probe measured
+        on this machine, not a number chosen in advance.
+        """
+        faults = int(response.get("faults") or 0)
+        duration = float(response.get("duration_s") or 0.0)
+        if not faults or not duration or not self._page_cost_s:
+            return
+        cost = faults * self._page_cost_s
+        share = cost / duration
+        if share < _FAULT_SHARE_WARNING:
+            return
+        logger.warning(
+            f"[JUmPER]: a benchmark measurement spent about {cost * 1000:.0f}ms of "
+            f"its {duration * 1000:.0f}ms on {faults} page faults - the cost of "
+            "touching memory inherited from the prefix rather than of the cell "
+            "itself. Cells working over large Python objects are affected most, "
+            "and the timing understates them. Re-run with --replay-mode full for "
+            "a number that does not carry this."
         )
 
     def _spawn(self, script: str):
