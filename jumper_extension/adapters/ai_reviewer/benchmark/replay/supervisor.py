@@ -27,12 +27,19 @@ from jumper_extension.adapters.ai_reviewer.benchmark.measure import (
     measure_session,
 )
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED
+from jumper_extension.adapters.ai_reviewer.benchmark.replay.lifetime import die_with_parent
 from jumper_extension.adapters.ai_reviewer.benchmark.replay.link import JsonChannel, JsonLink
 
 _ZYGOTE_MODULE = "jumper_extension.adapters.ai_reviewer.benchmark.replay.zygote"
 
 # How long a stopping zygote gets to leave on its own before it is killed.
 _STOP_TIMEOUT_S = 10.0
+
+# Room on top of a cell's own budget for the work around it: starting and
+# stopping the sampler, and writing the session export. The zygote enforces the
+# budget itself, so this is only a backstop against the zygote going silent -
+# generous on purpose, because expiring it early would kill a healthy run.
+_OVERHEAD_ALLOWANCE_S = 120.0
 
 
 class Supervisor:
@@ -93,11 +100,11 @@ class Supervisor:
         started = time.perf_counter()
 
         def run() -> dict:
-            reply = self.zygote.ask({**request, "cmd": "fork"})
+            reply = self.zygote.ask({**request, "cmd": "fork"}, deadline=_deadline(request))
             if reply is None:
                 return {
                     "status": FAILED,
-                    "error": "the zygote stopped answering mid-measurement",
+                    "error": f"the zygote gave no answer: {self.zygote.failure()}",
                     "gone": True,
                 }
             answer.update(reply)
@@ -119,6 +126,20 @@ class Supervisor:
         self.zygote.close(_STOP_TIMEOUT_S)
 
 
+def _deadline(request: dict) -> float | None:
+    """When to stop waiting on the zygote for this request.
+
+    A cell with no budget of its own gets none here either: how long a baseline
+    may take is the user's call, and a full replay does not cap it. What the
+    channel still notices in that case is the zygote *dying*, which is the
+    failure this guards against.
+    """
+    timeout = request.get("timeout")
+    if not timeout:
+        return None
+    return time.monotonic() + float(timeout) + _OVERHEAD_ALLOWANCE_S
+
+
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="JUmPER benchmark fork supervisor")
     parser.add_argument("--prefix-script", required=True)
@@ -137,6 +158,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    # A restarted or interrupted Jupyter kernel must not leave a sampler and a
+    # full copy of the prefix running behind it.
+    if not die_with_parent() and os.getppid() == 1:
+        return 0
     supervisor = Supervisor(
         prefix_script=args.prefix_script,
         interval=args.interval,

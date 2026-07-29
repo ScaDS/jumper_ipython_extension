@@ -28,7 +28,6 @@ What still lives here is what only the holder of the state can do:
 import argparse
 import json
 import os
-import signal
 import sys
 import time
 import traceback
@@ -36,6 +35,11 @@ from pathlib import Path
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT
+from jumper_extension.adapters.ai_reviewer.benchmark.replay.lifetime import (
+    die_with_parent,
+    kill_group,
+    own_process_group,
+)
 from jumper_extension.adapters.ai_reviewer.benchmark.replay.link import JsonLink
 
 # How often the parent checks on a running child. Only the wall time of a
@@ -359,10 +363,19 @@ class Zygote:
         pid = os.fork()
         if pid == 0:
             self._run_child(code, request)  # never returns
+        # Both sides place the child in its own group; whichever runs first wins
+        # and the loser's failure is meaningless. Without it a timeout could only
+        # kill the cell, leaving whatever the cell started behind.
+        own_process_group(pid)
         return self._await(pid, request.get("timeout"), error_path)
 
     def _run_child(self, code: str, request: dict):
         """Run the target cell in the inherited state, then leave without cleanup."""
+        # Its own group, so a timeout reaches whatever the cell starts; and dead
+        # when the zygote is, so an abandoned measurement cannot keep a full copy
+        # of the prefix alive with nobody waiting for it.
+        own_process_group()
+        die_with_parent()
         try:
             self.link.close()  # the supervisor's stream is none of the child's business
         except BaseException:
@@ -375,6 +388,9 @@ class Zygote:
             )
             os.dup2(handle, 1)
             os.dup2(handle, 2)
+            # stdin is the zygote's request channel: a cell calling input() would
+            # otherwise eat the next measurement request off it.
+            os.dup2(os.open(os.devnull, os.O_RDONLY), 0)
             os.close(handle)
         except BaseException:
             pass
@@ -412,7 +428,7 @@ class Zygote:
             if done:
                 break
             if deadline is not None and time.perf_counter() > deadline:
-                os.kill(pid, signal.SIGKILL)
+                kill_group(pid)
                 os.waitpid(pid, 0)
                 return {
                     "status": TIMEOUT,
@@ -484,6 +500,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    if not die_with_parent():
+        # Either the kernel will not promise it, or the supervisor is already
+        # gone - and running the prefix for a supervisor that no longer exists
+        # would hold a full copy of it for nothing.
+        if os.getppid() == 1:
+            return 0
     zygote = Zygote(
         prefix_script=args.prefix_script,
         work_dir=args.work_dir,

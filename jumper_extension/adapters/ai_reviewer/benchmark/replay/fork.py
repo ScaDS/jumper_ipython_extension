@@ -21,6 +21,7 @@ what it allocated. Timing is unaffected; the warning below says as much.
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK
@@ -41,12 +42,31 @@ _SUPERVISOR_MODULE = "jumper_extension.adapters.ai_reviewer.benchmark.replay.sup
 # How long a stopping supervisor gets to leave on its own before it is killed.
 _STOP_TIMEOUT_S = 10.0
 
+# Room for the two hops below this one to do their own work - the supervisor's
+# allowance for sampling and export, and the round trips between them. This only
+# has to outlast a healthy measurement; the budget a cell is actually held to is
+# enforced where the cell runs.
+_RELAY_ALLOWANCE_S = 300.0
+
 _RSS_CAVEAT = (
     "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed "
     "once instead of once per measurement. Timings are unaffected, but memory "
     "metrics are not comparable with a full replay's - the process tree holds "
     "both the prefix and a child that inherited it, and their RSS is summed."
 )
+
+
+def _deadline(timeout: float | None) -> float | None:
+    """When to stop waiting on the supervisor, or None to wait as long as it lives.
+
+    A cell with no budget of its own gets none here either: how long a baseline
+    may take is the user's call, and the full replay does not cap it. A dead
+    supervisor is still noticed in that case - that is what the channel watches
+    for, and it is the failure this exists to stop hanging on.
+    """
+    if not timeout:
+        return None
+    return time.monotonic() + float(timeout) + _RELAY_ALLOWANCE_S
 
 
 class ForkReplayStrategy(ReplayStrategy):
@@ -116,13 +136,20 @@ class ForkReplayStrategy(ReplayStrategy):
                 # along with the replay and is cheap beside it.
                 "output_names": self.context.adapter.output_names(code),
                 "timeout": timeout,
-            }
+            },
+            # The supervisor already allows for its own overhead on top of the
+            # cell's budget; this only has to outlast that, and never expire on a
+            # measurement that is merely slow.
+            deadline=_deadline(timeout),
         )
         if response is None:
             return ReplayResult(
                 status=FAILED,
                 strategy_broken=True,
-                error=f"the supervisor stopped responding.\n{tail(self._log_text())}",
+                error=(
+                    f"the supervisor gave no answer: {self._channel.failure()}.\n"
+                    f"{tail(self._log_text())}"
+                ),
             )
         return self._result_of(response, session_path, fingerprint_path)
 
