@@ -126,6 +126,16 @@ def build_ai_review_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Repair rounds before a failing suggestion is reported as failed",
     )
+    parser.add_argument(
+        "--replay-mode",
+        default=None,
+        choices=("full", "fork", "dill"),
+        help=(
+            "How the state a timed cell needs is rebuilt between measurements. "
+            "'full' re-runs every preceding cell each time; the others rebuild it "
+            "once and reuse it. A mode that cannot serve this cell falls back to full"
+        ),
+    )
     _CHECK_NAMES = ("validate_syntax", "run")
     parser.add_argument(
         "--check",

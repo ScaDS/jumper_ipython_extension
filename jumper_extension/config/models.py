@@ -135,6 +135,23 @@ class AIBenchmarkChecksConfig(BaseModel):
     run: bool = True
 
 
+class AIBenchmarkReplayConfig(BaseModel):
+    """How the state a timed cell needs is rebuilt between measurements.
+
+    ``full`` re-runs every preceding cell per measurement: always correct, and
+    the reason a benchmark is slow. The others rebuild that state once and reuse
+    it, and each is gated by what it can actually serve - a mode that is not
+    built, or cannot handle the cell's language, degrades to ``full`` with a
+    warning rather than failing the benchmark.
+    """
+    mode: Literal["full", "fork", "dill"] = "full"
+    # Check a fast mode against one full replay of the baseline before trusting
+    # it. Worth the extra prefix run: a restore that silently rebuilt the wrong
+    # state would otherwise pass unnoticed, because every variant is compared
+    # against a baseline that went through the same broken restore.
+    cross_check: bool = True
+
+
 class AIBenchmarkConfig(BaseModel):
     """Parameters for replaying and timing the suggestions of a review."""
     runs: int = 3
@@ -145,6 +162,7 @@ class AIBenchmarkConfig(BaseModel):
     # Kill a variant once it exceeds this multiple of the baseline duration.
     timeout_factor: float = 10.0
     checks: AIBenchmarkChecksConfig = Field(default_factory=AIBenchmarkChecksConfig)
+    replay: AIBenchmarkReplayConfig = Field(default_factory=AIBenchmarkReplayConfig)
 
 
 class AIConfig(BaseModel):

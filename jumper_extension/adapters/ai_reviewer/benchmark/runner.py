@@ -1,29 +1,29 @@
-"""Replay one cell in a fresh process and read back what it cost.
+"""Replay one cell, however the chosen strategy gets it there, and read back what it cost.
 
-Each run is its own interpreter: the prefix rebuilds the state the cell needs,
-and nothing a variant mutates can leak into the next one. Results come back as
-a session export, which is then read through the very same reporter the live
-review uses, so a variant's metrics are comparable with the baseline's by
-construction rather than by convention.
+Rebuilding the state a cell needs is the strategy's job (see ``replay``); this
+module owns the half that must stay identical no matter which strategy ran:
+results come back as a session export, which is then read through the very same
+reporter the live review uses, so a variant's metrics are comparable with the
+baseline's by construction rather than by convention.
 """
 import contextlib
 import logging
 import os
 import statistics
-import subprocess
 import tempfile
-import time
 
 import pandas as pd
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
-from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT, RunOutcome
-from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
-from jumper_extension.adapters.ai_reviewer.language import (
-    LanguageAdapter,
-    ReplayRequest,
-    get_adapter,
+from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, RunOutcome
+from jumper_extension.adapters.ai_reviewer.benchmark.replay import (
+    FULL,
+    FullReplayStrategy,
+    ReplayContext,
+    resolve_strategy,
 )
+from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
+from jumper_extension.adapters.ai_reviewer.language import LanguageAdapter, get_adapter
 from jumper_extension.adapters.cell_history import CellHistory
 from jumper_extension.adapters.reporter import build_performance_reporter
 from jumper_extension.adapters.session import SessionImporter
@@ -31,11 +31,9 @@ from jumper_extension.monitor.common import OfflinePerformanceMonitor
 
 logger = logging.getLogger("extension")
 
-_ERROR_TAIL_CHARS = 4000
-
 
 class BenchmarkRunner:
-    """Runs replay scripts and turns their session exports into numbers."""
+    """Drives a replay strategy and turns its session exports into numbers."""
 
     def __init__(
         self,
@@ -44,6 +42,7 @@ class BenchmarkRunner:
         level: str = "process",
         work_dir: str | None = None,
         adapter: LanguageAdapter | None = None,
+        replay_mode: str = FULL,
     ):
         self.prefix_cells = prefix_cells
         self.interval = interval
@@ -52,72 +51,57 @@ class BenchmarkRunner:
         # The target cell's language decides how a replay is built and launched;
         # defaults to Python so direct constructors keep their old behaviour.
         self.adapter = adapter or get_adapter("python")
+        self.strategy = resolve_strategy(
+            replay_mode,
+            ReplayContext(
+                prefix_cells=self.prefix_cells,
+                interval=self.interval,
+                work_dir=self._work_dir,
+                adapter=self.adapter,
+            ),
+        )
+        self._prepared = False
 
     @property
     def work_dir(self) -> str:
         return self._work_dir
 
     def run_once(self, code: str, tag: str, timeout: float | None = None) -> RunOutcome:
-        """Replay the prefix plus *code* once, timing the last cell."""
-        session_path = os.path.join(self._work_dir, f"{tag}_session.zip")
-        fingerprint_path = os.path.join(self._work_dir, f"{tag}_fingerprint.json")
-        # A timed run always fingerprints its outputs: verification rides along
-        # with the replay (the two are one check level) and is cheap beside it.
-        output_names = self.adapter.output_names(code)
-        artifact = self.adapter.render_replay(
-            ReplayRequest(
-                prefix_cells=self.prefix_cells,
-                target_code=code,
-                interval=self.interval,
-                output_names=output_names,
-                session_path=session_path,
-                fingerprint_path=fingerprint_path,
-                output_path=os.path.join(self._work_dir, tag),
-                work_dir=self._work_dir,
-            )
-        )
-
-        for stale in (session_path, fingerprint_path):
-            if os.path.exists(stale):
-                os.remove(stale)
-
-        started = time.perf_counter()
-        try:
-            completed = subprocess.run(
-                artifact.command,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=self._work_dir,
-                env=self._child_env(),
-            )
-        except subprocess.TimeoutExpired:
-            return RunOutcome(
-                status=TIMEOUT,
-                error=f"Exceeded the {timeout:.0f}s budget and was killed.",
-            )
-        wall = time.perf_counter() - started
-
-        if completed.returncode != 0:
-            return RunOutcome(status=FAILED, error=_tail(completed.stderr))
-        if not os.path.exists(session_path):
-            return RunOutcome(
-                status=FAILED,
-                error=f"The run produced no session export.\n{_tail(completed.stderr)}",
-            )
-        outcome = self._read_outcome(session_path, fingerprint_path)
-        outcome.wall_s = round(wall, 4)
+        """Replay the prefix state plus *code* once, timing the last cell."""
+        self._ensure_prepared()
+        result = self.strategy.replay(code, tag, timeout)
+        if not result.ok:
+            return RunOutcome(status=result.status, error=result.error)
+        outcome = self._read_outcome(result.session_path, result.fingerprint_path)
+        outcome.wall_s = result.wall_s
         return outcome
 
-    def _child_env(self) -> dict:
-        """Keep each replay's own logs beside its session export.
+    def close(self):
+        """Release whatever the strategy is holding. Safe to call twice."""
+        self.strategy.close()
 
-        A replay is a fresh interpreter, so it opens a log directory of its own;
-        left alone, a single benchmark would scatter a dozen of them across the
-        user's home. Here they land next to the script and zip they describe,
-        which is where anyone debugging a failed replay would look.
+    def _ensure_prepared(self):
+        """Set the strategy up on first use, falling back to full replay if it cannot.
+
+        Preparing lazily matters: a benchmark whose timed run is turned off never
+        reaches a replay, and should not pay for a zygote or a checkpoint it will
+        not use. A strategy that cannot start is not an error - the full replay
+        is always correct, so we say why and carry on with it.
         """
-        return {**os.environ, "JUMPER_LOG_DIR": self._work_dir}
+        if self._prepared:
+            return
+        self._prepared = True
+        outcome = self.strategy.prepare()
+        if outcome.ok:
+            return
+
+        logger.warning(
+            f"[JUmPER]: benchmark replay mode {self.strategy.name!r} could not start "
+            f"({outcome.reason}); falling back to the full replay."
+        )
+        self.strategy.close()
+        self.strategy = FullReplayStrategy(self.strategy.context)
+        self.strategy.prepare()
 
     def _read_outcome(self, session_path: str, fingerprint_path: str) -> RunOutcome:
         """Read the exported session through the live review's own analysis path.
@@ -127,7 +111,10 @@ class BenchmarkRunner:
         its interval - and a good optimization is precisely the one that stops
         being sampled. Missing metrics must not read as a failed run.
         """
-        target_index = len(self.prefix_cells)
+        # Where the target landed is the strategy's business: a full replay puts
+        # it after the prefix it just ran, while one that restores state instead
+        # may place it anywhere in the history it synthesizes.
+        target_index = self.strategy.target_cell_index
         importer = SessionImporter(logger)
         work_dir, cleanup = importer._prepare_work_directory(session_path)
         try:
@@ -217,11 +204,6 @@ def median_of(outcomes: list[RunOutcome]) -> tuple[float, dict]:
             ]
             metrics.setdefault(name, {})[statistic] = round(statistics.median(values), 4)
     return round(duration, 6), metrics
-
-
-def _tail(text: str) -> str:
-    text = (text or "").strip()
-    return text[-_ERROR_TAIL_CHARS:]
 
 
 def _remove_tree(path: str) -> None:

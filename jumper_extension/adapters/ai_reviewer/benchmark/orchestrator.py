@@ -80,16 +80,21 @@ class BenchmarkOrchestrator:
         do. An empty dict also means the baseline itself would not run, leaving
         nothing to compare against.
         """
-        if self.checks.run.active:
-            return self._run_timed(baseline_code, variants)
-        if self.checks.validate_syntax.active:
-            return self._run_syntax_only(variants)
-        # Both the run and the syntax gate are off: resolve_checks already
-        # explained why, and there is genuinely nothing left to do here.
-        logger.info(
-            "[JUmPER]: benchmark has no active checks; nothing to measure or verify."
-        )
-        return {}
+        try:
+            if self.checks.run.active:
+                return self._run_timed(baseline_code, variants)
+            if self.checks.validate_syntax.active:
+                return self._run_syntax_only(variants)
+            # Both the run and the syntax gate are off: resolve_checks already
+            # explained why, and there is genuinely nothing left to do here.
+            logger.info(
+                "[JUmPER]: benchmark has no active checks; nothing to measure or verify."
+            )
+            return {}
+        finally:
+            # A strategy may be holding a live process or a checkpoint on disk;
+            # it outlives no single measurement, so this is where it is released.
+            self.runner.close()
 
     def _run_timed(self, baseline_code: str, variants: list[tuple[str, str]]) -> dict:
         """The full benchmark: measure the baseline, then time and verify each variant."""

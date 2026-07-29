@@ -981,7 +981,11 @@ def _active_language() -> str:
 
 def _benchmark_options(args) -> dict:
     """Per-run benchmark overrides; absent flags fall back to the config."""
-    options = {"runs": args.benchmark_runs, "fix_attempts": args.fix_attempts}
+    options = {
+        "runs": args.benchmark_runs,
+        "fix_attempts": args.fix_attempts,
+        "replay_mode": getattr(args, "replay_mode", None),
+    }
     resolved = {key: value for key, value in options.items() if value is not None}
     checks = _check_overrides(args)
     if checks:

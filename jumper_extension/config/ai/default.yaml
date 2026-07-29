@@ -31,6 +31,22 @@ benchmark:
     validate_syntax: true   # static parse gate before any replay
     run: true               # timed replay + fingerprint/compare results vs baseline
 
+  replay:
+    # How the state the timed cell needs is rebuilt between measurements.
+    #   full - re-run every preceding cell, every time. Always correct, and the
+    #          reason a benchmark is slow.
+    #   fork - run the prefix once, fork a child per measurement (Python only).
+    #   dill - run the prefix once, restore a checkpoint per measurement.
+    # A mode that is not built, or cannot serve the cell's language, falls back
+    # to full with a warning instead of failing the benchmark.
+    mode: full
+    # Before trusting a fast mode, measure the baseline once through it and once
+    # through the full replay, and compare the results. Without this a restore
+    # that rebuilt the wrong state passes unnoticed: every variant is compared
+    # against a baseline that went through the same broken restore, so they
+    # agree with each other and the divergence check reports a match.
+    cross_check: true
+
 context:
   strategy: faster
 
