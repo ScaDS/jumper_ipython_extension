@@ -19,6 +19,7 @@ from jumper_extension.adapters.ai_reviewer.benchmark.models import (
 )
 from jumper_extension.adapters.ai_reviewer.benchmark.checks import CheckPlan, all_active
 from jumper_extension.adapters.ai_reviewer.benchmark.progress import BenchmarkProgress
+from jumper_extension.adapters.ai_reviewer.benchmark.replay import StrategyChanged
 from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner, median_of
 from jumper_extension.adapters.ai_reviewer.language import LanguageAdapter, get_adapter
 
@@ -82,7 +83,7 @@ class BenchmarkOrchestrator:
         """
         try:
             if self.checks.run.active:
-                return self._run_timed(baseline_code, variants)
+                return self._timed_on_one_instrument(baseline_code, variants)
             if self.checks.validate_syntax.active:
                 return self._run_syntax_only(variants)
             # Both the run and the syntax gate are off: resolve_checks already
@@ -95,6 +96,52 @@ class BenchmarkOrchestrator:
             # A strategy may be holding a live process or a checkpoint on disk;
             # it outlives no single measurement, so this is where it is released.
             self.runner.close()
+
+    def _timed_on_one_instrument(
+        self,
+        baseline_code: str,
+        variants: list[tuple[str, str]],
+    ) -> dict:
+        """Measure everything, and if the strategy changes underneath, start over.
+
+        A benchmark reports ratios, so every number in one has to come from the
+        same instrument. When a strategy gives out mid-run the runner has already
+        swapped in the full replay, but the measurements taken before the swap
+        cannot be set beside the ones taken after: a variant timed one way over a
+        baseline timed the other is not a speedup, it is the difference between
+        two clocks.
+
+        Worse, the budget each variant is given comes from how long the baseline
+        took *including* its prefix. Under a mode that replays the prefix once,
+        that share is near zero - so variants inheriting it after a swap would be
+        killed by a timeout with no room for the prefix they now have to replay,
+        and each one handed to the repair loop to fix code that was never wrong.
+
+        Restarting is therefore the cheap option, not the expensive one. Once
+        only: the full replay prepares nothing and cannot give out in turn, so a
+        second swap would mean a defect here rather than a problem on the machine.
+        """
+        for attempt in (1, 2):
+            try:
+                return self._run_timed(baseline_code, variants)
+            except StrategyChanged as change:
+                if attempt == 2:
+                    logger.error(
+                        "[JUmPER]: the benchmark's replay strategy gave out twice "
+                        f"({change}); giving up rather than reporting numbers from "
+                        "two different instruments."
+                    )
+                    return {}
+                logger.warning(
+                    f"[JUmPER]: the benchmark's replay strategy gave out ({change}). "
+                    "Everything measured so far is discarded and the whole benchmark "
+                    "is being re-run on the full replay - measurements from two "
+                    "different modes cannot be compared with each other, and this "
+                    "way every number in the report comes from the same one. "
+                    "Expect it to take longer."
+                )
+                self.final_code.clear()
+        return {}
 
     def _run_timed(self, baseline_code: str, variants: list[tuple[str, str]]) -> dict:
         """The full benchmark: measure the baseline, then time and verify each variant."""
@@ -180,7 +227,8 @@ class BenchmarkOrchestrator:
         pending = [_Candidate(label, code, self.fix_attempts) for label, code in variants]
         repairing: dict[Future, _Candidate] = {}
 
-        with ThreadPoolExecutor(max_workers=max(1, len(pending))) as pool:
+        pool = ThreadPoolExecutor(max_workers=max(1, len(pending)))
+        try:
             while pending or repairing:
                 if pending:
                     process(results, pending.pop(0), pending, repairing, pool)
@@ -196,6 +244,12 @@ class BenchmarkOrchestrator:
                     candidate.code = fixed
                     candidate.attempts += 1
                     pending.append(candidate)
+        except BaseException:
+            # Do not wait out a repair on the way out. Nothing here will use its
+            # answer, and an unfinished model call can hold the door for minutes.
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise
+        pool.shutdown(wait=True)
         return results
 
     def _process_timed(

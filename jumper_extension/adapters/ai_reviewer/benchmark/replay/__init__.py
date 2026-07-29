@@ -14,6 +14,7 @@ from jumper_extension.adapters.ai_reviewer.benchmark.replay.base import (
     ReplayContext,
     ReplayResult,
     ReplayStrategy,
+    StrategyChanged,
     tail,
 )
 from jumper_extension.adapters.ai_reviewer.benchmark.replay.full import FullReplayStrategy
@@ -39,6 +40,7 @@ __all__ = [
     "ReplayContext",
     "ReplayResult",
     "ReplayStrategy",
+    "StrategyChanged",
     "available_modes",
     "register_strategy",
     "resolve_strategy",

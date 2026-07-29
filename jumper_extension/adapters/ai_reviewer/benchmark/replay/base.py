@@ -31,6 +31,18 @@ DILL = "dill"
 _ERROR_TAIL_CHARS = 4000
 
 
+class StrategyChanged(RuntimeError):
+    """Raised when a strategy gave out mid-benchmark and was swapped for another.
+
+    Not an error to report - the swap already happened and the full replay can
+    finish the job. It unwinds the run instead, because what was measured before
+    the swap and what would be measured after it come from two different
+    instruments, and a benchmark's output is a ratio between its measurements.
+    Mixing them silently is how a variant ends up divided by a baseline that was
+    never timed the same way.
+    """
+
+
 @dataclass
 class ReplayContext:
     """What every strategy needs to rebuild the state a cell under test expects."""

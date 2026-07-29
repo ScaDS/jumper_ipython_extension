@@ -1,8 +1,10 @@
+import logging
 from unittest.mock import Mock
 
 from jumper_extension.adapters.ai_reviewer.benchmark import fingerprint
 from jumper_extension.adapters.ai_reviewer.benchmark.checks import CheckPlan, Decision
 from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, RunOutcome
+from jumper_extension.adapters.ai_reviewer.benchmark.replay import StrategyChanged
 from jumper_extension.adapters.ai_reviewer.benchmark.orchestrator import (
     BASELINE_LABEL,
     BenchmarkOrchestrator,
@@ -255,3 +257,62 @@ def test_timeout_budget_covers_the_prefix_and_room_to_be_slow():
     )
 
     assert budget == 42.0  # 1s prefix x2, plus 4s x10
+
+
+def test_a_strategy_giving_out_restarts_the_whole_benchmark(caplog):
+    """Numbers from two replay modes must never end up in one report.
+
+    A benchmark reports ratios, so a variant timed one way over a baseline timed
+    the other is not a speedup. When the runner swaps strategies mid-run it says
+    so, and everything measured before the swap has to be thrown away.
+    """
+    seen = []
+
+    def run_once(code, tag, timeout=None):
+        seen.append(tag)
+        # Gives out once, partway through the first variant.
+        if len([t for t in seen if t.startswith("1_")]) == 1 and "restarted" not in seen:
+            seen.append("restarted")
+            raise StrategyChanged("the zygote is gone")
+        return RunOutcome(
+            status=OK,
+            duration_s=4.0 if code == "base" else 1.0,
+            wall_s=5.0,
+            metrics={},
+            fingerprints=_PRINTS,
+        )
+
+    runner = Mock()
+    runner.run_once = run_once
+    orchestrator = BenchmarkOrchestrator(
+        runner=runner,
+        fix_fn=lambda code, error, label: code,
+        runs=2,
+        fix_attempts=3,
+    )
+
+    with caplog.at_level(logging.WARNING, logger="extension"):
+        results = orchestrator.run("base", [("1", "fast")])
+
+    assert results["1"].speedup == 4.0, "the surviving report is measured end to end"
+    # The baseline is re-measured too: its own numbers came from the old mode.
+    assert seen.count("baseline_0") == 2
+    assert any("re-run on the full replay" in r.message for r in caplog.records)
+
+
+def test_a_strategy_giving_out_twice_reports_nothing(caplog):
+    """The full replay prepares nothing and cannot give out; twice means a defect."""
+    runner = Mock()
+    runner.run_once = Mock(side_effect=StrategyChanged("gone again"))
+    orchestrator = BenchmarkOrchestrator(
+        runner=runner,
+        fix_fn=lambda code, error, label: code,
+        runs=2,
+        fix_attempts=3,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="extension"):
+        results = orchestrator.run("base", [("1", "fast")])
+
+    assert results == {}
+    assert any("gave out twice" in r.message for r in caplog.records)

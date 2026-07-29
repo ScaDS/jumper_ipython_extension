@@ -20,6 +20,7 @@ from jumper_extension.adapters.ai_reviewer.benchmark.replay import (
     FULL,
     FullReplayStrategy,
     ReplayContext,
+    StrategyChanged,
     resolve_strategy,
 )
 from jumper_extension.adapters.ai_reviewer.context.collector import ContextCollector
@@ -71,10 +72,13 @@ class BenchmarkRunner:
         self._ensure_prepared()
         result = self.strategy.replay(code, tag, timeout)
         if result.strategy_broken:
-            # Not this code's fault, so it must not be reported as its failure:
-            # swap in the full replay and give the same cell a fair second run.
+            # Not this code's fault, so it must not be reported as its failure.
+            # Nor can this one measurement simply be retried on the full replay
+            # and set beside the ones taken before it: a benchmark's output is a
+            # ratio, and the two modes are two instruments. Swap, then unwind and
+            # let the whole run start again on one of them.
             self._fall_back(result.error)
-            result = self.strategy.replay(code, tag, timeout)
+            raise StrategyChanged(result.error)
         if not result.ok:
             return RunOutcome(status=result.status, error=result.error)
         outcome = self._read_outcome(result.session_path, result.fingerprint_path)
