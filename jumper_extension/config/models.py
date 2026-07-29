@@ -145,10 +145,13 @@ class AIBenchmarkReplayConfig(BaseModel):
     warning rather than failing the benchmark.
     """
     mode: Literal["full", "fork", "dill"] = "full"
-    # Check a fast mode against one full replay of the baseline before trusting
-    # it. Worth the extra prefix run: a restore that silently rebuilt the wrong
-    # state would otherwise pass unnoticed, because every variant is compared
-    # against a baseline that went through the same broken restore.
+    # NOT IMPLEMENTED - nothing reads this yet, whatever it is set to.
+    #
+    # Reserved for checking a fast mode against one full replay of the baseline
+    # before trusting it. Worth the extra prefix run when it lands: a mode that
+    # silently rebuilt the wrong state would otherwise pass unnoticed, because
+    # every variant is compared against a baseline that went through the same
+    # broken rebuild, so the two agree and the divergence check reports a match.
     cross_check: bool = True
 
 

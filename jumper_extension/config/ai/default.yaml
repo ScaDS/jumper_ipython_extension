@@ -33,18 +33,21 @@ benchmark:
 
   replay:
     # How the state the timed cell needs is rebuilt between measurements.
-    #   full - re-run every preceding cell, every time. Always correct, and the
-    #          reason a benchmark is slow.
+    #   full - re-run every preceding cell, every time. The reference every
+    #          other mode falls back to, and the reason a benchmark is slow.
     #   fork - run the prefix once, fork a child per measurement (Python only).
-    #   dill - run the prefix once, restore a checkpoint per measurement.
-    # A mode that is not built, or cannot serve the cell's language, falls back
-    # to full with a warning instead of failing the benchmark.
+    #   dill - not built yet.
+    # A mode that is not built, or cannot serve the cell's language, or that
+    # gives out mid-run, falls back to full with a warning instead of failing
+    # the benchmark.
     mode: full
-    # Before trusting a fast mode, measure the baseline once through it and once
-    # through the full replay, and compare the results. Without this a restore
-    # that rebuilt the wrong state passes unnoticed: every variant is compared
-    # against a baseline that went through the same broken restore, so they
-    # agree with each other and the divergence check reports a match.
+    # NOT IMPLEMENTED - nothing reads this yet, whatever it is set to.
+    #
+    # Reserved for measuring the baseline once through a fast mode and once
+    # through the full replay and comparing the two, so that a mode which
+    # rebuilt the wrong state cannot pass unnoticed: every variant is compared
+    # against a baseline that went through the same rebuild, so the two agree
+    # with each other and the divergence check reports a match.
     cross_check: true
 
 context:
