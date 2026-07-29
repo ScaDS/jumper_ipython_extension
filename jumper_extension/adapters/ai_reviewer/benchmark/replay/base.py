@@ -64,6 +64,10 @@ class ReplayResult:
     fingerprint_path: str = ""
     wall_s: float = 0.0
     error: str = ""
+    # The strategy itself broke, not the code it was given. Without this a dead
+    # zygote reads as a failing suggestion, and every variant gets handed to the
+    # repair loop to fix code that was never wrong.
+    strategy_broken: bool = False
 
     @property
     def ok(self) -> bool:

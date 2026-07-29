@@ -43,6 +43,25 @@ def render_cell(raw_cell: str, cell_magics: list[str]) -> str:
     )
 
 
+def build_prefix_script(prefix_cells: list[dict], output_path: str) -> str:
+    """Render just the prefix cells, for a runtime that brings its own adapter.
+
+    The fork zygote runs the prefix once and then forks per measurement, so it
+    owns the monitor and the session export itself and needs nothing from the
+    header or the footer - only the cells, driven through the same hooks the
+    full replay uses, so the state they build is the state it builds.
+    """
+    parts = []
+    for cell in prefix_cells:
+        parts.append(f"\n# --- cell {cell['index']} ---\n")
+        parts.append(render_cell(cell["raw_cell"], cell.get("cell_magics")))
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(parts), encoding="utf-8")
+    return str(path)
+
+
 def build_script(
     prefix_cells: list[dict],
     target_code: str,

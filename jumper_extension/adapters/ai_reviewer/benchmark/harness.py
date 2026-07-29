@@ -36,7 +36,7 @@ from jumper_extension.core.service import build_perfmonitor_magic_adapter
 _TARGET_LANGUAGE_DEFAULT = "unknown"
 
 
-def _clock_offset() -> float:
+def clock_offset() -> float:
     """How much to add to an epoch second to get the sampler's perf_counter.
 
     Measured back to back so the two reads refer to the same instant; over a
@@ -47,7 +47,7 @@ def _clock_offset() -> float:
     return mono - epoch
 
 
-def _synthesize_history(
+def synthesize_history(
     prefix_count: int,
     target_code: str,
     language: str,
@@ -114,7 +114,7 @@ def run_harness(
         display_disabled_reason="Display disabled in the benchmark harness.",
     )
     adapter.perfmonitor_start(str(interval))
-    offset = _clock_offset()
+    offset = clock_offset()
     try:
         completed = subprocess.run(
             run_cmd,
@@ -136,7 +136,7 @@ def run_harness(
     with open(markers_path) as handle:
         markers = json.load(handle)
 
-    adapter.service.cell_history.data = _synthesize_history(
+    adapter.service.cell_history.data = synthesize_history(
         prefix_count=prefix_count,
         target_code=target_code,
         language=language,

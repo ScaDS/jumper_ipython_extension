@@ -67,11 +67,17 @@ def test_no_mode_means_full(context):
 
 
 def test_unbuilt_mode_falls_back_to_full_with_a_reason(context, caplog):
+    # A name no build will ever register: the point is the degradation path, and
+    # naming a real mode here would only test whether that mode exists yet.
     with caplog.at_level(logging.WARNING, logger="extension"):
-        strategy = resolve_strategy("fork", context)
+        strategy = resolve_strategy("nonesuch", context)
 
     assert isinstance(strategy, FullReplayStrategy)
     assert any("not available in this install" in r.message for r in caplog.records)
+
+
+def test_fork_is_registered(context):
+    assert "fork" in available_modes()
 
 
 def test_registered_mode_is_used_for_a_language_it_serves(context, clean_registry):

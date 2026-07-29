@@ -70,6 +70,11 @@ class BenchmarkRunner:
         """Replay the prefix state plus *code* once, timing the last cell."""
         self._ensure_prepared()
         result = self.strategy.replay(code, tag, timeout)
+        if result.strategy_broken:
+            # Not this code's fault, so it must not be reported as its failure:
+            # swap in the full replay and give the same cell a fair second run.
+            self._fall_back(result.error)
+            result = self.strategy.replay(code, tag, timeout)
         if not result.ok:
             return RunOutcome(status=result.status, error=result.error)
         outcome = self._read_outcome(result.session_path, result.fingerprint_path)
@@ -92,12 +97,20 @@ class BenchmarkRunner:
             return
         self._prepared = True
         outcome = self.strategy.prepare()
-        if outcome.ok:
-            return
+        if not outcome.ok:
+            self._fall_back(outcome.reason)
 
+    def _fall_back(self, reason: str):
+        """Give up on the current strategy and finish on the full replay.
+
+        Always possible, and always correct: the full replay needs no setup and
+        serves every language, so there is no state in which this cannot be done.
+        """
+        if isinstance(self.strategy, FullReplayStrategy):
+            return
         logger.warning(
-            f"[JUmPER]: benchmark replay mode {self.strategy.name!r} could not start "
-            f"({outcome.reason}); falling back to the full replay."
+            f"[JUmPER]: benchmark replay mode {self.strategy.name!r} is unusable "
+            f"({reason}); falling back to the full replay."
         )
         self.strategy.close()
         self.strategy = FullReplayStrategy(self.strategy.context)
