@@ -21,9 +21,17 @@ What still lives here is what only the holder of the state can do:
 * decide whether this machine may be forked at all (``probe_fork``,
   ``gpu_blocker``);
 * fork, wait, and kill on timeout;
-* in the child: walk the inherited pages, run the cell, write epoch marks and
-  output fingerprints, and leave through ``os._exit`` without running teardown
-  that belongs to the process it was copied from.
+* in the child: pay the fork's own costs before the clock starts - walking the
+  inherited pages and rebuilding the thread pool - then run the cell, write
+  epoch marks, count what the kernel had to do anyway, dump output fingerprints,
+  and leave through ``os._exit`` without running teardown that belongs to the
+  process it was copied from.
+
+Each of those preamble steps exists because a cost that belongs to *being a
+forked child* was landing inside the window meant to measure the cell, and none
+of them average out: every measurement is a fresh child, so there is no such
+thing as a warmed-up run. What cannot be moved out - a reference count written
+into an inherited page is a real copy - is counted and reported instead.
 """
 import argparse
 import json
@@ -56,6 +64,10 @@ _PROBE_SIZE = 1200
 _PROBE_BYTES = 64 * 1024 * 1024
 
 _PAGE = 4096
+
+# Small enough to cost under a millisecond, large enough that BLAS takes its
+# parallel path rather than the serial shortcut it keeps for tiny matrices.
+_WARMUP_SIZE = 64
 
 
 class InertMagicAdapter:
@@ -94,11 +106,21 @@ def prefault(maps_path: str = "/proc/self/maps") -> int:
     fast vectorized rewrites a review is looking for. Walking the pages here
     moves the cost outside the measured window.
 
-    It cannot move all of it. Reading a Python object *writes* to the page it
-    lives on, because the reference count lives inside the object, and a write to
-    an inherited page is a real copy rather than bookkeeping. Walking ahead
-    cannot pre-pay that - copying is exactly what a fork avoids - so what remains
-    is counted per measurement and reported instead.
+    Three things it does not cover, all of them measured rather than assumed:
+
+    * **Writes.** Reading a Python object *writes* to the page it lives on,
+      because the reference count lives inside the object, and a write to an
+      inherited page is a real copy rather than bookkeeping. Walking ahead cannot
+      pre-pay that - copying is exactly what a fork avoids - so what remains is
+      counted per measurement and reported instead. Measured: an inherited
+      20-million-element list summed in 737ms against 107ms on a second pass.
+    * **File-backed mappings.** Only anonymous private memory is walked, so a
+      cell over ``numpy.memmap``, h5py or pyarrow still pays first-touch inside
+      the window - measured at 2.0-2.2x on a private 200MB mapping. Including
+      them means bounding the walk first, or a large mapped dataset would be
+      pulled in wholesale on every measurement.
+    * **Everything but Linux.** It reads ``/proc/self/maps``; elsewhere it
+      returns 0 and the penalty stays inside the measurement.
 
     One strided pass per region rather than a Python loop over pages: the work is
     the kernel's either way, and the loop tripled it. Returns the pages touched.
@@ -143,6 +165,39 @@ def prefault(maps_path: str = "/proc/self/maps") -> int:
     return touched
 
 
+def warm_thread_pool() -> bool:
+    """Rebuild the thread pool the fork destroyed, before anything is timed.
+
+    Only the forking thread survives a ``fork()``, so a BLAS or OpenMP pool the
+    prefix had built is gone in the child. The library notices and builds a new
+    one - but lazily, on the next parallel operation, which in this arrangement
+    is the measured cell itself. Measured here: a matmul taking 105ms in the
+    parent took 132ms as the first one in a child, and 115ms when a 0.8ms warm-up
+    had already paid for the pool.
+
+    It never averages out on its own. Every measurement is a fresh child, so
+    dropping the first run as a warm-up does not help - the second and third are
+    just as cold - and a fixed cost of tens of milliseconds is a rounding error
+    against a slow baseline and the whole of a fast rewrite.
+
+    **Limitation: this warms BLAS, and only BLAS.** That is what numpy operations
+    go through, which covers most of what gets benchmarked, but a cell whose
+    parallelism comes from elsewhere - OpenMP inside numba or scikit-learn,
+    torch's own inter-op pools - still builds that pool inside the measured
+    window. Covering them would mean a per-library list that is always one
+    library out of date; what such a case leaves behind is a raised compute ratio
+    in the probe's logged timings.
+    """
+    try:
+        import numpy
+
+        block = numpy.ones((_WARMUP_SIZE, _WARMUP_SIZE))
+        block @ block
+        return True
+    except Exception:
+        return False
+
+
 def task_count() -> int:
     """How many OS threads this process has right now."""
     try:
@@ -168,6 +223,13 @@ def probe_fork(work_dir: str) -> dict:
     of a few milliseconds cannot separate a real effect from a busy machine. The
     timings are still taken - they are the only way an *unknown* slowdown would
     ever show up - but they are reported for the log rather than used to refuse.
+
+    **Limitations.** The thread question is asked through numpy, so without it
+    nothing is checked at all and the mode is allowed on trust. Pools that are
+    not BLAS - OpenMP inside numba or scikit-learn, torch's inter-op pools - are
+    neither warmed nor counted here. And the answer is about the machine, while
+    the distortions it looks for scale with what a *cell* touches: that half is
+    the per-measurement page-fault warning's job, not this one's.
     """
     try:
         import numpy
@@ -197,6 +259,9 @@ def probe_fork(work_dir: str) -> dict:
             started = time.perf_counter()
             pages = prefault()
             walk_s = time.perf_counter() - started
+            # Kept out of walk_s, which prices page faults, but done before the
+            # arms so the probe measures the preamble a measurement really gets.
+            warm_thread_pool()
             child = {
                 "compute": _timed(lambda: matrix @ matrix),
                 "memory": _timed(array.sum),
@@ -252,7 +317,15 @@ def gpu_blocker() -> str:
 
     A CUDA context does not survive a fork: the child gets an initialization
     error on its first call. Only modules the prefix actually imported are
-    inspected, so a notebook that never touched the GPU is never held back.
+    inspected, so a notebook that never went near an accelerator is not held back
+    by one being installed.
+
+    **This is a best-effort list, and it errs in both directions.** Torch is
+    asked whether its CUDA context is actually initialized; cupy and jax are not,
+    so importing either refuses the mode even when the work is on the CPU. In the
+    other direction it does not know about TensorFlow, numba.cuda, PyCUDA, ROCm
+    or OpenCL, nor about ``mpi4py`` once MPI is initialized, where forking is
+    undefined - so a prefix using those can still be forked and should not be.
     """
     torch = sys.modules.get("torch")
     if torch is not None:
@@ -369,7 +442,11 @@ class Zygote:
             # Before the start mark: resolving inherited pages is the fork's
             # cost, not the cell's, and leaving it inside the window understates
             # exactly the fastest variants.
+            # Both before the start mark: resolving inherited pages and
+            # rebuilding a thread pool are the fork's costs, not the cell's, and
+            # inside the window they understate exactly the fastest variants.
             prefault()
+            warm_thread_pool()
             # Page faults bracket the cell for the same reason the clocks do.
             # A fault here is the kernel making inherited memory usable, and for
             # Python objects that means copying the page a reference count was

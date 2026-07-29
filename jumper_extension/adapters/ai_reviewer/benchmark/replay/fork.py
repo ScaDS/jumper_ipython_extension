@@ -225,6 +225,13 @@ class ForkReplayStrategy(ReplayStrategy):
         because 20,000 faults decide everything for a 17ms cell and are nothing
         for a ten-second one. The price of a fault is the one the probe measured
         on this machine, not a number chosen in advance.
+
+        **The figure is a lower bound.** That price comes from the page walk,
+        which only ever reads, while the faults being counted here are mostly
+        writes - and a write fault copies four kilobytes where a read fault only
+        fixes a table entry. In the case measured above the warning reported
+        about 14ms against a real distortion nearer 67ms: right in direction and
+        order, conservative in size.
         """
         faults = int(response.get("faults") or 0)
         duration = float(response.get("duration_s") or 0.0)
