@@ -65,6 +65,11 @@ _PROBE_BYTES = 64 * 1024 * 1024
 
 _PAGE = 4096
 
+# madvise(2): populate the page tables for a range as if it had been read,
+# without copying anything. Linux 5.14 and later; older kernels refuse it and the
+# walk falls back to touching the pages itself.
+_MADV_POPULATE_READ = 22
+
 # Small enough to cost under a millisecond, large enough that BLAS takes its
 # parallel path rather than the serial shortcut it keeps for tiny matrices.
 _WARMUP_SIZE = 64
@@ -95,7 +100,46 @@ def _accept_anything(*args, **kwargs):
     return None
 
 
-def prefault(maps_path: str = "/proc/self/maps") -> int:
+def resident_regions(smaps_path: str = "/proc/self/smaps"):
+    """Anonymous private ranges that actually hold something, largest first.
+
+    ``smaps`` rather than ``maps`` because it carries each region's resident
+    size, and address space is a poor guide to what is there: measured on one
+    zygote, 2544MB of regions against 370MB actually in memory - the rest an
+    untouched reservation of the kind ``numpy.empty`` leaves behind. Walking by
+    region would spend real time on all of it and gain nothing, because reads of
+    an untouched page are served from the shared zero page.
+
+    File-backed regions are left out deliberately. They carry the same
+    first-touch cost - an inherited 200MB ``numpy.memmap`` summed at 20.8ms in a
+    child against 11.9ms in its parent - but walking them was measured *not* to
+    help (19.5ms before, 22.4ms after, at twice the walk cost), so what they cost
+    is reported through the page-fault warning instead of paid for here.
+    """
+    start = end = 0
+    for line in _lines(smaps_path):
+        fields = line.split()
+        # A header line ("7f..-7f.. rw-p 00000000 00:00 0 [path]") starts each
+        # region and is followed by its statistics, one per line.
+        if len(fields) >= 5 and "-" in fields[0] and len(fields[1]) == 4:
+            start = end = 0
+            perms = fields[1]
+            path = fields[5] if len(fields) > 5 else ""
+            # Where the prefix's arrays and objects live. The kernel's own
+            # ([vdso], [vvar], ...) are not ours to walk.
+            if "r" in perms and "p" in perms and (not path or path == "[heap]"):
+                try:
+                    start, end = (int(bound, 16) for bound in fields[0].split("-"))
+                except ValueError:
+                    start = end = 0
+        elif start and fields and fields[0] == "Rss:":
+            resident = int(fields[1]) if len(fields) > 1 and fields[1].isdigit() else 0
+            if resident:
+                yield start, end
+            start = end = 0
+
+
+def prefault(smaps_path: str = "/proc/self/smaps") -> int:
     """Resolve this child's inherited pages before anything is timed.
 
     A fork leaves the child's copy-on-write pages unresolved, and the first read
@@ -106,7 +150,15 @@ def prefault(maps_path: str = "/proc/self/maps") -> int:
     fast vectorized rewrites a review is looking for. Walking the pages here
     moves the cost outside the measured window.
 
-    Three things it does not cover, all of them measured rather than assumed:
+    The kernel is asked to do the walk (``MADV_POPULATE_READ``) rather than
+    touching the addresses ourselves. That is faster, needs no numpy, and - the
+    reason it matters most - it cannot crash: reading raw addresses from a
+    snapshot of the region list means a region freed in between takes the process
+    down with a signal Python cannot catch, and a dead zygote is reported as the
+    measured suggestion failing. An older kernel refuses the call, and only then
+    is the strided read used instead.
+
+    Two things it does not cover, both measured rather than assumed:
 
     * **Writes.** Reading a Python object *writes* to the page it lives on,
       because the reference count lives inside the object, and a write to an
@@ -114,55 +166,54 @@ def prefault(maps_path: str = "/proc/self/maps") -> int:
       pre-pay that - copying is exactly what a fork avoids - so what remains is
       counted per measurement and reported instead. Measured: an inherited
       20-million-element list summed in 737ms against 107ms on a second pass.
-    * **File-backed mappings.** Only anonymous private memory is walked, so a
-      cell over ``numpy.memmap``, h5py or pyarrow still pays first-touch inside
-      the window - measured at 2.0-2.2x on a private 200MB mapping. Including
-      them means bounding the walk first, or a large mapped dataset would be
-      pulled in wholesale on every measurement.
-    * **Everything but Linux.** It reads ``/proc/self/maps``; elsewhere it
-      returns 0 and the penalty stays inside the measurement.
+    * **File-backed mappings**, for the reason given in ``resident_regions``.
 
-    One strided pass per region rather than a Python loop over pages: the work is
-    the kernel's either way, and the loop tripled it. Returns the pages touched.
+    Linux only: elsewhere there is no ``smaps`` to read, this returns 0, and the
+    penalty stays inside the measurement.
+
+    Returns the pages populated.
     """
     try:
         import ctypes
 
-        import numpy
+        libc = ctypes.CDLL(None, use_errno=True)
     except Exception:
-        # Without numpy there is no strided read to do this cheaply - and a
-        # prefix that never imported it has little inherited data to speak of.
         return 0
 
     touched = 0
-    try:
-        with open(maps_path) as handle:
-            regions = handle.readlines()
-    except OSError:
-        return 0
-
-    for line in regions:
-        fields = line.split()
-        if len(fields) < 2:
-            continue
-        perms = fields[1]
-        path = fields[5] if len(fields) > 5 else ""
-        # Anonymous private memory only: that is where the prefix's arrays and
-        # objects live. File-backed regions come from the page cache already, and
-        # the kernel's own ([vdso], [vvar], ...) are not ours to walk.
-        if "r" not in perms or "p" not in perms:
-            continue
-        if path and path != "[heap]":
-            continue
-        try:
-            start, end = (int(bound, 16) for bound in fields[0].split("-"))
-            size = end - start
-            buffer = (ctypes.c_ubyte * size).from_address(start)
-            int(numpy.frombuffer(buffer, dtype=numpy.uint8)[::_PAGE].sum())
-        except Exception:
-            continue
-        touched += size // _PAGE
+    for start, end in resident_regions(smaps_path):
+        size = end - start
+        if libc.madvise(
+            ctypes.c_void_p(start),
+            ctypes.c_size_t(size),
+            ctypes.c_int(_MADV_POPULATE_READ),
+        ) == 0 or _read_through(ctypes, start, size):
+            touched += size // _PAGE
     return touched
+
+
+def _read_through(ctypes, start: int, size: int) -> bool:
+    """Touch one byte per page, for kernels without ``MADV_POPULATE_READ``.
+
+    One strided pass rather than a Python loop over pages: the work is the
+    kernel's either way, and the loop tripled it.
+    """
+    try:
+        import numpy
+
+        buffer = (ctypes.c_ubyte * size).from_address(start)
+        int(numpy.frombuffer(buffer, dtype=numpy.uint8)[::_PAGE].sum())
+        return True
+    except Exception:
+        return False
+
+
+def _lines(path: str) -> list[str]:
+    try:
+        with open(path) as handle:
+            return handle.readlines()
+    except OSError:
+        return []
 
 
 def warm_thread_pool() -> bool:
@@ -298,9 +349,11 @@ def probe_fork(work_dir: str) -> dict:
         "timings": {
             name: round(child[name] / parent[name], 2) for name in ("compute", "memory")
         },
-        # Seconds per page, measured on this machine: the unit the per-measurement
-        # page-fault warning is stated in, rather than a number picked in advance.
-        "page_cost_s": child["walk_s"] / child["walk_pages"] if child["walk_pages"] else 0.0,
+        # What the cheapest kind of fault costs on this machine, measured by the
+        # walk that just did several hundred thousand of them. Deliberately the
+        # cheap kind: it makes every per-measurement estimate a floor, and a
+        # floor can be stated without ever exceeding the thing it describes.
+        "fault_cost_s": child["walk_s"] / child["walk_pages"] if child["walk_pages"] else 0.0,
         "walk_pages": child["walk_pages"],
         "walk_s": round(child["walk_s"], 3),
     }

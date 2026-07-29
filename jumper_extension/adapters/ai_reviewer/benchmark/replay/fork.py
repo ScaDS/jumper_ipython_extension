@@ -48,10 +48,11 @@ _STOP_TIMEOUT_S = 10.0
 # enforced where the cell runs.
 _RELAY_ALLOWANCE_S = 300.0
 
-# A measurement whose page faults plausibly cost this much of its own duration is
-# worth telling the user about: the distortion falls hardest on the fastest
-# rewrites, which are the ones a review exists to find.
-_FAULT_SHARE_WARNING = 0.1
+# The share of a measurement that has to be page faults before it is worth
+# saying so. Low, because what is compared against it is a floor: the true cost
+# is several times this, and the distortion falls hardest on the fastest
+# rewrites - the ones a review exists to find.
+_FAULT_SHARE_WARNING = 0.05
 
 _RSS_CAVEAT = (
     "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed "
@@ -84,10 +85,10 @@ class ForkReplayStrategy(ReplayStrategy):
         self._channel = None
         self._log = None
         self._log_path = ""
-        # Seconds per page fault on this machine, measured by the probe. Zero
-        # means it could not be measured, and no fault warning is worth stating
-        # without it - a fault count on its own says nothing about a cell.
-        self._page_cost_s = 0.0
+        # Seconds per copy-on-write fault on this machine, measured by the probe.
+        # Zero means it could not be measured, and no fault warning is worth
+        # stating without it - a fault count alone says nothing about a cell.
+        self._fault_cost_s = 0.0
 
     def prepare(self) -> PrepareOutcome:
         if os.name != "posix":
@@ -111,12 +112,13 @@ class ForkReplayStrategy(ReplayStrategy):
         if not ready.get("ok"):
             return PrepareOutcome(False, ready.get("reason", "the supervisor refused to serve"))
 
-        self._page_cost_s = float(ready.get("page_cost_s") or 0.0)
+        self._fault_cost_s = float(ready.get("fault_cost_s") or 0.0)
         logger.debug(
             f"[JUmPER]: benchmark fork probe: threads {ready.get('threads', '?')}, "
             f"timings {ready.get('timings', {})}, "
             f"{ready.get('walk_pages', 0)} pages walked per measurement in "
-            f"{ready.get('walk_s', 0)}s"
+            f"{ready.get('walk_s', 0)}s, "
+            f"{float(ready.get('fault_cost_s') or 0.0) * 1e6:.2f}us per fault"
         )
         logger.warning(_RSS_CAVEAT)
         return PrepareOutcome(True)
@@ -226,23 +228,25 @@ class ForkReplayStrategy(ReplayStrategy):
         for a ten-second one. The price of a fault is the one the probe measured
         on this machine, not a number chosen in advance.
 
-        **The figure is a lower bound.** That price comes from the page walk,
-        which only ever reads, while the faults being counted here are mostly
-        writes - and a write fault copies four kilobytes where a read fault only
-        fixes a table entry. In the case measured above the warning reported
-        about 14ms against a real distortion nearer 67ms: right in direction and
-        order, conservative in size.
+        Deliberately a floor, and said as one. The price used is a *read* fault's,
+        measured by the page walk; most of what is counted here are writes, which
+        cost several times more because the kernel copies four kilobytes rather
+        than fixing a table entry. Pricing them as writes was tried and produced
+        estimates larger than the measurements they described - 174ms of an 83ms
+        cell - because a probe faulting in a tight loop is dearer per fault than
+        a cell interleaving them with work. A floor is worth more than a number
+        that can exceed its own subject, so the threshold is set low instead.
         """
         faults = int(response.get("faults") or 0)
         duration = float(response.get("duration_s") or 0.0)
-        if not faults or not duration or not self._page_cost_s:
+        if not faults or not duration or not self._fault_cost_s:
             return
-        cost = faults * self._page_cost_s
+        cost = faults * self._fault_cost_s
         share = cost / duration
         if share < _FAULT_SHARE_WARNING:
             return
         logger.warning(
-            f"[JUmPER]: a benchmark measurement spent about {cost * 1000:.0f}ms of "
+            f"[JUmPER]: a benchmark measurement spent at least {cost * 1000:.0f}ms of "
             f"its {duration * 1000:.0f}ms on {faults} page faults - the cost of "
             "touching memory inherited from the prefix rather than of the cell "
             "itself. Cells working over large Python objects are affected most, "

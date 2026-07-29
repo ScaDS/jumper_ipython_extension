@@ -104,7 +104,9 @@ def test_probe_answers_with_thread_counts_not_timings(tmp_path):
         return
     assert "/" in probe["threads"], "reports what the child recovered of the parent's"
     assert set(probe["timings"]) == {"compute", "memory"}
-    assert probe["page_cost_s"] >= 0.0
+    # The unit the per-measurement fault warning is stated in, measured here
+    # rather than picked in advance.
+    assert probe["fault_cost_s"] >= 0.0
 
 
 @posix_only
