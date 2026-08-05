@@ -261,10 +261,18 @@ class PerfmonitorMagics(Magics):
         sources are gathered and which prompt rules apply); ``--note``
         adds a free-text instruction.
 
+        With ``--benchmark`` every suggestion is replayed and timed
+        against the original, repaired when it fails, and reported with
+        a measured verdict. ``--benchmark-runs`` and ``--fix-attempts``
+        size that work, ``--replay-mode`` decides how the state the
+        timed cell needs is rebuilt, and ``--check``/``--skip-check``
+        turn individual benchmark steps off.
+
         Resume run: applies suggestion ``--select N`` from a previous
         ``--resume RUN_ID`` review - optionally rewriting it first via
         ``--note "instruction"`` - and places the resulting
-        code into the next cell.
+        code into the next cell. ``--resume RUN_ID --benchmark``
+        measures that review instead of applying anything from it.
 
         Args:
             line: Raw argument string, such as ``"--cells 5 --level
@@ -284,6 +292,14 @@ class PerfmonitorMagics(Magics):
             Focus on parallelization::
 
                 %perfmonitor_ai_review --strategy parallelization
+
+            Measure the suggestions instead of just proposing them::
+
+                %perfmonitor_ai_review --benchmark --replay-mode fork
+
+            Measure a review that already ran::
+
+                %perfmonitor_ai_review --resume abc123 --benchmark
 
             Apply the first suggestion from a previous run::
 

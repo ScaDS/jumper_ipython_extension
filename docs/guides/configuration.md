@@ -12,7 +12,7 @@ from jumper_extension.config.loader import load_config
 config = load_config()
 config.settings.perfreports.level   # "process"
 config.plots.default_subsets         # ["cpu", "mem", "io"]
-config.ai.model                      # "MiniMaxAI/MiniMax-M2.7"
+config.ai.llm.model                  # "MiniMaxAI/MiniMax-M3-MXFP8"
 ```
 
 ## How it's put together
@@ -115,22 +115,30 @@ Define which metric collectors are active for the Python-based monitors
 
 ## `ai` — `config/ai/default.yaml`
 
-Configures the LLM backend used by `%perfmonitor_ai_review`:
+Everything `%perfmonitor_ai_review` needs, in three groups: `llm` (which model
+answers), `benchmark` (how suggestions are measured) and `context` (what the
+model is told). Usage is covered in the [AI Review](ai-review/index.md) guides.
+
+### `ai.llm` — the model
 
 ```yaml
-base_url: https://llm.scads.ai/v1
-model: MiniMaxAI/MiniMax-M2.7
-max_tokens: 8000
-timeout: 120.0
-api_key_env: JUMPER_AI_API_KEY
+llm:
+  base_url: https://llm.scads.ai/v1
+  model: MiniMaxAI/MiniMax-M3-MXFP8
+  max_tokens: 16000
+  timeout: 520.0
+  api_key_env: JUMPER_AI_API_KEY
 ```
 
 | Key | Description |
 |---|---|
 | `base_url` | OpenAI-compatible API endpoint. |
 | `model` | Model identifier passed to the endpoint. |
-| `max_tokens` | Max tokens requested per completion. |
-| `timeout` | Request timeout in seconds. |
+| `max_tokens` / `timeout` / `max_retries` | Per-completion token budget, request timeout in seconds, retries. |
+| `streaming` | Stream the reply instead of waiting for it whole. |
+| `temperature` / `top_p` / `seed` | Sampling controls; `null` leaves the endpoint's own default. |
+| `enable_thinking` | Ask a reasoning model for its chain of thought — shown collapsed on the review card. |
+| `extra_body` | Arbitrary passthrough to a vLLM endpoint (`top_k`, `min_p`, `guided_*`, …). |
 | `api_key_env` | Name of the **environment variable** holding the API key. |
 
 All model parameters live in this file — none of them are read from environment
@@ -139,3 +147,50 @@ config: set the environment variable named by `api_key_env` (default
 `JUMPER_AI_API_KEY`) before starting your notebook or IPython session. To use a
 different secret name (e.g. on a shared cluster), change `api_key_env` here and
 export that variable instead.
+
+### `ai.benchmark` — measuring suggestions
+
+```yaml
+benchmark:
+  runs: 3
+  fix_attempts: 3
+  interval: 0.05
+  timeout_factor: 10.0
+  checks:
+    validate_syntax: true
+    run: true
+  replay:
+    mode: full
+    cross_check: true   # NOT IMPLEMENTED
+```
+
+| Key | Description |
+|---|---|
+| `runs` | Timed replays per suggestion; the first is dropped as warm-up. Per run: `--benchmark-runs`. |
+| `fix_attempts` | Repair rounds before a failing suggestion is reported as failed. Per run: `--fix-attempts`. |
+| `interval` | Sampling interval for replays, finer than the live monitor's so a fast variant still yields metrics. |
+| `timeout_factor` | A variant is killed past this multiple of the baseline duration. |
+| `checks.validate_syntax` / `checks.run` | Which [benchmark steps](ai-review/benchmark.md#running-fewer-steps) run. Per run: `--check` / `--skip-check`. |
+| `replay.mode` | How prefix state is rebuilt: `full`, `fork`, `dill`. Per run: `--replay-mode`. See [Replay modes](ai-review/replay-modes.md). |
+| `replay.cross_check` | Accepted and defaulted to `true`, but **nothing reads it yet**. |
+
+### `ai.context` — what the model is told
+
+```yaml
+context:
+  strategy: faster
+  known_packages:
+    - numpy
+    - torch
+    # ...
+```
+
+| Key | Description |
+|---|---|
+| `strategy` | Default `--strategy`; see [Steering the review](ai-review/strategies.md). |
+| `known_packages` | Packages whose installed versions are reported to the model, so it only suggests what is available. Absent ones are omitted. |
+
+!!! note
+    Strategies themselves are not part of this config. They live in
+    `adapters/ai_reviewer/strategy/strategies.yaml`, next to the prompt specs
+    they toggle.

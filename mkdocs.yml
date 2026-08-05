@@ -19,10 +19,15 @@ nav:
           - Quickstart: getting-started/quickstart.md
       - How-to Guides:
           - Configuration: guides/configuration.md
-          - Benchmark Replay Modes: guides/benchmark-replay-modes.md
+          - AI Review:
+              - Overview: guides/ai-review/index.md
+              - Steering the Review: guides/ai-review/strategies.md
+              - Measuring Suggestions: guides/ai-review/benchmark.md
+              - Replay Modes: guides/ai-review/replay-modes.md
           - Session Transfer: guides/session-transfer.md
           - Python Script Export: guides/script-export.md
           - Plot Export: guides/plot-export.md
+          - Live Performance Plotting: guides/live-plotting.md
           - Custom Monitors: guides/custom-monitor.md
           - Custom Python Collectors: guides/python-custom-collector.md
           - Custom C Collectors: guides/c-custom-collector.md

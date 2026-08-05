@@ -34,6 +34,20 @@ monitoring, reporting, and plotting.
         - perfmonitor_enable_perfreports
         - perfmonitor_disable_perfreports
 
+## **AI review**
+
+Hands a monitored cell to an LLM and, optionally, measures what it
+suggests. Requires the `[ai]` extras and an API key — see the
+[AI Review guide](../guides/ai-review/index.md).
+
+::: jumper_extension.ipython.magics.PerfmonitorMagics
+    options:
+      show_root_heading: false
+      show_root_full_path: false
+      show_root_toc_entry: false
+      members:
+        - perfmonitor_ai_review
+
 ## **Data export and import**
 
 You can export collected metrics and cell history for external analysis
