@@ -1,17 +1,25 @@
-import json
 import os
 import threading
 
 import pytest
 
-from jumper_extension.adapters.ai_reviewer.benchmark import dill_state
-from jumper_extension.adapters.ai_reviewer.benchmark.replay import ReplayContext, StrategyChanged
-from jumper_extension.adapters.ai_reviewer.benchmark.replay.dill import DillReplayStrategy
-from jumper_extension.adapters.ai_reviewer.benchmark.replay.full import FullReplayStrategy
-from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner
-from jumper_extension.adapters.ai_reviewer.language import get_adapter
-
 dill = pytest.importorskip("dill", reason="the dill replay mode needs the optional dill dependency")
+
+# Imported after the skip on purpose: these pull in dill, so an install with the
+# test extra but without [ai] must not fail collection.
+from jumper_extension.adapters.ai_reviewer.benchmark import dill_state  # noqa: E402
+from jumper_extension.adapters.ai_reviewer.benchmark.replay import (  # noqa: E402
+    ReplayContext,
+    StrategyChanged,
+)
+from jumper_extension.adapters.ai_reviewer.benchmark.replay.dill import (  # noqa: E402
+    DillReplayStrategy,
+)
+from jumper_extension.adapters.ai_reviewer.benchmark.replay.full import (  # noqa: E402
+    FullReplayStrategy,
+)
+from jumper_extension.adapters.ai_reviewer.benchmark.runner import BenchmarkRunner  # noqa: E402
+from jumper_extension.adapters.ai_reviewer.language import get_adapter  # noqa: E402
 
 _PREFIX = [
     {"index": 0, "raw_cell": "import numpy as np", "cell_magics": []},
@@ -125,7 +133,7 @@ def test_a_measurement_restores_the_prefix_state(tmp_path):
         assert outcome.duration_s is not None
         assert outcome.fingerprints["total"]["kind"] == "scalar"
 
-        meta = dill_state.read_meta(os.path.join(str(tmp_path), "dill_state", "meta.json"))
+        meta = dill_state.read_meta(runner.strategy._paths["meta"])
         assert meta["prefix_s"] >= 0
         assert meta["environment"]["dill"] == dill.__version__
     finally:
@@ -151,7 +159,7 @@ def test_two_measurements_draw_the_same_random_numbers(tmp_path):
 def test_the_checkpoint_directory_is_removed_on_close(tmp_path):
     runner = build_runner(tmp_path, _PREFIX)
     runner.run_once("total = float(data.sum())", tag="v1")
-    state_dir = os.path.join(str(tmp_path), "dill_state")
+    state_dir = runner.strategy._state_dir
     assert os.path.exists(state_dir)
 
     runner.close()
@@ -196,14 +204,13 @@ def test_a_value_that_will_not_pickle_falls_back(tmp_path):
 def test_a_checkpoint_over_the_limit_falls_back(tmp_path, monkeypatch):
     from jumper_extension.adapters.ai_reviewer.benchmark.replay import dill as dill_mode
 
-    monkeypatch.setattr(dill_mode, "_max_checkpoint_bytes", lambda: 1024)
+    monkeypatch.setattr(dill_mode, "_max_checkpoint_bytes", lambda work_dir: 1024)
     runner = build_runner(tmp_path, _PREFIX)
     try:
         outcome = runner.run_once("total = float(data.sum())", tag="v1")
 
         assert isinstance(runner.strategy, FullReplayStrategy)
         assert outcome.ok
-        assert not os.path.exists(os.path.join(str(tmp_path), "dill_state", "checkpoint.pkl"))
     finally:
         runner.close()
 
@@ -212,7 +219,7 @@ def test_a_checkpoint_that_will_not_load_is_not_blamed_on_the_cell(tmp_path):
     runner = build_runner(tmp_path, _PREFIX)
     try:
         runner._ensure_prepared()
-        checkpoint = os.path.join(str(tmp_path), "dill_state", "checkpoint.pkl")
+        checkpoint = runner.strategy._paths["checkpoint"]
         with open(checkpoint, "wb") as handle:
             handle.write(b"not a checkpoint")
 
@@ -229,9 +236,9 @@ def test_a_stale_phase_file_cannot_vouch_for_a_later_failure(tmp_path):
     runner = build_runner(tmp_path, _PREFIX)
     try:
         runner._ensure_prepared()
-        state_dir = os.path.join(str(tmp_path), "dill_state")
-        dill_state.write_phase(os.path.join(state_dir, "v1.phase"), "completed")
-        with open(os.path.join(state_dir, "checkpoint.pkl"), "wb") as handle:
+        strategy = runner.strategy
+        dill_state.write_phase(os.path.join(strategy._state_dir, "v1.phase"), "completed")
+        with open(strategy._paths["checkpoint"], "wb") as handle:
             handle.write(b"not a checkpoint")
 
         with pytest.raises(StrategyChanged):
@@ -271,3 +278,130 @@ def test_cross_check_measures_the_baseline_the_other_way(tmp_path):
         assert isinstance(runner.strategy, DillReplayStrategy)
     finally:
         runner.close()
+
+
+def test_a_handle_hidden_on_an_object_is_refused(tmp_path):
+    """The shallow screen cannot see inside an object; the pickler guard can.
+
+    Restoring such a handle reopens the file in its original mode - `w+` means
+    truncation - so the data the prefix wrote through it would be destroyed on
+    every measurement, and the benchmark would report success while doing it.
+    """
+    victim = tmp_path / "user_data.txt"
+    prefix = [{
+        "index": 0,
+        "raw_cell": (
+            "class Holder:\n"
+            "    pass\n"
+            "holder = Holder()\n"
+            f"holder.handle = open({str(victim)!r}, 'w+')\n"
+            "holder.handle.write('PRECIOUS USER DATA')\n"
+            "holder.handle.flush()"
+        ),
+        "cell_magics": [],
+    }]
+    runner = build_runner(tmp_path, prefix)
+    try:
+        outcome = runner.run_once("x = 1", tag="v1")
+
+        assert isinstance(runner.strategy, FullReplayStrategy)
+        assert outcome.ok
+        # Written by the prefix, and still there: nothing reopened it.
+        assert victim.read_text() == "PRECIOUS USER DATA"
+    finally:
+        runner.close()
+
+
+def test_a_callers_own_files_are_left_alone(tmp_path):
+    """The strategy makes its own directory and removes exactly that one."""
+    mine = tmp_path / "dill_state"
+    mine.mkdir()
+    (mine / "user-owned.txt").write_text("mine")
+
+    runner = build_runner(tmp_path, _PREFIX)
+    runner.run_once("total = float(data.sum())", tag="v1")
+    runner.close()
+
+    assert (mine / "user-owned.txt").read_text() == "mine"
+
+
+def test_a_prefix_full_of_magics_still_checkpoints(tmp_path):
+    """`%perfmonitor_start` is in nearly every prefix, and it renders to an
+    adapter call - so the checkpoint process has to bring an adapter."""
+    prefix = [
+        {"index": 0, "raw_cell": "%perfmonitor_start 0.05", "cell_magics": ["%perfmonitor_start 0.05"]},
+        {"index": 1, "raw_cell": "import numpy as np\nvalues = np.arange(1000)", "cell_magics": []},
+    ]
+    runner = build_runner(tmp_path, prefix)
+    try:
+        outcome = runner.run_once("total = int(values.sum())", tag="v1")
+
+        assert isinstance(runner.strategy, DillReplayStrategy)
+        assert outcome.ok, outcome.error
+        assert outcome.fingerprints["total"]["value"] == 499500
+    finally:
+        runner.close()
+
+
+def test_a_prefix_that_shadows_the_helpers_keeps_its_own_values(tmp_path):
+    """Bookkeeping names are removed by identity, so a user's `_jumper` survives."""
+    prefix = [{
+        "index": 0,
+        "raw_cell": "_jumper = 'mine'\ndump = 42\nmagic = 'kept'",
+        "cell_magics": [],
+    }]
+    runner = build_runner(tmp_path, prefix)
+    try:
+        outcome = runner.run_once("kept = _jumper + str(dump) + magic", tag="v1")
+
+        assert isinstance(runner.strategy, DillReplayStrategy)
+        assert outcome.ok, outcome.error
+    finally:
+        runner.close()
+
+
+def test_a_missing_rng_artifact_is_not_silently_ignored(tmp_path):
+    """Losing it means every measurement reseeds from entropy, and a correct
+    variant gets reported as computing something else."""
+    prefix = [{"index": 0, "raw_cell": "import random\nrandom.seed(99)", "cell_magics": []}]
+    runner = build_runner(tmp_path, prefix)
+    try:
+        runner._ensure_prepared()
+        os.remove(runner.strategy._paths["rng"])
+
+        with pytest.raises(StrategyChanged):
+            runner.run_once("draw = random.random()", tag="v1")
+    finally:
+        runner.close()
+
+
+def test_a_failure_after_the_cell_is_not_the_cells_fault(tmp_path, context):
+    """Fingerprinting, stopping the monitor and exporting all happen after the
+    cell has run; a failure there belongs to the benchmark, not the suggestion."""
+    from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED
+    from jumper_extension.adapters.ai_reviewer.benchmark.replay.base import ReplayResult
+
+    strategy = DillReplayStrategy(context)
+    phase_path = str(tmp_path / "v1.phase")
+    failed = ReplayResult(status=FAILED, error="No space left on device")
+
+    for phase, expected in [
+        ("cell_started", False),
+        ("cell_finished", True),
+        ("exporting", True),
+        ("loading", True),
+        ("setup", True),
+    ]:
+        dill_state.write_phase(phase_path, phase)
+        blamed = strategy._blame(failed, phase_path)
+        assert blamed.strategy_broken is expected, phase
+
+
+def test_an_unreadable_prepare_log_still_falls_back(tmp_path):
+    """A prefix that prints one invalid byte used to crash preparation itself."""
+    from jumper_extension.adapters.ai_reviewer.benchmark.replay import dill as dill_mode
+
+    log = tmp_path / "checkpoint.log"
+    log.write_bytes(b"traceback with a bad byte: \xff\xfe and more")
+
+    assert "bad byte" in dill_mode._read_tail(str(log))

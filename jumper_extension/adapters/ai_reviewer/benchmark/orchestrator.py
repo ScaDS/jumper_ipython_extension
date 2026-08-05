@@ -233,6 +233,14 @@ class BenchmarkOrchestrator:
         if reference is None:
             return
 
+        if not reference.ok:
+            # The check was asked for and could not be made. Carrying on would
+            # report numbers whose state nothing ever verified, so the mode goes
+            # back to the one that needs no verifying.
+            reason = f"its baseline could not be measured through the full replay: {reference.error}"
+            self.runner.fall_back(reason)
+            raise StrategyChanged(reason)
+
         verdict, differing = fingerprint.compare_all(reference.fingerprints, prints)
         if verdict == fingerprint.DIFFERS:
             names = ", ".join(differing) or "unnamed values"
@@ -241,6 +249,16 @@ class BenchmarkOrchestrator:
             )
             self.runner.fall_back(reason)
             raise StrategyChanged(reason)
+        if verdict == fingerprint.UNVERIFIED:
+            # Common and not an error: a cell that mutates in place or only has
+            # side effects binds nothing comparable. Worth saying plainly, since
+            # the guide sells this check as what keeps a fast mode honest.
+            logger.warning(
+                "[JUmPER]: the cell under review binds nothing this benchmark can "
+                "compare, so the replay mode's rebuilt state could not be checked "
+                "against a full replay. The timings below are unverified in that "
+                "sense; --replay-mode full needs no such check."
+            )
 
         reference_duration = reference.duration_s or 0.0
         if min(reference_duration, duration or 0.0) < _CROSS_CHECK_FLOOR_S:
@@ -250,10 +268,11 @@ class BenchmarkOrchestrator:
             return
         logger.warning(
             f"[JUmPER]: the baseline takes {duration}s under this replay mode against "
-            f"{reference_duration}s under the full replay ({ratio:.1f}x). The results "
-            "match, so the state is right, but the timings are not comparable with a "
-            "full replay's - a restored process has none of the warm-up the prefix "
-            "would have done, and a forked one pays for the memory it inherited."
+            f"{reference_duration}s under the full replay ({ratio:.1f}x). Their results "
+            "matched - as far as statistical signatures can tell - but the timings are "
+            "not comparable with a full replay's: a restored process has none of the "
+            "warm-up the prefix would have done, and a forked one pays for the memory "
+            "it inherited."
         )
 
     def _run_syntax_only(self, variants: list[tuple[str, str]]) -> dict:

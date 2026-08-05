@@ -15,15 +15,18 @@ the prefix should already have paid. Neither shows up from inside the mode,
 because the baseline is restored the same way as the variants and agrees with
 them - which is why the cross-mode baseline check exists and is on by default.
 
-What the mode refuses, it refuses before writing anything: `dill_state` screens
-the namespace for values a checkpoint would silently change, because a dump that
-succeeds proves nothing (an open file pickles happily and comes back truncated).
+What the mode refuses, it refuses before writing anything - and not by trusting
+the dump, which proves nothing on its own (an open file pickles happily and comes
+back truncated). `dill_state` gives the unsafe types a reducer that raises, so
+the refusal happens inside the pickler, wherever in the object graph the value
+is hiding.
 """
 import logging
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from jumper_extension.adapters.ai_reviewer.benchmark import dill_state
 from jumper_extension.adapters.ai_reviewer.benchmark.replay.base import (
@@ -56,10 +59,12 @@ _NO_GAIN_SHARE = 0.8
 # is not worth a warning - and at these durations the two figures are noise.
 _MIN_PREFIX_S = 0.5
 
-# Phases a restore reports. Everything up to and including ``setup`` is the
-# checkpoint's business; from ``cell_started`` the cell is running and a failure
-# belongs to the code under test.
-_STRATEGY_PHASES = ("", "loading", "setup")
+# Phases a restore reports. Only while the phase is ``cell_started`` is the code
+# under test actually running; before that the checkpoint is being restored, and
+# after it this benchmark is fingerprinting and exporting. A failure in either is
+# ours, and blaming it on a suggestion would send the model off to fix code that
+# did nothing wrong.
+_CELL_PHASES = ("cell_started",)
 
 
 class DillReplayStrategy(ReplayStrategy):
@@ -80,10 +85,10 @@ class DillReplayStrategy(ReplayStrategy):
         return 0
 
     def prepare(self) -> PrepareOutcome:
-        state_dir = os.path.join(self.context.work_dir, "dill_state")
-        # Our own directory, so publishing and cleaning up can never touch a file
-        # the caller put in a work_dir it supplied.
-        os.makedirs(state_dir, exist_ok=True)
+        # A directory of our own making, with a name nobody else can predict: the
+        # work_dir may be the caller's, and close() deletes this tree whole.
+        state_dir = tempfile.mkdtemp(prefix="dill_state-", dir=self.context.work_dir)
+        os.chmod(state_dir, 0o700)
         self._state_dir = state_dir
         self._paths = {
             "checkpoint": os.path.join(state_dir, "checkpoint.pkl"),
@@ -94,7 +99,7 @@ class DillReplayStrategy(ReplayStrategy):
         script = build_checkpoint_script(
             self.context.prefix_cells,
             self._paths,
-            _max_checkpoint_bytes(),
+            _max_checkpoint_bytes(self.context.work_dir),
             os.path.join(state_dir, "checkpoint.py"),
         )
         log_path = os.path.join(state_dir, "checkpoint.log")
@@ -121,7 +126,7 @@ class DillReplayStrategy(ReplayStrategy):
         if completed.returncode != 0:
             return PrepareOutcome(
                 False,
-                f"the prefix failed while being checkpointed.\n{tail(_read(log_path))}",
+                f"the prefix failed while being checkpointed.\n{tail(_read_tail(log_path))}",
             )
 
         meta = dill_state.read_meta(self._paths["meta"])
@@ -130,7 +135,7 @@ class DillReplayStrategy(ReplayStrategy):
         if not os.path.exists(self._paths["checkpoint"]):
             return PrepareOutcome(
                 False,
-                f"no checkpoint was written.\n{tail(_read(log_path))}",
+                f"no checkpoint was written.\n{tail(_read_tail(log_path))}",
             )
 
         self._prefix_s = float(meta.get("prefix_s") or 0.0)
@@ -189,16 +194,21 @@ class DillReplayStrategy(ReplayStrategy):
         must not be handed to the repair loop to fix code that never ran.
         """
         phase = dill_state.read_phase(phase_path)
-        if phase not in _STRATEGY_PHASES:
+        if phase in _CELL_PHASES:
             return result
+        stage = {
+            "": "the restore never started",
+            "loading": "the checkpoint could not be restored",
+            "setup": "the monitor could not be started on the restored state",
+            "cell_finished": "the cell ran, but its results could not be captured",
+            "exporting": "the cell ran, but its session could not be exported",
+            "completed": "the run finished and then failed anyway",
+        }.get(phase, f"the restore stopped at {phase!r}")
         return ReplayResult(
             status=result.status,
             wall_s=result.wall_s,
             strategy_broken=True,
-            error=(
-                f"the checkpoint could not be restored (reached "
-                f"{phase or 'nothing'}). {result.error}"
-            ),
+            error=f"{stage}. {result.error}",
         )
 
     def _warn_if_no_gain(self, restore_report: str):
@@ -226,14 +236,33 @@ class DillReplayStrategy(ReplayStrategy):
         )
 
 
-def _max_checkpoint_bytes() -> int:
+def _max_checkpoint_bytes(work_dir: str) -> int:
+    """The configured ceiling, or what the filesystem can actually spare.
+
+    The cap alone does not protect a disk with less free space than the cap, so
+    the smaller of the two wins - and a margin is left, because a filesystem that
+    reaches zero takes more than this benchmark down with it.
+    """
     replay = load_config().ai.benchmark.replay
-    return int(float(replay.dill_max_checkpoint_gb) * 1024 ** 3)
-
-
-def _read(path: str) -> str:
+    configured = int(float(replay.dill_max_checkpoint_gb) * 1024 ** 3)
     try:
-        with open(path, encoding="utf-8") as handle:
-            return handle.read()
+        free = shutil.disk_usage(work_dir).free
+    except OSError:
+        return configured
+    return max(min(configured, int(free * 0.9)), 0)
+
+
+def _read_tail(path: str, limit: int = 8192) -> str:
+    """The end of a log, however the child chose to encode it.
+
+    Read as bytes and decoded with replacement: a prefix that printed one invalid
+    byte used to turn a clean fallback into a UnicodeDecodeError, and a chatty one
+    would have had its whole log pulled into memory to show the last lines of it.
+    """
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            handle.seek(max(handle.tell() - limit, 0))
+            return handle.read().decode("utf-8", errors="replace")
     except OSError:
         return ""

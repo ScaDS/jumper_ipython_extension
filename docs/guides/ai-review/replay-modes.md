@@ -149,16 +149,18 @@ and reading the data cost about what recomputing it did.
 
     An open file, a lock or a thread left in your namespace pickles without
     complaint and comes back as something else — an open `w+` file is even
-    *truncated on disk* when restored. So the namespace is screened before the
-    checkpoint is written, and a binding that cannot survive falls the whole
-    benchmark back to `full`, naming the variable. The same applies when `cupy`
-    or `tensorflow` is imported: their generator state cannot be carried, and
-    a benchmark that cannot reproduce its own random numbers reports correct
-    suggestions as wrong.
+    *truncated on disk* when restored. So the refusal is made inside the
+    pickler itself, which walks the whole object graph anyway: a handle on an
+    attribute, in an object array or ten containers deep is refused just the
+    same, and the whole benchmark falls back to `full`, naming the variable
+    where it can. The same applies when `cupy` or `tensorflow` is imported:
+    their generator state cannot be carried, and a benchmark that cannot
+    reproduce its own random numbers reports correct suggestions as wrong.
 
-A checkpoint larger than `ai.benchmark.replay.dill_max_checkpoint_gb` (4 GB by
-default) is abandoned rather than written, so a large prefix cannot fill a shared
-filesystem.
+A checkpoint is abandoned rather than written once it passes the smaller of
+`ai.benchmark.replay.dill_max_checkpoint_gb` (4 GB by default) and what the
+filesystem can spare, so a large prefix does not quietly fill the disk it is
+writing to.
 
 ## Fallback
 
@@ -211,10 +213,12 @@ So when a fast mode is active, `ai.benchmark.replay.cross_check` (on by default)
 measures the baseline **once through `full`** as well, before the fast mode
 prepares anything, and compares:
 
-| Compared | If it differs |
+| Outcome | What happens |
 |---|---|
-| Results | The mode rebuilt state the cell notices. Everything is discarded and the whole benchmark re-runs on `full`. |
-| Duration | Only a warning, and only past 2× on measurements above a few milliseconds — a restored process misses the prefix's warm-up, a forked one pays for inherited memory, and machines are noisy. |
+| Results differ | The mode rebuilt state the cell notices. Everything is discarded and the whole benchmark re-runs on `full`. |
+| Duration differs | Only a warning, and only past 2× on measurements above a few milliseconds — a restored process misses the prefix's warm-up, a forked one pays for inherited memory, and machines are noisy. |
+| The reference will not run | The check was asked for and could not be made, so the benchmark goes back to `full` rather than reporting numbers nothing verified. |
+| Nothing comparable to check | A cell that only mutates in place or has side effects binds nothing a fingerprint can hold. The run continues, with a warning saying plainly that the mode went unverified for this cell. |
 
 It costs one extra prefix replay per benchmark. Turning it off saves that and
 gives up the only check there is on whether a fast mode rebuilt your state.

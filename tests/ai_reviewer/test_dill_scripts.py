@@ -22,17 +22,18 @@ _PATHS = {
 }
 
 
-def test_checkpoint_script_runs_the_prefix_through_the_hooks(tmp_path):
+def test_checkpoint_script_runs_the_prefix_in_its_own_namespace(tmp_path):
     source = open(build_checkpoint_script(_PREFIX, _PATHS, 1024, str(tmp_path / "cp.py"))).read()
 
-    assert "magic_adapter.on_pre_run_cell" in source  # same hooks as the full replay
+    assert "_jumper.new_state()" in source          # not __main__: the user's own module
+    assert "_jumper.run_cell(_jumper_state," in source   # same hooks as the full replay
     assert "_jumper.checkpoint(" in source
     # It measures nothing and exports nothing: this process only builds state.
     assert "perfmonitor_start" not in source
     assert "export_session" not in source
 
 
-def test_checkpoint_script_carries_prefix_magics(tmp_path):
+def test_checkpoint_script_passes_prefix_magics_along(tmp_path):
     prefix = [{
         "index": 0,
         "raw_cell": "%perfmonitor_start 0.05",
@@ -40,9 +41,9 @@ def test_checkpoint_script_carries_prefix_magics(tmp_path):
     }]
     source = open(build_checkpoint_script(prefix, _PATHS, 1024, str(tmp_path / "cp.py"))).read()
 
-    # A captured magic becomes an adapter call, so the script must have built one.
-    assert "magic_adapter.perfmonitor_start('0.05')" in source
-    assert "_jumper.silent_adapter" in source
+    # The adapter a captured magic will call is attached before any cell runs.
+    assert "_jumper.attach_adapter(_jumper_state" in source
+    assert "'%perfmonitor_start 0.05'" in source
 
 
 def test_restore_script_loads_before_it_measures_and_seeds_last(tmp_path):
@@ -61,14 +62,15 @@ def test_restore_script_loads_before_it_measures_and_seeds_last(tmp_path):
 
     order = [
         source.index("_jumper.restore(_jumper_paths)"),
-        source.index("magic_adapter = _jumper.silent_adapter"),
+        source.index("_jumper.attach_adapter(_jumper_state"),
         source.index("perfmonitor_start"),
         source.index("_jumper.restore_rng"),
-        source.index("magic_adapter.on_pre_run_cell"),
-        source.index('_jumper.write_phase(_jumper_paths["phase"], "completed")'),
+        source.index('"cell_started"'),
+        source.index("_jumper.run_cell(_jumper_state"),
+        source.index('"cell_finished"'),
+        source.index("export_session"),
+        source.index('"completed"'),
     ]
     assert order == sorted(order)
     # One cell runs here, the one under test: the prefix is restored, not replayed.
-    assert source.count("on_pre_run_cell") == 1
-
-
+    assert source.count("_jumper.run_cell(") == 1

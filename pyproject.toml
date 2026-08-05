@@ -8,7 +8,9 @@ version = "0.3.6"
 description = "IPython extension for monitoring cell performance"
 readme={ file='README.md', content-type="text/markdown"}
 license-files=["LICENSE"]
-requires-python = ">=3.8"
+# 3.10 is the floor the code actually has: `X | None` and `list[T]` are used in
+# runtime-evaluated annotations throughout, which 3.8 and 3.9 cannot import.
+requires-python = ">=3.10"
 dependencies = [
     "ipython",
     "matplotlib",

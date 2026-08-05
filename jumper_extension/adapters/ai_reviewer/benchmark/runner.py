@@ -81,7 +81,11 @@ class BenchmarkRunner:
             raise StrategyChanged(result.error)
         if not result.ok:
             return RunOutcome(status=result.status, error=result.error)
-        outcome = self._read_outcome(result.session_path, result.fingerprint_path)
+        outcome = self._read_outcome(
+            result.session_path,
+            result.fingerprint_path,
+            self.strategy.target_cell_index,
+        )
         outcome.wall_s = result.wall_s
         return outcome
 
@@ -97,7 +101,9 @@ class BenchmarkRunner:
         Returns None when the active strategy already *is* the full replay -
         there is nothing to compare - and never disturbs it otherwise: the check
         runs on a throwaway strategy of its own, before the active one prepares,
-        so a prefix is never resident twice.
+        so a prefix is never resident twice. A reference that will not run comes
+        back as a failed outcome, because a check that silently did not happen is
+        indistinguishable from one that passed.
         """
         if isinstance(self.strategy, FullReplayStrategy):
             return None
@@ -107,12 +113,15 @@ class BenchmarkRunner:
             reference.prepare()
             result = reference.replay(code, tag, None)
             if not result.ok:
-                logger.warning(
-                    "[JUmPER]: the cross-check replay did not run "
-                    f"({result.error or result.status}); the benchmark continues unchecked."
-                )
-                return None
-            outcome = self._read_outcome(result.session_path, result.fingerprint_path)
+                return RunOutcome(status=result.status, error=result.error)
+            # Its own row, not the active strategy's: a full replay puts the cell
+            # under test after the prefix it just ran, and reading row zero there
+            # would time a prefix cell instead.
+            outcome = self._read_outcome(
+                result.session_path,
+                result.fingerprint_path,
+                reference.target_cell_index,
+            )
             outcome.wall_s = result.wall_s
             return outcome
         finally:
@@ -153,7 +162,12 @@ class BenchmarkRunner:
         self.strategy = FullReplayStrategy(self.strategy.context)
         self.strategy.prepare()
 
-    def _read_outcome(self, session_path: str, fingerprint_path: str) -> RunOutcome:
+    def _read_outcome(
+        self,
+        session_path: str,
+        fingerprint_path: str,
+        target_index: int,
+    ) -> RunOutcome:
         """Read the exported session through the live review's own analysis path.
 
         Duration and metrics come from different places on purpose. The hooks
@@ -161,10 +175,10 @@ class BenchmarkRunner:
         its interval - and a good optimization is precisely the one that stops
         being sampled. Missing metrics must not read as a failed run.
         """
-        # Where the target landed is the strategy's business: a full replay puts
+        # Where the target landed is the strategy's business - a full replay puts
         # it after the prefix it just ran, while one that restores state instead
-        # may place it anywhere in the history it synthesizes.
-        target_index = self.strategy.target_cell_index
+        # may place it anywhere - so the caller names the row rather than this
+        # reading it off whichever strategy happens to be active.
         importer = SessionImporter(logger)
         work_dir, cleanup = importer._prepare_work_directory(session_path)
         try:

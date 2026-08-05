@@ -38,20 +38,21 @@ _CHECKPOINT_HEADER = '''\
 import time as _jumper_time
 from jumper_extension.adapters.ai_reviewer.benchmark import dill_state as _jumper
 
-# The prefix is driven through the same hooks the full replay uses, so a captured
-# magic becomes an adapter call - and almost every prefix starts with one. This
-# adapter monitors nothing: the checkpoint process measures nothing.
-magic_adapter = _jumper.silent_adapter("checkpoint")
+# The prefix runs in a namespace of its own, so nothing the user binds can
+# collide with this script's bookkeeping - and nothing of ours ends up in the
+# checkpoint. Cells go through the same hooks the full replay uses, because a
+# captured magic renders to an adapter call and almost every prefix has one.
+_jumper_state = _jumper.new_state()
+_jumper.attach_adapter(_jumper_state, "checkpoint")
 _jumper_started = _jumper_time.perf_counter()
 '''
 
 _CHECKPOINT_FOOTER = '''
 _jumper.checkpoint(
-    globals(),
+    _jumper_state,
     {paths!r},
     {max_bytes!r},
     _jumper_time.perf_counter() - _jumper_started,
-    helper_names={helpers!r},
 )
 '''
 
@@ -61,29 +62,31 @@ _RESTORE_HEADER = '''\
 from jumper_extension.adapters.ai_reviewer.benchmark import dill_state as _jumper
 from jumper_extension.adapters.ai_reviewer.benchmark.fingerprint import dump
 
-_jumper_paths = {paths!r}
-# Loading first, adapter second: dill updates this module's namespace, and the
+# Restore first, monitor second: the load rebuilds a whole namespace, and the
 # monitor has no business existing while it does. Only the target cell's window
-# is ever sliced out of the samples, so starting late costs nothing.
-_jumper.report_restore({restore_report!r}, _jumper.restore(_jumper_paths))
+# is sliced out of the samples, so starting late costs nothing.
+_jumper_paths = _jumper.use_paths({paths!r})
+_jumper_state, _jumper_restore_s = _jumper.restore(_jumper_paths)
+_jumper.report_restore({restore_report!r}, _jumper_restore_s)
 _jumper.write_phase(_jumper_paths["phase"], "setup")
-magic_adapter = _jumper.silent_adapter("restore")
-magic_adapter.perfmonitor_start({interval!r})
+_jumper.attach_adapter(_jumper_state, "restore")
+_jumper_state.magic_adapter.perfmonitor_start({interval!r})
 # Last thing before the cell: anything above could have consumed the generators.
-_jumper.restore_rng(_jumper_paths["rng"])
+_jumper.restore_rng(_jumper_paths["rng"], _jumper.META.get("rng"))
 _jumper.write_phase(_jumper_paths["phase"], "cell_started")
+_jumper.run_cell(_jumper_state, {target_code!r})
 '''
 
 _RESTORE_FOOTER = '''
-dump({names!r}, globals(), {fingerprint_path!r})
-magic_adapter.perfmonitor_stop("")
-magic_adapter.export_session({session_path!r})
+# The cell is over; everything below is this benchmark's own work, and a failure
+# in it must not be reported as the suggestion's.
+_jumper.write_phase(_jumper_paths["phase"], "cell_finished")
+dump({names!r}, vars(_jumper_state), {fingerprint_path!r})
+_jumper_state.magic_adapter.perfmonitor_stop("")
+_jumper.write_phase(_jumper_paths["phase"], "exporting")
+_jumper_state.magic_adapter.export_session({session_path!r})
 _jumper.write_phase(_jumper_paths["phase"], "completed")
 '''
-
-# Names the checkpoint script itself puts in the namespace, dropped before the
-# dump so a restored process starts with the user's bindings and nothing else.
-_CHECKPOINT_HELPERS = ("magic_adapter", "_jumper", "_jumper_time", "_jumper_started")
 
 
 def render_cell(raw_cell: str, cell_magics: list[str]) -> str:
@@ -128,15 +131,11 @@ def build_checkpoint_script(
     """
     parts = [_CHECKPOINT_HEADER]
     for cell in prefix_cells:
-        parts.append(f"\n# --- cell {cell['index']} ---\n")
-        parts.append(render_cell(cell["raw_cell"], cell.get("cell_magics")))
-    parts.append(
-        _CHECKPOINT_FOOTER.format(
-            paths=paths,
-            max_bytes=max_bytes,
-            helpers=_CHECKPOINT_HELPERS,
+        parts.append(
+            f"\n_jumper.run_cell(_jumper_state, {cell['raw_cell']!r}, "
+            f"{list(cell.get('cell_magics') or [])!r}, {cell['index']!r})\n"
         )
-    )
+    parts.append(_CHECKPOINT_FOOTER.format(paths=paths, max_bytes=max_bytes))
     return _write(output_path, "".join(parts))
 
 
@@ -160,9 +159,8 @@ def build_restore_script(
             paths=paths,
             restore_report=restore_report_path,
             interval=str(interval),
+            target_code=target_code,
         ),
-        "\n# --- cell under test ---\n",
-        render_cell(target_code, []),
         _RESTORE_FOOTER.format(
             names=fingerprint_names,
             fingerprint_path=fingerprint_path,
