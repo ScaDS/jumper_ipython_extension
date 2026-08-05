@@ -64,6 +64,7 @@ include = ["jumper_extension*"]
     "analyze/*.md", "analyze/*.yaml",
     "suggest/*.md", "suggest/*.yaml",
     "refine/*.md", "refine/*.yaml",
+    "fix/*.md", "fix/*.yaml",
     "fragments/*.md",
 ]
 "jumper_extension.adapters.ai_reviewer.strategy" = ["*.yaml"]
