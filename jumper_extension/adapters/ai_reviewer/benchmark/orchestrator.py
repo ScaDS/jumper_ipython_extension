@@ -27,6 +27,17 @@ logger = logging.getLogger("extension")
 
 BASELINE_LABEL = "baseline"
 
+# How far the fast mode's baseline may sit from the full replay's before it is
+# worth saying so. Wide on purpose: it is meant to catch state that was lost,
+# not the ordinary cost of a mode or a busy machine.
+_CROSS_CHECK_BAND = 2.0
+
+# Below this, a ratio says nothing: a cell measured in tens of microseconds is
+# dominated by first-call dispatch in whichever process happened to be colder,
+# and both modes would trip the band on every fast cell. Results are still
+# compared - that part is not noise-sensitive.
+_CROSS_CHECK_FLOOR_S = 0.005
+
 
 class _Candidate:
     def __init__(self, label: str, code: str, attempts_left: int):
@@ -53,9 +64,11 @@ class BenchmarkOrchestrator:
         timeout_factor: float = 10.0,
         adapter: LanguageAdapter | None = None,
         checks: CheckPlan | None = None,
+        cross_check: bool = True,
     ):
         self.runner = runner
         self.fix_fn = fix_fn
+        self.cross_check = cross_check
         # Defaults to Python so direct constructors (and tests) keep working;
         # build_orchestrator passes the target cell's actual adapter.
         self.adapter = adapter or get_adapter("python")
@@ -148,6 +161,10 @@ class BenchmarkOrchestrator:
         self.progress = BenchmarkProgress(len(variants), self.runs)
         self._position = {label: index for index, (label, _) in enumerate(variants, start=1)}
 
+        # Before the active strategy prepares anything, so the two never hold the
+        # same prefix at the same time.
+        reference = self._cross_check_reference(baseline_code)
+
         baseline_runs = self._measure(
             baseline_code,
             BASELINE_LABEL,
@@ -171,6 +188,7 @@ class BenchmarkOrchestrator:
             correctness=fingerprint.MATCH,
         )
         prints = baseline_runs[-1].fingerprints
+        self._compare_with_reference(reference, duration, prints)
         timeout = self._timeout_from(baseline_runs, duration)
 
         results = {BASELINE_LABEL: baseline}
@@ -187,6 +205,56 @@ class BenchmarkOrchestrator:
         )
         self.progress.finished()
         return results
+
+    def _cross_check_reference(self, baseline_code: str):
+        """One baseline measured through the full replay, to check the fast mode by.
+
+        Returns None when the check is off or the active strategy is already the
+        full replay.
+        """
+        if not self.cross_check:
+            return None
+        return self.runner.cross_check_baseline(baseline_code)
+
+    def _compare_with_reference(self, reference, duration: float, prints: dict):
+        """Hold the fast mode's baseline against the full replay's.
+
+        Results that differ mean the mode rebuilt state the cell notices, and
+        nothing inside the benchmark would ever say so - every variant is
+        compared against this same wrongly rebuilt baseline. That is worth
+        discarding the run for: the strategy is swapped and the benchmark starts
+        again on the full replay.
+
+        Durations are treated far more gently. A restored process misses the
+        warm-up the prefix would have done, a forked one pays for memory it
+        inherited, and machines are noisy; a band this wide catches state that
+        was lost, not the ordinary cost of a mode.
+        """
+        if reference is None:
+            return
+
+        verdict, differing = fingerprint.compare_all(reference.fingerprints, prints)
+        if verdict == fingerprint.DIFFERS:
+            names = ", ".join(differing) or "unnamed values"
+            reason = (
+                f"its baseline computed something else than the full replay did ({names})"
+            )
+            self.runner.fall_back(reason)
+            raise StrategyChanged(reason)
+
+        reference_duration = reference.duration_s or 0.0
+        if min(reference_duration, duration or 0.0) < _CROSS_CHECK_FLOOR_S:
+            return
+        ratio = duration / reference_duration
+        if 1 / _CROSS_CHECK_BAND <= ratio <= _CROSS_CHECK_BAND:
+            return
+        logger.warning(
+            f"[JUmPER]: the baseline takes {duration}s under this replay mode against "
+            f"{reference_duration}s under the full replay ({ratio:.1f}x). The results "
+            "match, so the state is right, but the timings are not comparable with a "
+            "full replay's - a restored process has none of the warm-up the prefix "
+            "would have done, and a forked one pays for the memory it inherited."
+        )
 
     def _run_syntax_only(self, variants: list[tuple[str, str]]) -> dict:
         """Check each suggestion parses, repairing what does not - no timing.

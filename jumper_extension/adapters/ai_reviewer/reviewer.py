@@ -168,6 +168,7 @@ class AIReviewer:
             timeout_factor=defaults.timeout_factor,
             adapter=adapter,
             checks=checks,
+            cross_check=defaults.replay.cross_check,
         )
 
     def _cell_language(self, index: int) -> str:

@@ -30,10 +30,22 @@ from jumper_extension.adapters.ai_reviewer.benchmark.replay.fork import ForkRepl
 
 register_strategy(ForkReplayStrategy)
 
+# The dill mode needs an optional dependency. Only that import is guarded: a
+# defect in our own module must surface rather than quietly disabling the mode.
+try:
+    import dill as _dill  # noqa: F401
+except ImportError:
+    DillReplayStrategy = None
+else:
+    from jumper_extension.adapters.ai_reviewer.benchmark.replay.dill import DillReplayStrategy
+
+    register_strategy(DillReplayStrategy)
+
 __all__ = [
     "DILL",
     "FORK",
     "FULL",
+    "DillReplayStrategy",
     "ForkReplayStrategy",
     "FullReplayStrategy",
     "PrepareOutcome",

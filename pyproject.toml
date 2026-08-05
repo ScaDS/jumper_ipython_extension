@@ -33,6 +33,9 @@ jumper_extension = "jumper_extension:load_ipython_extension"
 ai = [
     "langgraph>=0.2",
     "langchain-openai>=0.2",
+    # Optional replay mode: checkpoint the benchmark prefix once instead of
+    # replaying it per measurement.
+    "dill>=0.3.8",
 ]
 
 test = [

@@ -37,6 +37,9 @@ def _runner(behaviour, log=None):
         )
 
     runner.run_once = run_once
+    # These fakes stand in for the full replay, which is what a cross-check
+    # would compare against, so there is nothing left to check.
+    runner.cross_check_baseline = lambda code, tag="cross_check": None
     return runner
 
 
@@ -149,6 +152,9 @@ def _diverging_runner(behaviour, diverging_codes: set):
         return outcome
 
     runner.run_once = run_once
+    # These fakes stand in for the full replay, which is what a cross-check
+    # would compare against, so there is nothing left to check.
+    runner.cross_check_baseline = lambda code, tag="cross_check": None
     return runner
 
 
@@ -284,6 +290,7 @@ def test_a_strategy_giving_out_restarts_the_whole_benchmark(caplog):
 
     runner = Mock()
     runner.run_once = run_once
+    runner.cross_check_baseline = lambda code, tag="cross_check": None
     orchestrator = BenchmarkOrchestrator(
         runner=runner,
         fix_fn=lambda code, error, label: code,

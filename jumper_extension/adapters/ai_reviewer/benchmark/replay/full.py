@@ -9,15 +9,12 @@ costs what it costs - the prefix is paid for again on each of the
 """
 import logging
 import os
-import subprocess
-import time
 
-from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT
 from jumper_extension.adapters.ai_reviewer.benchmark.replay.base import (
     FULL,
     ReplayResult,
     ReplayStrategy,
-    tail,
+    run_script_replay,
 )
 from jumper_extension.adapters.ai_reviewer.language import ReplayRequest
 
@@ -48,37 +45,11 @@ class FullReplayStrategy(ReplayStrategy):
             )
         )
 
-        for stale in (session_path, fingerprint_path):
-            if os.path.exists(stale):
-                os.remove(stale)
-
-        started = time.perf_counter()
-        try:
-            completed = subprocess.run(
-                artifact.command,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=context.work_dir,
-                env=self.child_env(),
-            )
-        except subprocess.TimeoutExpired:
-            return ReplayResult(
-                status=TIMEOUT,
-                error=f"Exceeded the {timeout:.0f}s budget and was killed.",
-            )
-        wall = time.perf_counter() - started
-
-        if completed.returncode != 0:
-            return ReplayResult(status=FAILED, error=tail(completed.stderr))
-        if not os.path.exists(session_path):
-            return ReplayResult(
-                status=FAILED,
-                error=f"The run produced no session export.\n{tail(completed.stderr)}",
-            )
-        return ReplayResult(
-            status=OK,
+        return run_script_replay(
+            artifact.command,
+            work_dir=context.work_dir,
+            env=self.child_env(),
+            timeout=timeout,
             session_path=session_path,
             fingerprint_path=fingerprint_path,
-            wall_s=round(wall, 4),
         )

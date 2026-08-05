@@ -15,10 +15,12 @@ has to be paid for. Strategies that only serve some languages say so through
 never by pretending it could rebuild state it cannot.
 """
 import os
+import subprocess
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from jumper_extension.adapters.ai_reviewer.benchmark.models import OK
+from jumper_extension.adapters.ai_reviewer.benchmark.models import FAILED, OK, TIMEOUT
 from jumper_extension.adapters.ai_reviewer.language import LanguageAdapter
 
 # The replay modes ``ai.benchmark.replay.mode`` accepts. FULL always works and
@@ -142,3 +144,57 @@ def tail(text: str) -> str:
     """The end of a child's stderr - the part that names what actually broke."""
     text = (text or "").strip()
     return text[-_ERROR_TAIL_CHARS:]
+
+
+def run_script_replay(
+    command: list,
+    work_dir: str,
+    env: dict,
+    timeout: float | None,
+    session_path: str,
+    fingerprint_path: str,
+    stale_paths: tuple = (),
+) -> ReplayResult:
+    """Run one replay script as a child and read its verdict off the filesystem.
+
+    Shared by every strategy that measures in a separate interpreter - which is
+    all of them except the fork mode, whose child is reached through a
+    supervisor. Leftovers are removed first: measurement tags repeat across
+    repair attempts, so a stale session or report from a previous attempt would
+    otherwise be read as this one's.
+    """
+    for stale in (session_path, fingerprint_path, *stale_paths):
+        if stale and os.path.exists(stale):
+            os.remove(stale)
+
+    started = time.perf_counter()
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=work_dir,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return ReplayResult(
+            status=TIMEOUT,
+            error=f"Exceeded the {timeout:.0f}s budget and was killed.",
+        )
+    wall = time.perf_counter() - started
+
+    if completed.returncode != 0:
+        return ReplayResult(status=FAILED, error=tail(completed.stderr), wall_s=round(wall, 4))
+    if not os.path.exists(session_path):
+        return ReplayResult(
+            status=FAILED,
+            error=f"The run produced no session export.\n{tail(completed.stderr)}",
+            wall_s=round(wall, 4),
+        )
+    return ReplayResult(
+        status=OK,
+        session_path=session_path,
+        fingerprint_path=fingerprint_path,
+        wall_s=round(wall, 4),
+    )

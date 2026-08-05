@@ -161,7 +161,8 @@ benchmark:
     run: true
   replay:
     mode: full
-    cross_check: true   # NOT IMPLEMENTED
+    cross_check: true
+    dill_max_checkpoint_gb: 4.0
 ```
 
 | Key | Description |
@@ -172,7 +173,8 @@ benchmark:
 | `timeout_factor` | A variant is killed past this multiple of the baseline duration. |
 | `checks.validate_syntax` / `checks.run` | Which [benchmark steps](ai-review/benchmark.md#running-fewer-steps) run. Per run: `--check` / `--skip-check`. |
 | `replay.mode` | How prefix state is rebuilt: `full`, `fork`, `dill`. Per run: `--replay-mode`. See [Replay modes](ai-review/replay-modes.md). |
-| `replay.cross_check` | Accepted and defaulted to `true`, but **nothing reads it yet**. |
+| `replay.cross_check` | With a fast mode active, also measure the baseline once through `full` and compare. Differing results send the whole benchmark back to `full`; differing durations warn. Costs one extra prefix replay. |
+| `replay.dill_max_checkpoint_gb` | Ceiling on a `dill` checkpoint; passing it abandons the checkpoint and falls back to `full`. |
 
 ### `ai.context` — what the model is told
 

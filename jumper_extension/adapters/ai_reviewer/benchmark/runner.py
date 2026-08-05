@@ -77,13 +77,46 @@ class BenchmarkRunner:
             # and set beside the ones taken before it: a benchmark's output is a
             # ratio, and the two modes are two instruments. Swap, then unwind and
             # let the whole run start again on one of them.
-            self._fall_back(result.error)
+            self.fall_back(result.error)
             raise StrategyChanged(result.error)
         if not result.ok:
             return RunOutcome(status=result.status, error=result.error)
         outcome = self._read_outcome(result.session_path, result.fingerprint_path)
         outcome.wall_s = result.wall_s
         return outcome
+
+    def cross_check_baseline(self, code: str, tag: str = "cross_check") -> RunOutcome | None:
+        """Measure *code* once through the full replay, whatever mode is active.
+
+        A fast mode rebuilds state instead of replaying it, and nothing inside
+        the benchmark can tell whether it rebuilt the right one: the baseline and
+        every variant go through the same rebuild, so they agree with each other
+        and the divergence check reports a match. The only thing that can catch
+        it is a measurement taken the other way.
+
+        Returns None when the active strategy already *is* the full replay -
+        there is nothing to compare - and never disturbs it otherwise: the check
+        runs on a throwaway strategy of its own, before the active one prepares,
+        so a prefix is never resident twice.
+        """
+        if isinstance(self.strategy, FullReplayStrategy):
+            return None
+
+        reference = FullReplayStrategy(self.strategy.context)
+        try:
+            reference.prepare()
+            result = reference.replay(code, tag, None)
+            if not result.ok:
+                logger.warning(
+                    "[JUmPER]: the cross-check replay did not run "
+                    f"({result.error or result.status}); the benchmark continues unchecked."
+                )
+                return None
+            outcome = self._read_outcome(result.session_path, result.fingerprint_path)
+            outcome.wall_s = result.wall_s
+            return outcome
+        finally:
+            reference.close()
 
     def close(self):
         """Release whatever the strategy is holding. Safe to call twice."""
@@ -102,9 +135,9 @@ class BenchmarkRunner:
         self._prepared = True
         outcome = self.strategy.prepare()
         if not outcome.ok:
-            self._fall_back(outcome.reason)
+            self.fall_back(outcome.reason)
 
-    def _fall_back(self, reason: str):
+    def fall_back(self, reason: str):
         """Give up on the current strategy and finish on the full replay.
 
         Always possible, and always correct: the full replay needs no setup and

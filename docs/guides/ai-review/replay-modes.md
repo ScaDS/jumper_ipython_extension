@@ -12,7 +12,7 @@ replay mode decides how often that prefix is paid for.**
 |------|-------------|-----------|--------|
 | `full` | once per measurement | all | Default. The reference every other mode falls back to. |
 | `fork` | once per benchmark | Python | Available. |
-| `dill` | once per benchmark | Python | Not built yet. |
+| `dill` | once per benchmark | Python | Available with the `[ai]` extras (needs `dill`). |
 
 Before repairs, a benchmark takes `(1 + suggestions) × runs` measurements. A
 repaired suggestion may add up to `runs` more measurements per repair round.
@@ -37,7 +37,8 @@ or per run:
 | Choose | When |
 |---|---|
 | `fork` | An expensive prefix, and a cell whose work is **arrays** — numpy, BLAS, anything where the data is large but the number of Python objects is small. |
-| `full` | The **memory numbers** are what you are after (see the caveat below), or the cell works over large **Python data structures** — a list of millions of ints, a dict of objects. |
+| `dill` | An expensive prefix that **loads or computes data**, and either memory numbers you want to keep honest or a prefix `fork` refuses (an initialized CUDA context, a torch runtime). |
+| `full` | The cell works over large **Python data structures** — a list of millions of ints, a dict of objects — or the prefix holds anything a checkpoint cannot carry (see below). |
 
 !!! note
     `full` is the reference rather than a guarantee of correctness. It replays
@@ -113,13 +114,63 @@ cell itself. ... Re-run with --replay-mode full for a number that does not carry
     would, with nothing firing to say so. On array work the two modes have been
     measured to agree within the machine's own noise.
 
+## How `dill` is arranged
+
+```
+prepare      one process runs the prefix, then writes a checkpoint of what it built
+measurement  a fresh process loads that checkpoint and times the cell on top of it
+```
+
+Nothing is inherited and nothing is shared, so `dill` has none of `fork`'s
+distortions: no copy-on-write faults, no thread pool lost to `fork()`, and an
+RSS that describes one process. It is also the mode for prefixes `fork` refuses.
+
+**What a checkpoint cannot carry.** It holds the values your cells bound, not
+the process around them. Measured, none of this survives a round trip:
+
+- environment variables, the working directory's `sys.path` entries, module
+  options such as `numpy.seterr`;
+- a view's aliasing — `b = a[2:5]` comes back as an independent array, so
+  mutations no longer propagate;
+- the BLAS, JIT and dispatch caches the prefix warmed. Every measurement is a
+  cold process, so a target with an expensive first call **reads slower** than
+  it would under `full` — the mirror image of `fork`'s understatement.
+
+Imports are not saved either: `dill` keeps modules by reference, so every
+measurement re-runs `import torch`. A prefix whose cost *is* its imports gains
+nothing, and a warning says so with both figures.
+
+**What it saves is the prefix's compute, minus the cost of storing its data.**
+Measured here: a 6 s eigendecomposition leaving 11 MB went from 8.8 s to 3.0 s
+per measurement, while a 0.7 s array build leaving 320 MB was a wash — writing
+and reading the data cost about what recomputing it did.
+
+!!! warning "State that would be silently ruined refuses the mode"
+
+    An open file, a lock or a thread left in your namespace pickles without
+    complaint and comes back as something else — an open `w+` file is even
+    *truncated on disk* when restored. So the namespace is screened before the
+    checkpoint is written, and a binding that cannot survive falls the whole
+    benchmark back to `full`, naming the variable. The same applies when `cupy`
+    or `tensorflow` is imported: their generator state cannot be carried, and
+    a benchmark that cannot reproduce its own random numbers reports correct
+    suggestions as wrong.
+
+A checkpoint larger than `ai.benchmark.replay.dill_max_checkpoint_gb` (4 GB by
+default) is abandoned rather than written, so a large prefix cannot fill a shared
+filesystem.
+
 ## Fallback
 
 A mode that cannot serve the cell in front of it **never fails the benchmark** —
 it degrades to `full` and logs why. That happens when:
 
-- the cell is not Python (`fork` is Python-only, so R cells always use `full`);
-- the platform is not POSIX;
+- the cell is not Python (`fork` and `dill` are Python-only, so R cells always
+  use `full`);
+- the optional `dill` dependency is not installed;
+- the prefix left state a checkpoint would silently change, or a checkpoint over
+  the size limit;
+- the platform is not POSIX (`fork` only);
 - the prefix left an initialized CUDA context, which no forked child can use.
   This check is best-effort: it asks torch whether its context is initialized,
   but refuses on a bare `import cupy` or `import jax` even for CPU-only work, and
@@ -148,21 +199,25 @@ it degrades to `full` and logs why. That happens when:
     Reporting per-cell memory correctly under `fork` needs PSS/USS accounting
     rather than RSS, which is tracked as separate work.
 
-## `cross_check` — configured, not yet implemented
+## `cross_check` — how a fast mode is kept honest
 
-!!! danger "This setting does nothing today"
-
-    `ai.benchmark.replay.cross_check` is accepted by the configuration and
-    defaults to `true`, but **nothing reads it**. It is reserved for work that has
-    not landed. Do not rely on it: no cross-checking of any kind currently
-    happens, whatever it is set to.
-
-What it is meant to become: before a fast mode is trusted, the baseline would be
-measured once through it and once through `full`, and the results compared.
-Without that, a mode that rebuilt the wrong state passes unnoticed — every
-suggestion is compared against a baseline that went through the same broken
+A mode that rebuilt the wrong state would otherwise pass unnoticed: every
+suggestion is compared against a baseline that went through the *same* wrong
 rebuild, so the two agree with each other and the divergence check reports a
-match. It would cost one extra prefix run per benchmark.
+match. Nothing inside a mode can catch that. A measurement taken the other way
+can.
+
+So when a fast mode is active, `ai.benchmark.replay.cross_check` (on by default)
+measures the baseline **once through `full`** as well, before the fast mode
+prepares anything, and compares:
+
+| Compared | If it differs |
+|---|---|
+| Results | The mode rebuilt state the cell notices. Everything is discarded and the whole benchmark re-runs on `full`. |
+| Duration | Only a warning, and only past 2× on measurements above a few milliseconds — a restored process misses the prefix's warm-up, a forked one pays for inherited memory, and machines are noisy. |
+
+It costs one extra prefix replay per benchmark. Turning it off saves that and
+gives up the only check there is on whether a fast mode rebuilt your state.
 
 !!! tip "Where the measurements behind this page live"
     The numbers each claim rests on — page-fault costs, thread-probe refusal
