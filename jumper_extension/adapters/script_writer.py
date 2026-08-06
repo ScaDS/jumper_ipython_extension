@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import dedent
 from typing import Optional, List
@@ -6,6 +7,7 @@ from datetime import datetime
 
 from jumper_extension.core.state import State
 from jumper_extension.adapters.cell_history import CellHistory
+from jumper_extension.adapters.magic_names import JUMPER_LINE_MAGICS, cell_magic_reason
 
 logger = logging.getLogger("extension")
 
@@ -18,23 +20,117 @@ def is_pure_magic_cell(raw_cell: str) -> bool:
     )
 
 
-def transform_cell_code(raw_cell: str, cell_magics: List[str]) -> str:
+@dataclass
+class RenderedCell:
+    """One notebook cell as script source, and what did not survive the trip.
+
+    *unsupported* is the important field: it is empty when *source* really is the
+    cell, and a reason when the cell cannot be a Python script at all. A caller
+    that ignores it gets what the benchmark used to get - a file that does not
+    parse, blamed on whoever wrote the cell.
     """
-    Replace captured magic commands with magic_adapter calls while keeping
-    the rest of the code intact.
+    source: str
+    dropped: List[str] = field(default_factory=list)
+    unsupported: str = ""
+
+
+def render_source(raw_cell: str, cell_magics: List[str]) -> RenderedCell:
+    """Turn one cell into source a plain interpreter can run.
+
+    Three kinds of magic reach this function and each leaves differently:
+
+    - a JUmPER magic becomes a ``magic_adapter`` call, because the adapter has a
+      method of that name and the replay wants the effect;
+    - any other magic IPython recognised is **removed**, because nothing in a
+      script can serve it - there is no frontend for ``%matplotlib`` and no
+      autoreloader to configure. It used to be rewritten to
+      ``magic_adapter.matplotlib(...)`` and fail with ``AttributeError``;
+    - a cell magic that decorates Python (``%%time``) loses its header and keeps
+      its body; one whose body is not Python (``%%bash``) is refused outright.
+
+    Only magics that were *captured while the cell ran* are removed, so a ``%``
+    inside a string literal is left alone, as it always was.
     """
     if not raw_cell:
-        return ""
+        return RenderedCell("")
 
-    # Build a lookup from magic line prefix to magic_adapter call string
-    # We rely on CellHistory.cell_magics entries having the original magic lines (e.g. "%perfmonitor_start 1.0")
-    replacements = {}
+    body, dropped, unsupported = _strip_cell_magic(raw_cell)
+    if unsupported:
+        return RenderedCell("", dropped, unsupported)
+
+    replacements, foreign = _adapter_calls(cell_magics)
+    out_lines: List[str] = []
+    for line in body.splitlines():
+        lstrip = line.lstrip()
+        # Only attempt replacement if line starts with a magic marker
+        if lstrip.startswith("%"):
+            indent = line[: len(line) - len(lstrip)]
+            name = _magic_name(lstrip)
+            if name in foreign:
+                dropped.append(lstrip)
+                out_lines.append(f"{indent}# JUmPER dropped {lstrip.strip()}: {foreign[name]}")
+                continue
+            rep = _lookup(lstrip, replacements)
+            if rep is not None:
+                # keep original indentation
+                out_lines.append(f"{indent}{rep}")
+                continue
+        out_lines.append(line)
+    return RenderedCell("\n".join(out_lines), dropped, "")
+
+
+def transform_cell_code(raw_cell: str, cell_magics: List[str]) -> str:
+    """Replace captured magic commands with magic_adapter calls.
+
+    The source of :func:`render_source`, for callers that have already decided
+    what to do about a cell they cannot render.
+    """
+    return render_source(raw_cell, cell_magics).source
+
+
+def _strip_cell_magic(raw_cell: str) -> tuple:
+    """Take a ``%%`` header off a cell, or say why the cell cannot be rendered.
+
+    A cell magic has to be the cell's first non-blank line - that is IPython's
+    rule, not ours - so only that line is examined.
+    """
+    lines = raw_cell.splitlines()
+    first = next((index for index, line in enumerate(lines) if line.strip()), None)
+    if first is None or not lines[first].lstrip().startswith("%%"):
+        return raw_cell, [], ""
+
+    header = lines[first].strip()
+    parts = header[2:].split(maxsplit=1)
+    name = parts[0] if parts else ""
+    arguments = parts[1] if len(parts) > 1 else ""
+    reason = cell_magic_reason(name, arguments)
+    if reason:
+        return "", [], f"{header.split()[0]}: {reason}"
+
+    remaining = lines[:first] + lines[first + 1:]
+    return "\n".join(remaining), [header], ""
+
+
+def _adapter_calls(cell_magics: List[str]) -> tuple:
+    """Split the captured magics into ones the adapter serves and ones it cannot.
+
+    Returns the replacement lookup for the first group and, for the second, the
+    reason each is dropped - keyed by name, since that is what a line is matched
+    on once the exact-text lookup misses.
+    """
+    replacements: dict = {}
+    foreign: dict = {}
     for magic in cell_magics:
         # Normalize leading '%'
         stripped_no_pct = magic[1:] if magic.startswith("%") else magic
         parts = stripped_no_pct.split(maxsplit=1)
+        if not parts:
+            continue
         cmd = parts[0]
         args = parts[1] if len(parts) > 1 else ""
+        if cmd not in JUMPER_LINE_MAGICS:
+            foreign[cmd] = "no notebook to serve it outside a live session"
+            continue
         # construct a Python call to the magic_adapter method
         # prefer passing the whole "line" string of arguments
         if args:
@@ -46,33 +142,32 @@ def transform_cell_code(raw_cell: str, cell_magics: List[str]) -> str:
         replacements[magic] = call
         # also allow matching without the leading '%', just in case
         replacements[stripped_no_pct] = call
+    return replacements, foreign
 
-    # Now transform the cell line by line
-    out_lines: List[str] = []
-    for line in raw_cell.splitlines():
-        lstrip = line.lstrip()
-        # Only attempt replacement if line starts with a magic marker
-        if lstrip.startswith("%"):
-            # Exact match by full line (common for bare magic lines)
-            rep = replacements.get(lstrip)
-            if rep is None:
-                # Try by the first token
-                key = lstrip.split("#", 1)[0].strip()  # drop trailing inline comments if any
-                rep = replacements.get(key)
-            if rep is None:
-                # As a fallback, try to parse and replace if it's one of captured commands
-                token = lstrip[1:].split(maxsplit=1)[0]
-                for k, v in replacements.items():
-                    if k.lstrip("%").split(maxsplit=1)[0] == token:
-                        rep = v
-                        break
-            if rep is not None:
-                # keep original indentation
-                indent = line[: len(line) - len(lstrip)]
-                out_lines.append(f"{indent}{rep}")
-                continue
-        out_lines.append(line)
-    return "\n".join(out_lines)
+
+def _magic_name(lstripped_line: str) -> str:
+    """The command a magic line invokes, without its ``%`` or arguments."""
+    tokens = lstripped_line.lstrip("%").split(maxsplit=1)
+    return tokens[0] if tokens else ""
+
+
+def _lookup(lstripped_line: str, replacements: dict) -> Optional[str]:
+    """The adapter call for a magic line, matched the three ways it may appear."""
+    # Exact match by full line (common for bare magic lines)
+    rep = replacements.get(lstripped_line)
+    if rep is not None:
+        return rep
+    # Try by the first token
+    key = lstripped_line.split("#", 1)[0].strip()  # drop trailing inline comments if any
+    rep = replacements.get(key)
+    if rep is not None:
+        return rep
+    # As a fallback, try to parse and replace if it's one of captured commands
+    token = _magic_name(lstripped_line)
+    for captured, call in replacements.items():
+        if captured.lstrip("%").split(maxsplit=1)[0] == token:
+            return call
+    return None
 
 
 class NotebookScriptWriter:
