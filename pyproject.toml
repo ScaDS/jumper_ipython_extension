@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jumper-extension"
-version = "0.3.6"
+version = "0.4.1"
 description = "IPython extension for monitoring cell performance"
 readme={ file='README.md', content-type="text/markdown"}
 license-files=["LICENSE"]
@@ -15,7 +15,9 @@ dependencies = [
     "ipython",
     "matplotlib",
     "plotly",
-    "kaleido",
+    # Kaleido 1.x requires plotly>=6.1.1; pin to the stable 0.2.x series
+    # for compatibility with plotly 5.x (used in this project).
+    "kaleido==0.2.1",
     "pandas",
     "numpy",
     "ipympl",
@@ -44,7 +46,7 @@ test = [
     "pytest",
     "pytest-mock",
     "pytest-cov",
-    "pynvml",
+    "nvidia-ml-py",
 ]
 
 docs = [
@@ -74,4 +76,4 @@ include = ["jumper_extension*"]
 ]
 "jumper_extension.adapters.ai_reviewer.strategy" = ["*.yaml"]
 "jumper_extension.templates.visualizer.plotly" = ["**/*"]
-"jumper_extension.monitor.backends.native_c" = ["collector.c", "Makefile", "jumper_collector"]
+"jumper_extension.monitor.backends.native_c" = ["**/*.c", "**/*.h", "Makefile"]

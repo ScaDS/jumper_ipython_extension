@@ -53,7 +53,7 @@ pip install .
 
 For NVIDIA GPU monitoring:
 ```bash
-pip install pynvml
+pip install nvidia-ml-py
 ```
 
 For AMD GPU monitoring:
@@ -389,6 +389,25 @@ y = np.dot(x, x.T)
 # View performance report (handled locally)
 %perfmonitor_perfreport
 ```
+
+#### Custom kernel search paths
+
+By default, the wrapper kernel only finds kernels that ``KernelSpecManager``
+discovers in its standard locations (``~/.local/share/jupyter/kernels``,
+the active environment, and the system-wide Jupyter data directory).
+On clusters and other shared installations, kernels are often deployed
+under non-default paths. In that case, pass those paths to
+``%list_kernels`` to extend ``KernelSpecManager.kernel_dirs`` for the
+running wrapper kernel:
+
+```python
+%list_kernels /software/util/JupyterLab/jumper/kernels/
+```
+
+The added paths persist for the lifetime of the wrapper kernel, so any
+kernels discovered through them can subsequently be selected with
+``%wrap_kernel``. Multiple paths can be supplied space-separated; quote
+paths that contain spaces.
 
 ### Wrapper Kernel Demos
 

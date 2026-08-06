@@ -187,6 +187,11 @@ class PerformanceMonitor:
         )
 
     def stop(self):
+        # Never started: there is no thread to join and no start_time to
+        # measure the elapsed window against, which would raise below.
+        if self.start_time is None:
+            self.running = False
+            return
         self.running = False
         if hasattr(self, "_stop_event"):
             self._stop_event.set()

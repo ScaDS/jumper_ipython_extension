@@ -33,7 +33,7 @@ JUmPER can collect GPU metrics for both NVIDIA and AMD GPUs. GPU support is opti
 For NVIDIA GPUs, install:
 
 ```bash
-pip install pynvml
+pip install nvidia-ml-py
 ```
 
 For AMD GPUs, install:
