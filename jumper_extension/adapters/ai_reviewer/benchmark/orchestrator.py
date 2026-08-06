@@ -172,10 +172,7 @@ class BenchmarkOrchestrator:
             on_run=self.progress.baseline_run,
         )
         if isinstance(baseline_runs, RunOutcome):
-            logger.warning(
-                "[JUmPER]: the cell under review did not replay cleanly, so there is "
-                f"nothing to compare against: {baseline_runs.error}"
-            )
+            logger.warning(_baseline_failure(baseline_runs))
             return {}
 
         duration, metrics = median_of(baseline_runs)
@@ -530,6 +527,35 @@ class BenchmarkOrchestrator:
             correctness=correctness,
             differing_names=differing,
         )
+
+
+def _baseline_failure(outcome: RunOutcome) -> str:
+    """Say what could not be replayed, and whose problem it is.
+
+    A benchmark measures the cell under review against its own predecessors, so
+    it needs both. When the prefix is what failed, the cell under review has not
+    been run at all - saying it "did not replay cleanly" points a user, and a
+    repair loop, at code that is very likely fine.
+    """
+    if outcome.prefix_cell is None:
+        return (
+            "[JUmPER]: the cell under review did not replay cleanly, so there is "
+            f"nothing to compare against: {outcome.error}"
+        )
+    return (
+        f"[JUmPER]: benchmark skipped: prefix cell {outcome.prefix_cell} could not be "
+        f"replayed - {_last_line(outcome.error)}\n"
+        "A replay runs in a plain interpreter, so a cell that talks to the notebook "
+        "frontend, or to anything else only a live session provides, cannot be "
+        "reproduced. The review itself is unaffected.\n"
+        f"{outcome.error}"
+    )
+
+
+def _last_line(error: str) -> str:
+    """The exception line of a traceback - the part worth putting in a sentence."""
+    lines = [line.strip() for line in (error or "").splitlines() if line.strip()]
+    return lines[-1] if lines else "no error was reported"
 
 
 def _walls(outcomes: list[RunOutcome]) -> list[float]:

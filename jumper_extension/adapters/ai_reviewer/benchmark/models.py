@@ -14,6 +14,10 @@ class RunOutcome:
     metrics: dict = dataclasses.field(default_factory=dict)
     fingerprints: dict = dataclasses.field(default_factory=dict)
     error: str = ""
+    # Set when the replay died in a prefix cell rather than in the code it was
+    # asked to time, so the failure is reported against the notebook rather than
+    # against a suggestion that never ran.
+    prefix_cell: int | None = None
 
     @property
     def ok(self) -> bool:

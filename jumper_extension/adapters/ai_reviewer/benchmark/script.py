@@ -5,10 +5,18 @@ numbers it exports come from the same monitor and the same ``CellHistory`` as
 the original run - which is the whole point: the variant has to be measured the
 way the baseline was.
 """
+import re
 from pathlib import Path
 from textwrap import dedent
 
 from jumper_extension.adapters.script_writer import is_pure_magic_cell, transform_cell_code
+
+# Written above each cell so a traceback can be traced back to the cell it came
+# from. A replay that fails in the prefix has not measured anything and has said
+# nothing about the code under review, and the two have to be told apart.
+_PREFIX_MARKER = "# --- cell {index} ---"
+_TARGET_MARKER = "# --- cell under test ---"
+_CELL_MARKER = re.compile(r"^# --- cell (\d+) ---$")
 
 _HEADER = '''\
 #!/usr/bin/env python3
@@ -110,7 +118,7 @@ def build_prefix_script(prefix_cells: list[dict], output_path: str) -> str:
     """
     parts = []
     for cell in prefix_cells:
-        parts.append(f"\n# --- cell {cell['index']} ---\n")
+        parts.append("\n" + _PREFIX_MARKER.format(index=cell["index"]) + "\n")
         parts.append(render_cell(cell["raw_cell"], cell.get("cell_magics")))
 
     return _write(output_path, "".join(parts))
@@ -186,9 +194,9 @@ def build_script(
     """
     parts = [_HEADER.format(interval=str(interval))]
     for cell in prefix_cells:
-        parts.append(f"\n# --- cell {cell['index']} ---\n")
+        parts.append("\n" + _PREFIX_MARKER.format(index=cell["index"]) + "\n")
         parts.append(render_cell(cell["raw_cell"], cell.get("cell_magics")))
-    parts.append("\n# --- cell under test ---\n")
+    parts.append("\n" + _TARGET_MARKER + "\n")
     parts.append(render_cell(target_code, []))
     parts.append(
         _FOOTER.format(
@@ -199,6 +207,50 @@ def build_script(
     )
 
     return _write(output_path, "".join(parts))
+
+
+def failing_prefix_cell(script_path: str, error: str) -> int | None:
+    """The prefix cell a replay's traceback points at, or None.
+
+    A replay that dies in the prefix has measured nothing and has said nothing
+    about the code under review - it could not even get as far as running it - so
+    reporting that failure against the suggestion sends the repair loop to fix
+    code that never executed. The markers written above each cell are what makes
+    the two distinguishable after the fact.
+
+    None means the traceback is in the cell under test, in the scaffolding around
+    it, or nowhere this can resolve; in each of those the prefix is not the thing
+    to blame.
+    """
+    frames = re.findall(rf'File "{re.escape(script_path)}", line (\d+)', error)
+    if not frames:
+        return None
+    try:
+        lines = Path(script_path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+
+    # The last frame in this file is the innermost one still in generated code;
+    # anything deeper belongs to a library the cell called.
+    line = int(frames[-1])
+    for candidate in reversed(lines[: min(line, len(lines))]):
+        if candidate.strip() == _TARGET_MARKER:
+            return None
+        found = _CELL_MARKER.match(candidate.strip())
+        if found:
+            return int(found.group(1))
+    return None
+
+
+def failing_checkpoint_cell(error: str) -> int | None:
+    """The prefix cell a checkpoint died in, read off its traceback.
+
+    The checkpoint script does not lay cells out in a file - it hands each to
+    ``dill_state.run_cell``, which compiles it as ``<cell N>``. That name is the
+    only marker there is, and it is enough.
+    """
+    frames = re.findall(r'File "<cell (\d+)>"', error or "")
+    return int(frames[-1]) if frames else None
 
 
 def _write(output_path: str, source: str) -> str:

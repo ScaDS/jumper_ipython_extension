@@ -40,6 +40,7 @@ from jumper_extension.adapters.ai_reviewer.benchmark.replay.base import (
 from jumper_extension.adapters.ai_reviewer.benchmark.script import (
     build_checkpoint_script,
     build_restore_script,
+    failing_checkpoint_cell,
 )
 from jumper_extension.config.loader import load_config
 
@@ -124,9 +125,12 @@ class DillReplayStrategy(ReplayStrategy):
             return PrepareOutcome(False, f"the checkpoint process could not start: {error}")
 
         if completed.returncode != 0:
+            log = tail(_read_tail(log_path))
+            cell = failing_checkpoint_cell(log)
+            where = f" at cell {cell}" if cell is not None else ""
             return PrepareOutcome(
                 False,
-                f"the prefix failed while being checkpointed.\n{tail(_read_tail(log_path))}",
+                f"the prefix failed while being checkpointed{where}.\n{log}",
             )
 
         meta = dill_state.read_meta(self._paths["meta"])

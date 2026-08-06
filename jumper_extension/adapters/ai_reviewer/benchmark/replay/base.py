@@ -82,6 +82,11 @@ class ReplayResult:
     # zygote reads as a failing suggestion, and every variant gets handed to the
     # repair loop to fix code that was never wrong.
     strategy_broken: bool = False
+    # The prefix cell the failure came from, when it came from one. A replay that
+    # died before reaching the cell under test has not measured it and has said
+    # nothing about it, and a benchmark that reports otherwise sends the repair
+    # loop after code that never ran.
+    prefix_cell: int | None = None
 
     @property
     def ok(self) -> bool:
@@ -185,7 +190,17 @@ def run_script_replay(
     wall = time.perf_counter() - started
 
     if completed.returncode != 0:
-        return ReplayResult(status=FAILED, error=tail(completed.stderr), wall_s=round(wall, 4))
+        # Imported here rather than at module scope: `script` renders cells and
+        # this module is what a rendered cell's runtime leans on.
+        from jumper_extension.adapters.ai_reviewer.benchmark.script import failing_prefix_cell
+
+        stderr = tail(completed.stderr)
+        return ReplayResult(
+            status=FAILED,
+            error=stderr,
+            wall_s=round(wall, 4),
+            prefix_cell=failing_prefix_cell(str(command[-1]), stderr),
+        )
     if not os.path.exists(session_path):
         return ReplayResult(
             status=FAILED,

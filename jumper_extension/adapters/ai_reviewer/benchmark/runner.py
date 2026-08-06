@@ -80,7 +80,11 @@ class BenchmarkRunner:
             self.fall_back(result.error)
             raise StrategyChanged(result.error)
         if not result.ok:
-            return RunOutcome(status=result.status, error=result.error)
+            return RunOutcome(
+                status=result.status,
+                error=result.error,
+                prefix_cell=result.prefix_cell,
+            )
         outcome = self._read_outcome(
             result.session_path,
             result.fingerprint_path,
