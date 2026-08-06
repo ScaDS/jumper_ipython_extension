@@ -1,0 +1,2492 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Performance monitoring for IPython and Jupyter notebooks">
+      
+      
+      
+        <link rel="canonical" href="https://scads.github.io/jumper_jupyter_performance/guides/ai-review/strategies/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../benchmark/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Steering the Review - JUmPER – Jupyter meets Performance</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#steering-the-review" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="JUmPER – Jupyter meets Performance" class="md-header__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
+      
+  <img src="../../../img/JUmPER01.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            JUmPER – Jupyter meets Performance
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Steering the Review
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <!-- Repository information (extended with wrapper kernel) -->
+<style>
+  .md-header__source {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  .md-header__source .md-source {
+    flex-shrink: 0 !important;
+  }
+  .md-source .md-source__version {
+    display: block;
+    font-size: 0.6rem;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+</style>
+
+<!-- Original repo source -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ScaDS/jumper_jupyter_performance
+  </div>
+</a>
+
+<!-- Wrapper kernel package info -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance/tree/main/jumper_wrapper_kernel" title="Wrapper Kernel" class="md-source">
+  <div class="md-source__icon md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M284-1.3c-17.3-10-38.7-10-56 0l-84.2 48.6c-17.3 10-28 28.5-28 48.5v101.9l-88.3 51c-17.3 10-28 28.5-28 48.5v97.3c0 20 10.7 38.5 28 48.5l84.3 48.6c17.3 10 38.7 10 56 0l88.3-51 88.3 51c17.3 10 38.7 10 56 0l84.1-48.6c17.3-10 28-28.5 28-48.5v-97.3c0-20-10.7-38.5-28-48.5l-88.3-51V95.8c0-20-10.7-38.5-28-48.5zm-52 293.9v106.5l-88.3 51c-1.2.7-2.6 1.1-4 1.1V345.9zm231.4.6c.7 1.2 1.1 2.6 1.1 4v97.3c0 2.9-1.5 5.5-4 6.9L376.2 450c-1.2.7-2.6 1.1-4 1.1V345.8zM348.3 95.8v101.9L256 251V144.5l91.2-52.6c.7 1.2 1.1 2.6 1.1 4z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jumper-wrapper-kernel
+    <span class="md-source__version">v0.1.2</span>
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="JUmPER – Jupyter meets Performance" class="md-nav__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
+      
+  <img src="../../../img/JUmPER01.svg" alt="logo">
+
+    </a>
+    JUmPER – Jupyter meets Performance
+  </label>
+  
+    <div class="md-nav__source">
+      <!-- Repository information (extended with wrapper kernel) -->
+<style>
+  .md-header__source {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  .md-header__source .md-source {
+    flex-shrink: 0 !important;
+  }
+  .md-source .md-source__version {
+    display: block;
+    font-size: 0.6rem;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+</style>
+
+<!-- Original repo source -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ScaDS/jumper_jupyter_performance
+  </div>
+</a>
+
+<!-- Wrapper kernel package info -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance/tree/main/jumper_wrapper_kernel" title="Wrapper Kernel" class="md-source">
+  <div class="md-source__icon md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M284-1.3c-17.3-10-38.7-10-56 0l-84.2 48.6c-17.3 10-28 28.5-28 48.5v101.9l-88.3 51c-17.3 10-28 28.5-28 48.5v97.3c0 20 10.7 38.5 28 48.5l84.3 48.6c17.3 10 38.7 10 56 0l88.3-51 88.3 51c17.3 10 38.7 10 56 0l84.1-48.6c17.3-10 28-28.5 28-48.5v-97.3c0-20-10.7-38.5-28-48.5l-88.3-51V95.8c0-20-10.7-38.5-28-48.5zm-52 293.9v106.5l-88.3 51c-1.2.7-2.6 1.1-4 1.1V345.9zm231.4.6c.7 1.2 1.1 2.6 1.1 4v97.3c0 2.9-1.5 5.5-4 6.9L376.2 450c-1.2.7-2.6 1.1-4 1.1V345.8zM348.3 95.8v101.9L256 251V144.5l91.2-52.6c.7 1.2 1.1 2.6 1.1 4z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jumper-wrapper-kernel
+    <span class="md-source__version">v0.1.2</span>
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPython Extension
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    IPython Extension
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-to Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-to Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2_2" id="__nav_2_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI Review
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    AI Review
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Steering the Review
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Steering the Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-strategy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a strategy changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#available-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --note
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-pieces-fit-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the pieces fit together
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the pieces fit together">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-files-and-what-each-owns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The files and what each owns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-map-two-consumers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One map, two consumers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-same-as-a-diff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same, as a diff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-each-prompt-exposes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What each prompt exposes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-what-you-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting what you built
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-your-own-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding your own strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding your own strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-ids-you-can-toggle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ids you can toggle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measuring Suggestions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../replay-modes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay Modes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../session-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session Transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../script-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Script Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plot-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plot Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../live-plotting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Performance Plotting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../custom-monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Monitors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../python-custom-collector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Python Collectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../c-custom-collector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom C Collectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualizing-custom-collector-metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualizing Custom Collector Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Public API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/jupyter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jupyter API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api/string/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    String Based API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Internals
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../internals/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../internals/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../internals/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../internals/ipython/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPython
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../internals/monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wrapper Kernel
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Wrapper Kernel
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/guides/magic-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magic Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/guides/wrap-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Auto-Wrap Kernels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/api/kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/api/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../wrapper-kernel/api/utilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-strategy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a strategy changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#available-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --note
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-pieces-fit-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the pieces fit together
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the pieces fit together">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-files-and-what-each-owns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The files and what each owns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-map-two-consumers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One map, two consumers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-same-as-a-diff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same, as a diff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-each-prompt-exposes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What each prompt exposes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-what-you-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting what you built
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-your-own-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding your own strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding your own strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-ids-you-can-toggle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ids you can toggle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="steering-the-review">Steering the Review</h1>
+<p>A review is steered with two arguments: <code>--strategy</code> picks a prepared angle,
+<code>--note</code> says anything the prepared ones do not cover.</p>
+<div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">strategy</span> <span class="n">parallelization</span>
+<span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">strategy</span> <span class="n">custom</span> <span class="o">--</span><span class="n">note</span> <span class="s2">&quot;keep it single-threaded, we run under SLURM&quot;</span>
+</code></pre></div>
+<h2 id="what-a-strategy-changes">What a strategy changes</h2>
+<p>Each strategy pulls two levers at once:</p>
+<ul>
+<li><strong>Context sources</strong> — what the model is given (cell code, timings, metric
+  summaries, tags, hardware, installed packages, raw metric arrays).</li>
+<li><strong>Prompt items</strong> — individual lines of the system prompts, switched on or off
+  one by one.</li>
+</ul>
+<p>The two stay in step: a source that is turned off is neither collected nor
+mentioned in the prompt, so the model is never told about data it did not get.</p>
+<h2 id="available-strategies">Available strategies</h2>
+<table>
+<thead>
+<tr>
+<th><code>--strategy</code></th>
+<th>Use it when</th>
+<th>What it turns on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>faster</code> <em>(default)</em></td>
+<td>You just want the cell to be quicker.</td>
+<td>The standard context; the model picks the angle.</td>
+</tr>
+<tr>
+<td><code>parallelization</code></td>
+<td>A GPU sits idle, or cores do.</td>
+<td>GPU-offload rules, a hint to look for under-used parallel hardware, and the installed-package list.</td>
+</tr>
+<tr>
+<td><code>deep</code></td>
+<td>The summaries hide the shape of the problem — bursts, stalls, a slow start.</td>
+<td>The <strong>raw per-timestep metric arrays</strong> behind <code>%perfmonitor_plot</code>, plus packages.</td>
+</tr>
+<tr>
+<td><code>custom</code></td>
+<td>None of the above describes the goal.</td>
+<td>Nothing on its own — <strong>requires <code>--note</code></strong>.</td>
+</tr>
+<tr>
+<td><code>r_clean</code></td>
+<td>Reviewing R cells.</td>
+<td>The R style rule instead of the Python/PEP 8 one; drops the package list.</td>
+</tr>
+</tbody>
+</table>
+<p>The default comes from <code>ai.context.strategy</code> in
+<a href="../../configuration/#aicontext-what-the-model-is-told">configuration</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><code>deep</code> sends every sample of every metric for the reviewed range. It is the
+most expensive strategy by a wide margin — use it on one cell, not a range.</p>
+</div>
+<h2 id="-note"><code>--note</code></h2>
+<p>Free text, folded into the prompt. Its meaning depends on where it is used:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Effect of <code>--note</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>%perfmonitor_ai_review --note "..."</code></td>
+<td>Steers which suggestions are generated.</td>
+</tr>
+<tr>
+<td><code>%perfmonitor_ai_review --resume ID --select N --note "..."</code></td>
+<td>Rewrites that one suggestion before it is applied.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>--note</code> replaced the earlier <code>--refine</code>; the old flag no longer exists.</p>
+</div>
+<h2 id="how-the-pieces-fit-together">How the pieces fit together</h2>
+<h3 id="the-files-and-what-each-owns">The files and what each owns</h3>
+<div class="highlight"><pre><span></span><code>adapters/ai_reviewer/
+├── strategy/
+│   ├── strategies.yaml     the strategies: id, description, two toggle buckets
+│   ├── loader.py           merges both buckets into ONE flat  id -&gt; enabled  map
+│   └── models.py           the Strategy dataclass
+├── prompts/
+│   ├── __init__.py         PromptLibrary: loads specs, inlines fragments, renders
+│   ├── analyze/
+│   │   ├── template.md     fixed prose + Jinja loops over the spec&#39;s item lists
+│   │   └── spec.yaml       the items themselves: {id, enabled, text | fragment}
+│   ├── suggest/            same pair of files, one per prompt
+│   ├── refine/
+│   ├── fix/
+│   └── fragments/*.md      rule texts that are long, or shared by several prompts
+└── context/collector.py    _SOURCE_FIELDS: source id -&gt; the field it fills
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Owns</th>
+<th>Edit it to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>strategy/strategies.yaml</code></td>
+<td>Which strategies exist and what each one flips.</td>
+<td>Add a strategy, or retune an existing one.</td>
+</tr>
+<tr>
+<td><code>prompts/&lt;id&gt;/spec.yaml</code></td>
+<td>The toggleable items of one prompt and their <strong>defaults</strong>.</td>
+<td>Change a default for every strategy; add a new toggle id.</td>
+</tr>
+<tr>
+<td><code>prompts/&lt;id&gt;/template.md</code></td>
+<td>The fixed prose, and where the item lists are spliced into it.</td>
+<td>Reword instructions that are not optional.</td>
+</tr>
+<tr>
+<td><code>prompts/fragments/*.md</code></td>
+<td>One rule's text, reused across prompts.</td>
+<td>Reword a rule everywhere at once.</td>
+</tr>
+<tr>
+<td><code>context/collector.py</code></td>
+<td>Which source id fills which context field.</td>
+<td>Add a new context source.</td>
+</tr>
+</tbody>
+</table>
+<p>A prompt is assembled from three of them at render time:</p>
+<pre class="mermaid"><code>flowchart LR
+    SPEC["spec.yaml&lt;br/&gt;items: id, enabled, text|fragment"] --&gt; LIB["PromptLibrary.render"]
+    FRAG["fragments/*.md"] --&gt;|inlined as the item's text| LIB
+    OVR["strategy overrides&lt;br/&gt;id → enabled"] --&gt;|wins over the spec default| LIB
+    LIB --&gt; TPL["template.md&lt;br/&gt;Jinja loops keep only enabled items"]
+    TPL --&gt; OUT["the system prompt"]</code></pre>
+<h3 id="one-map-two-consumers">One map, two consumers</h3>
+<p>The loader flattens a strategy's <code>context</code> and <code>overrides</code> buckets into a
+single <code>id -&gt; enabled</code> map, and that one map is handed to both layers:</p>
+<pre class="mermaid"><code>flowchart TD
+    CLI["--strategy r_clean"] --&gt; Y["strategies.yaml effect:&lt;br/&gt;context: packages false&lt;br/&gt;overrides: pep8_multiline false, r_style true"]
+    Y --&gt; M["loader.py → one flat map&lt;br/&gt;packages: false, pep8_multiline: false, r_style: true"]
+    M --&gt; C["ContextCollector.collect"]
+    M --&gt; P["PromptLibrary.render"]
+    C --&gt; C1["packages never gathered&lt;br/&gt;env_info stays empty"]
+    P --&gt; P1["given item 'Preinstalled libraries' dropped&lt;br/&gt;— same id as the source"]
+    P --&gt; P2["rule pep8_multiline dropped"]
+    P --&gt; P3["rule r_style inlined from fragments/r_style.md"]</code></pre>
+<p>Every item keeps its own <code>enabled</code> default in <code>spec.yaml</code>; a strategy overrides
+only the ids it names, and an id a prompt never defines is ignored there.</p>
+<p><strong>Ids are shared on purpose.</strong> A <code>given</code> item announcing a context source
+carries the same id as the source, so one toggle removes both the data and the
+sentence promising it. Conversely <code>pep8_multiline</code> appears in three prompts, so
+<code>r_clean</code> silences it in all three at once.</p>
+<h3 id="the-same-as-a-diff">The same, as a diff</h3>
+<p><code>r_clean</code> against the default, in the composed <code>suggest</code> prompt — real output of
+the inspection command below:</p>
+<div class="highlight"><pre><span></span><code><span class="w"> </span>You are given the:
+<span class="w"> </span>    - Cell source code - or, when several cells were reviewed, all of them, …
+<span class="w"> </span>    - Bottleneck analysis
+<span class="w"> </span>    - Description of the available hardware
+<span class="gd">-    - Preinstalled libraries</span>
+
+<span class="w"> </span>Rules:
+<span class="w"> </span>    …
+<span class="gd">-    - Write code as properly formatted multi-line Python with real newlines</span>
+<span class="gd">-      between statements (PEP 8 style), never as a semicolon-joined one-liner.</span>
+<span class="gi">+    - Write the cell in idiomatic R - the language of the cell under review.</span>
+<span class="gi">+      Prefer vectorized base-R operations and R packages over a foreign</span>
+<span class="gi">+      ecosystem, and format the code as real multi-line R …</span>
+<span class="w"> </span>    - Return the options as a JSON array matching the requested schema, …
+</code></pre></div>
+<p>Three lines of YAML moved one line of context and two lines of instruction. The
+<code>fix</code> prompt changes the same way, because it shares both rule ids.</p>
+<h3 id="what-each-prompt-exposes">What each prompt exposes</h3>
+<table>
+<thead>
+<tr>
+<th>Prompt</th>
+<th>Runs</th>
+<th>Item lists in its spec</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analyze</code></td>
+<td>Every review — name the bottleneck.</td>
+<td><code>given</code>, <code>hints</code></td>
+</tr>
+<tr>
+<td><code>suggest</code></td>
+<td>Every review — propose the options.</td>
+<td><code>given</code>, <code>rules</code>, <code>user_note</code></td>
+</tr>
+<tr>
+<td><code>refine</code></td>
+<td><code>--resume --select N --note "…"</code>.</td>
+<td><code>rules</code></td>
+</tr>
+<tr>
+<td><code>fix</code></td>
+<td>Each <a href="../benchmark/">benchmark repair round</a>.</td>
+<td><code>given</code>, <code>rules</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>user_note</code> is not a strategy toggle: it switches on when <code>--note</code> is given.
+<code>refine</code> receives the note through its human message instead, and <code>fix</code> never
+sees it.</p>
+<h3 id="inspecting-what-you-built">Inspecting what you built</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># the composed system prompts, exactly as the strategy leaves them</span>
+python<span class="w"> </span>-m<span class="w"> </span>jumper_extension.adapters.ai_reviewer.prompts<span class="w"> </span>--strategy<span class="w"> </span>r_clean
+
+<span class="c1"># the full System + Human messages each node would send, on a synthetic state</span>
+python<span class="w"> </span>-m<span class="w"> </span>jumper_extension.adapters.ai_reviewer.agent.preview<span class="w"> </span>--strategy<span class="w"> </span>deep<span class="w"> </span>--note<span class="w"> </span><span class="s2">&quot;no new dependencies&quot;</span>
+</code></pre></div>
+<p>The preview uses the same message builders as the real nodes, so what it prints
+cannot drift from what the LLM receives.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Diff two strategies to see exactly what one costs or adds:
+<code>diff &lt;(python -m …prompts --strategy faster) &lt;(python -m …prompts --strategy r_clean)</code>.</p>
+</div>
+<h2 id="adding-your-own-strategy">Adding your own strategy</h2>
+<p>Strategies are data, not code. They live in <code>strategy/strategies.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">memory</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cut peak memory</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Trade speed for a smaller footprint.</span>
+<span class="w">    </span><span class="nt">effect</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">overrides</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">gpu_offload</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">        </span><span class="c1"># prompt items</span>
+<span class="w">      </span><span class="nt">context</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">raw_perf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">            </span><span class="c1"># context sources</span>
+</code></pre></div>
+<p>Add the entry and <code>--strategy memory</code> is accepted immediately — the choices the
+parser offers are read from this file. Set <code>require_note: true</code> to make the
+strategy refuse to run without <code>--note</code>, as <code>custom</code> does.</p>
+<h3 id="the-ids-you-can-toggle">The ids you can toggle</h3>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Ids</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>context</code></td>
+<td><code>code</code>, <code>timing</code>, <code>perf</code>, <code>raw_perf</code>, <code>hardware</code>, <code>tags</code>, <code>packages</code></td>
+<td><strong>Facts JUmPER gathered by itself</strong> — the cell's own source, its measured timings, the sampled CPU/GPU/memory metrics, the tags derived from them, the real machine's hardware, the versions actually installed. A toggle here decides whether that data is collected and sent at all.</td>
+</tr>
+<tr>
+<td><code>overrides</code></td>
+<td>Any item id in any prompt spec — e.g. <code>gpu_offload</code>, <code>parallel_analysis_hint</code>, <code>pep8_multiline</code>, <code>r_style</code>, <code>preserve_comments</code>, <code>preserve_style</code></td>
+<td><strong>Rules the model must follow under this strategy</strong> — style, output format, which optimization angles to pursue or ignore, what to leave untouched. A toggle here changes what the prompt asks for, never what was measured.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>packages</code> reports the versions of the libraries listed under
+<code>ai.context.known_packages</code>. Extending that list is how you tell the model
+what it is allowed to suggest.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">A brand-new prompt folder needs a packaging entry</p>
+<p><code>spec.yaml</code>, <code>template.md</code> and <code>fragments/*.md</code> are shipped as package data,
+listed per prompt folder in <code>pyproject.toml</code>. Editing existing files needs
+nothing; adding a whole new prompt folder means adding its glob there, or it
+will be missing from an installed copy.</p>
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
