@@ -76,6 +76,58 @@ def test_both_kinds_of_magic_in_one_cell():
     assert parses(rendered.source)
 
 
+def test_a_magic_registered_by_an_earlier_line_is_still_removed():
+    # The cell that broke a real notebook. `cell_magics` holds what IPython knew
+    # *before* the cell ran, so %autoreload - registered by the %load_ext on the
+    # line above it - was never captured and went into the script verbatim.
+    cell = "%load_ext autoreload\n%autoreload 2\nimport os\nimport sys"
+
+    rendered = render_source(cell, ["load_ext autoreload"])
+
+    assert rendered.unsupported == ""
+    assert rendered.dropped == ["%load_ext autoreload", "%autoreload 2"]
+    assert "import os" in rendered.source
+    assert parses(rendered.source)
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "if True:\n    !pip install foo\nx = 1",
+        "if True:\n    %matplotlib inline\nx = 1",
+        "import os\nos.getcwd?",
+        "!ls\nimport os",
+    ],
+)
+def test_everything_the_parser_trips_over_is_removed_safely(cell):
+    # Shell escapes, help suffixes and magics inside a block. The last one is why
+    # a dropped line becomes `pass` rather than a comment: a block with only a
+    # comment in it is a new syntax error one line up.
+    magics = ["matplotlib inline"] if "%matplotlib" in cell else []
+
+    assert parses(render_source(cell, magics).source)
+
+
+def test_a_line_magic_decorating_a_statement_keeps_the_statement():
+    # %time binds a name. Dropping the whole line would lose the binding along
+    # with the timing, and the next cell would fail on a name that never existed.
+    rendered = render_source("%time total = sum(range(10))", [])
+
+    assert rendered.source.startswith("total = sum(range(10))")
+    assert parses(rendered.source)
+
+
+def test_a_syntax_error_of_the_users_own_is_handed_back_untouched():
+    # Nothing here can help, and the replay reporting the real error beats a
+    # half-edited cell that fails somewhere else.
+    cell = "def f(:\n    pass"
+
+    rendered = render_source(cell, [])
+
+    assert rendered.source == cell
+    assert rendered.dropped == []
+
+
 def test_a_percent_inside_a_string_is_left_alone():
     # Only magics IPython captured while the cell ran are removed, so text that
     # merely looks like one keeps its place - and its string keeps its contents.

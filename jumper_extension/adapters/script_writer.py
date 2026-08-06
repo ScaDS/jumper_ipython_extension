@@ -7,7 +7,11 @@ from datetime import datetime
 
 from jumper_extension.core.state import State
 from jumper_extension.adapters.cell_history import CellHistory
-from jumper_extension.adapters.magic_names import JUMPER_LINE_MAGICS, cell_magic_reason
+from jumper_extension.adapters.magic_names import (
+    JUMPER_LINE_MAGICS,
+    TRANSPARENT_LINE_MAGICS,
+    cell_magic_reason,
+)
 
 logger = logging.getLogger("extension")
 
@@ -41,15 +45,21 @@ def render_source(raw_cell: str, cell_magics: List[str]) -> RenderedCell:
 
     - a JUmPER magic becomes a ``magic_adapter`` call, because the adapter has a
       method of that name and the replay wants the effect;
-    - any other magic IPython recognised is **removed**, because nothing in a
-      script can serve it - there is no frontend for ``%matplotlib`` and no
-      autoreloader to configure. It used to be rewritten to
-      ``magic_adapter.matplotlib(...)`` and fail with ``AttributeError``;
+    - any other magic is **removed**, because nothing in a script can serve it -
+      there is no frontend for ``%matplotlib`` and no autoreloader to configure.
+      It used to be rewritten to ``magic_adapter.matplotlib(...)`` and fail with
+      ``AttributeError``;
     - a cell magic that decorates Python (``%%time``) loses its header and keeps
       its body; one whose body is not Python (``%%bash``) is refused outright.
 
-    Only magics that were *captured while the cell ran* are removed, so a ``%``
-    inside a string literal is left alone, as it always was.
+    **The returned source parses, or *unsupported* says why it cannot.** That is
+    the guarantee callers need, and it cannot be met from the captured magic list
+    alone: ``cell_magics`` holds what IPython recognised *before* the cell ran, so
+    a cell that begins ``%load_ext autoreload`` and then uses ``%autoreload 2``
+    reports only the first - the second magic did not exist yet. What is left is
+    therefore removed by :func:`_drop_unparseable_lines`, which asks the parser
+    instead of guessing. A ``%`` inside a string literal never breaks parsing and
+    is never touched.
     """
     if not raw_cell:
         return RenderedCell("")
@@ -68,7 +78,11 @@ def render_source(raw_cell: str, cell_magics: List[str]) -> RenderedCell:
             name = _magic_name(lstrip)
             if name in foreign:
                 dropped.append(lstrip)
-                out_lines.append(f"{indent}# JUmPER dropped {lstrip.strip()}: {foreign[name]}")
+                # `pass`, not a bare comment: this line may be the only thing in
+                # a block, and an empty block is a fresh syntax error one line up.
+                out_lines.append(
+                    f"{indent}pass  # JUmPER dropped {lstrip.strip()}: {foreign[name]}"
+                )
                 continue
             rep = _lookup(lstrip, replacements)
             if rep is not None:
@@ -76,7 +90,67 @@ def render_source(raw_cell: str, cell_magics: List[str]) -> RenderedCell:
                 out_lines.append(f"{indent}{rep}")
                 continue
         out_lines.append(line)
-    return RenderedCell("\n".join(out_lines), dropped, "")
+
+    source, swept = _drop_unparseable_lines("\n".join(out_lines))
+    return RenderedCell(source, dropped + swept, "")
+
+
+def _drop_unparseable_lines(source: str) -> tuple:
+    """Remove the magic and shell lines the parser trips over, and only those.
+
+    Everything IPython accepts that Python does not - ``%magic``, ``!command``,
+    a trailing ``?`` - is a syntax error at exactly its own line, so the parser
+    is a better detector than any prefix rule: it finds a magic nobody captured
+    and leaves alone a ``%`` that merely appears inside a string, because that
+    one parses.
+
+    Lines are replaced by a comment rather than deleted so the line numbers the
+    next parse reports still refer to the same places, and so the script shows
+    what was taken out. A syntax error that is not one of these is the user's
+    own, and is handed back untouched for the replay to report.
+    """
+    lines = source.splitlines()
+    dropped: List[str] = []
+    for _ in range(len(lines) + 1):
+        try:
+            compile("\n".join(lines), "<cell>", "exec")
+            return "\n".join(lines), dropped
+        except SyntaxError as error:
+            index = (error.lineno or 0) - 1
+            if not 0 <= index < len(lines):
+                break
+            offender = lines[index]
+            stripped = offender.strip()
+            if not stripped.startswith(("%", "!")) and not stripped.endswith("?"):
+                break
+            indent = offender[: len(offender) - len(offender.lstrip())]
+            dropped.append(stripped)
+            lines[index] = indent + _without_magic(stripped)
+        except ValueError:
+            # A null byte or similar: nothing here can help, and the replay's own
+            # error is more informative than a mangled source would be.
+            break
+    # Nothing was salvaged, so hand back exactly what came in: the replay's own
+    # report of the user's syntax error is worth more than a half-edited cell.
+    return source, []
+
+
+def _without_magic(stripped_line: str) -> str:
+    """What a line that Python cannot parse leaves behind.
+
+    ``%time total = f()`` keeps its assignment - the magic decorated a statement,
+    and the statement is the part a replay has to reproduce. Everything else
+    becomes ``pass``, not a bare comment: the line may be the only thing in a
+    block, and a block with nothing in it is a fresh syntax error one line up.
+    """
+    note = f"# JUmPER dropped {stripped_line}"
+    if stripped_line.startswith("%"):
+        parts = stripped_line.lstrip("%").split(maxsplit=1)
+        name = parts[0] if parts else ""
+        remainder = parts[1].strip() if len(parts) > 1 else ""
+        if name in TRANSPARENT_LINE_MAGICS and remainder:
+            return f"{remainder}  {note}: kept the statement, lost the timing"
+    return f"pass  {note}: not Python, and no kernel to run it"
 
 
 def transform_cell_code(raw_cell: str, cell_magics: List[str]) -> str:

@@ -38,6 +38,10 @@ JUMPER_LINE_MAGICS = frozenset(
     }
 )
 
+# Line magics whose *rest of the line* is Python: ``%time x = f()`` binds x, and a
+# replay that dropped the whole line would lose the binding along with the timing.
+TRANSPARENT_LINE_MAGICS = frozenset({"time", "timeit", "prun", "debug"})
+
 # Cell magics whose body *is* Python and which only decorate how it runs. The
 # header comes off and the body stays, which is what a replay wants: it is timing
 # the cell itself, and a second timer or a suppressed stdout would change nothing
