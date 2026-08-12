@@ -1,0 +1,4464 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Performance monitoring for IPython and Jupyter notebooks">
+      
+      
+      
+        <link rel="canonical" href="https://scads.github.io/jumper_jupyter_performance/internals/adapters/ai-reviewer/api/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../../../core/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>API Reference - JUmPER – Jupyter meets Performance</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/panzoom.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <meta name="panzoom-theme" content="material">
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ai-reviewer" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="JUmPER – Jupyter meets Performance" class="md-header__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
+      
+  <img src="../../../../img/JUmPER01.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            JUmPER – Jupyter meets Performance
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <!-- Repository information (extended with wrapper kernel) -->
+<style>
+  .md-header__source {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  .md-header__source .md-source {
+    flex-shrink: 0 !important;
+  }
+  .md-source .md-source__version {
+    display: block;
+    font-size: 0.6rem;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+</style>
+
+<!-- Original repo source -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ScaDS/jumper_jupyter_performance
+  </div>
+</a>
+
+<!-- Wrapper kernel package info -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance/tree/main/jumper_wrapper_kernel" title="Wrapper Kernel" class="md-source">
+  <div class="md-source__icon md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M284-1.3c-17.3-10-38.7-10-56 0l-84.2 48.6c-17.3 10-28 28.5-28 48.5v101.9l-88.3 51c-17.3 10-28 28.5-28 48.5v97.3c0 20 10.7 38.5 28 48.5l84.3 48.6c17.3 10 38.7 10 56 0l88.3-51 88.3 51c17.3 10 38.7 10 56 0l84.1-48.6c17.3-10 28-28.5 28-48.5v-97.3c0-20-10.7-38.5-28-48.5l-88.3-51V95.8c0-20-10.7-38.5-28-48.5zm-52 293.9v106.5l-88.3 51c-1.2.7-2.6 1.1-4 1.1V345.9zm231.4.6c.7 1.2 1.1 2.6 1.1 4v97.3c0 2.9-1.5 5.5-4 6.9L376.2 450c-1.2.7-2.6 1.1-4 1.1V345.8zM348.3 95.8v101.9L256 251V144.5l91.2-52.6c.7 1.2 1.1 2.6 1.1 4z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jumper-wrapper-kernel
+    <span class="md-source__version">v0.1.2</span>
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="JUmPER – Jupyter meets Performance" class="md-nav__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
+      
+  <img src="../../../../img/JUmPER01.svg" alt="logo">
+
+    </a>
+    JUmPER – Jupyter meets Performance
+  </label>
+  
+    <div class="md-nav__source">
+      <!-- Repository information (extended with wrapper kernel) -->
+<style>
+  .md-header__source {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  .md-header__source .md-source {
+    flex-shrink: 0 !important;
+  }
+  .md-source .md-source__version {
+    display: block;
+    font-size: 0.6rem;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+</style>
+
+<!-- Original repo source -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ScaDS/jumper_jupyter_performance
+  </div>
+</a>
+
+<!-- Wrapper kernel package info -->
+<a href="https://github.com/ScaDS/jumper_jupyter_performance/tree/main/jumper_wrapper_kernel" title="Wrapper Kernel" class="md-source">
+  <div class="md-source__icon md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M284-1.3c-17.3-10-38.7-10-56 0l-84.2 48.6c-17.3 10-28 28.5-28 48.5v101.9l-88.3 51c-17.3 10-28 28.5-28 48.5v97.3c0 20 10.7 38.5 28 48.5l84.3 48.6c17.3 10 38.7 10 56 0l88.3-51 88.3 51c17.3 10 38.7 10 56 0l84.1-48.6c17.3-10 28-28.5 28-48.5v-97.3c0-20-10.7-38.5-28-48.5l-88.3-51V95.8c0-20-10.7-38.5-28-48.5zm-52 293.9v106.5l-88.3 51c-1.2.7-2.6 1.1-4 1.1V345.9zm231.4.6c.7 1.2 1.1 2.6 1.1 4v97.3c0 2.9-1.5 5.5-4 6.9L376.2 450c-1.2.7-2.6 1.1-4 1.1V345.8zM348.3 95.8v101.9L256 251V144.5l91.2-52.6c.7 1.2 1.1 2.6 1.1 4z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jumper-wrapper-kernel
+    <span class="md-source__version">v0.1.2</span>
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPython Extension
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    IPython Extension
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-to Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How-to Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2_2" id="__nav_2_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI Review
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    AI Review
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/ai-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/ai-review/strategies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Steering the Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/ai-review/benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measuring Suggestions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/ai-review/replay-modes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Replay Modes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/session-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session Transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/script-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Script Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/plot-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plot Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/live-plotting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Performance Plotting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/custom-monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Monitors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/python-custom-collector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Python Collectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/c-custom-collector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom C Collectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/visualizing-custom-collector-metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualizing Custom Collector Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Public API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/jupyter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jupyter API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/string/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    String Based API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internals
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Internals
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2" id="__nav_2_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_4_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Adapters
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_2" id="__nav_2_4_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_3" id="__nav_2_4_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cell History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cell History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cell-history/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cell-history/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_4" id="__nav_2_4_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analyzer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analyzer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analyzer/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analyzer/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_5" id="__nav_2_4_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reporter
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reporter
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reporter/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reporter/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_6" id="__nav_2_4_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualizer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Visualizer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualizer/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualizer/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_7" id="__nav_2_4_2_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Session
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../session/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../session/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_8" id="__nav_2_4_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Script Writer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Script Writer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../script-writer/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../script-writer/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4_2_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_4_2_9" id="__nav_2_4_2_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI Reviewer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_2_4_2_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_4_2_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    AI Reviewer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        reviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AIReviewer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AIReviewer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.attach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        attach
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.build_orchestrator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_orchestrator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        review
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewerProtocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AIReviewerProtocol
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.UnavailableAIReviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UnavailableAIReviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.build_ai_reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_ai_reviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ipython/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IPython
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wrapper Kernel
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Wrapper Kernel
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/guides/magic-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magic Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/guides/wrap-kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Auto-Wrap Kernels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/api/kernel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/api/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../wrapper-kernel/api/utilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        reviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AIReviewer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AIReviewer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.attach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        attach
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.build_orchestrator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_orchestrator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        review
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.AIReviewerProtocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AIReviewerProtocol
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.UnavailableAIReviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UnavailableAIReviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumper_extension.adapters.ai_reviewer.reviewer.build_ai_reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_ai_reviewer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="ai-reviewer">AI Reviewer</h1>
+<p>This page documents the <code>jumper_extension.adapters.ai_reviewer</code> package, which hands a monitored cell to a large language model (LLM) and, optionally, measures what it suggests. High‑level usage is described in the <a href="../../../../api/">Public API</a> and <a href="../../../../api/jupyter/">Jupyter API</a> sections, and the design of this adapter in <a href="../architecture/">Architecture</a>; the content below is generated directly from the Python code.</p>
+<h2 id="reviewer">Reviewer</h2>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="jumper_extension.adapters.ai_reviewer.reviewer"></a>
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer" class="doc doc-heading">
+            <code>AIReviewer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Adapter running the LangGraph-based AI optimization-review workflow.</p>
+<p>Builds (and caches) the fresh-run and resume graphs, generates run
+ids, and keeps track of pending reviews so a follow-up
+<code>--resume RUN_ID --select N</code> can apply one of the suggestions.
+Mirrors :class:<code>PerformanceReporter</code> / :class:<code>PerformanceVisualizer</code>:
+constructed with the stable <code>reporter</code> and bound to the live
+monitor via :meth:<code>attach</code>.</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AIReviewer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adapter running the LangGraph-based AI optimization-review workflow.</span>
+
+<span class="sd">    Builds (and caches) the fresh-run and resume graphs, generates run</span>
+<span class="sd">    ids, and keeps track of pending reviews so a follow-up</span>
+<span class="sd">    ``--resume RUN_ID --select N`` can apply one of the suggestions.</span>
+<span class="sd">    Mirrors :class:`PerformanceReporter` / :class:`PerformanceVisualizer`:</span>
+<span class="sd">    constructed with the stable ``reporter`` and bound to the live</span>
+<span class="sd">    monitor via :meth:`attach`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reporter</span><span class="p">:</span> <span class="n">PerformanceReporter</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span> <span class="o">=</span> <span class="n">reporter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span> <span class="o">=</span> <span class="n">UnavailablePerformanceMonitor</span><span class="p">(</span>
+            <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Monitor has not been started yet.&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resume_graph</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach started PerformanceMonitor.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_review_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lazily build (and cache) the fresh-run AI review graph.</span>
+
+<span class="sd">        Imported lazily so the optional ``[ai]`` extras (langgraph,</span>
+<span class="sd">        langchain-openai) are only required when this magic is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_review_graph</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.context.collector</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextCollector</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.llm.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMClientConfig</span><span class="p">,</span> <span class="n">build_llm</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.ui.review_display</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_ai_review_display</span>
+
+            <span class="n">llm</span> <span class="o">=</span> <span class="n">build_llm</span><span class="p">(</span><span class="n">LLMClientConfig</span><span class="o">.</span><span class="n">from_config</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span> <span class="o">=</span> <span class="n">build_review_graph</span><span class="p">(</span>
+                <span class="n">llm</span><span class="p">,</span>
+                <span class="n">ContextCollector</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
+                <span class="n">build_ai_review_display</span><span class="p">(),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">build_orchestrator</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_benchmark_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lazily build (and cache) the graph behind ``--resume --benchmark``.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_graph</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.llm.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMClientConfig</span><span class="p">,</span> <span class="n">build_llm</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.ui.review_display</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_ai_review_display</span>
+
+            <span class="n">llm</span> <span class="o">=</span> <span class="n">build_llm</span><span class="p">(</span><span class="n">LLMClientConfig</span><span class="o">.</span><span class="n">from_config</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span> <span class="o">=</span> <span class="n">build_benchmark_graph</span><span class="p">(</span>
+                <span class="n">llm</span><span class="p">,</span>
+                <span class="n">build_ai_review_display</span><span class="p">(),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">build_orchestrator</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_orchestrator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">fix_fn</span><span class="p">,</span> <span class="n">target_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wire a benchmark for the cell at *target_index*, or None if impossible.</span>
+
+<span class="sd">        The prefix is every cell before the target: the cell only means anything</span>
+<span class="sd">        with the state its predecessors built, and a replay that skipped them</span>
+<span class="sd">        would push the repair loop into inventing the missing data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.checks</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_checks</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkOrchestrator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkRunner</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_adapter</span>
+
+        <span class="n">prefix_cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix_cells</span><span class="p">(</span><span class="n">target_index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prefix_cells</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_language</span><span class="p">(</span><span class="n">target_index</span><span class="p">))</span>
+        <span class="n">defaults</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">benchmark</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;benchmark_options&quot;</span><span class="p">]</span>
+        <span class="n">checks</span> <span class="o">=</span> <span class="n">resolve_checks</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">checks</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checks&quot;</span><span class="p">))</span>
+        <span class="n">runs</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;runs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">runs</span>
+        <span class="n">fix_attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fix_attempts&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">fix_attempts</span>
+        <span class="n">runner</span> <span class="o">=</span> <span class="n">BenchmarkRunner</span><span class="p">(</span>
+            <span class="n">prefix_cells</span><span class="o">=</span><span class="n">prefix_cells</span><span class="p">,</span>
+            <span class="n">interval</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;level&quot;</span><span class="p">],</span>
+            <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
+            <span class="n">replay_mode</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;replay_mode&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: benchmarking </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> suggestion(s) against cell &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_index</span><span class="si">}</span><span class="s2">; each replays </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix_cells</span><span class="p">)</span><span class="si">}</span><span class="s2"> preceding cell(s) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">runs</span><span class="si">}</span><span class="s2"> time(s). This can take a while.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">BenchmarkOrchestrator</span><span class="p">(</span>
+            <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
+            <span class="n">fix_fn</span><span class="o">=</span><span class="n">fix_fn</span><span class="p">,</span>
+            <span class="n">runs</span><span class="o">=</span><span class="n">runs</span><span class="p">,</span>
+            <span class="n">fix_attempts</span><span class="o">=</span><span class="n">fix_attempts</span><span class="p">,</span>
+            <span class="n">timeout_factor</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">timeout_factor</span><span class="p">,</span>
+            <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
+            <span class="n">checks</span><span class="o">=</span><span class="n">checks</span><span class="p">,</span>
+            <span class="n">cross_check</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">cross_check</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cell_language</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Language recorded for the cell at *index*; Python for legacy rows.&quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_language</span>
+
+        <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">printer</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="s2">&quot;language&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;python&quot;</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">history</span><span class="p">[</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">rows</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;python&quot;</span>
+        <span class="k">return</span> <span class="n">resolve_language</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;language&quot;</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prefix_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Every cell executed before *target_index*, as the replay needs them.&quot;&quot;&quot;</span>
+        <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">printer</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: no cell history to replay for the benchmark&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">history</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">cell_index</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="n">target_index</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">,</span>
+                    <span class="s2">&quot;raw_cell&quot;</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">raw_cell</span><span class="p">,</span>
+                    <span class="s2">&quot;cell_magics&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">&quot;cell_magics&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]),</span>
+                    <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">&quot;language&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;python&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">cells</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_resume_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lazily build (and cache) the resume AI review graph.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resume_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_resume_graph</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.llm.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMClientConfig</span><span class="p">,</span> <span class="n">build_llm</span>
+
+            <span class="n">llm</span> <span class="o">=</span> <span class="n">build_llm</span><span class="p">(</span><span class="n">LLMClientConfig</span><span class="o">.</span><span class="n">from_config</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resume_graph</span> <span class="o">=</span> <span class="n">build_resume_graph</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">shell</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resume_graph</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">review</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the AI-powered performance review on a fresh cell selection.</span>
+
+<span class="sd">        The chosen ``strategy`` resolves to a set of overrides that steer</span>
+<span class="sd">        both which context sources are gathered and which prompt rules</span>
+<span class="sd">        apply; ``note`` is a free-text instruction folded into the</span>
+<span class="sd">        prompt. Collects the cell code and performance context, asks the</span>
+<span class="sd">        LLM to identify the bottleneck and propose optimizations, then</span>
+<span class="sd">        displays the numbered options together with ``--resume`` commands.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">empty_state</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_strategy</span>
+
+        <span class="n">resolved</span> <span class="o">=</span> <span class="n">get_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">resolved</span><span class="o">.</span><span class="n">require_note</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">note</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[JUmPER]: strategy &#39;</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">&#39; requires a --note instruction&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">run_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
+        <span class="n">initial_state</span> <span class="o">=</span> <span class="n">empty_state</span><span class="p">(</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="n">cell_range</span><span class="o">=</span><span class="n">cell_range</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
+            <span class="n">overrides</span><span class="o">=</span><span class="n">resolved</span><span class="o">.</span><span class="n">overrides</span><span class="p">,</span>
+            <span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">,</span>
+            <span class="n">benchmark</span><span class="o">=</span><span class="n">benchmark</span><span class="p">,</span>
+            <span class="n">benchmark_options</span><span class="o">=</span><span class="n">benchmark_options</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_review_graph</span><span class="p">()</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replay and time the suggestions of a review that already ran.</span>
+
+<span class="sd">        Benchmarking costs far more than the review itself, so it is a separate</span>
+<span class="sd">        decision: look at the options first, then spend the machine time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_benchmark_graph</span><span class="p">()</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span>
+            <span class="o">**</span><span class="n">state</span><span class="p">,</span>
+            <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;benchmark_options&quot;</span><span class="p">:</span> <span class="n">benchmark_options</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a previously suggested optimization, optionally refined.</span>
+
+<span class="sd">        Loads the state stored under ``run_id`` by a prior ``review``</span>
+<span class="sd">        run, marks suggestion ``select`` as chosen and runs the resume</span>
+<span class="sd">        graph: if ``note`` is provided, the suggestion is rewritten per</span>
+<span class="sd">        that instruction first; either way the resulting code is placed</span>
+<span class="sd">        into the next cell via ``shell.set_next_input``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">select</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;suggestions&quot;</span><span class="p">]):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Invalid suggestion index </span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2"> for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(expected 1-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">resume_state</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="n">state</span><span class="p">,</span>
+            <span class="s2">&quot;chosen_index&quot;</span><span class="p">:</span> <span class="n">select</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="n">note</span><span class="p">,</span>
+            <span class="s2">&quot;refined_code&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_resume_graph</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">resume_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.attach" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">attach</span><span class="p">(</span><span class="n">monitor</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Attach started PerformanceMonitor.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Attach started PerformanceMonitor.&quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.benchmark" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">benchmark</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Replay and time the suggestions of a review that already ran.</p>
+<p>Benchmarking costs far more than the review itself, so it is a separate
+decision: look at the options first, then spend the machine time.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replay and time the suggestions of a review that already ran.</span>
+
+<span class="sd">    Benchmarking costs far more than the review itself, so it is a separate</span>
+<span class="sd">    decision: look at the options first, then spend the machine time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_benchmark_graph</span><span class="p">()</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span>
+        <span class="o">**</span><span class="n">state</span><span class="p">,</span>
+        <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;benchmark_options&quot;</span><span class="p">:</span> <span class="n">benchmark_options</span> <span class="ow">or</span> <span class="p">{},</span>
+    <span class="p">})</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.build_orchestrator" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">build_orchestrator</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">fix_fn</span><span class="p">,</span> <span class="n">target_index</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Wire a benchmark for the cell at <em>target_index</em>, or None if impossible.</p>
+<p>The prefix is every cell before the target: the cell only means anything
+with the state its predecessors built, and a replay that skipped them
+would push the repair loop into inventing the missing data.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_orchestrator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">fix_fn</span><span class="p">,</span> <span class="n">target_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wire a benchmark for the cell at *target_index*, or None if impossible.</span>
+
+<span class="sd">    The prefix is every cell before the target: the cell only means anything</span>
+<span class="sd">    with the state its predecessors built, and a replay that skipped them</span>
+<span class="sd">    would push the repair loop into inventing the missing data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.checks</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_checks</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkOrchestrator</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkRunner</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_adapter</span>
+
+    <span class="n">prefix_cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix_cells</span><span class="p">(</span><span class="n">target_index</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">prefix_cells</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_language</span><span class="p">(</span><span class="n">target_index</span><span class="p">))</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">benchmark</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;benchmark_options&quot;</span><span class="p">]</span>
+    <span class="n">checks</span> <span class="o">=</span> <span class="n">resolve_checks</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">checks</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checks&quot;</span><span class="p">))</span>
+    <span class="n">runs</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;runs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">runs</span>
+    <span class="n">fix_attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fix_attempts&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">fix_attempts</span>
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">BenchmarkRunner</span><span class="p">(</span>
+        <span class="n">prefix_cells</span><span class="o">=</span><span class="n">prefix_cells</span><span class="p">,</span>
+        <span class="n">interval</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;level&quot;</span><span class="p">],</span>
+        <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
+        <span class="n">replay_mode</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;replay_mode&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;[JUmPER]: benchmarking </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> suggestion(s) against cell &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_index</span><span class="si">}</span><span class="s2">; each replays </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix_cells</span><span class="p">)</span><span class="si">}</span><span class="s2"> preceding cell(s) &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">runs</span><span class="si">}</span><span class="s2"> time(s). This can take a while.&quot;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">BenchmarkOrchestrator</span><span class="p">(</span>
+        <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
+        <span class="n">fix_fn</span><span class="o">=</span><span class="n">fix_fn</span><span class="p">,</span>
+        <span class="n">runs</span><span class="o">=</span><span class="n">runs</span><span class="p">,</span>
+        <span class="n">fix_attempts</span><span class="o">=</span><span class="n">fix_attempts</span><span class="p">,</span>
+        <span class="n">timeout_factor</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">timeout_factor</span><span class="p">,</span>
+        <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
+        <span class="n">checks</span><span class="o">=</span><span class="n">checks</span><span class="p">,</span>
+        <span class="n">cross_check</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">cross_check</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.resume" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">resume</span><span class="p">(</span><span class="n">shell</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">select</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Apply a previously suggested optimization, optionally refined.</p>
+<p>Loads the state stored under <code>run_id</code> by a prior <code>review</code>
+run, marks suggestion <code>select</code> as chosen and runs the resume
+graph: if <code>note</code> is provided, the suggestion is rewritten per
+that instruction first; either way the resulting code is placed
+into the next cell via <code>shell.set_next_input</code>.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a previously suggested optimization, optionally refined.</span>
+
+<span class="sd">    Loads the state stored under ``run_id`` by a prior ``review``</span>
+<span class="sd">    run, marks suggestion ``select`` as chosen and runs the resume</span>
+<span class="sd">    graph: if ``note`` is provided, the suggestion is rewritten per</span>
+<span class="sd">    that instruction first; either way the resulting code is placed</span>
+<span class="sd">    into the next cell via ``shell.set_next_input``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">select</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;suggestions&quot;</span><span class="p">]):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Invalid suggestion index </span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2"> for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(expected 1-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">resume_state</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="n">state</span><span class="p">,</span>
+        <span class="s2">&quot;chosen_index&quot;</span><span class="p">:</span> <span class="n">select</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="n">note</span><span class="p">,</span>
+        <span class="s2">&quot;refined_code&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_resume_graph</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">resume_state</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.review" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">review</span><span class="p">(</span><span class="n">shell</span><span class="p">,</span> <span class="n">cell_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;process&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s1">&#39;faster&#39;</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">benchmark</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Run the AI-powered performance review on a fresh cell selection.</p>
+<p>The chosen <code>strategy</code> resolves to a set of overrides that steer
+both which context sources are gathered and which prompt rules
+apply; <code>note</code> is a free-text instruction folded into the
+prompt. Collects the cell code and performance context, asks the
+LLM to identify the bottleneck and propose optimizations, then
+displays the numbered options together with <code>--resume</code> commands.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">review</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the AI-powered performance review on a fresh cell selection.</span>
+
+<span class="sd">    The chosen ``strategy`` resolves to a set of overrides that steer</span>
+<span class="sd">    both which context sources are gathered and which prompt rules</span>
+<span class="sd">    apply; ``note`` is a free-text instruction folded into the</span>
+<span class="sd">    prompt. Collects the cell code and performance context, asks the</span>
+<span class="sd">    LLM to identify the bottleneck and propose optimizations, then</span>
+<span class="sd">    displays the numbered options together with ``--resume`` commands.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">empty_state</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_strategy</span>
+
+    <span class="n">resolved</span> <span class="o">=</span> <span class="n">get_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">resolved</span><span class="o">.</span><span class="n">require_note</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">note</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: strategy &#39;</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">&#39; requires a --note instruction&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
+    <span class="n">initial_state</span> <span class="o">=</span> <span class="n">empty_state</span><span class="p">(</span>
+        <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+        <span class="n">cell_range</span><span class="o">=</span><span class="n">cell_range</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
+        <span class="n">overrides</span><span class="o">=</span><span class="n">resolved</span><span class="o">.</span><span class="n">overrides</span><span class="p">,</span>
+        <span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">,</span>
+        <span class="n">benchmark</span><span class="o">=</span><span class="n">benchmark</span><span class="p">,</span>
+        <span class="n">benchmark_options</span><span class="o">=</span><span class="n">benchmark_options</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_review_graph</span><span class="p">()</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewerProtocol" class="doc doc-heading">
+            <code>AIReviewerProtocol</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.Protocol">Protocol</span></code></p>
+
+
+
+        <p>Structural protocol for the AI review adapter used by the service.</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AIReviewerProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural protocol for the AI review adapter used by the service.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">review</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="jumper_extension.adapters.ai_reviewer.reviewer.UnavailableAIReviewer" class="doc doc-heading">
+            <code>UnavailableAIReviewer</code>
+
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A stub that type-checks against AIReviewerProtocol but only logs
+that the optional <code>[ai]</code> dependencies are missing.</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UnavailableAIReviewer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A stub that type-checks against AIReviewerProtocol but only logs</span>
+<span class="sd">    that the optional ``[ai]`` dependencies are missing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">_AI_EXTRAS_MISSING_REASON</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span> <span class="o">=</span> <span class="n">reason</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">review</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_warn</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_warn</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">resume</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_warn</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_warn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">EXTENSION_INFO_MESSAGES</span><span class="p">[</span><span class="n">ExtensionInfoCode</span><span class="o">.</span><span class="n">AI_REVIEW_NOT_AVAILABLE</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">reason</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reason</span><span class="p">,</span>
+                <span class="n">install_cmd</span><span class="o">=</span><span class="n">_ai_extras_install_cmd</span><span class="p">(),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="jumper_extension.adapters.ai_reviewer.reviewer.build_ai_reviewer" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">build_ai_reviewer</span><span class="p">(</span><span class="n">reporter</span><span class="p">)</span></code>
+
+</h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Build an AI reviewer adapter attached to <em>reporter</em>.</p>
+<p>Falls back to :class:<code>UnavailableAIReviewer</code> when the optional
+<code>[ai]</code> extras (<code>langgraph</code>, <code>langchain-openai</code>) are not
+installed, so <code>%perfmonitor_ai_review</code> can explain how to enable
+the feature instead of raising an <code>ImportError</code>.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>jumper_extension/adapters/ai_reviewer/reviewer.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_ai_reviewer</span><span class="p">(</span><span class="n">reporter</span><span class="p">:</span> <span class="n">PerformanceReporter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AIReviewerProtocol</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an AI reviewer adapter attached to *reporter*.</span>
+
+<span class="sd">    Falls back to :class:`UnavailableAIReviewer` when the optional</span>
+<span class="sd">    ``[ai]`` extras (``langgraph``, ``langchain-openai``) are not</span>
+<span class="sd">    installed, so ``%perfmonitor_ai_review`` can explain how to enable</span>
+<span class="sd">    the feature instead of raising an ``ImportError``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">langgraph</span>  <span class="c1"># noqa: F401</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">langchain_openai</span>  <span class="c1"># noqa: F401</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">UnavailableAIReviewer</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">AIReviewer</span><span class="p">(</span><span class="n">reporter</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": [], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../../../assets/javascripts/panzoom.min.js"></script>
+      
+        <script src="../../../../assets/javascripts/zoompan.js"></script>
+      
+    
+  </body>
+</html>
