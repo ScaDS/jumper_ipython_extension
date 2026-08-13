@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prompt Assembly — Query Console</title>
+<style>
+  :root {
+    --ground: #f2f4f4;
+    --surface: #ffffff;
+    --surface-sunk: #e9edec;
+    --ink: #16201f;
+    --ink-soft: #55635f;
+    --ink-faint: #8b9793;
+    --rule: #d3dbd8;
+    --accent: #0c6a63;
+    --accent-soft: #d9ebe7;
+    --off: #b0736a;
+    --off-soft: #f6e6e2;
+
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    --step: 0.75rem;
+    --radius: 3px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101514;
+      --surface: #171e1d;
+      --surface-sunk: #121817;
+      --ink: #e6ecea;
+      --ink-soft: #a3b1ad;
+      --ink-faint: #6d7b77;
+      --rule: #2a3533;
+      --accent: #5cc9bd;
+      --accent-soft: #16302d;
+      --off: #d99a90;
+      --off-soft: #2e211f;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #101514;
+    --surface: #171e1d;
+    --surface-sunk: #121817;
+    --ink: #e6ecea;
+    --ink-soft: #a3b1ad;
+    --ink-faint: #6d7b77;
+    --rule: #2a3533;
+    --accent: #5cc9bd;
+    --accent-soft: #16302d;
+    --off: #d99a90;
+    --off-soft: #2e211f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: calc(var(--step) * 4) calc(var(--step) * 2) calc(var(--step) * 6);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 3);
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.6rem);
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 0.4em;
+  }
+
+  header p {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-soft);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 0.9em;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--step) calc(var(--step) * 1.5);
+    padding: var(--step) calc(var(--step) * 1.5);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+
+  .controls__label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.28rem 0.6rem;
+    cursor: pointer;
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--ink);
+  }
+
+  .stages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: calc(var(--step) * 2);
+  }
+
+  @media (min-width: 1000px) {
+    .stages { grid-template-columns: 1.05fr 0.85fr 1.1fr; align-items: start; }
+  }
+
+  .stage {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .stage__head {
+    padding: var(--step) calc(var(--step) * 1.25);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--step);
+  }
+
+  .stage__title {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .stage__count {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .group {
+    padding: calc(var(--step) * 1.25);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .stage > .group:last-child { border-bottom: 0; }
+
+  .group__name {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 0.55rem minmax(0, 1fr);
+    gap: 0.6rem;
+    padding: 0.45rem 0;
+    border-top: 1px dotted var(--rule);
+  }
+
+  .row:first-of-type { border-top: 0; }
+
+  .row__flag {
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-top: 0.42rem;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .row--off .row__flag { background: transparent; border: 1px solid var(--off); }
+  .row--off .row__id { color: var(--off); text-decoration: line-through; }
+  .row--off .row__meta { color: var(--ink-faint); }
+  .row--muted { opacity: 0.55; }
+
+  .row__id {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--ink);
+  }
+
+  .row__meta {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    display: block;
+  }
+
+  .plan {
+    padding: calc(var(--step) * 1.25);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .plan .kw { color: var(--accent); }
+  .plan .cmt { color: var(--ink-faint); }
+  .plan pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+
+  .message {
+    padding: calc(var(--step) * 1.25);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .stage__result .message:last-child { border-bottom: 0; }
+
+  .message__role {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .message__body {
+    background: var(--surface-sunk);
+    border-radius: var(--radius);
+    padding: calc(var(--step) * 0.9);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  .message__body b { color: var(--accent); font-weight: 600; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--step) calc(var(--step) * 2);
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+
+  .swatch {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .swatch--off { background: transparent; border: 1px solid var(--off); }
+  .swatch--none { background: var(--ink-faint); opacity: 0.55; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: calc(var(--step) * 1.5);
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    max-width: 68ch;
+  }
+
+  footer code, .inline-code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .row, .chip { transition: opacity 120ms ease, border-color 120ms ease; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="controls">
+    <span class="controls__label">Request</span>
+    <div class="chips" id="requests"></div>
+    <span class="controls__label" id="strategy-label">--strategy</span>
+    <div class="chips" id="strategies"></div>
+    <span class="controls__label">--note</span>
+    <div class="chips">
+      <button class="chip" id="note-toggle" type="button" aria-pressed="false">free-text instruction</button>
+    </div>
+  </div>
+
+  <div class="stages">
+    <section class="stage" aria-labelledby="stage-sources">
+      <div class="stage__head">
+        <span class="stage__title" id="stage-sources">Sources</span>
+        <span class="stage__count" id="sources-count"></span>
+      </div>
+      <div class="group">
+        <span class="group__name">Root knowledge · recorded facts</span>
+        <div id="root-rows"></div>
+      </div>
+      <div class="group">
+        <span class="group__name">Text · request material</span>
+        <div id="text-rows"></div>
+      </div>
+    </section>
+
+    <section class="stage" aria-labelledby="stage-query">
+      <div class="stage__head">
+        <span class="stage__title" id="stage-query">Query</span>
+        <span class="stage__count" id="query-count"></span>
+      </div>
+      <div class="plan" id="plan"></div>
+    </section>
+
+    <section class="stage stage__result" aria-labelledby="stage-result">
+      <div class="stage__head">
+        <span class="stage__title" id="stage-result">Returned context</span>
+        <span class="stage__count" id="result-count"></span>
+      </div>
+      <div class="message">
+        <span class="message__role">System message</span>
+        <pre class="message__body" id="system-body"></pre>
+      </div>
+      <div class="message">
+        <span class="message__role">Human message</span>
+        <pre class="message__body" id="human-body"></pre>
+      </div>
+    </section>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch"></i> selected by this request</span>
+    <span><i class="swatch swatch--off"></i> disabled, never built</span>
+    <span><i class="swatch swatch--none"></i> not part of this request</span>
+  </div>
+
+  <footer>
+    <strong>Note.</strong> The source selections in current strategies may differ from those shown here.
+    This example illustrates the model: JUmPER assembles the LLM context as a query over Sources, a
+    catalog—or “database”—of available inputs.
+  </footer>
+</div>
+
+<script>
+  const SOURCES = [
+    { id: "code", label: "Cell code", origin: "execution hooks", shape: "source verbatim, or joined with # --- cell N --- markers", on: true, requests: ["analyze", "suggest"] },
+    { id: "timing", label: "Execution time", origin: "execution hooks", shape: "total and per-cell seconds", on: true, requests: ["analyze"] },
+    { id: "tags", label: "Performance tags", origin: "analyzer", shape: "tag names", on: true, requests: ["analyze"] },
+    { id: "perf", label: "Metric summary", origin: "sampler", shape: "{metric: {mean, max}}, overall and per cell", on: true, requests: ["analyze"] },
+    { id: "raw_perf", label: "Raw metric arrays", origin: "sampler", shape: "{column: [values]} per timestep", on: false, requests: ["analyze"] },
+    { id: "hardware", label: "Hardware", origin: "node inventory", shape: "cpus, gpus, gpu name, memory limits", on: true, requests: ["analyze", "suggest"] },
+    { id: "packages", label: "Installed packages", origin: "package metadata", shape: "{package: version} for known packages", on: true, requests: ["suggest"] },
+    { id: "analysis", display: "Bottleneck analysis", label: "Bottleneck analysis", origin: "result of the preceding Analyze request", shape: "plain text stored with the review", group: "text", on: true, requests: ["suggest", "refine"] },
+    { id: "selected_option", display: "Selected option full code", label: "Selected option full code", origin: "chosen by --select", shape: "title and complete code", on: true, requests: ["refine"] },
+    { id: "other_option_diffs", display: "Other options' diffs", label: "Other options' diffs", origin: "each compared with its original target cell", shape: "unified diffs", on: true, requests: ["refine"] }
+  ];
+
+  const TEXT_ITEMS = [
+    { id: "parallel_analysis_hint", label: "parallel_analysis_hint", kind: "hint", on: false, requests: ["analyze"] },
+    { id: "options_schema", label: "options_schema", kind: "rule", on: true, requests: ["suggest"] },
+    { id: "focused_rewrite", label: "focused_rewrite", kind: "rule", on: true, requests: ["suggest"] },
+    { id: "single_cell_target", label: "single_cell_target", kind: "rule", on: true, requests: ["suggest"] },
+    { id: "preserve_comments", label: "preserve_comments", kind: "rule", on: true, requests: ["suggest"] },
+    { id: "preserve_style", label: "preserve_style", kind: "rule", on: true, requests: ["suggest"] },
+    { id: "pep8_multiline", label: "pep8_multiline", kind: "fragment file", on: true, requests: ["suggest", "refine"] },
+    { id: "r_style", label: "r_style", kind: "fragment file", on: false, requests: ["suggest", "refine"] },
+    { id: "gpu_offload", label: "gpu_offload", kind: "fragment file", on: false, requests: ["suggest"] },
+    { id: "json_output", label: "json_output", kind: "rule", on: true, requests: ["suggest"] },
+    { id: "refine_template", label: "refine/template.md", kind: "fixed role, task and output contract", on: true, requests: ["refine"] },
+    { id: "user_note", label: "user_note", kind: "text supplied by --note", on: false, requests: ["suggest", "refine"] }
+  ];
+
+  const STRATEGIES = {
+    faster: {},
+    deep: { raw_perf: true, packages: true },
+    parallelization: { packages: true, gpu_offload: true, parallel_analysis_hint: true },
+    r_clean: { packages: false, pep8_multiline: false, r_style: true },
+    custom: {}
+  };
+
+  const GIVEN_TEXT = {
+    code: "Source code of a notebook cell",
+    timing: "Wall-clock execution time of the cell(s), total and per cell",
+    tags: "Performance classification tags JUmPER assigned to it",
+    perf: "Summary of the measured CPU/GPU/memory metrics",
+    raw_perf: "Raw per-timestep metric arrays behind the %perfmonitor_plot charts",
+    hardware: "Description of the available hardware",
+    packages: "Preinstalled libraries",
+    analysis: "Bottleneck analysis"
+  };
+
+  const BLOCK_ORDER = {
+    analyze: ["code", "timing", "tags", "perf", "raw_perf", "hardware"],
+    suggest: ["analysis", "code", "hardware", "packages"]
+  };
+
+  const BLOCK_TEXT = {
+    code: "Cell source code:\n    df = pd.read_csv(path)\n    for row in df.iterrows(): ...",
+    timing: "Execution time, wall-clock - total: 41.7s; per cell - cell 7: 41.7s",
+    tags: "Performance tags: cpu_bound, single_threaded",
+    perf: "Performance summary (mean/max per metric) - overall: {cpu: {mean: 98.4, max: 100.0}, ...}",
+    raw_perf: "Raw metric arrays behind the plots (per timestep): {time: [...], cpu: [...], ...}",
+    hardware: "Hardware: {num_cpus: 64, num_gpus: 1, gpu_name: 'A100', memory_limits: {...}}",
+    packages: "Available libraries: {numpy: '1.26.4', pandas: '2.2.1', numba: '0.59.0'}",
+    analysis: "Bottleneck analysis:\n    The cell is processor bound in a row-wise Python loop..."
+  };
+
+  const state = { request: "analyze", strategy: "faster", note: false };
+
+  const el = (id) => document.getElementById(id);
+
+  function effective(item) {
+    if (item.id === "user_note") return state.note;
+    const override = STRATEGIES[state.strategy][item.id];
+    return override === undefined ? item.on : override;
+  }
+
+  function inRequest(item) {
+    return item.requests.includes(state.request);
+  }
+
+  function rowMarkup(item, meta) {
+    const belongs = inRequest(item);
+    const on = effective(item);
+    const classes = ["row"];
+    if (!belongs) classes.push("row--muted");
+    else if (!on) classes.push("row--off");
+    const flag = belongs && on
+      ? '<i class="row__flag"></i>'
+      : belongs
+        ? '<i class="row__flag" style="background:transparent;border:1px solid var(--off)"></i>'
+        : '<i class="row__flag" style="background:var(--ink-faint);opacity:.55"></i>';
+    return `<div class="${classes.join(" ")}">${flag}<div>
+      <span class="row__id">${item.display || item.id}</span>
+      <span class="row__meta">${meta}</span>
+    </div></div>`;
+  }
+
+  function renderChips(target, values, key) {
+    el(target).innerHTML = values.map((value) => `
+      <button class="chip" type="button" data-key="${key}" data-value="${value}"
+              aria-pressed="${state[key] === value}">${value}</button>`).join("");
+  }
+
+  function renderSources() {
+    el("root-rows").innerHTML = SOURCES
+      .filter((source) => source.group !== "text")
+      .map((source) => rowMarkup(source, `${source.label} · ${source.origin}`))
+      .join("");
+    const runtimeText = SOURCES
+      .filter((source) => source.group === "text")
+      .map((source) => rowMarkup(source, source.origin));
+    const promptText = TEXT_ITEMS.map((item) => rowMarkup(item, item.kind));
+    el("text-rows").innerHTML = [...runtimeText, ...promptText].join("");
+
+    const selected = SOURCES.filter((s) => inRequest(s) && effective(s)).length;
+    el("sources-count").textContent = `${selected} of ${SOURCES.length} rows selected`;
+  }
+
+  function renderPlan() {
+    const given = SOURCES.filter((s) => inRequest(s) && effective(s)).map((s) => s.id);
+    const extras = TEXT_ITEMS.filter((i) => inRequest(i) && effective(i)).map((i) => i.id);
+    const skipped = SOURCES.filter((s) => inRequest(s) && !effective(s)).map((s) => s.id);
+
+    if (state.request === "refine") {
+      const missingNote = state.note
+        ? ""
+        : `<span class="cmt">-- no --note: resume applies the option without a Refine request</span>`;
+      el("plan").innerHTML = `<pre><span class="kw">SELECT</span> ${given.join(", ") || "-"}
+<span class="kw">FROM</span>   stored review --resume RUN_ID
+<span class="kw">WHERE</span>  request = 'refine'
+<span class="kw">AND</span>    option = --select N
+<span class="kw">DERIVE</span> other_option_diffs FROM each other option + its original target code
+<span class="kw">WITH</span>   ${extras.join(", ") || "-"}
+<span class="kw">VIA</span>    inherited strategy '${state.strategy}'
+${missingNote}</pre>`;
+      el("query-count").textContent = `${given.length + extras.length} items declared`;
+      return;
+    }
+
+    el("plan").innerHTML = `<pre><span class="kw">SELECT</span> ${given.join(", ") || "-"}
+<span class="kw">FROM</span>   sources
+<span class="kw">WHERE</span>  enabled = true
+<span class="kw">AND</span>    request = '${state.request}'
+<span class="kw">AND</span>    cells = --cells, level = --level
+<span class="kw">WITH</span>   ${extras.join(", ") || "-"}
+<span class="kw">VIA</span>    strategy '${state.strategy}'
+${skipped.length ? `<span class="cmt">-- not built: ${skipped.join(", ")}</span>` : ""}<span class="cmt">-- never queried: cell_sources</span></pre>`;
+
+    el("query-count").textContent = `${given.length + extras.length} items declared`;
+  }
+
+  function renderResult() {
+    const given = SOURCES.filter((s) => inRequest(s) && effective(s));
+    const extras = TEXT_ITEMS.filter((i) => inRequest(i) && effective(i) && i.id !== "user_note");
+
+    if (state.request === "refine") {
+      const rules = extras
+        .filter((item) => item.id !== "refine_template")
+        .map((item) => `  · ${item.label}`)
+        .join("\n");
+      el("system-body").innerHTML =
+        `<b>refine/template.md</b>\n\nAdjust the previously proposed cell according to the custom instruction.\n` +
+        `Other options are unified diffs and may be incorporated only when the instruction refers to them.\n` +
+        `Return complete cell code only.\n\nRules:\n${rules || "  · none"}`;
+
+      const instruction = state.note
+        ? "use multiprocessing instead of joblib"
+        : "[missing — resume applies the selected option without calling Refine]";
+      el("human-body").textContent =
+        "Original bottleneck analysis:\n    The cell is processor bound in a row-wise Python loop...\n\n" +
+        "Other proposed options (each diffed vs its original target cell):\n" +
+        "    --- original\n    +++ option 2\n    @@ ...\n    + vectorized alternative...\n\n" +
+        "Selected option (Option 1 — Parallel map) — full code:\n" +
+        "    result = parallel_map(work, rows)\n\n" +
+        `Custom instruction:\n    ${instruction}`;
+      el("result-count").textContent = `${state.note ? 4 : 3} blocks`;
+      return;
+    }
+
+    const task = state.request === "analyze"
+      ? "Identify the most likely performance bottleneck of the cell in 2-4 sentences."
+      : "Propose ranked rewrites of the cell, most impactful first.";
+
+    const bullets = given.map((s) => `  - ${GIVEN_TEXT[s.id]}`).join("\n");
+    const rules = extras.map((i) => `  · ${i.label}`).join("\n");
+    const note = state.note && state.request === "suggest"
+      ? "\n\nUser note:\n  \"use multiprocessing instead of joblib\""
+      : "";
+
+    el("system-body").innerHTML =
+      `<b>${state.request}/template.md</b>\n\nYou are given the:\n${bullets}\n\n${task}` +
+      (rules ? `\n\nRules:\n${rules}` : "") + note;
+
+    const blocks = BLOCK_ORDER[state.request]
+      .filter((id) => given.some((s) => s.id === id))
+      .map((id) => BLOCK_TEXT[id])
+      .join("\n\n");
+
+    el("human-body").textContent = blocks;
+    el("result-count").textContent = `${given.length} blocks`;
+  }
+
+  function render() {
+    renderChips("requests", ["analyze", "suggest", "refine"], "request");
+    renderChips("strategies", Object.keys(STRATEGIES), "strategy");
+    el("strategy-label").textContent = state.request === "refine" ? "inherited strategy" : "--strategy";
+    el("note-toggle").setAttribute("aria-pressed", String(state.note));
+    renderSources();
+    renderPlan();
+    renderResult();
+  }
+
+  document.addEventListener("click", (event) => {
+    const chip = event.target.closest(".chip");
+    if (!chip) return;
+    if (chip.id === "note-toggle") {
+      state.note = !state.note;
+    } else {
+      state[chip.dataset.key] = chip.dataset.value;
+      if (chip.dataset.value === "custom") state.note = true;
+      if (chip.dataset.key === "request" && chip.dataset.value === "refine") state.note = true;
+    }
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

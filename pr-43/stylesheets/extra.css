@@ -1,0 +1,404 @@
+/* Fullscreen presentation for interactive AI Reviewer diagrams */
+.prompt-fullscreen-target {
+  position: relative;
+}
+
+.prompt-fullscreen-toggle {
+  position: absolute;
+  top: 0.68rem;
+  right: 0.68rem;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--md-default-fg-color) 18%, transparent);
+  border-radius: 0.35rem;
+  color: var(--md-default-fg-color--light);
+  background: color-mix(in srgb, var(--md-default-bg-color) 92%, transparent);
+  box-shadow: 0 0.2rem 0.6rem color-mix(in srgb, #000 10%, transparent);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.prompt-fullscreen-target:fullscreen > .prompt-fullscreen-toggle,
+.prompt-fullscreen-target--fallback > .prompt-fullscreen-toggle {
+  z-index: 12;
+}
+
+.prompt-fullscreen-toggle .panzoom-icon {
+  width: 1rem;
+  fill: currentColor;
+}
+
+.prompt-fullscreen-toggle:hover,
+.prompt-fullscreen-toggle:focus-visible {
+  color: var(--md-accent-fg-color);
+}
+
+.prompt-fullscreen-toggle:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}
+
+.prompt-fullscreen-target:fullscreen,
+.prompt-fullscreen-target--fallback {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: var(--md-default-bg-color);
+  overflow: auto;
+}
+
+.prompt-fullscreen-target--fallback {
+  position: fixed !important;
+  inset: 0;
+  z-index: 1000;
+}
+
+.prompt-fullscreen-lock {
+  overflow: hidden;
+}
+
+.query-console-material-shell {
+  height: 1450px;
+  overflow: hidden;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.9rem;
+  background: var(--md-default-bg-color);
+}
+
+.query-console-material-shell iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.query-console-material-shell:fullscreen iframe,
+.query-console-material-shell.prompt-fullscreen-target--fallback iframe {
+  height: 100vh;
+}
+
+.context-workbench-frame:fullscreen .context-workbench,
+.context-workbench-frame.prompt-fullscreen-target--fallback .context-workbench {
+  height: 100%;
+  margin: 0;
+  border-radius: 0;
+}
+
+.context-workbench-frame:fullscreen .context-workbench__pane,
+.context-workbench-frame.prompt-fullscreen-target--fallback .context-workbench__pane {
+  min-width: 0;
+}
+
+.context-workbench-frame:fullscreen .context-pipeline,
+.context-workbench-frame.prompt-fullscreen-target--fallback .context-pipeline {
+  grid-template-columns:
+    minmax(250px, 1.35fr) 32px minmax(190px, 1fr) 32px
+    minmax(250px, 1.3fr) 32px minmax(150px, 0.75fr);
+}
+
+/* AI Reviewer prompt-context workbench */
+.context-workbench {
+  --cq-line: color-mix(in srgb, var(--md-default-fg-color) 24%, transparent);
+  --cq-panel: color-mix(in srgb, var(--md-default-bg-color) 94%, var(--md-primary-fg-color) 6%);
+  --cq-source: color-mix(in srgb, #34a853 11%, var(--md-default-bg-color));
+  --cq-query: color-mix(in srgb, #d39e00 12%, var(--md-default-bg-color));
+  --cq-system: color-mix(in srgb, #7c4dff 11%, var(--md-default-bg-color));
+  --cq-human: color-mix(in srgb, #4285f4 11%, var(--md-default-bg-color));
+  margin: 1.4rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--cq-line);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, #34a853 8%, transparent), transparent 24rem),
+    radial-gradient(circle at 88% 100%, color-mix(in srgb, #7c4dff 8%, transparent), transparent 24rem),
+    var(--md-default-bg-color);
+  box-shadow: 0 0.55rem 1.6rem color-mix(in srgb, #000 9%, transparent);
+  scrollbar-color: color-mix(in srgb, var(--md-primary-fg-color) 55%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.context-workbench__toggle {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.context-workbench__tabs {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  gap: 0.35rem;
+  min-width: max-content;
+  padding: 0.75rem 3.25rem 0.75rem 0.75rem;
+  border-bottom: 1px solid var(--cq-line);
+  background: color-mix(in srgb, var(--md-default-bg-color) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.context-workbench__tabs label {
+  padding: 0.48rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.context-workbench__tabs label:hover {
+  color: var(--md-default-fg-color);
+  background: var(--cq-panel);
+}
+
+.context-workbench__scroll {
+  align-self: center;
+  margin-left: 0.45rem;
+  color: var(--md-default-fg-color--lighter);
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+#context-request-analyze:checked ~ .context-workbench__tabs label[for="context-request-analyze"],
+#context-request-suggest:checked ~ .context-workbench__tabs label[for="context-request-suggest"],
+#context-request-refine:checked ~ .context-workbench__tabs label[for="context-request-refine"] {
+  border-color: color-mix(in srgb, var(--md-primary-fg-color) 55%, transparent);
+  color: var(--md-primary-fg-color);
+  background: color-mix(in srgb, var(--md-primary-fg-color) 10%, var(--md-default-bg-color));
+}
+
+.context-workbench__pane {
+  display: none;
+  min-width: 72rem;
+  padding: 1rem;
+}
+
+#context-request-analyze:checked ~ .context-workbench__pane--analyze,
+#context-request-suggest:checked ~ .context-workbench__pane--suggest,
+#context-request-refine:checked ~ .context-workbench__pane--refine {
+  display: block;
+  animation: context-pane-in 180ms ease-out;
+}
+
+@keyframes context-pane-in {
+  from { opacity: 0; transform: translateY(0.25rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.context-pipeline {
+  display: grid;
+  grid-template-columns: minmax(17rem, 1.45fr) 3.1rem minmax(13rem, 1fr) 3.1rem minmax(17rem, 1.35fr) 3.1rem minmax(11rem, 0.8fr);
+  align-items: stretch;
+}
+
+.context-stage {
+  min-height: 21rem;
+  padding: 0.8rem;
+  border: 1px solid var(--cq-line);
+  border-radius: 0.75rem;
+  background: var(--cq-panel);
+  box-shadow: 0 0.25rem 0.7rem color-mix(in srgb, #000 6%, transparent);
+}
+
+.context-stage > header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  align-items: center;
+  margin: -0.1rem -0.1rem 0.8rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--cq-line);
+}
+
+.context-stage > header > span {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  inline-size: 1.8rem;
+  block-size: 1.8rem;
+  border-radius: 50%;
+  color: var(--md-default-bg-color);
+  background: var(--md-default-fg-color);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.context-stage > header strong {
+  line-height: 1.15;
+}
+
+.context-stage > header small {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.62rem;
+}
+
+.context-stage--sources { background: var(--cq-source); }
+.context-stage--query { background: var(--cq-query); }
+.context-stage--request { display: flex; flex-direction: column; background: var(--cq-system); }
+
+.context-source-group,
+.context-rule,
+.context-message {
+  padding: 0.68rem;
+  border: 1px solid var(--cq-line);
+  border-radius: 0.58rem;
+  background: color-mix(in srgb, var(--md-default-bg-color) 82%, transparent);
+}
+
+.context-source-group + .context-source-group,
+.context-rule + .context-rule,
+.context-message + .context-message {
+  margin-top: 0.65rem;
+}
+
+.context-source-group > b,
+.context-rule > b,
+.context-message > b {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.73rem;
+}
+
+.context-source-group > small,
+.context-rule > small,
+.context-message > small {
+  display: block;
+  margin-top: 0.42rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.context-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.context-chips span {
+  padding: 0.19rem 0.36rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #34a853 14%, var(--md-default-bg-color));
+  font-size: 0.58rem;
+  line-height: 1.25;
+}
+
+.context-file {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.4rem 0;
+  border-top: 1px dashed var(--cq-line);
+}
+
+.context-file:first-of-type { border-top: 0; }
+.context-file code { font-size: 0.62rem; font-weight: 700; }
+.context-file--runtime > b { font-size: 0.62rem; font-weight: 700; }
+.context-file span { color: var(--md-default-fg-color--light); font-size: 0.58rem; }
+
+.context-rule {
+  min-height: 4.25rem;
+}
+
+.context-rule > span,
+.context-rule > code,
+.context-message > span {
+  display: block;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.context-message {
+  min-height: 7.5rem;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.context-message:hover {
+  transform: translateY(-0.12rem);
+  box-shadow: 0 0.4rem 0.9rem color-mix(in srgb, #000 9%, transparent);
+}
+
+.context-message--system {
+  border-left: 0.22rem solid #7c4dff;
+  background: var(--cq-system);
+}
+
+.context-message--human {
+  border-left: 0.22rem solid #4285f4;
+  background: var(--cq-human);
+}
+
+.context-pipeline__arrow {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  height: 1px;
+  background: var(--md-default-fg-color--lighter);
+}
+
+.context-pipeline__arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  width: 0;
+  height: 0;
+  border-top: 0.28rem solid transparent;
+  border-bottom: 0.28rem solid transparent;
+  border-left: 0.42rem solid var(--md-default-fg-color--lighter);
+}
+
+.context-pipeline__arrow span {
+  position: absolute;
+  bottom: 0.35rem;
+  padding: 0 0.2rem;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-default-bg-color);
+  font-size: 0.54rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.context-envelope {
+  display: grid;
+  gap: 0.55rem;
+  place-items: center;
+  margin: auto 0;
+}
+
+.context-envelope span {
+  width: 100%;
+  padding: 0.65rem 0.4rem;
+  border: 1px solid var(--cq-line);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--md-default-bg-color) 82%, transparent);
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.context-envelope i {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.7rem;
+  font-style: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #context-request-analyze:checked ~ .context-workbench__pane--analyze,
+  #context-request-suggest:checked ~ .context-workbench__pane--suggest,
+  #context-request-refine:checked ~ .context-workbench__pane--refine,
+  .context-message {
+    animation: none;
+    transition: none;
+  }
+}

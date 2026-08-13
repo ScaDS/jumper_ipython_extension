@@ -52,6 +52,8 @@
     
       <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
+    
       <link rel="stylesheet" href="../../../../assets/stylesheets/panzoom.css">
     
     <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
@@ -61,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -2182,6 +2184,157 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System view
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llm-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LLM Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#source-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source Query
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source Query">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#precedence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Precedence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-interactive-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Interactive Console
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Query Interactive Console">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-panels-show" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the panels show
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Benchmark">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#replay-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replay paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measurement-and-repair-concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement and repair concurrency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repair-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repair loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2886,6 +3039,157 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System view
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llm-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LLM Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#source-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source Query
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source Query">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#precedence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Precedence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-interactive-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Interactive Console
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Query Interactive Console">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-panels-show" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the panels show
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benchmark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Benchmark">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#replay-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replay paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measurement-and-repair-concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement and repair concurrency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repair-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repair loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2942,18 +3246,25 @@
 
 
 <h1 id="ai-reviewer-architecture">AI Reviewer — Architecture</h1>
-<!-- TODO: one-paragraph card. What this adapter is responsible for,
-     and what it deliberately leaves to others. -->
-
+<p>AI Reviewer turns recorded code and performance data into large language model
+(LLM) analysis and ranked cell rewrites. It can benchmark each rewrite against
+the original, repair a broken or divergent variant, and place a selected result
+into the next notebook cell. It reuses Reporter and Monitor data; it does not
+collect performance samples itself.</p>
 <h2 id="responsibilities">Responsibilities</h2>
-<!-- TODO: 3–5 bullets. One line each. -->
-
 <ul>
-<li>…</li>
+<li>Build review context from cell source, timings, metrics, tags, hardware, and
+  installed packages.</li>
+<li>Compose strategy-controlled prompts for analysis, suggestions, refinement,
+  and repair.</li>
+<li>Run fresh-review, benchmark-only, and apply workflows while retaining their
+  state by run identifier (ID).</li>
+<li>Validate, replay, time, compare, and repair one-cell benchmark variants.</li>
+<li>Render text or notebook HyperText Markup Language (HTML) with code
+  differences, measured verdicts, and resume commands.</li>
 </ul>
 <h2 id="structure">Structure</h2>
-<!-- TODO: replace with the real component graph. -->
-
+<h3 id="system-view">System view</h3>
 <div class="panzoom-box" data-key="alt" id="panzoom0" oncontextmenu="return false;">
     
     <nav class="panzoom-nav">
@@ -2975,35 +3286,932 @@
     </svg>
 </button>
     </nav>
-    <pre class="mermaid"><code>graph TD
-    todo[TODO: components and their direction of dependency]</code></pre> 
+    <pre class="mermaid"><code>flowchart TB
+    command["%perfmonitor_ai_review"] --&gt; reviewer[AI Reviewer]
+    reviewer --&gt; workflows[Workflow graphs]
+    reviewer --&gt; state[Stored review state]
+
+    workflows -.-&gt; context[Context collection]
+    context --&gt; reporter[Reporter]
+    context --&gt; monitor[Monitor]
+
+    workflows -.-&gt; llm[Large language model]
+    workflows -.-&gt; benchmark[Benchmark]
+    workflows -.-&gt; display[Review display]
+    workflows -.-&gt; next[Next notebook cell]
+
+    state -. resume input .-&gt; workflows
+    display --&gt; card[Review card]</code></pre> 
     <div class="panzoom-info-box panzoom-info-box-bottom panzoom-hidden">
 Hold "Alt" / "Option" to enable pan &amp; zoom
 </div>
 </div>
-<h2 id="design-patterns">Design patterns</h2>
-<!-- TODO: name the patterns used, with conventional names.
-     Shared ones are defined once in ../index.md — reference them by name. -->
-
+<p>Solid arrows show ownership or a direct dependency. Dotted arrows show
+collaborators used by particular paths, not one mandatory sequence. A fresh
+review collects context and resolves a review strategy. Resume paths load
+stored review state and enter benchmark or apply without collecting context
+again.</p>
 <table>
 <thead>
 <tr>
-<th>Pattern</th>
-<th>Where</th>
-<th>What it buys</th>
+<th>Part</th>
+<th>Role in the workflow</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>…</td>
-<td>…</td>
-<td>…</td>
+<td>AI Reviewer</td>
+<td>Selects a workflow, coordinates collaborators, and retains review state by run identifier.</td>
+</tr>
+<tr>
+<td>Context collection</td>
+<td>Reads selected source code and existing performance data through Reporter and Monitor.</td>
+</tr>
+<tr>
+<td>Review strategy</td>
+<td>Selects which context sources and prompt rules the fresh review uses.</td>
+</tr>
+<tr>
+<td>Workflow graphs</td>
+<td>Coordinate fresh review, later benchmark, and apply without mixing their entry conditions.</td>
+</tr>
+<tr>
+<td>Large language model (LLM)</td>
+<td>Supplies analysis, suggestions, optional refinement, and repair code.</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>Validates every option and measures each version that can run.</td>
+</tr>
+<tr>
+<td>Review display</td>
+<td>Shows analysis, ranked code differences, measured verdicts, and follow-up commands.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="llm-context">LLM Context</h3>
+<p>To use smaller LLMs effectively, it's essential to clearly specify the task they need to perform. Therefore, our primary goal is to make context building system both flexible and convenient. The following schemes are aimed to give the user or the developer (choose your side) better view on how we approach LLM Context building in our project. <strong>Source Query</strong> - suggests an overall view at the context building in our project from the angle of request to the database. <strong>Query Console</strong> elaborates this idea and provides a fine-grained look at the picked sources and how they affect the resulting context.</p>
+<h4 id="source-query">Source Query</h4>
+<p><strong>Source Query</strong> represents the general idea on Sources: Where <strong>Root knowledge</strong>: deterministic sources such as code and metrics, <strong>Text sources</strong>: text instructions and LLM generated analysis.</p>
+<div class="context-workbench-frame prompt-fullscreen-target" data-prompt-fullscreen>
+  <button class="prompt-fullscreen-toggle" type="button" aria-label="Open diagram in fullscreen" aria-pressed="false">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+      <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+    </svg>
+  </button>
+  <div class="context-workbench">
+  <input class="context-workbench__toggle" type="radio" name="context-request" id="context-request-analyze" checked>
+  <input class="context-workbench__toggle" type="radio" name="context-request" id="context-request-suggest">
+  <input class="context-workbench__toggle" type="radio" name="context-request" id="context-request-refine">
+
+  <div class="context-workbench__tabs" role="tablist" aria-label="Request type">
+    <label for="context-request-analyze" role="tab">Analyze request</label>
+    <label for="context-request-suggest" role="tab">Suggest request</label>
+    <label for="context-request-refine" role="tab">Refine request</label>
+    <span class="context-workbench__scroll">Scroll to follow the pipeline →</span>
+  </div>
+
+  <div class="context-workbench__pane context-workbench__pane--analyze">
+    <div class="context-pipeline">
+      <section class="context-stage context-stage--sources">
+        <header><span>01</span><strong>Sources</strong><small>one logical catalog</small></header>
+        <div class="context-source-group">
+          <b>Root knowledge</b>
+          <div class="context-chips">
+            <span>Cell code</span><span>Exact timing</span><span>Tags</span>
+            <span>Metric summary</span><span>Raw metrics</span><span>Hardware</span>
+          </div>
+          <small><code>reporter.py</code> · monitor nodes · <code>collector.py</code></small>
+        </div>
+        <div class="context-source-group context-source-group--text">
+          <b>Text sources</b>
+          <div class="context-file"><code>analyze/template.md</code><span>fixed role · task · layout</span></div>
+          <div class="context-file"><code>analyze/spec.yaml</code><span><em>given</em> · <em>hints</em> · enabled defaults</span></div>
+        </div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>query</span></div>
+
+      <section class="context-stage context-stage--query">
+        <header><span>02</span><strong>Selection plan</strong><small>resolve before reading</small></header>
+        <div class="context-rule"><b>Request profile</b><code>prompt_id = analyze</code></div>
+        <div class="context-rule"><b>Strategy</b><span><code>--strategy</code> or default ID</span><small>matching toggles override <code>enabled</code></small></div>
+        <div class="context-rule"><b>Scope</b><span><code>--cells</code> · <code>--level</code></span><small>limits runtime records only</small></div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>project</span></div>
+
+      <section class="context-stage context-stage--messages">
+        <header><span>03</span><strong>Message projections</strong><small>two independent branches</small></header>
+        <div class="context-message context-message--system">
+          <b>SystemMessage</b>
+          <span>template + enabled <em>given</em> + enabled <em>hints</em></span>
+          <small>role · input descriptions · bottleneck task</small>
+        </div>
+        <div class="context-message context-message--human">
+          <b>HumanMessage</b>
+          <span>non-empty enabled source values</span>
+          <small>code · timing · tags · metrics · hardware</small>
+        </div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>assemble</span></div>
+
+      <section class="context-stage context-stage--request">
+        <header><span>04</span><strong>LLM context</strong><small>Analyze request</small></header>
+        <div class="context-envelope">
+          <span>SystemMessage</span>
+          <i>+</i>
+          <span>HumanMessage</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="context-workbench__pane context-workbench__pane--suggest">
+    <div class="context-pipeline">
+      <section class="context-stage context-stage--sources">
+        <header><span>01</span><strong>Sources</strong><small>one logical catalog</small></header>
+        <div class="context-source-group">
+          <b>Root knowledge</b>
+          <div class="context-chips">
+            <span>Cell code</span><span>Hardware</span><span>Installed packages</span>
+          </div>
+          <small><code>reporter.py</code> · monitor · <code>default.yaml</code> package names · <code>collector.py</code> installed versions</small>
+        </div>
+        <div class="context-source-group context-source-group--text">
+          <b>Text sources</b>
+          <div class="context-file context-file--runtime"><b>Bottleneck analysis</b><span>result of the preceding Analyze request</span></div>
+          <div class="context-file"><code>suggest/template.md</code><span>fixed role · task · layout</span></div>
+          <div class="context-file"><code>suggest/spec.yaml</code><span><em>given</em> · <em>rules</em> · note slot</span></div>
+          <div class="context-file"><code>fragments/*.md</code><span>referenced rule text</span></div>
+          <div class="context-file"><code>--note</code><span>optional runtime text · hard requirement</span></div>
+        </div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>query</span></div>
+
+      <section class="context-stage context-stage--query">
+        <header><span>02</span><strong>Selection plan</strong><small>resolve before reading</small></header>
+        <div class="context-rule"><b>Request profile</b><code>prompt_id = suggest</code></div>
+        <div class="context-rule"><b>Strategy</b><span><code>--strategy</code> or default ID</span><small>matching toggles override <code>enabled</code>; <code>require_note</code> only validates</small></div>
+        <div class="context-rule"><b>Text input</b><span><code>--note</code></span><small>queried with Text sources; does not rewrite strategy</small></div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>project</span></div>
+
+      <section class="context-stage context-stage--messages">
+        <header><span>03</span><strong>Message projections</strong><small>two independent branches</small></header>
+        <div class="context-message context-message--system">
+          <b>SystemMessage</b>
+          <span>template + enabled <em>given</em> + enabled <em>rules</em> + note</span>
+          <small>role · generation rules · output rules</small>
+        </div>
+        <div class="context-message context-message--human">
+          <b>HumanMessage</b>
+          <span>non-empty enabled source values</span>
+          <small>analysis · code · hardware · package versions</small>
+        </div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>assemble</span></div>
+
+      <section class="context-stage context-stage--request">
+        <header><span>04</span><strong>LLM context</strong><small>Suggest request</small></header>
+        <div class="context-envelope">
+          <span>SystemMessage</span>
+          <i>+</i>
+          <span>HumanMessage</span>
+          <i>+</i>
+          <span>Response schema</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="context-workbench__pane context-workbench__pane--refine">
+    <div class="context-pipeline">
+      <section class="context-stage context-stage--sources">
+        <header><span>01</span><strong>Sources</strong><small>stored review + resume input</small></header>
+        <div class="context-source-group">
+          <b>Root knowledge</b>
+          <div class="context-chips">
+            <span>Selected option full code</span>
+            <span>Other options' diffs</span>
+          </div>
+        </div>
+        <div class="context-source-group context-source-group--text">
+          <b>Text sources</b>
+          <div class="context-file context-file--runtime"><b>Bottleneck analysis</b><span>stored result of the preceding Analyze request</span></div>
+          <div class="context-file"><code>refine/template.md</code><span>fixed role · adjustment task · output contract</span></div>
+          <div class="context-file"><code>refine/spec.yaml</code><span>enabled style rules</span></div>
+          <div class="context-file"><code>fragments/*.md</code><span>referenced Python or R style text</span></div>
+          <div class="context-file"><code>--note</code><span>required custom instruction</span></div>
+        </div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>query</span></div>
+
+      <section class="context-stage context-stage--query">
+        <header><span>02</span><strong>Selection plan</strong><small>resume one stored review</small></header>
+        <div class="context-rule"><b>Request profile</b><code>prompt_id = refine</code></div>
+        <div class="context-rule"><b>Stored review</b><span><code>--resume RUN_ID</code></span><small>loads analysis, options, target code, and the original strategy toggles</small></div>
+        <div class="context-rule"><b>Option</b><span><code>--select N</code></span><small>selects a title and full code; every other option becomes a diff against its own original target cell</small></div>
+        <div class="context-rule"><b>Text input</b><span><code>--note</code></span><small>without it, resume applies directly and no Refine request is sent</small></div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>project</span></div>
+
+      <section class="context-stage context-stage--messages">
+        <header><span>03</span><strong>Message projections</strong><small>two independent branches</small></header>
+        <div class="context-message context-message--system">
+          <b>SystemMessage</b>
+          <span>template + enabled style rules</span>
+          <small>role · adjustment task · use-of-diffs constraint · code-only output</small>
+        </div>
+        <div class="context-message context-message--human">
+          <b>HumanMessage</b>
+          <span>stored values + derived diffs + new instruction</span>
+          <small>analysis · other-option diffs · selected full code · <code>--note</code></small>
+        </div>
+      </section>
+
+      <div class="context-pipeline__arrow"><span>assemble</span></div>
+
+      <section class="context-stage context-stage--request">
+        <header><span>04</span><strong>LLM context</strong><small>Refine request</small></header>
+        <div class="context-envelope">
+          <span>SystemMessage</span>
+          <i>+</i>
+          <span>HumanMessage</span>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="admonition note">
+<p class="admonition-title">Messages are projections</p>
+<p>HumanMessage and SystemMessage are not records in the source catalog but conventional logical parts of the prompt, coming from <strong>LangChain</strong> library.</p>
+</div>
+<h5 id="precedence">Precedence</h5>
+<ol>
+<li>The graph step selects the Analyze, Suggest, or Refine profile.</li>
+<li><code>--strategy</code> selects a <code>strategies.yaml</code> entry; <code>default.yaml</code> supplies the
+   ID only when the option is omitted.</li>
+<li>The selected strategy's merged toggles override matching source and prompt
+   item defaults.</li>
+<li>Suggest consumes the bottleneck analysis from the preceding Analyze call,
+   together with code, hardware, and installed package versions.</li>
+<li>Scope options select fresh-review records. For Refine, <code>--resume</code> reloads the
+   stored review and its strategy toggles; <code>--select</code> chooses one option.
+   <code>--note</code> is the Human-message instruction that makes the Refine call run.</li>
+</ol>
+<h4 id="query-interactive-console">Query Interactive Console</h4>
+<p>Choose the request, strategy, and whether <code>--note</code> is present. The selected
+sources, query plan, and returned <code>SystemMessage</code> and <code>HumanMessage</code> update
+together.</p>
+<div class="query-console-material-shell prompt-fullscreen-target" data-prompt-fullscreen>
+  <button class="prompt-fullscreen-toggle" type="button" aria-label="Open diagram in fullscreen" aria-pressed="false">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+      <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+    </svg>
+  </button>
+  <iframe
+    id="query-console-material"
+    src="../prompt-assembly/query-console-material-embed.html"
+    title="Prompt assembly query console — Material style"
+    loading="lazy">
+  </iframe>
+</div>
+
+<script>
+(() => {
+  const frame = document.getElementById("query-console-material");
+  if (!frame) return;
+
+  const applyMaterialStyle = () => {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+
+    doc.querySelector("header")?.remove();
+    if (doc.getElementById("query-console-material-style")) return;
+
+    const style = doc.createElement("style");
+    style.id = "query-console-material-style";
+    style.textContent = `
+      :root {
+        --ground: #f8faf9;
+        --surface: rgba(255, 255, 255, 0.88);
+        --surface-sunk: rgba(255, 255, 255, 0.76);
+        --ink: #202124;
+        --ink-soft: #5f6368;
+        --ink-faint: #80868b;
+        --rule: rgba(32, 33, 36, 0.20);
+        --accent: #3f51b5;
+        --accent-soft: #eef0ff;
+        --off: #b05f52;
+        --off-soft: #faeae7;
+        --source: #edf7ef;
+        --query: #fff8df;
+        --result: #f3edff;
+        --human: #eaf2ff;
+        --radius: 14px;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 10% 0%, rgba(52, 168, 83, 0.08), transparent 24rem),
+          radial-gradient(circle at 90% 100%, rgba(124, 77, 255, 0.08), transparent 24rem),
+          var(--ground);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .page {
+        min-width: 1080px;
+        max-width: 1240px;
+        padding: 18px;
+        gap: 18px;
+      }
+
+      header { display: none !important; }
+
+      .controls {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 8px 24px rgba(32, 33, 36, 0.08);
+        backdrop-filter: blur(10px);
+      }
+
+      .controls__label {
+        font-family: inherit;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--ink-faint);
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 0.36rem 0.72rem;
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 650;
+        background: rgba(255, 255, 255, 0.72);
+        transition: 150ms ease;
+      }
+
+      .chip:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-1px);
+      }
+
+      .chip[aria-pressed="true"] {
+        color: var(--accent);
+        border-color: rgba(63, 81, 181, 0.52);
+        background: var(--accent-soft);
+        box-shadow: 0 2px 8px rgba(63, 81, 181, 0.10);
+      }
+
+      .stages {
+        grid-template-columns: 1.05fr 0.85fr 1.1fr;
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .stage {
+        overflow: hidden;
+        border-radius: var(--radius);
+        box-shadow: 0 6px 18px rgba(32, 33, 36, 0.07);
+      }
+
+      .stage:nth-child(1) { background: var(--source); }
+      .stage:nth-child(2) { background: var(--query); }
+      .stage:nth-child(3) { background: var(--result); }
+
+      .stage__head {
+        padding: 13px 14px;
+        background: rgba(255, 255, 255, 0.42);
+      }
+
+      .stage__title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 750;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .stage__title::before {
+        display: grid;
+        place-items: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        color: #fff;
+        background: var(--ink);
+        font-size: 0.62rem;
+        font-weight: 800;
+      }
+
+      .stage:nth-child(1) .stage__title::before { content: "01"; }
+      .stage:nth-child(2) .stage__title::before { content: "02"; }
+      .stage:nth-child(3) .stage__title::before { content: "03"; }
+
+      .stage__count {
+        font-family: inherit;
+        font-size: 0.66rem;
+      }
+
+      .group {
+        margin: 10px;
+        padding: 11px;
+        border: 1px solid var(--rule) !important;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .group + .group { margin-top: 0; }
+
+      .group__name {
+        color: var(--ink);
+        font-family: inherit;
+        font-size: 0.68rem;
+        font-weight: 750;
+        letter-spacing: 0.025em;
+        text-transform: none;
+      }
+
+      .row__flag { background: #34a853; }
+      .row__id {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-size: 0.78rem;
+        font-weight: 750;
+      }
+      .row__meta { font-size: 0.7rem; }
+
+      .plan {
+        margin: 10px;
+        padding: 13px;
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.72);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-size: 0.75rem;
+      }
+
+      .plan .kw { color: #9a7100; font-weight: 750; }
+      .plan pre { font-family: inherit; }
+
+      .message {
+        margin: 10px;
+        padding: 12px;
+        border: 1px solid var(--rule) !important;
+        border-radius: 10px;
+      }
+
+      .message:nth-child(2) {
+        border-left: 4px solid #7c4dff !important;
+        background: rgba(243, 237, 255, 0.86);
+      }
+
+      .message:nth-child(3) {
+        margin-top: 0;
+        border-left: 4px solid #4285f4 !important;
+        background: var(--human);
+      }
+
+      .message__role {
+        color: var(--ink);
+        font-family: inherit;
+        font-weight: 750;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .message__body {
+        border: 1px solid rgba(32, 33, 36, 0.10);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.68);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-size: 0.72rem;
+      }
+
+      .message__body b { color: #6241c7; }
+
+      .legend {
+        padding: 10px 13px;
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.74);
+      }
+
+      .swatch { background: #34a853; }
+      .swatch--off {
+        background: transparent;
+        border: 1px solid var(--off);
+      }
+      .swatch--none {
+        background: var(--ink-faint);
+        opacity: 0.55;
+      }
+
+      footer {
+        padding: 13px;
+        border: 1px solid rgba(63, 81, 181, 0.24);
+        border-radius: 10px;
+        background: rgba(232, 240, 254, 0.72);
+        max-width: none;
+      }
+
+      footer code,
+      .inline-code {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-weight: 700;
+      }
+    `;
+    doc.head.appendChild(style);
+  };
+
+  frame.addEventListener("load", applyMaterialStyle);
+  if (frame.contentDocument?.readyState === "complete") applyMaterialStyle();
+})();
+</script>
+
+<h5 id="what-the-panels-show">What the panels show</h5>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sources</td>
+<td>Root knowledge and Text-source rows, including whether this request selects each row</td>
+</tr>
+<tr>
+<td>Query</td>
+<td>Scope, selected identifiers, strategy overrides, and values that are never queried</td>
+</tr>
+<tr>
+<td>Returned context</td>
+<td>The rendered <code>SystemMessage</code> and the runtime values placed in <code>HumanMessage</code></td>
+</tr>
+</tbody>
+</table>
+<p>Suggest receives the bottleneck analysis produced by Analyze. Refine reloads
+that analysis and the stored options. <code>--select</code> supplies the selected title
+and full code; every other option is converted to a diff against its own
+original target cell; <code>--note</code> becomes the custom instruction. Refine inherits
+the original review's strategy toggles.</p>
+<h3 id="workflows">Workflows</h3>
+<div class="panzoom-box" data-key="alt" id="panzoom0" oncontextmenu="return false;">
+    
+    <nav class="panzoom-nav">
+    <button class="panzoom-info panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path>
+    </svg>
+</button><button class="panzoom-reset panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M125.7 160l50.3 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L48 224c-17.7 0-32-14.3-32-32L16 64c0-17.7 14.3-32 32-32s32 14.3 32 32l0 51.2L97.6 97.6c87.5-87.5 229.3-87.5 316.8 0s87.5 229.3 0 316.8s-229.3 87.5-316.8 0c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0c62.5 62.5 163.8 62.5 226.3 0s62.5-163.8 0-226.3s-163.8-62.5-226.3 0L125.7 160z"></path>
+    </svg>
+</button><button class="panzoom-max panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+    </svg>
+</button><button class="panzoom-min panzoom-button panzoom-hidden">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 320c-17.7 0-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0z"></path>
+    </svg>
+</button>
+    </nav>
+    <pre class="mermaid"><code>flowchart TB
+    START(["%perfmonitor_ai_review"]) --&gt; kind{Arguments}
+
+    kind --&gt;|"fresh review (no resume)"| collect["Collect report context"]
+    collect --&gt; analyze["Analyze the bottleneck"]
+    analyze --&gt; suggest["Generate ranked options"]
+    suggest --&gt; gate{"--benchmark?"}
+    gate --&gt;|no| card["Display the review card"]
+    gate --&gt;|yes| bench["Benchmark the suggestions"]
+    bench --&gt; card
+
+    kind --&gt;|"--resume ID --benchmark"| bench
+    kind --&gt;|"--resume ID --select N"| chosen["Load the chosen option"]
+    chosen --&gt; note{"--note given?"}
+    note --&gt;|yes| refine["Rewrite it from the note"]
+    refine --&gt; next["Place code in the next cell"]
+    note --&gt;|no| next</code></pre> 
+    <div class="panzoom-info-box panzoom-info-box-bottom panzoom-hidden">
+Hold "Alt" / "Option" to enable pan &amp; zoom
+</div>
+</div>
+<ul>
+<li>A fresh review collects recorded cell code and performance data, requests an
+  analysis and ranked options, and optionally benchmarks them before display.</li>
+<li>A later benchmark reuses stored suggestions without repeating context
+  collection, analysis, or suggestion calls.</li>
+<li>Apply loads one stored option, optionally refines it from a user note, and
+  places the result in the next cell without running it.</li>
+</ul>
+<h3 id="benchmark">Benchmark</h3>
+<p>Benchmarking turns a proposal into a measured verdict. For a one-cell review,
+it:</p>
+<ol>
+<li>Measures the original cell as the baseline.</li>
+<li>Validates every option and measures each version that can run.</li>
+<li>Compares each result with the baseline and reports timing together with
+   whether the result still matches.</li>
+</ol>
+<p>Multi-cell reviews remain reviewable, but their benchmark step is skipped
+because each target needs its own baseline and notebook state.</p>
+<h4 id="replay-paths">Replay paths</h4>
+<p>A replay runs the target cell in a separate operating-system process.</p>
+<div class="admonition note">
+<p class="admonition-title">State reconstruction</p>
+<p>Before the target runs, the replay reconstructs the prefix: all recorded
+cells before the target. The replay path decides how often this work is
+repeated. The separate process isolates measurements from each other, not
+from the machine. Replayed code can still overwrite real files or repeat
+real network actions, such as submitting the same job twice.</p>
+</div>
+<div class="panzoom-box" data-key="alt" id="panzoom0" oncontextmenu="return false;">
+    
+    <nav class="panzoom-nav">
+    <button class="panzoom-info panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path>
+    </svg>
+</button><button class="panzoom-reset panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M125.7 160l50.3 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L48 224c-17.7 0-32-14.3-32-32L16 64c0-17.7 14.3-32 32-32s32 14.3 32 32l0 51.2L97.6 97.6c87.5-87.5 229.3-87.5 316.8 0s87.5 229.3 0 316.8s-229.3 87.5-316.8 0c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0c62.5 62.5 163.8 62.5 226.3 0s62.5-163.8 0-226.3s-163.8-62.5-226.3 0L125.7 160z"></path>
+    </svg>
+</button><button class="panzoom-max panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+    </svg>
+</button><button class="panzoom-min panzoom-button panzoom-hidden">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 320c-17.7 0-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0z"></path>
+    </svg>
+</button>
+    </nav>
+    <pre class="mermaid"><code>flowchart TB
+    bench[Benchmark] --&gt; mode{Configured path}
+
+    mode --&gt; full["full&lt;br/&gt;replay the prefix every time"]
+    mode --&gt; fork["fork&lt;br/&gt;run the prefix once, copy the process"]
+    mode --&gt; dill["dill&lt;br/&gt;save the prefix state once, restore it"]
+
+    fork --&gt; check{Baseline agrees with full?}
+    dill --&gt; check
+    check --&gt;|no, or path unusable| fallback[Switch to full and restart]
+    fallback --&gt; full
+    check --&gt;|yes| target[Run one target cell]
+    full --&gt; target
+    target --&gt; outcome["Exported session → duration, metrics, result summaries"]</code></pre> 
+    <div class="panzoom-info-box panzoom-info-box-bottom panzoom-hidden">
+Hold "Alt" / "Option" to enable pan &amp; zoom
+</div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Language</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>full</code></td>
+<td>Every supported language</td>
+<td>The reference result; repeats all prefix work.</td>
+</tr>
+<tr>
+<td><code>fork</code></td>
+<td>Python</td>
+<td>Reduces repeated setup, but copied memory can inflate memory figures and library worker threads may not survive the copy.</td>
+</tr>
+<tr>
+<td><code>dill</code></td>
+<td>Python</td>
+<td>No process-copy effects; only safely saveable state survives, and the checkpoint can cost more than it saves.</td>
+</tr>
+</tbody>
+</table>
+<p><code>fork</code> and <code>dill</code> accelerate Python benchmarks. By default, their baseline
+result is checked once against <code>full</code>. If a path is unavailable, unsafe for the
+recorded state, or produces a different baseline, the benchmark falls back to
+<code>full</code>. Measurements already taken through the old path are discarded so one
+verdict never mixes replay paths.</p>
+<h4 id="measurement-and-repair-concurrency">Measurement and repair concurrency</h4>
+<div class="panzoom-box" data-key="alt" id="panzoom0" oncontextmenu="return false;">
+    
+    <nav class="panzoom-nav">
+    <button class="panzoom-info panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path>
+    </svg>
+</button><button class="panzoom-reset panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M125.7 160l50.3 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L48 224c-17.7 0-32-14.3-32-32L16 64c0-17.7 14.3-32 32-32s32 14.3 32 32l0 51.2L97.6 97.6c87.5-87.5 229.3-87.5 316.8 0s87.5 229.3 0 316.8s-229.3 87.5-316.8 0c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0c62.5 62.5 163.8 62.5 226.3 0s62.5-163.8 0-226.3s-163.8-62.5-226.3 0L125.7 160z"></path>
+    </svg>
+</button><button class="panzoom-max panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+    </svg>
+</button><button class="panzoom-min panzoom-button panzoom-hidden">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 320c-17.7 0-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0z"></path>
+    </svg>
+</button>
+    </nav>
+    <pre class="mermaid"><code>sequenceDiagram
+    participant M as Measure loop (sequential)
+    participant P as Repair pool (threads)
+    participant L as LLM
+
+    M-&gt;&gt;M: baseline × runs
+    M-&gt;&gt;M: option 1 × runs ✓
+    M-&gt;&gt;M: option 2 → crash
+    M-&gt;&gt;P: submit repair(option 2)
+    P-&gt;&gt;L: fix prompt (network wait)
+    M-&gt;&gt;M: option 3 × runs ✓
+    Note over M,P: option 2 is being repaired&lt;br/&gt;while option 3 is being timed
+    L--&gt;&gt;P: fixed code
+    P--&gt;&gt;M: re-queue option 2
+    M-&gt;&gt;M: option 2 × runs ✓</code></pre> 
+    <div class="panzoom-info-box panzoom-info-box-bottom panzoom-hidden">
+Hold "Alt" / "Option" to enable pan &amp; zoom
+</div>
+</div>
+<p>The LLM repairs option 2 while the measure loop times option 3, reducing total
+benchmark time without distorting measurements. Measurements remain sequential
+so options do not compete for processor, memory, or graphics-card resources.
+Returned code re-enters the same queue and passes the checks again.</p>
+<h4 id="repair-loop">Repair loop</h4>
+<div class="panzoom-box" data-key="alt" id="panzoom0" oncontextmenu="return false;">
+    
+    <nav class="panzoom-nav">
+    <button class="panzoom-info panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm169.8-90.7c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path>
+    </svg>
+</button><button class="panzoom-reset panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M125.7 160l50.3 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L48 224c-17.7 0-32-14.3-32-32L16 64c0-17.7 14.3-32 32-32s32 14.3 32 32l0 51.2L97.6 97.6c87.5-87.5 229.3-87.5 316.8 0s87.5 229.3 0 316.8s-229.3 87.5-316.8 0c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0c62.5 62.5 163.8 62.5 226.3 0s62.5-163.8 0-226.3s-163.8-62.5-226.3 0L125.7 160z"></path>
+    </svg>
+</button><button class="panzoom-max panzoom-button">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+    </svg>
+</button><button class="panzoom-min panzoom-button panzoom-hidden">
+    <svg class="panzoom-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 320c-17.7 0-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0z"></path>
+    </svg>
+</button>
+    </nav>
+    <pre class="mermaid"><code>stateDiagram-v2
+    direction TB
+
+    [*] --&gt; Syntax: fresh or repaired code
+    Syntax --&gt; Measure: valid with timing enabled
+    Syntax --&gt; Validated: valid with timing disabled
+    Syntax --&gt; Reject: invalid
+
+    Measure --&gt; Accepted: matches or unverified
+    Measure --&gt; Reject: crash or timeout
+    Measure --&gt; Remember: results differ
+    Remember --&gt; Reject: retain code and verdict
+
+    Reject --&gt; Repair: attempt available
+    Reject --&gt; Finalize: attempts exhausted
+    Repair --&gt; Syntax: code returned
+    Repair --&gt; Finalize: empty response or error
+
+    Finalize --&gt; Divergent: saved measurement exists
+    Finalize --&gt; Failed: no saved measurement
+
+    Validated --&gt; [*]
+    Accepted --&gt; [*]
+    Divergent --&gt; [*]
+    Failed --&gt; [*]</code></pre> 
+    <div class="panzoom-info-box panzoom-info-box-bottom panzoom-hidden">
+Hold "Alt" / "Option" to enable pan &amp; zoom
+</div>
+</div>
+<p>Syntax failures, crashes, timeouts, and changed results share one repair
+budget. A repaired version is checked from the beginning. If repair is
+exhausted, the final state depends on whether any version completed a
+measurement. When timing is disabled with <strong><code>--skip-check run</code></strong>, valid syntax
+settles as validated and invalid code follows the same repair path.</p>
+<ul>
+<li><strong><code>Divergent</code></strong> — At least one version ran, but its result differed from the
+  baseline. The benchmark keeps that real measurement and marks its speedup as
+  unearned.</li>
+<li><strong><code>Failed</code></strong> — No version completed a measurement before repair stopped
+  because attempts were exhausted or the LLM returned no usable code. There is
+  no timing verdict to report.</li>
+</ul>
+<h2 id="design-patterns">Design patterns</h2>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Pattern</th>
+<th>Implementation role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AIReviewer</code></td>
+<td><strong>Facade</strong></td>
+<td>Coordinates context collection, compiled graphs, benchmarking, display, and pending review state behind the service-facing review operations.</td>
+</tr>
+<tr>
+<td><code>AIReviewerProtocol</code></td>
+<td><strong>Structural Subtyping</strong></td>
+<td>Defines the service contract shared by the available and unavailable reviewer implementations.</td>
+</tr>
+<tr>
+<td><code>UnavailableAIReviewer</code></td>
+<td><strong>Null Object</strong></td>
+<td>Keeps the service dependency valid when the optional AI packages are absent and reports how to enable them.</td>
+</tr>
+<tr>
+<td><code>LanguageAdapter</code></td>
+<td><strong>Strategy</strong></td>
+<td>Supplies language-specific syntax validation, output-name extraction, and replay rendering.</td>
+</tr>
+<tr>
+<td><code>ReplayStrategy</code></td>
+<td><strong>Strategy</strong></td>
+<td>Selects how benchmark prefix state is reconstructed without changing result reading or scoring.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Pattern</th>
+<th>Implementation role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AIReviewer.attach()</code></td>
+<td><strong>Dependency Injection</strong></td>
+<td>Binds the live or imported monitor after reviewer construction.</td>
+</tr>
+<tr>
+<td><code>BenchmarkOrchestrator._drive()</code></td>
+<td><strong>Work Queue</strong></td>
+<td>Serializes candidate processing while tracking concurrent repair futures and re-queuing returned code.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Pattern</th>
+<th>Implementation role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>build_ai_reviewer()</code></td>
+<td><strong>Factory</strong></td>
+<td>Selects the real reviewer or its unavailable implementation according to installed dependencies.</td>
+</tr>
+<tr>
+<td><code>register_adapter()</code></td>
+<td><strong>Registry</strong></td>
+<td>Maps a recorded cell language to its benchmark adapter.</td>
+</tr>
+<tr>
+<td><code>register_strategy()</code></td>
+<td><strong>Registry</strong></td>
+<td>Maps a configured replay mode to its replay strategy.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="key-files">Key files</h2>
-<!-- TODO: file → one-line role. -->
-
 <table>
 <thead>
 <tr>
@@ -3013,13 +4221,54 @@ Hold "Alt" / "Option" to enable pan &amp; zoom
 </thead>
 <tbody>
 <tr>
-<td>…</td>
-<td>…</td>
+<td><code>adapters/ai_reviewer/reviewer.py</code></td>
+<td>Exposes the adapter facade, stores pending reviews, and assembles benchmark dependencies</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/agent/graph.py</code></td>
+<td>Defines the fresh-review, benchmark-only, and apply LangGraph workflows</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/agent/nodes.py</code></td>
+<td>Implements prompt calls, benchmark integration, display, refinement, and apply nodes</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/context/collector.py</code></td>
+<td>Builds strategy-controlled review context from Reporter and Monitor data</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/strategy/strategies.yaml</code></td>
+<td>Declares named prompt and context strategies</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/benchmark/orchestrator.py</code></td>
+<td>Owns sequential measurement, verdicts, retries, and the shared repair queue</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/benchmark/runner.py</code></td>
+<td>Runs replay strategies and reads exported sessions through the normal reporting path</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/benchmark/replay/base.py</code></td>
+<td>Defines the interchangeable prefix-state replay contract</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/language/base.py</code></td>
+<td>Defines the per-language benchmark contract and capabilities</td>
+</tr>
+<tr>
+<td><code>adapters/ai_reviewer/ui/review_display.py</code></td>
+<td>Renders text and HTML diffs, verdicts, and resume commands</td>
 </tr>
 </tbody>
 </table>
 <h2 id="notes">Notes</h2>
-<!-- TODO: constraints, invariants, known sharp edges. Delete if none. -->
+<ul>
+<li>Review state lives in the running Python process and is lost when it restarts.</li>
+<li>Benchmarking accepts one reviewed cell at a time.</li>
+<li>A replay is not the live notebook: interaction with the notebook user
+  interface may not be reproducible under any replay path.</li>
+</ul>
 
 
 
@@ -3076,6 +4325,10 @@ Hold "Alt" / "Option" to enable pan &amp; zoom
     
     
       <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../../../javascripts/system-view-panzoom.js"></script>
+      
+        <script src="../../../../javascripts/prompt-fullscreen.js"></script>
       
         <script src="../../../../assets/javascripts/panzoom.min.js"></script>
       
