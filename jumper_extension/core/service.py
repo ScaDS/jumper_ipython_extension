@@ -517,7 +517,8 @@ class PerfmonitorService:
         self,
         cell_range: Optional[Tuple[int, int]] = None,
         level: Optional[str] = None,
-        text: bool = False
+        text: bool = False,
+        compress_idle: bool = False,
     ) -> None:
         """Show a performance report for the current session.
 
@@ -528,6 +529,9 @@ class PerfmonitorService:
             level: Optional monitoring level override. If ``None``,
                 the default report level is used.
             text: If ``True``, render a text report instead of HTML.
+            compress_idle: If ``True``, exclude samples collected between
+                the selected cells. This is useful when a report combines
+                non-adjacent synthetic cells.
 
         Returns:
             None
@@ -544,16 +548,24 @@ class PerfmonitorService:
                     level="system",
                 )
         """
-        if not self.monitor.running:
+        if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
 
         if text:
-            self.reporter.print(cell_range=cell_range, level=level)
+            self.reporter.print(
+                cell_range=cell_range,
+                level=level,
+                compress_idle=compress_idle,
+            )
         else:
-            self.reporter.display(cell_range=cell_range, level=level)
+            self.reporter.display(
+                cell_range=cell_range,
+                level=level,
+                compress_idle=compress_idle,
+            )
 
     def export_perfdata(
         self,
@@ -824,12 +836,25 @@ class PerfmonitorService:
         return output_path
 
     @contextmanager
-    def monitored(self) -> "Iterator[PerfmonitorService]":
+    def monitored(
+        self,
+        raw_cell: Optional[str] = None,
+        cell_magics: Optional[List[str]] = None,
+        should_skip_report: bool = False,
+    ) -> "Iterator[PerfmonitorService]":
         """Context manager for monitoring a code block.
 
         This helper simulates a virtual cell: it registers a synthetic
         cell before the block and finalizes it afterwards so that the
         enclosed code is tracked like any other cell.
+
+        Args:
+            raw_cell: Optional source or label stored in cell history. A
+                generic placeholder is used when omitted.
+            cell_magics: Optional magic-command labels stored with the
+                virtual cell. Custom labelled blocks default to no magics.
+            should_skip_report: Whether automatic per-cell reporting should
+                be suppressed when the block finishes.
 
         Yields:
             PerfmonitorService: The current service instance, for
@@ -840,12 +865,31 @@ class PerfmonitorService:
 
                 with service.monitored():
                     do_expensive_work()
+
+            Label a block for later selection without emitting an automatic
+            report::
+
+                with service.monitored(
+                    raw_cell="# benchmark: full",
+                    should_skip_report=True,
+                ):
+                    run_benchmark()
         """
         unavailable_message = "unavailable on monitored context"
+        resolved_raw_cell = (
+            raw_cell
+            if raw_cell is not None
+            else f"# <Code {unavailable_message}>"
+        )
+        resolved_magics = (
+            cell_magics
+            if cell_magics is not None
+            else ([] if raw_cell is not None else [f"<Magics {unavailable_message}>"])
+        )
         self.on_pre_run_cell(
-            raw_cell=f"# <Code {unavailable_message}>",
-            cell_magics=[f"<Magics {unavailable_message}>"],
-            should_skip_report=False
+            raw_cell=resolved_raw_cell,
+            cell_magics=resolved_magics,
+            should_skip_report=should_skip_report,
         )
         try:
             yield self
@@ -1337,9 +1381,18 @@ class PerfmonitorMagicAdapter:
         return result
 
     @contextmanager
-    def monitored(self):
+    def monitored(
+        self,
+        raw_cell: Optional[str] = None,
+        cell_magics: Optional[List[str]] = None,
+        should_skip_report: bool = False,
+    ):
         """Code performance monitoring context manager."""
-        with self.service.monitored():
+        with self.service.monitored(
+            raw_cell=raw_cell,
+            cell_magics=cell_magics,
+            should_skip_report=should_skip_report,
+        ):
             yield self
 
     def close(self):

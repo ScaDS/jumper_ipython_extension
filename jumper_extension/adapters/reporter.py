@@ -189,9 +189,13 @@ class ReportPrinter(ReportBuilder):
     ):
         super().__init__(monitor, cell_history, analyzer)
 
-    def print(self, cell_range=None, level="process"):
+    def print(self, cell_range=None, level="process", compress_idle=False):
         """Print performance report"""
-        data = self.prepare_report_data(cell_range, level)
+        data = self.prepare_report_data(
+            cell_range,
+            level,
+            compress_idle=compress_idle,
+        )
         if data is None:
             return
 
@@ -258,7 +262,12 @@ class ReportPrinter(ReportBuilder):
 @runtime_checkable
 class ReportDisplayerProtocol(Protocol):
     """Structural protocol for HTML/text report displayers."""
-    def display(self, cell_range=None, level: str = "process") -> None: ...
+    def display(
+        self,
+        cell_range=None,
+        level: str = "process",
+        compress_idle: bool = False,
+    ) -> None: ...
 
 
 class ReportDisplayer(ReportBuilder):
@@ -272,10 +281,14 @@ class ReportDisplayer(ReportBuilder):
         super().__init__(monitor, cell_history, analyzer)
         self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent.parent / "templates"
 
-    def display(self, cell_range=None, level="process"):
+    def display(self, cell_range=None, level="process", compress_idle=False):
         """Print performance report"""
 
-        data = self.prepare_report_data(cell_range, level)
+        data = self.prepare_report_data(
+            cell_range,
+            level,
+            compress_idle=compress_idle,
+        )
         if data is None:
             return
 
@@ -333,7 +346,7 @@ class UnavailableReportDisplayer:
     def __init__(self, reason="Display not available."):
         self._reason = reason
 
-    def display(self, cell_range=None, level="process"):
+    def display(self, cell_range=None, level="process", compress_idle=False):
         """non-opt display"""
         logger.info(
             EXTENSION_INFO_MESSAGES[
@@ -387,13 +400,13 @@ class PerformanceReporter:
             attach_cell_index=True,
         )
 
-    def print(self, cell_range=None, level="process"):
+    def print(self, cell_range=None, level="process", compress_idle=False):
         """Print performance report"""
-        self.printer.print(cell_range, level)
+        self.printer.print(cell_range, level, compress_idle)
 
-    def display(self, cell_range=None, level="process"):
+    def display(self, cell_range=None, level="process", compress_idle=False):
         """Display performance report"""
-        self.displayer.display(cell_range, level)
+        self.displayer.display(cell_range, level, compress_idle)
 
 
 def build_performance_reporter(
@@ -424,5 +437,4 @@ def build_performance_reporter(
             templates_dir
         )
     return PerformanceReporter(printer, displayer)
-
 

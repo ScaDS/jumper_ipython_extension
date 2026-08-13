@@ -45,6 +45,63 @@ def test_no_monitor_error_cases(ipython, mock_cpu_only):
     magics.perfmonitor_export_perfdata("")
 
 
+def test_monitored_context_accepts_virtual_cell_metadata(mock_cpu_only):
+    service = build_perfmonitor_magic_adapter().service
+
+    with patch.object(service, "on_pre_run_cell") as pre_run, patch.object(
+        service, "on_post_run_cell"
+    ) as post_run:
+        with service.monitored(
+            raw_cell="# benchmark: array_reduce | full | prepare",
+            should_skip_report=True,
+        ) as active_service:
+            assert active_service is service
+
+    pre_run.assert_called_once_with(
+        raw_cell="# benchmark: array_reduce | full | prepare",
+        cell_magics=[],
+        should_skip_report=True,
+    )
+    post_run.assert_called_once_with(None)
+
+
+def test_monitored_context_keeps_default_placeholders(mock_cpu_only):
+    service = build_perfmonitor_magic_adapter().service
+
+    with patch.object(service, "on_pre_run_cell") as pre_run, patch.object(
+        service, "on_post_run_cell"
+    ):
+        with service.monitored():
+            pass
+
+    pre_run.assert_called_once_with(
+        raw_cell="# <Code unavailable on monitored context>",
+        cell_magics=["<Magics unavailable on monitored context>"],
+        should_skip_report=False,
+    )
+
+
+def test_perfreport_supports_imported_sessions_and_idle_compression(
+    mock_cpu_only,
+):
+    service = build_perfmonitor_magic_adapter().service
+    service.monitor.running = False
+    service.monitor.is_imported = True
+
+    with patch.object(service.reporter, "display") as display_report:
+        service.show_perfreport(
+            cell_range=(0, 2),
+            level="user",
+            compress_idle=True,
+        )
+
+    display_report.assert_called_once_with(
+        cell_range=(0, 2),
+        level="user",
+        compress_idle=True,
+    )
+
+
 def test_resources_and_gpu(ipython, mock_cpu_gpu):
     """Test resources display with GPU"""
     magics = PerfmonitorMagics(ipython, build_perfmonitor_magic_adapter())
