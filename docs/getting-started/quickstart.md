@@ -85,7 +85,7 @@ You can also use a direct, non-widget mode and export results:
 Review all executed cells with their timestamps and durations:
 
 ```python
-%cell_history
+%show_cell_history
 ```
 
 This opens an interactive table that lets you correlate individual cells with collected performance metrics.

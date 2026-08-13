@@ -39,6 +39,16 @@ Arrows point from a component to a collaborator it uses.
     src="assets/overview-dependencies.svg"
     alt="PerfmonitorService dependencies grouped by workflow"
   >
+  <div class="diagram-legend" aria-label="Diagram color legend">
+    <span class="diagram-legend__item">
+      <span class="diagram-legend__swatch diagram-legend__swatch--feature" aria-hidden="true"></span>
+      User-facing adapters
+    </span>
+    <span class="diagram-legend__item">
+      <span class="diagram-legend__swatch diagram-legend__swatch--foundation" aria-hidden="true"></span>
+      Runtime / low-level adapters
+    </span>
+  </div>
 </div>
 
 [Mermaid source](assets/overview-dependencies.mmd)
