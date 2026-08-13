@@ -10,28 +10,24 @@
       
       
       
-        <link rel="canonical" href="https://scads.github.io/jumper_jupyter_performance/guides/configuration/">
+        <link rel="canonical" href="https://scads.github.io/jumper_jupyter_performance/internals/adapters/ai-reviewer/prompt-assembly/query-console/">
       
       
-        <link rel="prev" href="../../getting-started/quickstart/">
-      
-      
-        <link rel="next" href="../ai-review/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Configuration - JUmPER – Jupyter meets Performance</title>
+        <title>Query Console - JUmPER – Jupyter meets Performance</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -50,13 +46,13 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../../../../stylesheets/extra.css">
     
-      <link rel="stylesheet" href="../../assets/stylesheets/panzoom.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/panzoom.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -75,7 +71,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#configuration" class="md-skip">
+        <a href="#ai-reviewer-prompt-assembly-console" class="md-skip">
           Skip to content
         </a>
       
@@ -91,9 +87,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="JUmPER – Jupyter meets Performance" class="md-header__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
+    <a href="../../../../.." title="JUmPER – Jupyter meets Performance" class="md-header__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
       
-  <img src="../../img/JUmPER01.svg" alt="logo">
+  <img src="../../../../../img/JUmPER01.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -110,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Configuration
+              Query Console
             
           </span>
         </div>
@@ -234,9 +230,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="JUmPER – Jupyter meets Performance" class="md-nav__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
+    <a href="../../../../.." title="JUmPER – Jupyter meets Performance" class="md-nav__button md-logo" aria-label="JUmPER – Jupyter meets Performance" data-md-component="logo">
       
-  <img src="../../img/JUmPER01.svg" alt="logo">
+  <img src="../../../../../img/JUmPER01.svg" alt="logo">
 
     </a>
     JUmPER – Jupyter meets Performance
@@ -297,7 +293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../../../.." class="md-nav__link">
         
   
   
@@ -321,20 +317,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -355,7 +349,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -420,7 +414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/installation/" class="md-nav__link">
+      <a href="../../../../../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -448,7 +442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/quickstart/" class="md-nav__link">
+      <a href="../../../../../getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -481,20 +475,18 @@
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
           <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
@@ -515,7 +507,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -530,37 +522,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Configuration
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../../guides/configuration/" class="md-nav__link">
         
   
   
@@ -576,137 +541,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#how-its-put-together" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How it's put together
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How it&#39;s put together">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#adding-your-own-variant-of-a-config-group" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adding your own variant of a config group
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#settings-configsettingsdefaultyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        settings — config/settings/default.yaml
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#plots-configplotsdefaultyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        plots — config/plots/default.yaml
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#collectorspython-and-collectorsc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        collectors/python and collectors/c
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ai-configaidefaultyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai — config/ai/default.yaml
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="ai — config/ai/default.yaml">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#aillm-the-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai.llm — the model
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aibenchmark-measuring-suggestions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai.benchmark — measuring suggestions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aicontext-what-the-model-is-told" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai.context — what the model is told
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -766,7 +600,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ai-review/" class="md-nav__link">
+      <a href="../../../../../guides/ai-review/" class="md-nav__link">
         
   
   
@@ -794,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ai-review/strategies/" class="md-nav__link">
+      <a href="../../../../../guides/ai-review/strategies/" class="md-nav__link">
         
   
   
@@ -822,7 +656,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ai-review/benchmark/" class="md-nav__link">
+      <a href="../../../../../guides/ai-review/benchmark/" class="md-nav__link">
         
   
   
@@ -850,7 +684,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ai-review/replay-modes/" class="md-nav__link">
+      <a href="../../../../../guides/ai-review/replay-modes/" class="md-nav__link">
         
   
   
@@ -886,7 +720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../session-transfer/" class="md-nav__link">
+      <a href="../../../../../guides/session-transfer/" class="md-nav__link">
         
   
   
@@ -914,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../script-export/" class="md-nav__link">
+      <a href="../../../../../guides/script-export/" class="md-nav__link">
         
   
   
@@ -942,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../plot-export/" class="md-nav__link">
+      <a href="../../../../../guides/plot-export/" class="md-nav__link">
         
   
   
@@ -970,7 +804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../live-plotting/" class="md-nav__link">
+      <a href="../../../../../guides/live-plotting/" class="md-nav__link">
         
   
   
@@ -998,7 +832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../custom-monitor/" class="md-nav__link">
+      <a href="../../../../../guides/custom-monitor/" class="md-nav__link">
         
   
   
@@ -1026,7 +860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../python-custom-collector/" class="md-nav__link">
+      <a href="../../../../../guides/python-custom-collector/" class="md-nav__link">
         
   
   
@@ -1054,7 +888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../c-custom-collector/" class="md-nav__link">
+      <a href="../../../../../guides/c-custom-collector/" class="md-nav__link">
         
   
   
@@ -1082,7 +916,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../visualizing-custom-collector-metrics/" class="md-nav__link">
+      <a href="../../../../../guides/visualizing-custom-collector-metrics/" class="md-nav__link">
         
   
   
@@ -1165,7 +999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../../../../../api/" class="md-nav__link">
         
   
   
@@ -1193,7 +1027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/jupyter/" class="md-nav__link">
+      <a href="../../../../../api/jupyter/" class="md-nav__link">
         
   
   
@@ -1221,7 +1055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/python/" class="md-nav__link">
+      <a href="../../../../../api/python/" class="md-nav__link">
         
   
   
@@ -1249,7 +1083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/string/" class="md-nav__link">
+      <a href="../../../../../api/string/" class="md-nav__link">
         
   
   
@@ -1332,7 +1166,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/architecture/" class="md-nav__link">
+      <a href="../../../../architecture/" class="md-nav__link">
         
   
   
@@ -1407,7 +1241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/" class="md-nav__link">
+      <a href="../../../" class="md-nav__link">
         
   
   
@@ -1482,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/data/architecture/" class="md-nav__link">
+      <a href="../../../data/architecture/" class="md-nav__link">
         
   
   
@@ -1510,7 +1344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/data/api/" class="md-nav__link">
+      <a href="../../../data/api/" class="md-nav__link">
         
   
   
@@ -1593,7 +1427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/cell-history/architecture/" class="md-nav__link">
+      <a href="../../../cell-history/architecture/" class="md-nav__link">
         
   
   
@@ -1621,7 +1455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/cell-history/api/" class="md-nav__link">
+      <a href="../../../cell-history/api/" class="md-nav__link">
         
   
   
@@ -1704,7 +1538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/analyzer/architecture/" class="md-nav__link">
+      <a href="../../../analyzer/architecture/" class="md-nav__link">
         
   
   
@@ -1732,7 +1566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/analyzer/api/" class="md-nav__link">
+      <a href="../../../analyzer/api/" class="md-nav__link">
         
   
   
@@ -1815,7 +1649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/reporter/architecture/" class="md-nav__link">
+      <a href="../../../reporter/architecture/" class="md-nav__link">
         
   
   
@@ -1843,7 +1677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/reporter/api/" class="md-nav__link">
+      <a href="../../../reporter/api/" class="md-nav__link">
         
   
   
@@ -1926,7 +1760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/visualizer/architecture/" class="md-nav__link">
+      <a href="../../../visualizer/architecture/" class="md-nav__link">
         
   
   
@@ -1954,7 +1788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/visualizer/api/" class="md-nav__link">
+      <a href="../../../visualizer/api/" class="md-nav__link">
         
   
   
@@ -2037,7 +1871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/session/architecture/" class="md-nav__link">
+      <a href="../../../session/architecture/" class="md-nav__link">
         
   
   
@@ -2065,7 +1899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/session/api/" class="md-nav__link">
+      <a href="../../../session/api/" class="md-nav__link">
         
   
   
@@ -2148,7 +1982,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/script-writer/architecture/" class="md-nav__link">
+      <a href="../../../script-writer/architecture/" class="md-nav__link">
         
   
   
@@ -2176,7 +2010,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/script-writer/api/" class="md-nav__link">
+      <a href="../../../script-writer/api/" class="md-nav__link">
         
   
   
@@ -2259,7 +2093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/ai-reviewer/architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -2287,7 +2121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/adapters/ai-reviewer/api/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -2331,7 +2165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/core/" class="md-nav__link">
+      <a href="../../../../core/" class="md-nav__link">
         
   
   
@@ -2359,7 +2193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/ipython/" class="md-nav__link">
+      <a href="../../../../ipython/" class="md-nav__link">
         
   
   
@@ -2387,7 +2221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../internals/monitor/" class="md-nav__link">
+      <a href="../../../../monitor/" class="md-nav__link">
         
   
   
@@ -2477,7 +2311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/" class="md-nav__link">
         
   
   
@@ -2552,7 +2386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/getting-started/installation/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/getting-started/installation/" class="md-nav__link">
         
   
   
@@ -2580,7 +2414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/getting-started/quickstart/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/getting-started/quickstart/" class="md-nav__link">
         
   
   
@@ -2663,7 +2497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/guides/magic-commands/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/guides/magic-commands/" class="md-nav__link">
         
   
   
@@ -2691,7 +2525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/guides/wrap-kernel/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/guides/wrap-kernel/" class="md-nav__link">
         
   
   
@@ -2774,7 +2608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/api/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/api/" class="md-nav__link">
         
   
   
@@ -2802,7 +2636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/api/kernel/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/api/kernel/" class="md-nav__link">
         
   
   
@@ -2830,7 +2664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/api/install/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/api/install/" class="md-nav__link">
         
   
   
@@ -2858,7 +2692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../wrapper-kernel/api/utilities/" class="md-nav__link">
+      <a href="../../../../../wrapper-kernel/api/utilities/" class="md-nav__link">
         
   
   
@@ -2921,113 +2755,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-its-put-together" class="md-nav__link">
+  <a href="#what-the-panels-show" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it's put together
+        What the panels show
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="How it&#39;s put together">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#adding-your-own-variant-of-a-config-group" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Adding your own variant of a config group
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#settings-configsettingsdefaultyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        settings — config/settings/default.yaml
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#plots-configplotsdefaultyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        plots — config/plots/default.yaml
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#collectorspython-and-collectorsc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        collectors/python and collectors/c
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ai-configaidefaultyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai — config/ai/default.yaml
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="ai — config/ai/default.yaml">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#aillm-the-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai.llm — the model
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aibenchmark-measuring-suggestions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai.benchmark — measuring suggestions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aicontext-what-the-model-is-told" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ai.context — what the model is told
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3051,286 +2785,53 @@
   
 
 
-<h1 id="configuration">Configuration</h1>
-<p>JUmPER is configured through a single, global <code>AppConfig</code> object, composed at
-import time from the YAML files under <code>jumper_extension/config/</code> and exposed via
-<code>load_config()</code>. Every default mentioned elsewhere in this documentation — the
-initial <code>--level</code>, the sampling interval, which plot subsets are shown, which
-collectors run, which LLM the AI reviewer talks to — comes from this config.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
-<span class="n">config</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span>   <span class="c1"># &quot;process&quot;</span>
-<span class="n">config</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">default_subsets</span>         <span class="c1"># [&quot;cpu&quot;, &quot;mem&quot;, &quot;io&quot;]</span>
-<span class="n">config</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">model</span>                  <span class="c1"># &quot;MiniMaxAI/MiniMax-M3-MXFP8&quot;</span>
-</code></pre></div>
-<h2 id="how-its-put-together">How it's put together</h2>
-<p><code>jumper_extension/config/config.yaml</code> lists which option file to load for each
-config group, Hydra-style:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">defaults</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">settings</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">plots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ai</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">collectors/python</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">collectors/c</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</code></pre></div>
-<p><code>load_config()</code> reads this list, loads <code>jumper_extension/config/&lt;group&gt;/&lt;option&gt;.yaml</code>
-for each entry, validates the merged result with Pydantic (<code>AppConfig</code> in
-<code>jumper_extension/config/models.py</code>), and caches it for the lifetime of the
-process.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Config files are shipped as package data and read via <code>importlib.resources</code> —
-there is currently no user-level override file (e.g. <code>~/.jumper/config.yaml</code>).
-To change a default, edit the corresponding <code>default.yaml</code> in your
-installed/checked-out copy of <code>jumper_extension/config/</code>.</p>
-</div>
-<h3 id="adding-your-own-variant-of-a-config-group">Adding your own variant of a config group</h3>
-<p>Each entry in <code>defaults:</code> is <code>&lt;group&gt;: &lt;option&gt;</code>, which resolves to
-<code>config/&lt;group&gt;/&lt;option&gt;.yaml</code> — <code>default</code> is just the name of the option that
-ships out of the box, not a special value. To make a custom variant the new
-default for the whole application:</p>
-<ol>
-<li>Copy <code>config/&lt;group&gt;/default.yaml</code> to <code>config/&lt;group&gt;/&lt;your-name&gt;.yaml</code>
-   (e.g. <code>config/settings/lab.yaml</code>) and edit it as needed.</li>
-<li>In <code>config/config.yaml</code>, change that group's entry to point at it, e.g.
-   <code>- settings: lab</code>.</li>
-<li><code>load_config()</code> will now load <code>settings/lab.yaml</code> everywhere — no other code
-   changes needed. <code>pyproject.toml</code>'s package-data entries already glob <code>*.yaml</code>
-   per group, so the new file is picked up automatically.</li>
-</ol>
-<p>This works for any group (<code>settings</code>, <code>plots</code>, <code>ai</code>, <code>collectors/python</code>,
-<code>collectors/c</code>).</p>
-<h2 id="settings-configsettingsdefaultyaml"><code>settings</code> — <code>config/settings/default.yaml</code></h2>
-<div class="highlight"><pre><span></span><code><span class="nt">perfreports</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">process</span>
-<span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-
-<span class="nt">monitoring</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">default_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
-<span class="w">  </span><span class="nt">live_update_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
-<span class="w">  </span><span class="nt">live_window_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120.0</span>
-
-<span class="nt">export_vars</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">perfdata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">perfdata_df</span>
-<span class="w">  </span><span class="nt">cell_history</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cell_history_df</span>
-
-<span class="nt">loaded_vars</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">perfdata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loaded_perfdata_df</span>
-<span class="w">  </span><span class="nt">cell_history</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loaded_cell_history_df</span>
-
-<span class="nt">visualizer_backend</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plotly</span>
-</code></pre></div>
+<h1 id="ai-reviewer-prompt-assembly-console">AI Reviewer — prompt assembly console</h1>
+<p>This console makes the prompt-assembly model operable. Pick a request, a
+strategy, and whether <code>--note</code> is present; the store, the query plan, and the
+two returned messages update together.</p>
+<p><iframe
+  src="../query-console-embed.html"
+  title="Prompt assembly query console"
+  style="width: 100%; height: 1150px; border: 1px solid var(--md-default-fg-color--lightest); border-radius: 3px;"
+  loading="lazy">
+</iframe>
+</p>
+<p><a href="../query-console-embed.html">Open the console in its own tab</a>{: target="_blank" }</p>
+<h2 id="what-the-panels-show">What the panels show</h2>
 <table>
 <thead>
 <tr>
-<th>Key</th>
-<th>Affects</th>
+<th>Panel</th>
+<th>Content</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>perfreports.level</code></td>
-<td>Default <code>--level</code> for <code>%perfmonitor_perfreport</code>, <code>%perfmonitor_ai_review</code>, <code>%perfmonitor_export_perfdata</code>, and the initial level used by automatic per-cell reports and <code>fast_setup()</code>.</td>
+<td>Sources</td>
+<td>Every row of the store: recorded facts under root knowledge, prompt text under Text, each with the flag this request gives it</td>
 </tr>
 <tr>
-<td><code>perfreports.text</code></td>
-<td>Default <code>--text</code> for <code>%perfmonitor_perfreport</code> and <code>fast_setup()</code>.</td>
+<td>Query</td>
+<td>The declared items as a plan: what is selected, what the scope is, what the strategy overrode, and what is never queried</td>
 </tr>
 <tr>
-<td><code>monitoring.default_interval</code></td>
-<td>Sampling interval used by <code>%perfmonitor_start</code> and <code>fast_setup()</code> when no interval is given, default <code>--interval</code> for <code>%perfmonitor_auto_perfreports</code>, and the fallback interval recorded by <code>start_script_recording</code>.</td>
-</tr>
-<tr>
-<td><code>monitoring.live_update_interval</code> / <code>monitoring.live_window_seconds</code></td>
-<td>Default <code>INTERVAL</code>/<code>WINDOW</code> for <code>%perfmonitor_plot --live</code> when not given explicitly.</td>
-</tr>
-<tr>
-<td><code>export_vars.perfdata</code> / <code>export_vars.cell_history</code></td>
-<td>Default variable names created by <code>%export_perfdata</code> / <code>%export_cell_history</code> when <code>--name</code> is omitted.</td>
-</tr>
-<tr>
-<td><code>loaded_vars.perfdata</code> / <code>loaded_vars.cell_history</code></td>
-<td>Default variable names created by <code>%import_perfdata</code> / <code>%import_cell_history</code>.</td>
-</tr>
-<tr>
-<td><code>visualizer_backend</code></td>
-<td>Default plotting backend (<code>matplotlib</code> or <code>plotly</code>), used when <code>build_perfmonitor_service()</code> / <code>%load_ext jumper_extension</code> is not given an explicit backend.</td>
+<td>Returned context</td>
+<td>The system message with its <code>given</code> bullets and rules, and the human message with one payload block per selected identifier</td>
 </tr>
 </tbody>
 </table>
-<p>These values seed <code>jumper_extension.core.state.State</code> via <code>State.from_config()</code>
-and are then mutated at runtime by magic commands (e.g. <code>%perfmonitor_perfreport
---level user</code> changes <code>state.perfreports.level</code> for subsequent auto-reports,
-but does not change the config default).</p>
-<h2 id="plots-configplotsdefaultyaml"><code>plots</code> — <code>config/plots/default.yaml</code></h2>
-<p>Controls which metric subsets exist and which ones <code>%perfmonitor_plot</code> shows
-when called without <code>--metrics</code>. See the
-<a href="../visualizing-custom-collector-metrics/">Visualizing Custom Collector Metrics guide</a>
-for the full reference on <code>default_subsets</code>, plot types, and adding new subsets.</p>
-<h2 id="collectorspython-and-collectorsc"><code>collectors/python</code> and <code>collectors/c</code></h2>
-<p>Define which metric collectors are active for the Python-based monitors
-(<code>thread</code>, <code>subprocess_python</code>) and the <code>native_c</code> binary, respectively. See:</p>
-<ul>
-<li><a href="../python-custom-collector/">Custom Python Collectors</a> — registering a
-  collector in <code>config/collectors/python/default.yaml</code>.</li>
-<li><a href="../c-custom-collector/">Custom C Collectors</a> — registering a collector in
-  <code>config/collectors/c/default.yaml</code>.</li>
-</ul>
-<h2 id="ai-configaidefaultyaml"><code>ai</code> — <code>config/ai/default.yaml</code></h2>
-<p>Everything <code>%perfmonitor_ai_review</code> needs, in three groups: <code>llm</code> (which model
-answers), <code>benchmark</code> (how suggestions are measured) and <code>context</code> (what the
-model is told). Usage is covered in the <a href="../ai-review/">AI Review</a> guides.</p>
-<h3 id="aillm-the-model"><code>ai.llm</code> — the model</h3>
-<div class="highlight"><pre><span></span><code><span class="nt">llm</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">base_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://llm.scads.ai/v1</span>
-<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MiniMaxAI/MiniMax-M3-MXFP8</span>
-<span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16000</span>
-<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">520.0</span>
-<span class="w">  </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">JUMPER_AI_API_KEY</span>
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>base_url</code></td>
-<td>OpenAI-compatible API endpoint.</td>
-</tr>
-<tr>
-<td><code>model</code></td>
-<td>Model identifier passed to the endpoint.</td>
-</tr>
-<tr>
-<td><code>max_tokens</code> / <code>timeout</code> / <code>max_retries</code></td>
-<td>Per-completion token budget, request timeout in seconds, retries.</td>
-</tr>
-<tr>
-<td><code>streaming</code></td>
-<td>Stream the reply instead of waiting for it whole.</td>
-</tr>
-<tr>
-<td><code>temperature</code> / <code>top_p</code> / <code>seed</code></td>
-<td>Sampling controls; <code>null</code> leaves the endpoint's own default.</td>
-</tr>
-<tr>
-<td><code>enable_thinking</code></td>
-<td>Ask a reasoning model for its chain of thought — shown collapsed on the review card.</td>
-</tr>
-<tr>
-<td><code>extra_body</code></td>
-<td>Arbitrary passthrough to a vLLM endpoint (<code>top_k</code>, <code>min_p</code>, <code>guided_*</code>, …).</td>
-</tr>
-<tr>
-<td><code>api_key_env</code></td>
-<td>Name of the <strong>environment variable</strong> holding the API key.</td>
-</tr>
-</tbody>
-</table>
-<p>All model parameters live in this file — none of them are read from environment
-variables. The only secret is the API key itself, which is never stored in the
-config: set the environment variable named by <code>api_key_env</code> (default
-<code>JUMPER_AI_API_KEY</code>) before starting your notebook or IPython session. To use a
-different secret name (e.g. on a shared cluster), change <code>api_key_env</code> here and
-export that variable instead.</p>
-<h3 id="aibenchmark-measuring-suggestions"><code>ai.benchmark</code> — measuring suggestions</h3>
-<div class="highlight"><pre><span></span><code><span class="nt">benchmark</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">runs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">fix_attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">  </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
-<span class="w">  </span><span class="nt">timeout_factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
-<span class="w">  </span><span class="nt">checks</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">validate_syntax</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">    </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">  </span><span class="nt">replay</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">full</span>
-<span class="w">    </span><span class="nt">cross_check</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">    </span><span class="nt">dill_max_checkpoint_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4.0</span>
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>runs</code></td>
-<td>Timed replays per suggestion; the first is dropped as warm-up. Per run: <code>--benchmark-runs</code>.</td>
-</tr>
-<tr>
-<td><code>fix_attempts</code></td>
-<td>Repair rounds before a failing suggestion is reported as failed. Per run: <code>--fix-attempts</code>.</td>
-</tr>
-<tr>
-<td><code>interval</code></td>
-<td>Sampling interval for replays, finer than the live monitor's so a fast variant still yields metrics.</td>
-</tr>
-<tr>
-<td><code>timeout_factor</code></td>
-<td>A variant is killed past this multiple of the baseline duration.</td>
-</tr>
-<tr>
-<td><code>checks.validate_syntax</code> / <code>checks.run</code></td>
-<td>Which <a href="../ai-review/benchmark/#running-fewer-steps">benchmark steps</a> run. Per run: <code>--check</code> / <code>--skip-check</code>.</td>
-</tr>
-<tr>
-<td><code>replay.mode</code></td>
-<td>How prefix state is rebuilt: <code>full</code>, <code>fork</code>, <code>dill</code>. Per run: <code>--replay-mode</code>. See <a href="../ai-review/replay-modes/">Replay modes</a>.</td>
-</tr>
-<tr>
-<td><code>replay.cross_check</code></td>
-<td>With a fast mode active, also measure the baseline once through <code>full</code> and compare. Differing results send the whole benchmark back to <code>full</code>; differing durations warn. Costs one extra prefix replay.</td>
-</tr>
-<tr>
-<td><code>replay.dill_max_checkpoint_gb</code></td>
-<td>Ceiling on a <code>dill</code> checkpoint; passing it abandons the checkpoint and falls back to <code>full</code>.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="aicontext-what-the-model-is-told"><code>ai.context</code> — what the model is told</h3>
-<div class="highlight"><pre><span></span><code><span class="nt">context</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">faster</span>
-<span class="w">  </span><span class="nt">known_packages</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">numpy</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">torch</span>
-<span class="w">    </span><span class="c1"># ...</span>
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>strategy</code></td>
-<td>Default <code>--strategy</code>; see <a href="../ai-review/strategies/">Steering the review</a>.</td>
-</tr>
-<tr>
-<td><code>known_packages</code></td>
-<td>Packages whose installed versions are reported to the model, so it only suggests what is available. Absent ones are omitted.</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Strategies themselves are not part of this config. They live in
-<code>adapters/ai_reviewer/strategy/strategies.yaml</code>, next to the prompt specs
-they toggle.</p>
-</div>
+<p>Strategy effects are the real ones: <code>deep</code> opens <code>raw_perf</code>, <code>r_clean</code> closes
+<code>packages</code> and swaps the style rule, <code>parallelization</code> adds a hint to analyze
+and the graphics-offload rule to suggest, and <code>custom</code> turns the note on.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -3374,18 +2875,18 @@ they toggle.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../../..", "features": [], "search": "../../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
-        <script src="../../javascripts/system-view-panzoom.js"></script>
+        <script src="../../../../../javascripts/system-view-panzoom.js"></script>
       
-        <script src="../../javascripts/prompt-fullscreen.js"></script>
+        <script src="../../../../../javascripts/prompt-fullscreen.js"></script>
       
-        <script src="../../assets/javascripts/panzoom.min.js"></script>
+        <script src="../../../../../assets/javascripts/panzoom.min.js"></script>
       
-        <script src="../../assets/javascripts/zoompan.js"></script>
+        <script src="../../../../../assets/javascripts/zoompan.js"></script>
       
     
   </body>
