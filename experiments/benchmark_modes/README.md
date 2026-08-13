@@ -108,3 +108,43 @@ different places. What the fast modes pay **once** instead is `prepare_s` in
 `prepare_failed` (the mode never got as far as a measurement), `strategy_changed`
 (it gave out mid-run). `degraded` is true whenever the strategy that ran is not the
 mode that was asked for.
+
+## Reading the JUmPER plots (`--profile`)
+
+A cell on these plots is not a notebook cell. It is a *virtual block* — a labelled
+span of time the run marked with `service.monitored(raw_cell=...)` so JUmPER records
+it as if it were a cell. Two kinds exist:
+
+- `prepare` — the mode's one-time setup, before anything is measured.
+- `target=<label> run=<n>` — one whole measurement: state rebuild, the timed cell,
+  interpreter start, session export.
+
+**Every (case, mode) pair gives 12 blocks: 1 `prepare` + 11 `target`, one per round.**
+`fast_rewrite` is the exception: two targets, so 1 + 22 = 23. Total 537.
+
+The report draws one mode at a time and renumbers its blocks 0…N, so **index ranges
+are identical for all three modes**; only the contents differ (medians, run
+`20260813_133547`):
+
+| Plot cell | Phase | `full` | `fork` | `dill` |
+|---|---|---|---|---|
+| `0` | `prepare` | 0.001 s — nothing to set up | 4.03 s — zygote + prefix | 3.30 s — prefix + checkpoint |
+| `1`…`11` | `target`, one per round | 2.87 s | 0.18 s | 2.82 s |
+| `1`…`22` | `fast_rewrite` only | 2.87 s | 0.18 s | 2.82 s |
+
+`full`'s cell `0` is a sliver with no samples: it pays nothing once and everything per
+measurement. `fork`'s cell `0` is its widest block — the prefix it never runs again.
+
+In the session file the indices are interleaved instead (a mode's blocks run 178, 181,
+183, 188 … across 0…536), because the modes take turns in rotating order. The last
+plot in the notebook shows that raw order.
+
+Two caveats:
+
+- **Read level `user`, not `process`.** The experiment script itself only waits; the
+  replays run in child processes. Under `fork`, the zygote (the parent holding the
+  prefix) and its child are both alive, so their memory is counted twice.
+- **Short blocks are nearly empty.** The sampler ticks every 0.25 s, so a 0.18 s
+  `fork` measurement catches zero or one sample — all 12 `python_objects`/`fork`
+  blocks hold 26 together. Only long blocks show shape: any `prepare` of a fast mode,
+  any `target` under `full` or `dill`, and `thread_pool` under `fork` (15 s timeouts).
