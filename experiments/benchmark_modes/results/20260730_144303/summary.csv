@@ -1,0 +1,12 @@
+case,target,mode,n,mean_ms,median_ms,median_excl_warmup_ms,min_ms,max_ms,wall_total_s,faults_when_warned_median,ratio_fork_over_full
+array_reduce,matmul,fork,11,115.5284,114.162,117.9935,94.695,142.998,3.7789,16448.0,0.856
+array_reduce,matmul,full,11,152.9159,133.426,132.9535,95.271,285.618,37.3076,,0.856
+fast_rewrite,loop,fork,11,285.2211,286.087,286.229,268.147,295.285,4.94,,1.172
+fast_rewrite,loop,full,11,245.2654,244.172,243.524,225.452,271.541,36.0348,,1.172
+fast_rewrite,vectorized,fork,11,1.477,1.413,1.4105,1.335,1.778,1.7855,,1.541
+fast_rewrite,vectorized,full,11,0.9341,0.917,0.922,0.787,1.277,31.9621,,1.541
+memmap_scan,scan,fork,11,19.772,19.264,19.3785,18.01,23.464,2.1076,3083.0,1.768
+memmap_scan,scan,full,11,11.2061,10.893,11.0395,10.045,13.339,33.7636,,1.768
+python_objects,sum,fork,11,121.1692,119.994,122.0125,107.36,137.741,3.5678,31379.0,5.181
+python_objects,sum,full,11,23.5091,23.162,23.156,21.925,25.98,38.0531,,5.181
+thread_pool,matmul,full,11,49.915,46.992,46.9115,39.656,86.373,56.5476,,
