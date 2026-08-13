@@ -117,3 +117,5 @@ language is recorded per cell, so a mixed notebook is handled cell by cell.
 - [Steering the review](strategies.md) — pick what the model optimizes for.
 - [Measuring suggestions](benchmark.md) — turn proposals into measured verdicts.
 - [Replay modes](replay-modes.md) — make a benchmark cheaper.
+- [LLM Context](../../internals/adapters/ai-reviewer/architecture.md#llm-context)
+  — see how requests, strategies, and sources become model messages.

@@ -24,6 +24,10 @@ Each strategy pulls two levers at once:
 The two stay in step: a source that is turned off is neither collected nor
 mentioned in the prompt, so the model is never told about data it did not get.
 
+See [LLM Context](../../internals/adapters/ai-reviewer/architecture.md#llm-context)
+for an interactive view of how each request selects sources and builds its
+`SystemMessage` and `HumanMessage`.
+
 ## Available strategies
 
 | `--strategy` | Use it when | What it turns on |
