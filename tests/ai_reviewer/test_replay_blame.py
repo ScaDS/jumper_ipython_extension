@@ -8,6 +8,7 @@ These check the two are told apart.
 from jumper_extension.adapters.ai_reviewer.benchmark.models import RunOutcome
 from jumper_extension.adapters.ai_reviewer.benchmark.orchestrator import _baseline_failure
 from jumper_extension.adapters.ai_reviewer.benchmark.script import (
+    body_path_for,
     build_script,
     failing_checkpoint_cell,
     failing_prefix_cell,
@@ -20,6 +21,7 @@ _PREFIX = [
 
 
 def _script(tmp_path) -> tuple:
+    """The entry script, plus the body module the cells and tracebacks live in."""
     path = build_script(
         _PREFIX,
         "total = 1",
@@ -29,7 +31,8 @@ def _script(tmp_path) -> tuple:
         "f.json",
         str(tmp_path / "baseline_0.py"),
     )
-    return path, open(path).read().splitlines()
+    body = body_path_for(path)
+    return path, body, open(body).read().splitlines()
 
 
 def _traceback(path: str, line: int, message: str) -> str:
@@ -41,7 +44,7 @@ def _traceback(path: str, line: int, message: str) -> str:
 
 
 def test_a_failure_in_the_prefix_names_the_cell_it_came_from(tmp_path):
-    path, lines = _script(tmp_path)
+    path, body, lines = _script(tmp_path)
     # The rendered call, not the hook that quotes the same text back.
     failing = next(
         number
@@ -49,20 +52,20 @@ def test_a_failure_in_the_prefix_names_the_cell_it_came_from(tmp_path):
         if line.startswith("hv.notebook_extension")
     )
 
-    assert failing_prefix_cell(path, _traceback(path, failing, "RuntimeError: no notebook")) == 3
+    assert failing_prefix_cell(path, _traceback(body, failing, "RuntimeError: no notebook")) == 3
 
 
 def test_a_failure_in_the_cell_under_test_is_not_blamed_on_the_prefix(tmp_path):
-    path, lines = _script(tmp_path)
+    path, body, lines = _script(tmp_path)
     failing = next(
         number for number, line in enumerate(lines, start=1) if line.strip() == "total = 1"
     )
 
-    assert failing_prefix_cell(path, _traceback(path, failing, "ValueError: boom")) is None
+    assert failing_prefix_cell(path, _traceback(body, failing, "ValueError: boom")) is None
 
 
 def test_an_error_from_somewhere_else_resolves_to_nothing(tmp_path):
-    path, _ = _script(tmp_path)
+    path, _, _ = _script(tmp_path)
 
     assert failing_prefix_cell(path, "ImportError: no module named minian") is None
     assert failing_prefix_cell("/tmp/does-not-exist.py", 'File "/tmp/x.py", line 2') is None
