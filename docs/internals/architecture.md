@@ -67,7 +67,7 @@ jumper_extension/ — main Python package
 ├─ core/ — stable domain model and orchestration (no feature-specific logic)  
 │  ├─ __init__.py  
 │  ├─ service.py — PerfmonitorService and PerfmonitorMagicAdapter (central orchestration)  
-│  ├─ state.py — state management, settings dataclasses and snapshots of user configuration  
+│  ├─ state.py — runtime session state (State) and snapshots, seeded from AppConfig.settings  
 │  ├─ parsers.py — argument parsers for magics and CLI-like flows  
 │  └─ messages.py — centralized user-facing messages and formatting  
 ├─ adapters/ — feature implementations and integrations  
@@ -79,7 +79,7 @@ jumper_extension/ — main Python package
 │  ├─ analyzer.py — performance classification logic  
 │  ├─ visualizer.py — plotting and interactive visualization  
 │  ├─ session.py — session export/import (CSV/JSON + manifest, offline monitor wiring)  
-│  └─ script_writer.py — notebook-to-script recording based on cell history and settings snapshots  
+│  └─ script_writer.py — notebook-to-script recording based on cell history and state snapshots  
 ├─ ipython/ — thin IPython integration layer  
 │  ├─ __init__.py  
 │  ├─ extension.py — load/unload hooks for the IPython extension  

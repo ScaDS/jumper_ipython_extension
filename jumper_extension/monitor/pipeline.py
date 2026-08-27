@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from jumper_extension.adapters.data import NodeInfo
 from jumper_extension.config.utils import instantiate
-from jumper_extension.config.collectors.python import load_collectors_config
+from jumper_extension.config.loader import load_config
 
 
 class PipelineBuilder:
@@ -31,11 +31,11 @@ class PipelineBuilder:
         self,
         deferred_keys: list[str],
     ) -> list[tuple[dict, dict, list[str]]]:
-        cfg = load_collectors_config()
+        collectors_cfg = load_config().collectors.python.collectors
         self._monitor._pipeline = []
         deferred = []
         num_gpus, gpu_memory, gpu_name = 0, 0.0, ""
-        for collector_cfg in cfg["collectors"].values():
+        for collector_cfg in collectors_cfg.values():
             collector_cfg = dict(collector_cfg)
             handler_cfg = collector_cfg.pop("handler")
             inject_keys = collector_cfg.pop("inject", [])
@@ -43,13 +43,15 @@ class PipelineBuilder:
                 deferred.append((collector_cfg, handler_cfg, inject_keys))
                 continue
             injected = {k: getattr(self._monitor, k) for k in inject_keys}
-            backend = instantiate(collector_cfg, **injected)
-            meta = backend.setup() or {}
+            collector_backend = instantiate(collector_cfg, **injected)
+            meta = collector_backend.setup() or {}
             if "num_gpus" in meta:
                 num_gpus = meta["num_gpus"]
                 gpu_memory = meta.get("gpu_memory", 0.0)
                 gpu_name = meta.get("gpu_name", "")
-            self._monitor._pipeline.append((backend, instantiate(handler_cfg)))
+            self._monitor._pipeline.append(
+                (collector_backend, instantiate(handler_cfg))
+            )
 
         self._monitor.node_info = NodeInfo(
             node="local",
@@ -69,6 +71,8 @@ class PipelineBuilder:
     ):
         for collector_cfg, handler_cfg, inject_keys in deferred:
             injected = {k: getattr(self._monitor, k) for k in inject_keys}
-            backend = instantiate(collector_cfg, **injected)
-            backend.setup()
-            self._monitor._pipeline.append((backend, instantiate(handler_cfg)))
+            collector_backend = instantiate(collector_cfg, **injected)
+            collector_backend.setup()
+            self._monitor._pipeline.append(
+                (collector_backend, instantiate(handler_cfg))
+            )

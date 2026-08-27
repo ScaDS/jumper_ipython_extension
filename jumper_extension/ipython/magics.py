@@ -233,7 +233,7 @@ class PerfmonitorMagics(Magics):
 
         Args:
             line: Raw argument string, for example
-                ``"--cell 2:5 --level system"``.
+                ``"--cells 2:5 --level system"``.
         Returns:
             None
 
@@ -244,9 +244,72 @@ class PerfmonitorMagics(Magics):
 
             Show a report for cells 2–5 at system level::
 
-                %perfmonitor_perfreport --cell 2:5 --level system
+                %perfmonitor_perfreport --cells 2:5 --level system
         """
         self.magic_adapter.perfmonitor_perfreport(line)
+
+    @line_magic
+    def perfmonitor_ai_review(self, line: str) -> None:
+        """Get LLM-powered optimization suggestions, or apply one.
+
+        Fresh run: analyzes the selected cell's code and performance
+        data, asks the LLM to identify the bottleneck and propose
+        ranked optimization options, then displays them together with
+        a run id and ``--resume`` commands.
+
+        The ``--strategy`` option steers a fresh run (which context
+        sources are gathered and which prompt rules apply); ``--note``
+        adds a free-text instruction.
+
+        With ``--benchmark`` every suggestion is replayed and timed
+        against the original, repaired when it fails, and reported with
+        a measured verdict. ``--benchmark-runs`` and ``--fix-attempts``
+        size that work, ``--replay-mode`` decides how the state the
+        timed cell needs is rebuilt, and ``--check``/``--skip-check``
+        turn individual benchmark steps off.
+
+        Resume run: applies suggestion ``--select N`` from a previous
+        ``--resume RUN_ID`` review - optionally rewriting it first via
+        ``--note "instruction"`` - and places the resulting
+        code into the next cell. ``--resume RUN_ID --benchmark``
+        measures that review instead of applying anything from it.
+
+        Args:
+            line: Raw argument string, such as ``"--cells 5 --level
+                process"`` or ``"--resume abc123 --select 1"``.
+        Returns:
+            None
+
+        Examples:
+            Analyze the last cell::
+
+                %perfmonitor_ai_review
+
+            Analyze a specific cell range::
+
+                %perfmonitor_ai_review --cells 2:5 --level user
+
+            Focus on parallelization::
+
+                %perfmonitor_ai_review --strategy parallelization
+
+            Measure the suggestions instead of just proposing them::
+
+                %perfmonitor_ai_review --benchmark --replay-mode fork
+
+            Measure a review that already ran::
+
+                %perfmonitor_ai_review --resume abc123 --benchmark
+
+            Apply the first suggestion from a previous run::
+
+                %perfmonitor_ai_review --resume abc123 --select 1
+
+            Apply a refined version of the second suggestion::
+
+                %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"
+        """
+        self.magic_adapter.perfmonitor_ai_review(line, self.shell)
 
     @line_magic
     def perfmonitor_export_perfdata(self, line: str) -> None:

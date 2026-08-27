@@ -57,7 +57,7 @@ class PerformanceMonitor:
             for level in self.levels
         }
 
-        # Ordered list of (backend, handler) pairs built from config/collectors/python/collectors.yaml.
+        # Ordered list of (backend, handler) pairs built from config/collectors/python/default.yaml.
         # Each tick: all backends snapshot() the process state into a shared
         # context, then collect() + handler.transform() produce flat metric rows.
         self._pipeline: list[tuple[Any, Any]] | None = None
@@ -74,7 +74,7 @@ class PerformanceMonitor:
 
     @property
     def _process_backend(self):
-        """Index 0: process collector is always first in config/collectors/python/collectors.yaml."""
+        """Index 0: process collector is always first in config/collectors/python/default.yaml."""
         return self._pipeline[0][0]
 
     def _bootstrap_schema(self):
@@ -187,6 +187,8 @@ class PerformanceMonitor:
         )
 
     def stop(self):
+        # Never started: there is no thread to join and no start_time to
+        # measure the elapsed window against, which would raise below.
         if self.start_time is None:
             self.running = False
             return

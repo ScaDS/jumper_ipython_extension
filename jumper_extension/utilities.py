@@ -19,7 +19,7 @@ def filter_perfdata(cell_history_data, perfdata, compress_idle=True):
         return perfdata.iloc[0:0]
 
     # Guard against perfdata collected before the time column was introduced.
-    # Stay silent when perfdata is empty — that just means no samples were
+    # Stay silent when perfdata is empty - that just means no samples were
     # collected yet (e.g. monitor not running or cells too short) and the
     # downstream "no performance data" message already covers it.
     if "time" not in perfdata.columns:

@@ -55,7 +55,7 @@ All jumper-extension magic commands are available and executed locally:
 | `%perfmonitor_stop` | Stop performance monitoring |
 | `%perfmonitor_perfreport` | View performance report |
 | `%perfmonitor_plot` | Plot performance data |
-| `%cell_history` | View cell execution history |
+| `%show_cell_history` | View cell execution history |
 
 For complete documentation on jumper-extension commands, see the [jumper-extension documentation](https://scads.github.io/jumper_jupyter_performance/).
 

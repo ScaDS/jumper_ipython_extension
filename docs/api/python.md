@@ -18,7 +18,7 @@ service = build_perfmonitor_service()
 
 This function creates:
 
-- A `Settings` instance holding monitoring and reporting configuration.
+- A `State` instance holding runtime monitoring and reporting state, seeded from `AppConfig.settings` (see [Configuration](../guides/configuration.md)).
 - A `PerformanceMonitor` for collecting metrics.
 - A `CellHistory` tracker for executed cells.
 - A `PerformanceVisualizer` and `PerformanceReporter` attached to the monitor and cell history.

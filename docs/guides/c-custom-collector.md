@@ -2,11 +2,13 @@
 
 The `native_c` monitor is a compiled binary that reads `/proc` directly.  Its
 metric backends are C translation units — not Python classes — and are registered
-at compile time, not via `collectors.yaml`.
+at compile time, not via `default.yaml`.
 
 !!! note
     For the **Python** monitor backends (`thread`, `subprocess_python`) see
-    [Custom Python Collectors](python-custom-collector.md).
+    [Custom Python Collectors](python-custom-collector.md). For an overview of
+    the config system this `default.yaml` is part of, see
+    [Configuration](configuration.md).
 
 ---
 
@@ -97,7 +99,7 @@ static const CCollector * const g_registry[] = {
 };
 ```
 
-**5.** Add to `config/collectors/c/collectors.yaml`:
+**5.** Add to `config/collectors/c/default.yaml`:
 ```yaml
 collectors:
   - cpu

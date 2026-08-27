@@ -102,7 +102,7 @@ Try it yourself:
 3. **View performance report**:
    ```python
    %perfmonitor_perfreport
-   %perfmonitor_perfreport --cell 2:5 --level user
+   %perfmonitor_perfreport --cells 2:5 --level user
    ```
 
    Will print aggregate performance report for entire notebook execution so far:
@@ -121,7 +121,7 @@ Try it yourself:
    ```
 
    Options:
-   - `--cell RANGE`: Specify cell range (e.g., `5`, `2:8`, `:5`)
+   - `--cells RANGE`: Specify cell range (e.g., `5`, `2:8`, `:5`)
    - `--level LEVEL`: Choose monitoring level (`process`, `user`, `system`, `slurm`)
 
 4. **Plot performance data**:
@@ -144,7 +144,7 @@ You can also run `%perfmonitor_plot` in a direct (non-widget) mode and save or e
 
 - **Choose monitoring level and cell range:**
   ```python
-  %perfmonitor_plot --metrics cpu_summary --level user --cell 2:5
+  %perfmonitor_plot --metrics cpu_summary --level user --cells 2:5
   ```
 
 - **Save the plot as JPEG:**
@@ -161,7 +161,7 @@ You can also run `%perfmonitor_plot` in a direct (non-widget) mode and save or e
 Notes:
 - `--metrics` accepts a comma-separated list of metric keys (see [Available Metric Keys](#available-metric-keys) below).
 - `--level` supports the same levels as reports: `process` (default), `user`, `system`, and `slurm` (if available).
-- `--cell` supports formats like `5`, `2:8`, `:5`, `3:`. Negative indices are supported (e.g., `-3:-1`).
+- `--cells` supports formats like `5`, `2:8`, `:5`, `3:`. Negative indices are supported (e.g., `-3:-1`).
 
 ### Live plotting mode
 
@@ -256,7 +256,7 @@ for example network I/O or a hardware sensor — without replacing the entire
 monitor backend, there are two ways to create a collector:
 
 1. **Python collector** — a `CollectorBackend` + `StorageHandler` pair loaded
-   automatically from `collectors.yaml`. Works with the `thread` and
+   automatically from `default.yaml`. Works with the `thread` and
    `subprocess_python` monitors. See the full
    [Custom Python Collectors guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/python-custom-collector/)
    for a step-by-step walkthrough including a `NetworkCollector` example.
@@ -269,7 +269,7 @@ monitor backend, there are two ways to create a collector:
 ### Visualizing Custom Collector Metrics
 
 Custom collector columns are available to `%perfmonitor_plot --metrics` once
-registered in `plots.yaml`. See the
+registered in `config/plots/default.yaml`. See the
 [Visualizing Custom Collector Metrics guide](https://scads.github.io/jumper_jupyter_performance/latest/guides/visualizing-custom-collector-metrics/)
 for the full reference — built-in plot types, `default_subsets`, and a
 disk-vs-network composite panel example.
@@ -336,8 +336,8 @@ The extension supports four different levels of metric collection, each providin
 | `%perfmonitor_resources` | Display available hardware resources |
 | `%perfmonitor_start [interval]` | Start monitoring (default: 1 second interval) |
 | `%perfmonitor_stop` | Stop monitoring |
-| `%perfmonitor_perfreport [--cell RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
-| `%perfmonitor_plot [--metrics LIST] [--cell RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE] [--live [INTERVAL WINDOW]]` | Interactive plot with widgets; direct plotting of selected metrics; live updating plots; optional export to JPEG or pickle |
+| `%perfmonitor_perfreport [--cells RANGE] [--level LEVEL]` | Show performance report for specific cell range and monitoring level |
+| `%perfmonitor_plot [--metrics LIST] [--cells RANGE] [--level LEVEL] [--save-jpeg FILE] [--pickle FILE] [--live [INTERVAL WINDOW]]` | Interactive plot with widgets; direct plotting of selected metrics; live updating plots; optional export to JPEG or pickle |
 | `%show_cell_history` | Show execution history of all cells with interactive table |
 | `%perfmonitor_enable_perfreports` | Auto-generate reports after each cell |
 | `%perfmonitor_disable_perfreports` | Disable auto-reports |
@@ -374,13 +374,6 @@ python -m jumper_wrapper_kernel.install install
 ```python
 # List available kernels
 %list_kernels
-
-# List kernels including additional, non-default search paths
-# (e.g. shared software trees on HPC clusters). The extra paths are
-# appended to the underlying KernelSpecManager.kernel_dirs and persist
-# for the lifetime of the wrapper kernel, so subsequent %wrap_kernel
-# calls can target kernels installed there.
-%list_kernels /software/util/JupyterLab/jumper/kernels/
 
 # Wrap a kernel (e.g. Python, R, Julia)
 %wrap_kernel python3

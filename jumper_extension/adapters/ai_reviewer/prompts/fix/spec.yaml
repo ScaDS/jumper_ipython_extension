@@ -1,0 +1,44 @@
+given:
+  - id: code
+    enabled: true
+    text: Source of the cell as you last proposed it
+  - id: error
+    enabled: true
+    text: >-
+      What went wrong - a traceback, a note that it was killed for running far longer
+      than the code it replaces, or a report that it ran but computed a different
+      result than the original
+
+rules:
+  - id: keep_idea
+    enabled: true
+    text: >-
+      Fix the failure without abandoning the optimization: if the idea cannot work here
+      at all, fall back to the closest variant that does.
+  - id: match_original
+    enabled: true
+    text: >-
+      The rewrite must produce what the original produced. Mind the dtype an
+      intermediate buffer is created with and the integer-vs-float semantics of the
+      operations on it - inheriting an input's dtype is a common way to silently
+      change the answer.
+  - id: no_fabrication
+    enabled: true
+    text: >-
+      The cell runs after the rest of the notebook, so names it does not define already
+      exist. Never invent, re-create or stub out input data to silence a NameError - fix
+      how the code uses what is there.
+  - id: code_only
+    enabled: true
+    text: Return only the corrected cell source, with no commentary and no markdown fences.
+  - id: pep8_multiline
+    enabled: true
+    fragment: pep8_multiline.md
+  - id: r_style
+    enabled: false
+    fragment: r_style.md
+
+user_note:
+  id: user_note
+  enabled: false
+  text: ""

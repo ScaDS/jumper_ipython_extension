@@ -1,0 +1,48 @@
+# Review strategies selected via `--strategy`. Each `effect` has two buckets,
+# both extensible: `overrides` toggles prompt items, `context` toggles context
+# sources gathered by the collector (code / timing / tags / perf / hardware / packages).
+
+strategies:
+  - id: faster
+    name: Just make it faster
+    description: Agent figures out the bottlenecks and suggests several options.
+    effect:
+      overrides: {}
+      context: {}
+
+  - id: parallelization
+    name: Focus on parallelization
+    description: Agent focuses on GPU under-use and threading/multiprocessing libraries.
+    effect:
+      overrides:
+        gpu_offload: true
+        parallel_analysis_hint: true
+      context:
+        packages: true
+
+  - id: custom
+    name: Explain what you need
+    description: Free-form instruction to the agent (requires --note).
+    require_note: true
+    effect:
+      overrides: {}
+      context: {}
+
+  - id: deep
+    name: Deep analysis with raw metrics
+    description: Also feeds the full raw per-timestep metric arrays (the %perfmonitor_plot data) to the model.
+    effect:
+      overrides: {}
+      context:
+        packages: true
+        raw_perf: true
+
+  - id: r_clean
+    name: R specific strategy
+    description: Keep suggestions idiomatic R - drops the Python/PEP8 style rule and applies the R style rule instead.
+    effect:
+      overrides:
+        pep8_multiline: false
+        r_style: true
+      context:
+        packages: false

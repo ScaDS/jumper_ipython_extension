@@ -8,7 +8,9 @@ version = "0.4.1"
 description = "IPython extension for monitoring cell performance"
 readme={ file='README.md', content-type="text/markdown"}
 license-files=["LICENSE"]
-requires-python = ">=3.8"
+# 3.10 is the floor the code actually has: `X | None` and `list[T]` are used in
+# runtime-evaluated annotations throughout, which 3.8 and 3.9 cannot import.
+requires-python = ">=3.10"
 dependencies = [
     "ipython",
     "matplotlib",
@@ -32,6 +34,14 @@ urls = {Homepage = "https://github.com/ScaDS/jumper_jupyter_performance"}
 jumper_extension = "jumper_extension:load_ipython_extension"
 
 [project.optional-dependencies]
+ai = [
+    "langgraph>=0.2",
+    "langchain-openai>=0.2",
+    # Optional replay mode: checkpoint the benchmark prefix once instead of
+    # replaying it per measurement.
+    "dill>=0.3.8",
+]
+
 test = [
     "pytest",
     "pytest-mock",
@@ -42,6 +52,7 @@ test = [
 docs = [
     "mkdocs-material",
     "mkdocstrings[python]",
+    "mkdocs-panzoom-plugin>=0.5.2",
 ]
 
 [tool.setuptools.packages.find]
@@ -50,8 +61,20 @@ include = ["jumper_extension*"]
 
 [tool.setuptools.package-data]
 "jumper_extension.config" = ["*.yaml"]
-"jumper_extension.config.collectors.python" = ["*.yaml"]
+"jumper_extension.config.settings" = ["*.yaml"]
+"jumper_extension.config.plots" = ["*.yaml"]
+"jumper_extension.config.ai" = ["*.yaml"]
 "jumper_extension.config.collectors.c" = ["*.yaml"]
+"jumper_extension.config.collectors.python" = ["*.yaml"]
 "jumper_extension.templates.report" = ["*.html", "*.css"]
+"jumper_extension.templates.ai_review" = ["*.html", "*.css"]
+"jumper_extension.adapters.ai_reviewer.prompts" = [
+    "analyze/*.md", "analyze/*.yaml",
+    "suggest/*.md", "suggest/*.yaml",
+    "refine/*.md", "refine/*.yaml",
+    "fix/*.md", "fix/*.yaml",
+    "fragments/*.md",
+]
+"jumper_extension.adapters.ai_reviewer.strategy" = ["*.yaml"]
 "jumper_extension.templates.visualizer.plotly" = ["**/*"]
 "jumper_extension.monitor.backends.native_c" = ["**/*.c", "**/*.h", "Makefile"]

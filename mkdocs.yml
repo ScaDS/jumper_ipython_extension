@@ -18,9 +18,16 @@ nav:
           - Installation: getting-started/installation.md
           - Quickstart: getting-started/quickstart.md
       - How-to Guides:
+          - Configuration: guides/configuration.md
+          - AI Review:
+              - Overview: guides/ai-review/index.md
+              - Steering the Review: guides/ai-review/strategies.md
+              - Measuring Suggestions: guides/ai-review/benchmark.md
+              - Replay Modes: guides/ai-review/replay-modes.md
           - Session Transfer: guides/session-transfer.md
           - Python Script Export: guides/script-export.md
           - Plot Export: guides/plot-export.md
+          - Live Performance Plotting: guides/live-plotting.md
           - Custom Monitors: guides/custom-monitor.md
           - Custom Python Collectors: guides/python-custom-collector.md
           - Custom C Collectors: guides/c-custom-collector.md
@@ -32,7 +39,32 @@ nav:
           - String Based API: api/string.md
       - Internals:
           - Architecture: internals/architecture.md
-          - Adapters: internals/adapters.md
+          - Adapters:
+              - Overview: internals/adapters/index.md
+              - Data:
+                  - Architecture: internals/adapters/data/architecture.md
+                  - API Reference: internals/adapters/data/api.md
+              - Cell History:
+                  - Architecture: internals/adapters/cell-history/architecture.md
+                  - API Reference: internals/adapters/cell-history/api.md
+              - Analyzer:
+                  - Architecture: internals/adapters/analyzer/architecture.md
+                  - API Reference: internals/adapters/analyzer/api.md
+              - Reporter:
+                  - Architecture: internals/adapters/reporter/architecture.md
+                  - API Reference: internals/adapters/reporter/api.md
+              - Visualizer:
+                  - Architecture: internals/adapters/visualizer/architecture.md
+                  - API Reference: internals/adapters/visualizer/api.md
+              - Session:
+                  - Architecture: internals/adapters/session/architecture.md
+                  - API Reference: internals/adapters/session/api.md
+              - Script Writer:
+                  - Architecture: internals/adapters/script-writer/architecture.md
+                  - API Reference: internals/adapters/script-writer/api.md
+              - AI Reviewer:
+                  - Architecture: internals/adapters/ai-reviewer/architecture.md
+                  - API Reference: internals/adapters/ai-reviewer/api.md
           - Core: internals/core.md
           - IPython: internals/ipython.md
           - Monitor: internals/monitor.md
@@ -52,13 +84,29 @@ nav:
 
 markdown_extensions:
   - admonition
-  - pymdownx.superfences
+  - md_in_html
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/system-view-panzoom.js
+  - javascripts/prompt-fullscreen.js
 
 plugins:
   - search
   - mkdocstrings
+  - panzoom:
+      full_screen: true
+      include_selectors:
+        - .panzoom-diagram
 
 hooks:
   - hooks/version_hook.py

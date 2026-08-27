@@ -45,6 +45,63 @@ def test_no_monitor_error_cases(ipython, mock_cpu_only):
     magics.perfmonitor_export_perfdata("")
 
 
+def test_monitored_context_accepts_virtual_cell_metadata(mock_cpu_only):
+    service = build_perfmonitor_magic_adapter().service
+
+    with patch.object(service, "on_pre_run_cell") as pre_run, patch.object(
+        service, "on_post_run_cell"
+    ) as post_run:
+        with service.monitored(
+            raw_cell="# benchmark: array_reduce | full | prepare",
+            should_skip_report=True,
+        ) as active_service:
+            assert active_service is service
+
+    pre_run.assert_called_once_with(
+        raw_cell="# benchmark: array_reduce | full | prepare",
+        cell_magics=[],
+        should_skip_report=True,
+    )
+    post_run.assert_called_once_with(None)
+
+
+def test_monitored_context_keeps_default_placeholders(mock_cpu_only):
+    service = build_perfmonitor_magic_adapter().service
+
+    with patch.object(service, "on_pre_run_cell") as pre_run, patch.object(
+        service, "on_post_run_cell"
+    ):
+        with service.monitored():
+            pass
+
+    pre_run.assert_called_once_with(
+        raw_cell="# <Code unavailable on monitored context>",
+        cell_magics=["<Magics unavailable on monitored context>"],
+        should_skip_report=False,
+    )
+
+
+def test_perfreport_supports_imported_sessions_and_idle_compression(
+    mock_cpu_only,
+):
+    service = build_perfmonitor_magic_adapter().service
+    service.monitor.running = False
+    service.monitor.is_imported = True
+
+    with patch.object(service.reporter, "display") as display_report:
+        service.show_perfreport(
+            cell_range=(0, 2),
+            level="user",
+            compress_idle=True,
+        )
+
+    display_report.assert_called_once_with(
+        cell_range=(0, 2),
+        level="user",
+        compress_idle=True,
+    )
+
+
 def test_resources_and_gpu(ipython, mock_cpu_gpu):
     """Test resources display with GPU"""
     magics = PerfmonitorMagics(ipython, build_perfmonitor_magic_adapter())
@@ -75,7 +132,7 @@ def test_cell_operations(ipython, mock_cpu_only):
 
     # Test auto-reports with level option
     magics.perfmonitor_enable_perfreports("--level user")
-    assert magics.magic_adapter.service.settings.perfreports.level == "user"
+    assert magics.magic_adapter.service.state.perfreports.level == "user"
     # First call to post_run_cell resets _skip_report flag
     magics.post_run_cell(result)
     with patch.object(
@@ -95,7 +152,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
 
     # Test invalid cell
-    magics.perfmonitor_plot("--cell invalid")
+    magics.perfmonitor_plot("--cells invalid")
 
     # Test empty data
     with patch.object(
@@ -125,7 +182,7 @@ def test_plot_scenarios(ipython, mock_cpu_only):
     ), patch.object(magics.magic_adapter.service.visualizer, "plot"), patch.object(
         magics.magic_adapter.service.monitor, "start_time", 0.0
     ):
-        magics.perfmonitor_plot("--cell 0")
+        magics.perfmonitor_plot("--cells 0")
 
     magics.perfmonitor_stop("")
 
@@ -135,7 +192,7 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
     magics = PerfmonitorMagics(ipython, build_perfmonitor_magic_adapter())
     magics.perfmonitor_start("")
 
-    # Add one executed cell so --cell 0 is valid and filter_perfdata has range
+    # Add one executed cell so --cells 0 is valid and filter_perfdata has range
     cell_info = type("Info", (), {"raw_cell": "x = 1"})()
     magics.pre_run_cell(cell_info)
     magics.post_run_cell(type("Result", (), {"result": None})())
@@ -162,17 +219,17 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
         PlotlyPerformanceVisualizer, "_render_direct_plot"
     ) as mock_plotly_render:
         magics.perfmonitor_plot(
-            "--backend plotly --metrics cpu_summary --level process --cell 0"
+            "--backend plotly --metrics cpu_summary --level process --cells 0"
         )
         assert isinstance(service.visualizer, PlotlyPerformanceVisualizer)
-        assert service.settings.visualizer_backend == "plotly"
+        assert service.state.visualizer_backend == "plotly"
         assert mock_plotly_render.called
 
     # No --backend: should use default from settings ("plotly")
     with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         PlotlyPerformanceVisualizer, "_render_direct_plot"
     ) as mock_plotly_default_render:
-        magics.perfmonitor_plot("--metrics cpu_summary --level process --cell 0")
+        magics.perfmonitor_plot("--metrics cpu_summary --level process --cells 0")
         assert isinstance(service.visualizer, PlotlyPerformanceVisualizer)
         assert mock_plotly_default_render.called
 
@@ -180,17 +237,17 @@ def test_plot_backend_selection_via_magic(ipython, mock_cpu_only):
         MatplotlibPerformanceVisualizer, "_render_direct_plot"
     ) as mock_matplotlib_render:
         magics.perfmonitor_plot(
-            "--backend matplotlib --metrics cpu_summary --level process --cell 0"
+            "--backend matplotlib --metrics cpu_summary --level process --cells 0"
         )
         assert isinstance(service.visualizer, MatplotlibPerformanceVisualizer)
-        assert service.settings.visualizer_backend == "matplotlib"
+        assert service.state.visualizer_backend == "matplotlib"
         assert mock_matplotlib_render.called
 
     # No --backend again: should keep using settings default ("matplotlib")
     with patch.object(monitor.nodes, "view", return_value=df), patch.object(
         MatplotlibPerformanceVisualizer, "_render_direct_plot"
     ) as mock_matplotlib_default_render:
-        magics.perfmonitor_plot("--metrics cpu_summary --level process --cell 0")
+        magics.perfmonitor_plot("--metrics cpu_summary --level process --cells 0")
         assert isinstance(service.visualizer, MatplotlibPerformanceVisualizer)
         assert mock_matplotlib_default_render.called
 
@@ -207,7 +264,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
     magics.perfmonitor_start("")
 
     # Test invalid cell for perfreport command
-    magics.perfmonitor_perfreport("--cell invalid")
+    magics.perfmonitor_perfreport("--cells invalid")
 
     # Add cell to history
     with patch("time.time", side_effect=[1.0, 2.0]):
@@ -242,7 +299,7 @@ def test_perfreport_scenarios(ipython, mock_cpu_only):
         magics.magic_adapter.service.reporter.print(
             (0, 0)
         )  # Custom cell marks (use integer indices)
-        magics.perfmonitor_perfreport("--cell 0")  # Via command
+        magics.perfmonitor_perfreport("--cells 0")  # Via command
 
     # Test with missing columns
     df_partial = pd.DataFrame(
@@ -389,7 +446,7 @@ def test_load_perfdata_csv(ipython, tmp_path):
     magics.perfmonitor_load_perfdata(str(csv_path))
 
     # Verify DataFrame was pushed to IPython namespace
-    loaded_var = magics.magic_adapter.service.settings.loaded_vars.perfdata
+    loaded_var = magics.magic_adapter.service.config.settings.loaded_vars.perfdata
     assert loaded_var in ipython.user_ns
     loaded_df = ipython.user_ns[loaded_var]
     assert len(loaded_df) == 2
@@ -435,7 +492,7 @@ def test_load_perfdata_json(ipython, tmp_path):
     magics.perfmonitor_load_perfdata(str(json_path))
 
     # Verify DataFrame was pushed to IPython namespace
-    loaded_var = magics.magic_adapter.service.settings.loaded_vars.perfdata
+    loaded_var = magics.magic_adapter.service.config.settings.loaded_vars.perfdata
     assert loaded_var in ipython.user_ns
     loaded_df = ipython.user_ns[loaded_var]
     assert len(loaded_df) == 2
@@ -466,7 +523,7 @@ def test_load_cell_history_csv(ipython, tmp_path):
     magics.perfmonitor_load_cell_history(str(csv_path))
 
     # Verify DataFrame was pushed to IPython namespace
-    loaded_var = magics.magic_adapter.service.settings.loaded_vars.cell_history
+    loaded_var = magics.magic_adapter.service.config.settings.loaded_vars.cell_history
     assert loaded_var in ipython.user_ns
     loaded_df = ipython.user_ns[loaded_var]
     assert len(loaded_df) == 1

@@ -1,0 +1,94 @@
+llm:
+  base_url: https://llm.scads.ai/v1
+  model: MiniMaxAI/MiniMax-M3-MXFP8
+  max_tokens: 16000
+  timeout: 520.0
+  max_retries: 2
+  streaming: true
+  temperature: null
+  top_p: null
+  seed: null
+  enable_thinking: true
+  # arbitrary vLLM passthrough (top_k, min_p, repetition_penalty, guided_*, ...)
+  extra_body: {}
+  api_key_env: JUMPER_AI_API_KEY
+
+benchmark:
+  # Timed replays per suggestion; the first is dropped as warm-up.
+  runs: 3
+  # LLM repair rounds before a suggestion is reported as failed.
+  fix_attempts: 3
+  # Sampling interval for benchmark replays, finer than the live monitor's so
+  # that a fast variant still yields metrics.
+  interval: 0.05
+  # A variant is killed past this multiple of the baseline duration.
+  timeout_factor: 10.0
+  # Which benchmark steps run. Each is also gated by adapter capability: a step
+  # enabled here but unsupported for the cell's language is skipped with a
+  # warning; one set false is skipped silently. Override per-run with
+  # --skip-check / --check.
+  checks:
+    validate_syntax: true   # static parse gate before any replay
+    run: true               # timed replay + fingerprint/compare results vs baseline
+
+  replay:
+    # How the state the timed cell needs is rebuilt between measurements.
+    #   full - re-run every preceding cell, every time. The reference every
+    #          other mode falls back to, and the reason a benchmark is slow.
+    #   fork - run the prefix once, fork a child per measurement (Python only).
+    #   dill - checkpoint the prefix once, restore it per measurement in a fresh
+    #          process (Python only, needs the optional dill dependency).
+    # A mode that is not built, or cannot serve the cell's language, or that
+    # gives out mid-run, falls back to full with a warning instead of failing
+    # the benchmark.
+    mode: full
+    # Measure the baseline once through the full replay too, and compare, so a
+    # mode that rebuilt the wrong state cannot pass unnoticed: every variant is
+    # compared against a baseline that went through the same rebuild, so the two
+    # agree with each other and the divergence check reports a match. Differing
+    # results send the whole benchmark back to the full replay; a duration off
+    # by more than 2x only warns. Costs one extra prefix replay per benchmark.
+    cross_check: true
+    # Ceiling on a dill checkpoint, in gigabytes. Passing it abandons the
+    # checkpoint and falls back to the full replay rather than filling the disk.
+    dill_max_checkpoint_gb: 4.0
+
+context:
+  strategy: faster
+
+  known_packages:
+    # arrays / numerics
+    - numpy
+    - scipy
+    - pandas
+    - polars
+    - pyarrow
+    # ML / DL
+    - torch
+    - tensorflow
+    - jax
+    - jaxlib
+    - scikit-learn
+    - xgboost
+    - lightgbm
+    - catboost
+    - transformers
+    - accelerate
+    - datasets
+    - peft
+    # GPU compute
+    - cupy-cuda11x
+    - cupy-cuda12x
+    - cupy
+    - cuml
+    - cudf
+    - pynvml
+    - triton
+    # parallelism / JIT
+    - numba
+    - joblib
+    - dask
+    - ray
+    # viz
+    - matplotlib
+    - plotly

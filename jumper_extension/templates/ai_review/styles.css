@@ -1,0 +1,185 @@
+/* Scoped to .ai-container; relies on the --bg/--text/--muted/--border tokens
+   defined on .jump-container (see templates/report/styles.css). */
+.ai-section-title {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin: 16px 0 8px;
+}
+
+.ai-analysis-text {
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ai-reasoning {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.ai-reasoning > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.ai-reasoning-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: none;
+}
+
+.ai-reasoning-preview {
+  color: var(--muted);
+  opacity: 0.75;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-reasoning[open] > summary .ai-reasoning-preview {
+  display: none;
+}
+
+.ai-reasoning-body {
+  color: var(--muted);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.ai-option-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  background: var(--bg);
+}
+
+.ai-option-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ai-option-index {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ai-option-title {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.ai-option-description {
+  color: var(--muted);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+/* Measured verdict, shown only with --benchmark. Tone follows correctness, not
+   speed: a variant that got fast by computing something else reads as bad. */
+.ai-verdict {
+  --verdict: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--verdict);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--verdict) 8%, transparent);
+  font-size: 12px;
+}
+
+.ai-verdict--good {
+  --verdict: var(--vscode-charts-green, var(--jp-success-color1, #15803d));
+}
+
+.ai-verdict--warn {
+  --verdict: var(--vscode-charts-yellow, var(--jp-warn-color1, #b45309));
+}
+
+.ai-verdict--bad {
+  --verdict: var(--vscode-charts-red, var(--jp-error-color1, #b91c1c));
+}
+
+.ai-verdict-headline {
+  color: var(--verdict);
+  font-weight: 650;
+}
+
+.ai-verdict-detail {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-verdict-note {
+  color: var(--muted);
+}
+
+.ai-verdict-note::before {
+  content: "· ";
+}
+
+.ai-diff > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.ai-diff-body {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.ai-diff-line { display: block; }
+.ai-diff-line--del { background: rgba(239, 68, 68, 0.16); color: #ef4444; }
+.ai-diff-line--ins { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
+.ai-diff-line--hunk { color: var(--muted); }
+.ai-diff-line--header { color: var(--muted); }
+.ai-diff-line--context { color: var(--text); }
+
+.ai-resume-commands {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ai-resume-command code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}

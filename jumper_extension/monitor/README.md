@@ -158,5 +158,5 @@ values, and are not all-zero at each monitoring level.
 ## Extending the monitor
 
 - [Custom Monitors](https://scads.github.io/jumper_jupyter_performance/latest/guides/custom-monitor/) — implement a full `MonitorProtocol` backend
-- [Custom Python Collectors](https://scads.github.io/jumper_jupyter_performance/latest/guides/python-custom-collector/) — add a metric group to `thread` / `subprocess_python` via `collectors.yaml`
+- [Custom Python Collectors](https://scads.github.io/jumper_jupyter_performance/latest/guides/python-custom-collector/) — add a metric group to `thread` / `subprocess_python` via `default.yaml`
 - [Custom C Collectors](https://scads.github.io/jumper_jupyter_performance/latest/guides/c-custom-collector/) — add a C metric backend to the `native_c` binary

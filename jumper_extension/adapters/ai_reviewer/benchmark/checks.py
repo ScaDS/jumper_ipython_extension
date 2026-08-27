@@ -1,0 +1,95 @@
+"""Decide which benchmark steps run for one cell, and say why the rest do not.
+
+Two things gate each step: whether the user asked for it (config, overridden
+per-run by ``--check``/``--skip-check``) and whether the cell's language adapter
+can actually do it. A step the user turned off is skipped in silence - that was
+the intent. A step the user left on but the adapter cannot perform is skipped
+with a warning naming the reason, so a language that cannot, say, run yet still
+gets its suggestions syntax-checked instead of failing outright.
+"""
+import logging
+from dataclasses import dataclass
+
+from jumper_extension.adapters.ai_reviewer.language import (
+    RUN,
+    VALIDATE_SYNTAX,
+    LanguageAdapter,
+)
+
+logger = logging.getLogger("extension")
+
+_NAMES = ("validate_syntax", "run")
+_CAPABILITY = {
+    "validate_syntax": VALIDATE_SYNTAX,
+    "run": RUN,
+}
+
+
+@dataclass
+class Decision:
+    """Whether one step runs, and - when skipped despite being asked for - why."""
+    active: bool
+    reason: str = ""
+
+
+@dataclass
+class CheckPlan:
+    validate_syntax: Decision
+    run: Decision
+
+
+def all_active() -> CheckPlan:
+    """The default plan: every step on. Used when no plan is injected."""
+    return CheckPlan(
+        validate_syntax=Decision(True),
+        run=Decision(True),
+    )
+
+
+def resolve_checks(
+    adapter: LanguageAdapter,
+    config_checks,
+    overrides: dict | None = None,
+) -> CheckPlan:
+    """Combine config, per-run overrides and adapter capability into a plan.
+
+    *config_checks* is the ``AIBenchmarkChecksConfig`` (``.validate_syntax`` etc);
+    *overrides* maps a step name to a forced on/off from the command line.
+    """
+    enabled = {name: getattr(config_checks, name) for name in _NAMES}
+    enabled.update(overrides or {})
+
+    decisions = {name: _decide(name, enabled[name], adapter) for name in _NAMES}
+
+    _log_plan(adapter, decisions)
+    return CheckPlan(**decisions)
+
+
+def _log_plan(adapter: LanguageAdapter, decisions: dict) -> None:
+    """Record every step's final status at debug level - on or off, always.
+
+    The warnings above only fire for a step that was asked for but cannot run;
+    this is the complete picture, so a debug log alone shows exactly what the
+    benchmark did and why for a given cell.
+    """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    for name in _NAMES:
+        decision = decisions[name]
+        if decision.active:
+            status = "active"
+        elif decision.reason:
+            status = f"skipped ({decision.reason})"
+        else:
+            status = "skipped (disabled)"
+        logger.debug(f"[JUmPER]: benchmark check {name} for {adapter.language!r}: {status}")
+
+
+def _decide(name: str, enabled: bool, adapter: LanguageAdapter) -> Decision:
+    if not enabled:
+        return Decision(False)  # turned off on purpose - no warning
+    if not adapter.supports(_CAPABILITY[name]):
+        reason = f"no {name} capability for language {adapter.language!r}"
+        logger.warning(f"[JUmPER]: benchmark {name} skipped: {reason}")
+        return Decision(False, reason)
+    return Decision(True)

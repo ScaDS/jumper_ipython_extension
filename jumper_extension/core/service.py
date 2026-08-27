@@ -1,7 +1,7 @@
 import logging
 import shlex
 from contextlib import contextmanager
-from typing import Optional, Tuple, List, Dict, Iterator
+from typing import Any, Optional, Tuple, List, Dict, Iterator
 
 import pandas as pd
 
@@ -11,6 +11,7 @@ from jumper_extension.core.parsers import (
     parse_arguments,
     build_perfmonitor_start_parser,
     build_perfreport_parser,
+    build_ai_review_parser,
     build_auto_perfreports_parser,
     build_perfmonitor_plot_parser,
     build_export_perfdata_parser,
@@ -21,13 +22,16 @@ from jumper_extension.core.parsers import (
     build_import_session_parser,
     ArgParsers,
 )
-from jumper_extension.core.state import Settings
+from jumper_extension.config.loader import load_config
+from jumper_extension.config.models import AppConfig
+from jumper_extension.core.state import State
 from jumper_extension.core.messages import (
     ExtensionErrorCode,
     ExtensionInfoCode,
     EXTENSION_ERROR_MESSAGES,
     EXTENSION_INFO_MESSAGES,
 )
+from jumper_extension.adapters.ai_reviewer.reviewer import AIReviewerProtocol, build_ai_reviewer
 from jumper_extension.adapters.data import aggregate_node_info
 from jumper_extension.monitor.common import MonitorProtocol
 from jumper_extension.monitor.backends.thread import PerformanceMonitor
@@ -60,27 +64,35 @@ class PerfmonitorService:
     """
     def __init__(
         self,
-        settings: Settings,
+        state: State,
+        config: AppConfig,
         monitor: MonitorProtocol,
         visualizer: VisualizerProtocol,
         reporter: PerformanceReporter,
+        ai_reviewer: AIReviewerProtocol,
         cell_history: CellHistory,
         script_writer: NotebookScriptWriter,
     ):
         """Initialize a PerfmonitorService instance.
 
         Args:
-            settings: Extension settings to use for this service.
+            state: Mutable runtime state for this session.
+            config: Application configuration (settings defaults,
+                plot subsets, collector pipelines).
             monitor: Performance monitor that will collect metrics.
             visualizer: Visualizer attached to the monitor.
             reporter: Reporter responsible for performance reports.
+            ai_reviewer: Adapter running the LLM-powered optimization
+                review workflow.
             cell_history: Cell history tracker for executed cells.
             script_writer: Script writer used for code recording.
         """
-        self.settings = settings
+        self.state = state
+        self.config = config
         self.monitor = monitor
         self.visualizer = visualizer
         self.reporter = reporter
+        self.ai_reviewer = ai_reviewer
         self.cell_history = cell_history
         self.script_writer = script_writer
         self._skip_report = False
@@ -137,7 +149,7 @@ class PerfmonitorService:
             should_skip_report: Whether automatic reporting should be
                 skipped for this cell.
         """
-        self.cell_history.start_cell(raw_cell, cell_magics)
+        self.cell_history.start_cell(raw_cell, cell_magics, _active_language())
         self._skip_report = should_skip_report
 
     def on_post_run_cell(self, result):
@@ -153,15 +165,15 @@ class PerfmonitorService:
         if (
                 not self._skip_report
                 and self.monitor.running
-                and self.settings.perfreports.enabled
+                and self.state.perfreports.enabled
         ):
-            if self.settings.perfreports.text:
+            if self.state.perfreports.text:
                 self.reporter.print(
-                    cell_range=None, level=self.settings.perfreports.level
+                    cell_range=None, level=self.state.perfreports.level
                 )
             else:
                 self.reporter.display(
-                    cell_range=None, level=self.settings.perfreports.level
+                    cell_range=None, level=self.state.perfreports.level
                 )
 
     def show_resources(self) -> None:
@@ -272,9 +284,9 @@ class PerfmonitorService:
             return ExtensionErrorCode.MONITOR_ALREADY_RUNNING
 
         if interval is None:
-            interval = self.settings.monitoring.default_interval
+            interval = self.config.settings.monitoring.default_interval
         else:
-            self.settings.monitoring.user_interval = interval
+            self.state.monitoring.user_interval = interval
 
         if check_sanity:
             from jumper_extension.monitor.sanity import (
@@ -297,9 +309,10 @@ class PerfmonitorService:
                 print(msg)
 
         self.monitor.start(interval)
-        self.settings.monitoring.running = self.monitor.running
+        self.state.monitoring.running = self.monitor.running
         self.visualizer.attach(self.monitor)
         self.reporter.attach(self.monitor)
+        self.ai_reviewer.attach(self.monitor)
         return None
 
     def stop_monitoring(self) -> None:
@@ -317,7 +330,7 @@ class PerfmonitorService:
             )
             return
         self.monitor.stop()
-        self.settings.monitoring.running = False
+        self.state.monitoring.running = False
 
     def plot_performance(
         self,
@@ -379,11 +392,11 @@ class PerfmonitorService:
             )
 
         selected_backend = (
-            (backend or self.settings.visualizer_backend) or "matplotlib"
+            (backend or self.state.visualizer_backend) or "matplotlib"
         )
         selected_backend = selected_backend.strip().lower()
         if backend:
-            self.settings.visualizer_backend = selected_backend
+            self.state.visualizer_backend = selected_backend
 
         current_backend = (
             "plotly"
@@ -406,7 +419,7 @@ class PerfmonitorService:
             metrics or save_jpeg or pickle_file
         ):
             # Default to configured level for direct plotting/export paths
-            effective_level = self.settings.perfreports.level
+            effective_level = self.state.perfreports.level
 
         if effective_level is not None:
             available_levels = get_available_levels()
@@ -467,9 +480,9 @@ class PerfmonitorService:
                     text=True,
                 )
         """
-        self.settings.perfreports.enabled = True
-        self.settings.perfreports.level = level
-        self.settings.perfreports.text = text
+        self.state.perfreports.enabled = True
+        self.state.perfreports.level = level
+        self.state.perfreports.text = text
 
         format_message = "text" if text else "html"
         options_message = f"level: {level}, interval: {interval}, format: {format_message}"
@@ -493,7 +506,7 @@ class PerfmonitorService:
         Examples:
             >>> service.disable_perfreports()
         """
-        self.settings.perfreports.enabled = False
+        self.state.perfreports.enabled = False
         logger.info(
             EXTENSION_INFO_MESSAGES[
                 ExtensionInfoCode.PERFORMANCE_REPORTS_DISABLED
@@ -504,7 +517,8 @@ class PerfmonitorService:
         self,
         cell_range: Optional[Tuple[int, int]] = None,
         level: Optional[str] = None,
-        text: bool = False
+        text: bool = False,
+        compress_idle: bool = False,
     ) -> None:
         """Show a performance report for the current session.
 
@@ -515,6 +529,9 @@ class PerfmonitorService:
             level: Optional monitoring level override. If ``None``,
                 the default report level is used.
             text: If ``True``, render a text report instead of HTML.
+            compress_idle: If ``True``, exclude samples collected between
+                the selected cells. This is useful when a report combines
+                non-adjacent synthetic cells.
 
         Returns:
             None
@@ -531,16 +548,24 @@ class PerfmonitorService:
                     level="system",
                 )
         """
-        if not self.monitor.running:
+        if not self.monitor.running and not self.monitor.is_imported:
             logger.warning(
                 EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.NO_ACTIVE_MONITOR]
             )
             return
 
         if text:
-            self.reporter.print(cell_range=cell_range, level=level)
+            self.reporter.print(
+                cell_range=cell_range,
+                level=level,
+                compress_idle=compress_idle,
+            )
         else:
-            self.reporter.display(cell_range=cell_range, level=level)
+            self.reporter.display(
+                cell_range=cell_range,
+                level=level,
+                compress_idle=compress_idle,
+            )
 
     def export_perfdata(
         self,
@@ -591,7 +616,7 @@ class PerfmonitorService:
             df = self.monitor.nodes.view(
                 level=level, cell_history=self.cell_history
             )
-            var_name = name or self.settings.export_vars.perfdata
+            var_name = name or self.config.settings.export_vars.perfdata
             logger.info(
                 EXTENSION_INFO_MESSAGES[
                     ExtensionInfoCode.PERFORMANCE_DATA_AVAILABLE
@@ -615,7 +640,7 @@ class PerfmonitorService:
             >>> df = next(iter(frames.values()))
         """
         df = self.monitor.nodes.load(file)
-        var_name = self.settings.loaded_vars.perfdata
+        var_name = self.config.settings.loaded_vars.perfdata
         if df is not None:
             logger.info(
                 EXTENSION_INFO_MESSAGES[
@@ -657,7 +682,7 @@ class PerfmonitorService:
             return {}
         else:
             df = self.cell_history.view()
-            var_name = name or self.settings.export_vars.cell_history
+            var_name = name or self.config.settings.export_vars.cell_history
             logger.info(
                 f"[JUmPER]: Cell history data available as '{var_name}'"
             )
@@ -678,7 +703,7 @@ class PerfmonitorService:
             >>> df = next(iter(frames.values()))
         """
         df = self.cell_history.load(file)
-        var_name = self.settings.loaded_vars.cell_history
+        var_name = self.config.settings.loaded_vars.cell_history
         if df is not None:
             logger.info(
                 f"[JUmPER]: Cell history data available as '{var_name}'"
@@ -744,9 +769,10 @@ class PerfmonitorService:
     def fast_setup(self) -> None:
         """Quickly start monitoring with per-cell reports enabled.
 
-        This convenience helper starts monitoring with a one-second
-        interval and enables HTML performance reports at the ``process``
-        level.
+        This convenience helper starts monitoring and enables HTML
+        performance reports using the configured defaults
+        (``AppConfig.settings.monitoring.default_interval`` and
+        ``AppConfig.settings.perfreports``).
 
         Returns:
             None
@@ -754,8 +780,14 @@ class PerfmonitorService:
         Examples:
             >>> service.fast_setup()
         """
-        self.start_monitoring(1.0)
-        self.enable_perfreports(level="process", interval=1.0, text=False)
+        perfreports = self.config.settings.perfreports
+        interval = self.config.settings.monitoring.default_interval
+        self.start_monitoring(interval)
+        self.enable_perfreports(
+            level=perfreports.level,
+            interval=interval,
+            text=perfreports.text,
+        )
         logger.info("[JUmPER]: Fast setup complete! Ready for interactive analysis.")
 
     def start_script_recording(self, output_path: Optional[str] = None) -> None:
@@ -777,7 +809,7 @@ class PerfmonitorService:
 
                 service.start_script_recording("analysis_script.py")
         """
-        self.script_writer.start_recording(self.settings.snapshot(), output_path)
+        self.script_writer.start_recording(self.state.snapshot(), output_path)
 
         if output_path:
             logger.info(f"[JUmPER]: Started script recording to '{output_path}'")
@@ -804,12 +836,25 @@ class PerfmonitorService:
         return output_path
 
     @contextmanager
-    def monitored(self) -> "Iterator[PerfmonitorService]":
+    def monitored(
+        self,
+        raw_cell: Optional[str] = None,
+        cell_magics: Optional[List[str]] = None,
+        should_skip_report: bool = False,
+    ) -> "Iterator[PerfmonitorService]":
         """Context manager for monitoring a code block.
 
         This helper simulates a virtual cell: it registers a synthetic
         cell before the block and finalizes it afterwards so that the
         enclosed code is tracked like any other cell.
+
+        Args:
+            raw_cell: Optional source or label stored in cell history. A
+                generic placeholder is used when omitted.
+            cell_magics: Optional magic-command labels stored with the
+                virtual cell. Custom labelled blocks default to no magics.
+            should_skip_report: Whether automatic per-cell reporting should
+                be suppressed when the block finishes.
 
         Yields:
             PerfmonitorService: The current service instance, for
@@ -820,17 +865,130 @@ class PerfmonitorService:
 
                 with service.monitored():
                     do_expensive_work()
+
+            Label a block for later selection without emitting an automatic
+            report::
+
+                with service.monitored(
+                    raw_cell="# benchmark: full",
+                    should_skip_report=True,
+                ):
+                    run_benchmark()
         """
         unavailable_message = "unavailable on monitored context"
+        resolved_raw_cell = (
+            raw_cell
+            if raw_cell is not None
+            else f"# <Code {unavailable_message}>"
+        )
+        resolved_magics = (
+            cell_magics
+            if cell_magics is not None
+            else ([] if raw_cell is not None else [f"<Magics {unavailable_message}>"])
+        )
         self.on_pre_run_cell(
-            raw_cell=f"# <Code {unavailable_message}>",
-            cell_magics=[f"<Magics {unavailable_message}>"],
-            should_skip_report=False
+            raw_cell=resolved_raw_cell,
+            cell_magics=resolved_magics,
+            should_skip_report=should_skip_report,
         )
         try:
             yield self
         finally:
             self.on_post_run_cell(None)
+
+    def ai_review(
+        self,
+        shell: Any,
+        cell_range: Optional[Tuple[int, int]] = None,
+        level: str = "process",
+        strategy: str = "faster",
+        note: str = "",
+        benchmark: bool = False,
+        benchmark_options: Optional[dict] = None,
+    ) -> None:
+        """Run the AI-powered performance review on a fresh cell selection.
+
+        Delegates to the attached :attr:`ai_reviewer`, which collects
+        the cell code and performance context, asks the LLM to identify
+        the bottleneck and propose optimizations, then displays the
+        numbered options together with ``--resume`` commands. The
+        resulting state is kept under a short run id so a follow-up
+        ``%perfmonitor_ai_review --resume <id> --select <n>`` can apply
+        (optionally refined) one of the suggestions.
+
+        Args:
+            shell: The current IPython shell instance.
+            cell_range: Optional ``(start_idx, end_idx)`` cell range to
+                analyze. If ``None``, the last non-short cell is used.
+            level: Monitoring level used to gather performance data.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.ai_review(shell)
+            >>> service.ai_review(shell, cell_range=(2, 4), level="user")
+            >>> service.ai_review(shell, strategy="parallelization")
+        """
+        self.ai_reviewer.review(
+            shell,
+            cell_range=cell_range,
+            level=level,
+            strategy=strategy,
+            note=note,
+            benchmark=benchmark,
+            benchmark_options=benchmark_options,
+        )
+
+    def ai_review_benchmark(self, run_id: str, benchmark_options: Optional[dict] = None) -> None:
+        """Replay and time the suggestions of a review that already ran.
+
+        Args:
+            run_id: Identifier printed by a previous ``%perfmonitor_ai_review``.
+            benchmark_options: Per-run overrides for the ``ai.benchmark`` config.
+
+        Examples:
+            >>> service.ai_review_benchmark("abc123")
+        """
+        self.ai_reviewer.benchmark(run_id, benchmark_options=benchmark_options)
+
+    def ai_review_resume(
+        self,
+        shell: Any,
+        run_id: str,
+        select: int,
+        note: str = "",
+    ) -> None:
+        """Apply a previously suggested optimization, optionally refined.
+
+        Delegates to the attached :attr:`ai_reviewer`, which loads the
+        state stored under ``run_id`` by a prior ``%perfmonitor_ai_review``
+        run, marks suggestion ``select`` as chosen and runs the resume
+        workflow: if ``note`` is provided, the suggestion is rewritten
+        per that instruction first; either way the resulting code
+        is placed into the next cell via ``shell.set_next_input``.
+
+        Args:
+            shell: The current IPython shell instance.
+            run_id: Identifier of a pending review (see the resume
+                commands printed by ``%perfmonitor_ai_review``).
+            select: 1-based index of the suggestion to apply.
+            note: Optional instruction used to rewrite the chosen
+                suggestion before applying it.
+
+        Returns:
+            None
+
+        Examples:
+            >>> service.ai_review_resume(shell, "abc123", select=1)
+            >>> service.ai_review_resume(
+            ...     shell,
+            ...     "abc123",
+            ...     select=2,
+            ...     note="use multiprocessing instead of joblib",
+            ... )
+        """
+        self.ai_reviewer.resume(shell, run_id, select=select, note=note)
 
     def close(self) -> None:
         """Stop monitoring and release resources held by the service.
@@ -843,6 +1001,58 @@ class PerfmonitorService:
         """
         if self.monitor:
             self.monitor.stop()
+
+
+def _active_language() -> str:
+    """Language of the cell about to run, as reported by the wrapped kernel.
+
+    Under the JUmPER wrapper kernel this is the wrapped kernel's
+    ``language_info['name']`` (e.g. ``"R"``); reachable via ``shell.kernel``
+    because ipykernel builds the shell with ``kernel=self``. Anywhere without a
+    kernel (terminal IPython, tests) it falls back to ``"python"``, which is
+    also what legacy history rows carry.
+    """
+    try:
+        from IPython import get_ipython
+
+        shell = get_ipython()
+        kernel = getattr(shell, "kernel", None)
+        language = getattr(kernel, "language", None)
+        return str(language).lower() if language else "python"
+    except Exception:
+        return "python"
+
+
+def _benchmark_options(args) -> dict:
+    """Per-run benchmark overrides; absent flags fall back to the config."""
+    options = {
+        "runs": args.benchmark_runs,
+        "fix_attempts": args.fix_attempts,
+        "replay_mode": getattr(args, "replay_mode", None),
+    }
+    resolved = {key: value for key, value in options.items() if value is not None}
+    checks = _check_overrides(args)
+    if checks:
+        resolved["checks"] = checks
+    return resolved
+
+
+def _check_overrides(args) -> dict:
+    """Turn --check / --skip-check into forced {step: on/off} overrides.
+
+    ``--check`` is a whitelist: name the steps to keep, the rest go off.
+    ``--skip-check`` then turns individual steps off, winning over both the
+    whitelist and the config.
+    """
+    check = getattr(args, "check", None)
+    skip = getattr(args, "skip_check", None)
+    overrides: dict = {}
+    if check:
+        for name in ("validate_syntax", "run"):
+            overrides[name] = name in check
+    for name in skip or []:
+        overrides[name] = False
+    return overrides
 
 
 class PerfmonitorMagicAdapter:
@@ -916,11 +1126,12 @@ class PerfmonitorMagicAdapter:
     def _parse_live_args(live_list):
         """Parse --live argument list into (interval, window) tuple.
 
-        ``--live``           → (2.0, 120.0)
-        ``--live 1.0``       → (1.0, 120.0)
+        ``--live``           → configured (live_update_interval, live_window_seconds)
+        ``--live 1.0``       → (1.0, live_window_seconds)
         ``--live 2.0 60``    → (2.0, 60.0)
         """
-        defaults = (2.0, 120.0)
+        monitoring = load_config().settings.monitoring
+        defaults = (monitoring.live_update_interval, monitoring.live_window_seconds)
         if not live_list:
             return defaults
         interval = live_list[0] if len(live_list) >= 1 else defaults[0]
@@ -934,8 +1145,8 @@ class PerfmonitorMagicAdapter:
             return
 
         cell_range = None
-        if args.cell:
-            cell_range = self._parse_cell_range(args.cell)
+        if args.cells:
+            cell_range = self._parse_cell_range(args.cells)
             if cell_range is None:
                 return
 
@@ -975,8 +1186,8 @@ class PerfmonitorMagicAdapter:
             return
 
         cell_range = None
-        if args.cell:
-            cell_range = self._parse_cell_range(args.cell)
+        if args.cells:
+            cell_range = self._parse_cell_range(args.cells)
             if cell_range is None:
                 return
 
@@ -984,6 +1195,50 @@ class PerfmonitorMagicAdapter:
             cell_range=cell_range,
             level=args.level,
             text=args.text
+        )
+
+    def perfmonitor_ai_review(self, line: str, shell: Any) -> None:
+        """Run a fresh AI review or apply a suggestion from a previous one."""
+        args = parse_arguments(self.parsers.ai_review, line)
+        if not args:
+            return
+
+        benchmark_options = _benchmark_options(args)
+
+        if args.resume:
+            if args.benchmark:
+                self.service.ai_review_benchmark(
+                    args.resume,
+                    benchmark_options=benchmark_options,
+                )
+                return
+            if args.select is None:
+                logger.warning(
+                    EXTENSION_ERROR_MESSAGES[ExtensionErrorCode.SELECT_REQUIRED_FOR_RESUME]
+                )
+                return
+            self.service.ai_review_resume(
+                shell,
+                run_id=args.resume,
+                select=args.select,
+                note=args.note,
+            )
+            return
+
+        cell_range = None
+        if args.cells:
+            cell_range = self._parse_cell_range(args.cells)
+            if cell_range is None:
+                return
+
+        self.service.ai_review(
+            shell,
+            cell_range=cell_range,
+            level=args.level,
+            strategy=args.strategy,
+            note=args.note,
+            benchmark=args.benchmark,
+            benchmark_options=benchmark_options,
         )
 
     def perfmonitor_export_perfdata(self, line: str) -> Optional[Dict[str, pd.DataFrame]]:
@@ -1030,7 +1285,9 @@ class PerfmonitorMagicAdapter:
             "show_cell_history -- show interactive table of cell execution history",
             "perfmonitor_start [interval] [--monitor TYPE] -- start monitoring (default: 1s, monitor=default)",
             "perfmonitor_stop -- stop monitoring",
-            "perfmonitor_perfreport [--cell RANGE] [--level LEVEL] -- show report",
+            "perfmonitor_perfreport [--cells RANGE] [--level LEVEL] -- show report",
+            "perfmonitor_ai_review [--cells RANGE] [--level LEVEL] [--strategy S] [--note TEXT]"
+            " -- LLM-powered optimization suggestions; resume with --resume RUN_ID --select N [--note TEXT]",
             "perfmonitor_plot -- interactive plot with widgets for data exploration",
             "perfmonitor_enable_perfreports [--level LEVEL] [--interval INTERVAL] [--text] -- enable auto-reports",
             "perfmonitor_disable_perfreports -- disable auto-reports",
@@ -1124,9 +1381,18 @@ class PerfmonitorMagicAdapter:
         return result
 
     @contextmanager
-    def monitored(self):
+    def monitored(
+        self,
+        raw_cell: Optional[str] = None,
+        cell_magics: Optional[List[str]] = None,
+        should_skip_report: bool = False,
+    ):
         """Code performance monitoring context manager."""
-        with self.service.monitored():
+        with self.service.monitored(
+            raw_cell=raw_cell,
+            cell_magics=cell_magics,
+            should_skip_report=should_skip_report,
+        ):
             yield self
 
     def close(self):
@@ -1139,7 +1405,7 @@ def build_perfmonitor_service(
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
         display_disabled_reason: str = "Display not available.",
-        visualizer_backend: str = "matplotlib",
+        visualizer_backend: Optional[str] = None,
 ) -> PerfmonitorService:
     """Build a new :class:`PerfmonitorService` instance.
 
@@ -1153,8 +1419,9 @@ def build_perfmonitor_service(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
-        visualizer_backend: Visualizer backend to use. Supported values:
-            ``"matplotlib"`` (default) and ``"plotly"``.
+        visualizer_backend: Visualizer backend to use (``"matplotlib"`` or
+            ``"plotly"``). If not given, ``AppConfig.settings.visualizer_backend``
+            is used.
 
     Returns:
         PerfmonitorService: A fully initialized service instance.
@@ -1163,11 +1430,12 @@ def build_perfmonitor_service(
         >>> from jumper_extension.core.service import build_perfmonitor_service
         >>> service = build_perfmonitor_service()
     """
-    settings = Settings()
-    settings.visualizer_backend = (
+    config = load_config()
+    state = State.from_config(config.settings)
+    state.visualizer_backend = (
         visualizer_backend.strip().lower()
         if visualizer_backend
-        else "matplotlib"
+        else config.settings.visualizer_backend
     )
     monitor = PerformanceMonitor()
     cell_history = CellHistory()
@@ -1175,20 +1443,26 @@ def build_perfmonitor_service(
         cell_history,
         plots_disabled=plots_disabled,
         plots_disabled_reason=plots_disabled_reason,
-        backend=visualizer_backend,
+        backend=state.visualizer_backend,
     )
     reporter = build_performance_reporter(
         cell_history,
         display_disabled=display_disabled,
         display_disabled_reason=display_disabled_reason,
     )
-    script_writer = NotebookScriptWriter(cell_history)
+    ai_reviewer = build_ai_reviewer(reporter)
+    script_writer = NotebookScriptWriter(
+        cell_history,
+        default_interval=config.settings.monitoring.default_interval,
+    )
 
     return PerfmonitorService(
-        settings=settings,
+        state=state,
+        config=config,
         monitor=monitor,
         visualizer=visualizer,
         reporter=reporter,
+        ai_reviewer=ai_reviewer,
         cell_history=cell_history,
         script_writer=script_writer,
     )
@@ -1199,7 +1473,7 @@ def build_perfmonitor_magic_adapter(
         plots_disabled_reason: str = "Plotting not available.",
         display_disabled: bool = False,
         display_disabled_reason: str = "Display not available.",
-        visualizer_backend: str = "matplotlib",
+        visualizer_backend: Optional[str] = None,
 ) -> PerfmonitorMagicAdapter:
     """Build a new :class:`PerfmonitorMagicAdapter` instance.
 
@@ -1214,8 +1488,9 @@ def build_perfmonitor_magic_adapter(
         display_disabled: If ``True``, disable rich display for reports.
         display_disabled_reason: Human-readable reason shown when rich
             display is disabled.
-        visualizer_backend: Visualizer backend to use. Supported values:
-            ``"matplotlib"`` (default) and ``"plotly"``.
+        visualizer_backend: Visualizer backend to use (``"matplotlib"`` or
+            ``"plotly"``). If not given, ``AppConfig.settings.visualizer_backend``
+            is used.
 
     Returns:
         PerfmonitorMagicAdapter: Adapter instance wrapping the service.
@@ -1237,6 +1512,7 @@ def build_perfmonitor_magic_adapter(
     parsers = ArgParsers(
         perfmonitor_start=build_perfmonitor_start_parser(),
         perfreport=build_perfreport_parser(),
+        ai_review=build_ai_review_parser(),
         auto_perfreports=build_auto_perfreports_parser(),
         perfmonitor_plot=build_perfmonitor_plot_parser(),
         export_perfdata=build_export_perfdata_parser(),

@@ -1,0 +1,824 @@
+{
+  "started_at": "20260806_131250",
+  "finished_at": "20260806_134231",
+  "interrupted": false,
+  "args": {
+    "runs": 11,
+    "cases": "",
+    "interval": 0.05,
+    "timeout": 300.0,
+    "prepare_timeout": 120.0,
+    "out": "",
+    "fixture_dir": "/home/ub/projects/work/jumper-ws/agents/experiments/fork_vs_full/results/fixtures",
+    "keep_work": false
+  },
+  "machine": {
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "python": "3.12.5",
+    "cores_logical": 12,
+    "cores_physical": 6,
+    "memory_total_gb": 15.6,
+    "memory_available_gb": 10.8,
+    "numpy": "2.3.2",
+    "openblas_num_threads": ""
+  },
+  "cases": [
+    {
+      "name": "array_reduce",
+      "aims_at": "neither",
+      "probes": "the case fork was built for: a large numpy array in the prefix, and a cell whose work is BLAS rather than Python objects",
+      "expectation": "all three modes agree - worklog SS4.4 measured a median fork ratio of 1.04 on this exact shape, within the machine's own noise, and an array is the one thing a checkpoint carries faithfully. The one thing dill loses here is the BLAS pool the prefix built, which this target is long enough to hide",
+      "prefix": [
+        "import numpy as np",
+        "rng = np.random.default_rng(0)",
+        "matrix = rng.random((2000, 2000))\nwarm = matrix @ matrix"
+      ],
+      "targets": {
+        "matmul": "product = matrix @ matrix"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 5.2372,
+          "probe": "threads 12/12, timings {'compute': 1.27, 'memory': 3.46}, 177297 pages walked per measurement in 0.096s, 0.54us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.27, 'memory': 3.46}, 177297 pages walked per measurement in 0.096s, 0.54us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 3.6842,
+          "probe": "",
+          "checkpoint_bytes": 64000798,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 64000798 bytes for a 0.1397s prefix"
+          ]
+        }
+      },
+      "wall_s": 84.12
+    },
+    {
+      "name": "python_objects",
+      "aims_at": "fork",
+      "probes": "reading an inherited Python object writes to its page, because the reference count lives inside the object - a write to a copy-on-write page is a real copy, and walking the pages ahead cannot pre-pay it",
+      "expectation": "fork is several times slower and the per-measurement page-fault warning fires - worklog SS4.3 measured 17.7ms against 85.0ms on a 3M-element list. dill has no inherited pages at all, so it should read the same as full - and pay for it in wall time instead, unpickling four million integer objects before every measurement",
+      "prefix": [
+        "values = [index * 3 for index in range(4_000_000)]"
+      ],
+      "targets": {
+        "sum": "total = sum(values)"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 4.516,
+          "probe": "threads 12/12, timings {'compute': 1.52, 'memory': 2.05}, 202158 pages walked per measurement in 0.093s, 0.46us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.52, 'memory': 2.05}, 202158 pages walked per measurement in 0.093s, 0.46us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 7.1339,
+          "probe": "",
+          "checkpoint_bytes": 19967093,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 19967093 bytes for a 0.3182s prefix"
+          ]
+        }
+      },
+      "wall_s": 87.35
+    },
+    {
+      "name": "memmap_scan",
+      "aims_at": "fork",
+      "probes": "a private file-backed mapping is faulted in again per child, and populating those mappings in the page walk was measured to make it worse",
+      "expectation": "fork is roughly 1.5-1.8x slower - worklog SS4.3 measured 11.9ms against 20.8ms on a 200MB mapping - and the walk does not help. dill cannot serve this prefix at all: a memmap owns an `mmap.mmap`, which refuses to pickle, so the mode falls back before writing anything and its column here is full in disguise. That is the right answer - a mapping restored as an ordinary array would time a different question - but it arrives as a traceback rather than as the named binding the guard produces for an open file",
+      "prefix": [
+        "import numpy as np",
+        "mapping = np.memmap(\"/home/ub/projects/work/jumper-ws/agents/experiments/fork_vs_full/results/fixtures/memmap_scan_25000000.f64\", dtype=\"float64\", mode=\"r\", shape=(25_000_000,))",
+        "warm = float(mapping.sum())"
+      ],
+      "targets": {
+        "scan": "total = float(mapping.sum())"
+      },
+      "fixture": "/home/ub/projects/work/jumper-ws/agents/experiments/fork_vs_full/results/fixtures/memmap_scan_25000000.f64",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 5.5117,
+          "probe": "threads 12/12, timings {'compute': 1.32, 'memory': 1.87}, 161672 pages walked per measurement in 0.09s, 0.56us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.32, 'memory': 1.87}, 161672 pages walked per measurement in 0.09s, 0.56us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "[JUmPER]: benchmark replay mode 'dill' is unusable (the prefix failed while being checkpointed.\nxtension/jumper_extension/adapters/ai_reviewer/benchmark/dill_state.py\", line 448, in checkpoint\n    dill.dump_module(writer, module=state)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/session.py\", line 257, in dump_module\n    pickler.dump(main)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 428, in dump\n    StockPickler.dump(self, obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 482, in dump\n    self.save(obj)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 1741, in save_module\n    pickler.save_reduce(_import_module, (mod_name,), obj=obj, state=main_dict)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 712, in save_reduce\n    save(state)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 1262, in save_module_dict\n    StockPickler.save_dict(pickler, obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 987, in save_dict\n    self._batch_setitems(obj.items())\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 1011, in _batch_setitems\n    save(v)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 414, in save_numpy_array\n    pickler.save_reduce(_create_array, (f,args,state,npdict), obj=obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 687, in save_reduce\n    save(args)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 917, in save_tuple\n    save(element)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 1262, in save_module_dict\n    StockPickler.save_dict(pickler, obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 987, in save_dict\n    self._batch_setitems(obj.items())\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 1011, in _batch_setitems\n    save(v)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 573, in save\n    rv = reduce(self.proto)\n         ^^^^^^^^^^^^^^^^^^\nTypeError: cannot pickle 'mmap.mmap' object); falling back to the full replay.",
+          "prepare_s": 3.535,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark replay mode 'dill' is unusable (the prefix failed while being checkpointed.\nxtension/jumper_extension/adapters/ai_reviewer/benchmark/dill_state.py\", line 448, in checkpoint\n    dill.dump_module(writer, module=state)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/session.py\", line 257, in dump_module\n    pickler.dump(main)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 428, in dump\n    StockPickler.dump(self, obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 482, in dump\n    self.save(obj)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 1741, in save_module\n    pickler.save_reduce(_import_module, (mod_name,), obj=obj, state=main_dict)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 712, in save_reduce\n    save(state)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 1262, in save_module_dict\n    StockPickler.save_dict(pickler, obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 987, in save_dict\n    self._batch_setitems(obj.items())\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 1011, in _batch_setitems\n    save(v)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 414, in save_numpy_array\n    pickler.save_reduce(_create_array, (f,args,state,npdict), obj=obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 687, in save_reduce\n    save(args)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 917, in save_tuple\n    save(element)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 555, in save\n    f(self, obj)  # Call unbound method with explicit self\n    ^^^^^^^^^^^^\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 1262, in save_module_dict\n    StockPickler.save_dict(pickler, obj)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 987, in save_dict\n    self._batch_setitems(obj.items())\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 1011, in _batch_setitems\n    save(v)\n  File \"/home/ub/projects/work/jumper-ws/venv/lib/python3.12/site-packages/dill/_dill.py\", line 422, in save\n    StockPickler.save(self, obj, save_persistent_id)\n  File \"/home/ub/.pyenv/versions/3.12.5/lib/python3.12/pickle.py\", line 573, in save\n    rv = reduce(self.proto)\n         ^^^^^^^^^^^^^^^^^^\nTypeError: cannot pickle 'mmap.mmap' object); falling back to the full replay."
+          ]
+        }
+      },
+      "wall_s": 75.21
+    },
+    {
+      "name": "fast_rewrite",
+      "aims_at": "fork",
+      "probes": "a benchmark reports a ratio, not a time: fork's fixed cost is a rounding error against a slow baseline and the whole of a fast rewrite, so the speedup - the number the user acts on - is where the distortion lands",
+      "expectation": "the modes report different speedups for the same rewrite. Before the page walk landed, worklog SS4.1 measured 170x falling to 81x; with the walk in place this case measures how much of that is left. dill's fixed cost sits outside the timed window, so its speedup should track full's - unless the sub-millisecond rewrite is dominated by a first call the cold process has to make",
+      "prefix": [
+        "import numpy as np",
+        "data = np.arange(2_000_000, dtype=np.float64)"
+      ],
+      "targets": {
+        "loop": "total = 0.0\nfor value in data:\n    total += float(value)",
+        "vectorized": "total = float(data.sum())"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 4.1682,
+          "probe": "threads 12/12, timings {'compute': 1.99, 'memory': 1.95}, 165579 pages walked per measurement in 0.086s, 0.52us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.99, 'memory': 1.95}, 165579 pages walked per measurement in 0.086s, 0.52us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 2.8735,
+          "probe": "",
+          "checkpoint_bytes": 16000318,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 16000318 bytes for a 0.0189s prefix"
+          ]
+        }
+      },
+      "wall_s": 146.6
+    },
+    {
+      "name": "thread_pool",
+      "aims_at": "fork",
+      "probes": "only the forking thread survives a fork(), and the child's warm-up covers BLAS and only BLAS - a pool belonging to another runtime is rebuilt lazily, inside the measured window (documented in zygote.warm_thread_pool)",
+      "expectation": "fork is slower by the cost of rebuilding torch's pool. Worklog SS4.2 measured the same shape on BLAS - 105ms against 132ms cold - before the warm-up was added; nothing warms this one. Agreement instead would mean torch shares the pool numpy's warm-up already rebuilds. What was actually measured is worse than either: see fork_safety_repro.py. This is the prefix the guide sends to dill instead - a fresh process has no inherited pool to deadlock on, and pays a cold torch import per measurement for it",
+      "prefix": [
+        "import torch",
+        "torch.set_num_threads(6)",
+        "left = torch.rand(2000, 2000)\nright = torch.rand(2000, 2000)\nwarm = left @ right"
+      ],
+      "targets": {
+        "matmul": "product = left @ right"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 6.2918,
+          "probe": "threads 17/22, timings {'compute': 1.92, 'memory': 1.52}, 240636 pages walked per measurement in 0.108s, 0.45us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 17/22, timings {'compute': 1.92, 'memory': 1.52}, 240636 pages walked per measurement in 0.108s, 0.45us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 5.0815,
+          "probe": "",
+          "checkpoint_bytes": 48001182,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 48001182 bytes for a 1.5931s prefix"
+          ]
+        }
+      },
+      "wall_s": 293.29
+    },
+    {
+      "name": "jit_warmup",
+      "aims_at": "dill",
+      "probes": "a checkpoint carries values, not the process that gave them meaning: the compiled code behind a JIT-ed function is not a value, so the dispatcher comes back uncompiled and the first call rebuilds it - inside the window the benchmark is timing",
+      "expectation": "the exact mirror of fork's understatement. Under full the prefix compiles the function again for every measurement, and under fork the child inherits the compiled code, so both time a warm call; dill times the compile. Measured directly on this machine before writing the case: the first call after a checkpoint round trip took 462ms and the second 1ms",
+      "prefix": [
+        "import numpy as np",
+        "from numba import njit",
+        "@njit\ndef accumulate(values):\n    total = 0.0\n    for index in range(values.shape[0]):\n        total += values[index] * 1.000001\n    return total",
+        "data = np.arange(2_000_000, dtype=np.float64)",
+        "warm = accumulate(data)"
+      ],
+      "targets": {
+        "call": "total = accumulate(data)"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0002,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 5.5794,
+          "probe": "threads 12/23, timings {'compute': 1.16, 'memory': 2.11}, 177165 pages walked per measurement in 0.089s, 0.50us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/23, timings {'compute': 1.16, 'memory': 2.11}, 177165 pages walked per measurement in 0.089s, 0.50us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 4.0801,
+          "probe": "",
+          "checkpoint_bytes": 16001309,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 16001309 bytes for a 0.6487s prefix"
+          ]
+        }
+      },
+      "wall_s": 96.58
+    },
+    {
+      "name": "import_heavy",
+      "aims_at": "dill",
+      "probes": "dill stores modules by reference, so a restore re-runs every import the prefix ran. A prefix whose cost *is* its imports is therefore traded for a restore of the same cost, and the mode buys nothing",
+      "expectation": "dill's per-measurement wall time lands near full's rather than near fork's, and the strategy says so itself: it compares restore_s against prefix_s and warns once when the first is within 80% of the second. fork pays the imports once, in the zygote, and is the only mode that gains here",
+      "prefix": [
+        "import numpy as np",
+        "import pandas as pd",
+        "import scipy.stats",
+        "import sklearn.linear_model",
+        "import statsmodels.api as sm",
+        "values = np.arange(1_000_000, dtype=np.float64)"
+      ],
+      "targets": {
+        "sum": "total = float(values.sum())"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 4.8606,
+          "probe": "threads 12/23, timings {'compute': 1.41, 'memory': 0.7}, 179224 pages walked per measurement in 0.097s, 0.54us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/23, timings {'compute': 1.41, 'memory': 0.7}, 179224 pages walked per measurement in 0.097s, 0.54us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 3.6777,
+          "probe": "",
+          "checkpoint_bytes": 8000417,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 8000417 bytes for a 0.8057s prefix"
+          ]
+        }
+      },
+      "wall_s": 93.78
+    },
+    {
+      "name": "fat_state",
+      "aims_at": "dill",
+      "probes": "what dill saves is the prefix's compute, minus the cost of storing its data - so a prefix that is cheap to run and fat to store is the shape where the trade goes the wrong way",
+      "expectation": "no gain, and possibly a loss: the plan measured a 0.70s prefix leaving 320MB going from 3.77s to 3.24s per measurement while the whole run went 11.2s -> 14.5s. Cell timings should still agree with full - this is a cost finding, not a fidelity one, and it is the one the per-measurement charts cannot show",
+      "prefix": [
+        "import numpy as np",
+        "rng = np.random.default_rng(0)",
+        "data = rng.random(40_000_000)"
+      ],
+      "targets": {
+        "sum": "total = float(data.sum())"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 5.0394,
+          "probe": "threads 12/12, timings {'compute': 1.54, 'memory': 2.97}, 239804 pages walked per measurement in 0.096s, 0.40us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.54, 'memory': 2.97}, 239804 pages walked per measurement in 0.096s, 0.40us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 5.8807,
+          "probe": "",
+          "checkpoint_bytes": 320000737,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 320000737 bytes for a 0.5822s prefix"
+          ]
+        }
+      },
+      "wall_s": 86.51
+    },
+    {
+      "name": "view_alias",
+      "aims_at": "dill",
+      "probes": "a view is aliasing, and aliasing is a property of memory rather than a value: `window = base[:n]` comes back from a checkpoint as an independent array, so a cell that writes through one and reads the other computes something else",
+      "expectation": "the only case here whose finding is a wrong *answer* rather than a wrong time. full and fork share the memory and see the write; dill does not, and its fingerprints should differ from full's - which is precisely what ai.benchmark.replay.cross_check exists to catch, and what nothing inside the mode can",
+      "prefix": [
+        "import numpy as np",
+        "base = np.ones(10_000_000, dtype=np.float64)",
+        "window = base[:5_000_000]"
+      ],
+      "targets": {
+        "write_through": "base += 1.0\ntotal = float(window.sum())"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 4.1148,
+          "probe": "threads 12/12, timings {'compute': 1.36, 'memory': 2.23}, 181203 pages walked per measurement in 0.09s, 0.50us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.36, 'memory': 2.23}, 181203 pages walked per measurement in 0.09s, 0.50us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 3.2752,
+          "probe": "",
+          "checkpoint_bytes": 120000377,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 120000377 bytes for a 0.0857s prefix"
+          ]
+        }
+      },
+      "wall_s": 76.37
+    },
+    {
+      "name": "open_handle",
+      "aims_at": "dill",
+      "probes": "an open file pickles without complaint and restores as something else - a `w+` handle is truncated on disk - so the refusal has to be made inside the pickler rather than by trusting a successful dump",
+      "expectation": "dill refuses this prefix before writing anything and the benchmark degrades to full, naming the binding. That is the intended outcome, so the dill column here is full in disguise and the report flags it as degraded. fork inherits the descriptor and is unaffected",
+      "prefix": [
+        "import numpy as np",
+        "values = np.arange(2_000_000, dtype=np.float64)",
+        "note = open(\"prefix_note.txt\", \"w\")",
+        "note.write(\"left open on purpose\\n\")"
+      ],
+      "targets": {
+        "sum": "total = float(values.sum())"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 3.8485,
+          "probe": "threads 12/12, timings {'compute': 1.58, 'memory': 2.06}, 165578 pages walked per measurement in 0.082s, 0.49us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.58, 'memory': 2.06}, 165578 pages walked per measurement in 0.082s, 0.49us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "[JUmPER]: benchmark replay mode 'dill' is unusable (the prefix left state a checkpoint would silently change: note: an open file (prefix_note.txt)); falling back to the full replay.",
+          "prepare_s": 2.8722,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark replay mode 'dill' is unusable (the prefix left state a checkpoint would silently change: note: an open file (prefix_note.txt)); falling back to the full replay."
+          ]
+        }
+      },
+      "wall_s": 71.3
+    },
+    {
+      "name": "rng_stream",
+      "aims_at": "dill",
+      "probes": "global random state is process state, not a binding: a restored process reseeds from OS entropy, and a benchmark that cannot reproduce its own random numbers reports correct suggestions as wrong",
+      "expectation": "the trap dill handles rather than one it falls into - the checkpoint captures the RNG explicitly and restores it last, immediately before the cell. All three modes should fingerprint identically. A mismatch here would be a defect, not a distortion",
+      "prefix": [
+        "import numpy as np",
+        "import random",
+        "np.random.seed(20260806)",
+        "random.seed(20260806)",
+        "burned = np.random.random(1000).sum()"
+      ],
+      "targets": {
+        "draw": "numpy_draw = float(np.random.random(2_000_000).sum())\npython_draw = random.random()"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 4.1152,
+          "probe": "threads 12/12, timings {'compute': 1.51, 'memory': 0.93}, 161673 pages walked per measurement in 0.09s, 0.56us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.51, 'memory': 0.93}, 161673 pages walked per measurement in 0.09s, 0.56us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 2.8212,
+          "probe": "",
+          "checkpoint_bytes": 268,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 268 bytes for a 0.0055s prefix"
+          ]
+        }
+      },
+      "wall_s": 71.78
+    },
+    {
+      "name": "slow_prefix",
+      "aims_at": "dill_gain",
+      "probes": "the shape dill was built for and the rest of this file does not contain: a prefix that is expensive to *run* and cheap to *store*, so replacing a replay with a restore replaces seconds with milliseconds",
+      "expectation": "the case measured in the dill plan - a 6s eigendecomposition leaving 11MB took a benchmark from 8.78s to 3.01s per measurement and 27.2s to 18.3s overall. Break-even should arrive on the second measurement, so dill should be cheaper than full here from the first round onwards",
+      "prefix": [
+        "import numpy as np",
+        "rng = np.random.default_rng(0)",
+        "matrix = rng.random((1200, 1200))",
+        "symmetric = matrix @ matrix.T",
+        "values, vectors = np.linalg.eigh(symmetric)"
+      ],
+      "targets": {
+        "norms": "column_norms = np.sqrt((vectors ** 2).sum(axis=0))"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 6.9204,
+          "probe": "threads 12/12, timings {'compute': 1.31, 'memory': 1.82}, 170111 pages walked per measurement in 0.088s, 0.52us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.31, 'memory': 1.82}, 170111 pages walked per measurement in 0.088s, 0.52us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 7.4192,
+          "probe": "",
+          "checkpoint_bytes": 34570511,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 34570511 bytes for a 4.3192s prefix"
+          ]
+        }
+      },
+      "wall_s": 121.45
+    },
+    {
+      "name": "model_fit",
+      "aims_at": "dill_gain",
+      "probes": "the same trade with an honest restore cost: a fitted model is small, but putting it back means importing sklearn again in every measurement, because dill stores modules by reference",
+      "expectation": "dill wins anyway. The restore pays roughly a second of imports where the prefix paid several seconds of fitting, so the gain is the difference rather than the whole prefix - the general case, and the one the break-even arithmetic in the report is written for",
+      "prefix": [
+        "import numpy as np",
+        "from sklearn.ensemble import HistGradientBoostingClassifier",
+        "rng = np.random.default_rng(1)",
+        "features = rng.random((200_000, 20))",
+        "labels = (features[:, 0] + features[:, 1] > 1).astype(int)",
+        "model = HistGradientBoostingClassifier(max_iter=600).fit(features, labels)",
+        "sample = features[:50_000]"
+      ],
+      "targets": {
+        "predict": "predictions = model.predict(sample)"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "[JUmPER]: benchmark replay mode 'fork' is unusable (a forked child gets back only 12 of the 28 threads its parent was using, so every measurement would be timed on fewer cores than the notebook used); falling back to the full replay.",
+          "prepare_s": 9.3125,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark replay mode 'fork' is unusable (a forked child gets back only 12 of the 28 threads its parent was using, so every measurement would be timed on fewer cores than the notebook used); falling back to the full replay."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 6.1349,
+          "probe": "",
+          "checkpoint_bytes": 42630054,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 42630054 bytes for a 2.9107s prefix"
+          ]
+        }
+      },
+      "wall_s": 216.77
+    },
+    {
+      "name": "simulation",
+      "aims_at": "dill_gain",
+      "probes": "the extreme of the same trade: seconds of iteration leaving a few megabytes and importing nothing but numpy, which is the largest ratio of prefix cost to restore cost this file can construct",
+      "expectation": "the clearest win available. Nothing here has to be re-imported and there is almost nothing to unpickle, so the restore should cost single-digit milliseconds against several seconds of replay, and the one-off setup should be repaid by the first measurement",
+      "prefix": [
+        "import numpy as np",
+        "rng = np.random.default_rng(2)",
+        "state = np.zeros(500_000)",
+        "for step in range(1100):\n    state = state * 0.999 + rng.random(500_000) * 0.001"
+      ],
+      "targets": {
+        "sort": "total = float(np.sort(state).sum())"
+      },
+      "fixture": "",
+      "setup": {
+        "full": {
+          "mode": "full",
+          "strategy": "full",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 0.0001,
+          "probe": "",
+          "checkpoint_bytes": null,
+          "prepare_log": []
+        },
+        "fork": {
+          "mode": "fork",
+          "strategy": "fork",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 8.7625,
+          "probe": "threads 12/12, timings {'compute': 1.12, 'memory': 1.89}, 162654 pages walked per measurement in 0.087s, 0.54us per fault",
+          "checkpoint_bytes": null,
+          "prepare_log": [
+            "[JUmPER]: benchmark fork probe: threads 12/12, timings {'compute': 1.12, 'memory': 1.89}, 162654 pages walked per measurement in 0.087s, 0.54us per fault",
+            "[JUmPER]: benchmark replay mode 'fork' is active: the prefix is replayed once instead of once per measurement. Timings are unaffected, but memory metrics are not comparable with a full replay's - the process tree holds both the prefix and a child that inherited it, and their RSS is summed."
+          ]
+        },
+        "dill": {
+          "mode": "dill",
+          "strategy": "dill",
+          "usable": true,
+          "failure": "",
+          "refusal": "",
+          "prepare_s": 7.4322,
+          "probe": "",
+          "checkpoint_bytes": 4000741,
+          "prepare_log": [
+            "[JUmPER]: benchmark dill checkpoint: 4000741 bytes for a 4.5289s prefix"
+          ]
+        }
+      },
+      "wall_s": 133.64
+    }
+  ]
+}

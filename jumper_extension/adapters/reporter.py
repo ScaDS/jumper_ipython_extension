@@ -32,8 +32,24 @@ class ReportBuilder:
         self.min_duration = None
         self.analyzer = analyzer
 
-    def _prepare_report_data(self, cell_range, level):
+    def prepare_report_data(
+        self,
+        cell_range,
+        level,
+        compress_idle: bool = False,
+        attach_cell_index: bool = False,
+    ):
         """Prepare all necessary data for performance reporting.
+
+        Args:
+            cell_range: Range of cells to report on, or None to resolve the
+                last non-short cell.
+            level: Performance level to read samples at.
+            compress_idle: Keep only samples measured while a cell was running.
+                Off by default: one window from the first cell's start to the
+                last cell's end, idle gaps included.
+            attach_cell_index: Label each sample with the ``cell_index`` it was
+                measured under.
 
         Returns:
             dict: Dictionary containing filtered_cells, perfdata, ranked_tags,
@@ -50,9 +66,14 @@ class ReportBuilder:
         start_idx, end_idx = cell_range
         filtered_cells = self.cell_history.view(start_idx, end_idx + 1)
 
-        perfdata = self.monitor.nodes.view(level=level)
+        perfdata = self.monitor.nodes.view(
+            level=level,
+            cell_history=self.cell_history if attach_cell_index else None,
+        )
         perfdata = filter_perfdata(
-            filtered_cells, perfdata, compress_idle=False
+            filtered_cells,
+            perfdata,
+            compress_idle=compress_idle,
         )
 
         # Check if non-empty, otherwise print results
@@ -168,9 +189,13 @@ class ReportPrinter(ReportBuilder):
     ):
         super().__init__(monitor, cell_history, analyzer)
 
-    def print(self, cell_range=None, level="process"):
+    def print(self, cell_range=None, level="process", compress_idle=False):
         """Print performance report"""
-        data = self._prepare_report_data(cell_range, level)
+        data = self.prepare_report_data(
+            cell_range,
+            level,
+            compress_idle=compress_idle,
+        )
         if data is None:
             return
 
@@ -237,7 +262,12 @@ class ReportPrinter(ReportBuilder):
 @runtime_checkable
 class ReportDisplayerProtocol(Protocol):
     """Structural protocol for HTML/text report displayers."""
-    def display(self, cell_range=None, level: str = "process") -> None: ...
+    def display(
+        self,
+        cell_range=None,
+        level: str = "process",
+        compress_idle: bool = False,
+    ) -> None: ...
 
 
 class ReportDisplayer(ReportBuilder):
@@ -251,10 +281,14 @@ class ReportDisplayer(ReportBuilder):
         super().__init__(monitor, cell_history, analyzer)
         self.templates_dir = Path(templates_dir) if templates_dir else Path(__file__).parent.parent / "templates"
 
-    def display(self, cell_range=None, level="process"):
+    def display(self, cell_range=None, level="process", compress_idle=False):
         """Print performance report"""
 
-        data = self._prepare_report_data(cell_range, level)
+        data = self.prepare_report_data(
+            cell_range,
+            level,
+            compress_idle=compress_idle,
+        )
         if data is None:
             return
 
@@ -312,7 +346,7 @@ class UnavailableReportDisplayer:
     def __init__(self, reason="Display not available."):
         self._reason = reason
 
-    def display(self, cell_range=None, level="process"):
+    def display(self, cell_range=None, level="process", compress_idle=False):
         """non-opt display"""
         logger.info(
             EXTENSION_INFO_MESSAGES[
@@ -342,13 +376,37 @@ class PerformanceReporter:
         self.displayer.monitor = monitor
         self.displayer.min_duration = monitor.interval
 
-    def print(self, cell_range=None, level="process"):
-        """Print performance report"""
-        self.printer.print(cell_range, level)
+    def build_context(self, cell_range=None, level: str = "process") -> dict | None:
+        """Assemble cell code, performance data and tags for the AI review agent.
 
-    def display(self, cell_range=None, level="process"):
+        Reuses :meth:`ReportBuilder.prepare_report_data`, which already
+        gathers everything the agent needs: ``filtered_cells`` (with
+        ``raw_cell`` holding the cell source code), ``perfdata``, and
+        ``tags_model``.
+
+        Unlike the printed report, the agent asks for idle-compressed and
+        cell-labelled samples, so a range does not blend into one average
+        diluted by the pauses between its cells.
+
+        Returns:
+            dict | None: ``{filtered_cells, perfdata, tags_model,
+            total_duration, cell_range}``, or ``None`` if no data is
+            available for the requested range.
+        """
+        return self.printer.prepare_report_data(
+            cell_range,
+            level,
+            compress_idle=True,
+            attach_cell_index=True,
+        )
+
+    def print(self, cell_range=None, level="process", compress_idle=False):
+        """Print performance report"""
+        self.printer.print(cell_range, level, compress_idle)
+
+    def display(self, cell_range=None, level="process", compress_idle=False):
         """Display performance report"""
-        self.displayer.display(cell_range, level)
+        self.displayer.display(cell_range, level, compress_idle)
 
 
 def build_performance_reporter(
@@ -379,5 +437,4 @@ def build_performance_reporter(
             templates_dir
         )
     return PerformanceReporter(printer, displayer)
-
 

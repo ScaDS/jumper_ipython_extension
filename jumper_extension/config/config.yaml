@@ -1,0 +1,6 @@
+defaults:
+  - settings: default
+  - plots: default
+  - ai: default
+  - collectors/python: default
+  - collectors/c: default

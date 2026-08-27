@@ -5,7 +5,7 @@ from __future__ import annotations
 To add a new metric source implement:
     1. :class:`CollectorBackend` subclass.
     2. matching :class:`StorageHandler` - to convert collector's raw output into a flat `dict[str, float]`
-    3. register them both in ``config/collectors/python/collectors.yaml``.
+    3. register them both in ``config/collectors/python/default.yaml``.
 """
 
 from abc import ABC, abstractmethod

@@ -1,44 +1,24 @@
-"""Configuration and state models for the JUmPER core.
+"""Runtime session state for the JUmPER core.
 
-This module defines dataclasses that hold runtime configuration for
-monitoring, performance reports, and names of exported or loaded
-variables.
+This module defines dataclasses that hold mutable, per-session state
+toggled by magic commands (automatic reports, monitoring interval and
+running flag, visualizer backend). Configurable defaults for these
+values live in ``jumper_extension.config`` (see ``SettingsConfig``);
+``State.from_config()`` seeds the initial values from there.
 """
 
 import copy
 from dataclasses import dataclass, field
 from typing import Optional
 
+from jumper_extension.config.models import SettingsConfig
 
-@dataclass
-class ExportVars:
-    """Names of variables used when exporting data frames.
-
-    Attributes:
-        perfdata: Variable name for exported performance data.
-        cell_history: Variable name for exported cell history.
-    """
-
-    perfdata: str = "perfdata_df"
-    cell_history: str = "cell_history_df"
+SETTINGS_DEFAULTS = SettingsConfig()
 
 
 @dataclass
-class LoadedVars:
-    """Names of variables used when loading data frames.
-
-    Attributes:
-        perfdata: Variable name for loaded performance data.
-        cell_history: Variable name for loaded cell history.
-    """
-
-    perfdata: str = "loaded_perfdata_df"
-    cell_history: str = "loaded_cell_history_df"
-
-
-@dataclass
-class PerfomanceReports:
-    """Configuration for automatic per-cell performance reports.
+class PerfReportsState:
+    """Current configuration of automatic per-cell performance reports.
 
     Attributes:
         enabled: Whether per-cell reports are enabled.
@@ -47,50 +27,59 @@ class PerfomanceReports:
     """
 
     enabled: bool = False
-    level: str = "process"
-    text: bool = False
+    level: str = SETTINGS_DEFAULTS.perfreports.level
+    text: bool = SETTINGS_DEFAULTS.perfreports.text
 
 
 @dataclass
-class PerformanceMonitoring:
-    """Configuration for the performance monitoring loop.
+class MonitoringState:
+    """Current state of the performance monitoring loop.
 
     Attributes:
-        default_interval: Default sampling interval in seconds.
         user_interval: User-provided interval overriding the default.
         running: Whether monitoring is currently running.
     """
 
-    default_interval: float = 1.0
     user_interval: Optional[float] = None
     running: bool = False
 
 
 @dataclass
-class Settings:
-    """Top-level configuration container for the extension.
-
-    Groups performance reports, monitoring configuration, and variable
-    names used when exporting or loading data.
+class State:
+    """Mutable runtime state for a JUmPER session.
 
     Attributes:
-        perfreports: Settings for per-cell performance reports.
-        monitoring: Settings for the monitoring loop.
-        export_vars: Names for exported data variables.
-        loaded_vars: Names for loaded data variables.
-        visualizer_backend: Default backend used for plotting.
+        perfreports: Current configuration of per-cell reports.
+        monitoring: Current state of the monitoring loop.
+        visualizer_backend: Currently selected backend used for plotting.
     """
 
-    perfreports: PerfomanceReports = field(default_factory=PerfomanceReports)
-    monitoring: PerformanceMonitoring = field(default_factory=PerformanceMonitoring)
-    export_vars: ExportVars = field(default_factory=ExportVars)
-    loaded_vars: LoadedVars = field(default_factory=LoadedVars)
-    visualizer_backend: str = "matplotlib"
+    perfreports: PerfReportsState = field(default_factory=PerfReportsState)
+    monitoring: MonitoringState = field(default_factory=MonitoringState)
+    visualizer_backend: str = SETTINGS_DEFAULTS.visualizer_backend
 
-    def snapshot(self) -> "Settings":
-        """Return a deep copy of the current settings.
+    def snapshot(self) -> "State":
+        """Return a deep copy of the current state.
 
         Returns:
-            Settings: Independent copy of the current configuration.
+            State: Independent copy of the current runtime state.
         """
         return copy.deepcopy(self)
+
+    @classmethod
+    def from_config(cls, cfg: SettingsConfig) -> "State":
+        """Build initial session state from configured defaults.
+
+        Args:
+            cfg: Settings defaults loaded from the application config.
+
+        Returns:
+            State: A new state seeded with the configured defaults.
+        """
+        return cls(
+            perfreports=PerfReportsState(
+                level=cfg.perfreports.level,
+                text=cfg.perfreports.text,
+            ),
+            visualizer_backend=cfg.visualizer_backend,
+        )

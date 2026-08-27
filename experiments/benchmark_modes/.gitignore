@@ -1,0 +1,4 @@
+# Regenerated on demand, and large: a 191MB memmap the cases build once and reuse.
+results/fixtures/
+# Session exports are per-run artefacts; the CSVs beside them are the record.
+results/*/harness_session.zip

@@ -1,0 +1,51 @@
+%%{init: {"flowchart": {"curve": "basis", "rankSpacing": 100, "nodeSpacing": 45}}}%%
+flowchart TB
+    service[PerfmonitorService]
+    service ----> collect_monitor[Monitor]
+    service ----> collect_history[Cell History]
+    service ----> reviewer[AI Reviewer]
+    service ----> review_reporter[Reporter]
+    service ----> visualizer[Visualizer]
+    service ----> session[Session]
+    service ----> writer[Script Writer]
+
+    subgraph transfer["Export, import, and replay"]
+        direction TB
+        session --> transfer_monitor[Monitor]
+        session --> transfer_history[Cell History]
+        session --> transfer_reporter[Reporter]
+        session --> transfer_visualizer[Visualizer]
+        writer --> transfer_history
+    end
+
+    subgraph visualize["Visualize metrics"]
+        direction TB
+        visualizer --> visualize_monitor[Monitor]
+        visualizer --> visualize_history[Cell History]
+    end
+
+    subgraph review["Report and review"]
+        direction TB
+        reviewer --> review_reporter
+        review_reporter --> review_monitor[Monitor]
+        review_reporter --> review_history[Cell History]
+        review_reporter --> review_analyzer[Analyzer]
+    end
+
+    subgraph collect["Collect and store metrics"]
+        direction TB
+        collect_monitor --> collect_data[Data]
+        collect_history
+    end
+
+    classDef service fill:#fff3cd,stroke:#d39e00,stroke-width:2px
+    classDef feature fill:#e8f0fe,stroke:#4285f4
+    classDef foundation fill:#e6f4ea,stroke:#34a853
+    class service service
+    class reviewer,review_reporter,visualizer,session,writer,transfer_reporter,transfer_visualizer feature
+    class collect_monitor,collect_history,collect_data,review_monitor,review_history,review_analyzer,visualize_monitor,visualize_history,transfer_monitor,transfer_history foundation
+    style collect fill:#eeeeee,stroke:#bdbdbd
+    style review fill:#eeeeee,stroke:#bdbdbd
+    style visualize fill:#eeeeee,stroke:#bdbdbd
+    style transfer fill:#eeeeee,stroke:#bdbdbd
+    linkStyle default stroke-width:1.6px

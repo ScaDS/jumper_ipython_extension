@@ -2,12 +2,14 @@
 
 A **collector** lets you add a new metric group to the `thread` or
 `subprocess_python` monitors without touching the monitor itself — register a
-`CollectorBackend` + `StorageHandler` pair in `collectors.yaml` and it is loaded
+`CollectorBackend` + `StorageHandler` pair in `default.yaml` and it is loaded
 automatically.
 
 !!! note
     This guide covers the **Python** monitor backends (`thread`, `subprocess_python`).
-    For the native C binary see [Custom C Collectors](c-custom-collector.md).
+    For the native C binary see [Custom C Collectors](c-custom-collector.md). For an
+    overview of the config system this `default.yaml` is part of, see
+    [Configuration](configuration.md).
 
 ---
 
@@ -87,10 +89,10 @@ Built-in handlers live in `jumper_extension/monitor/metrics/handlers.py`:
 
 ---
 
-## Step 3 — Register in `collectors.yaml`
+## Step 3 — Register in `default.yaml`
 
 ```yaml
-# jumper_extension/config/collectors/python/collectors.yaml
+# jumper_extension/config/collectors/python/default.yaml
 collectors:
   # ... existing collectors ...
 

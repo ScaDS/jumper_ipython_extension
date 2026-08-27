@@ -1,0 +1,1 @@
+Write the cell in idiomatic R - the language of the cell under review. Prefer vectorized base-R operations and R packages over a foreign ecosystem, and format the code as real multi-line R (one statement per line, `<-` for assignment), never a semicolon-joined one-liner.

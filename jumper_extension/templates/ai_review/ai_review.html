@@ -1,0 +1,75 @@
+<style>
+{{ inline_styles | safe }}
+</style>
+<div class="jump-container ai-container">
+    <hr class="jump-divider" />
+    <div class="jump-content">
+      <header class="jump-header">
+        <div class="jump-title">JUmPER AI Review</div>
+        <div class="jump-right">
+          <div class="jump-subtitle">
+            <span class="jump-kv">
+              <span class="jump-k">Run ID</span>
+              <span class="jump-v">{{ run_id }}</span>
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div class="jump-taglist">
+        {% for t in tags %}
+          <span class="jump-tag jump-tag--{{ t.slug }}">
+            <span class="jump-tag-name">{{ t.name }}</span>
+          </span>
+        {% endfor %}
+      </div>
+
+      <section class="ai-analysis">
+        <div class="ai-section-title">Analysis</div>
+        <p class="ai-analysis-text">{{ analysis }}</p>
+        {% if analysis_reasoning %}
+        <details class="ai-reasoning">
+          <summary><span class="ai-reasoning-label">Reasoning</span><span class="ai-reasoning-preview">{{ reasoning_preview }}</span></summary>
+          <div class="ai-reasoning-body">{{ analysis_reasoning }}</div>
+        </details>
+        {% endif %}
+      </section>
+
+      <section class="ai-options">
+        <div class="ai-section-title">Suggestions</div>
+        {% for option in options %}
+          <article class="ai-option-card">
+            <header class="ai-option-header">
+              <span class="ai-option-index">Option {{ option.index }}</span>
+              <span class="ai-option-title">{{ option.title }}</span>
+            </header>
+            <p class="ai-option-description">{{ option.description }}</p>
+            {% if option.verdict %}
+              <div class="ai-verdict ai-verdict--{{ option.verdict.tone }}">
+                <span class="ai-verdict-headline">{{ option.verdict.headline }}</span>
+                {% if option.verdict.detail %}
+                  <span class="ai-verdict-detail">{{ option.verdict.detail }}</span>
+                {% endif %}
+                {% for note in option.verdict.notes %}
+                  <span class="ai-verdict-note">{{ note }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+            <details class="ai-diff">
+              <summary>Show suggested code (diff)</summary>
+              <pre class="ai-diff-body">{% for line in option.diff %}<span class="ai-diff-line ai-diff-line--{{ line.kind }}">{{ line.text }}</span>{% endfor %}</pre>
+            </details>
+            <div class="ai-resume-command">
+              <code>{{ option.resume_command }}</code>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+
+      <section class="ai-resume">
+        <div class="ai-section-title">To apply</div>
+        <pre class="ai-resume-commands">{% for command in resume_commands %}{{ command }}
+{% endfor %}</pre>
+      </section>
+    </div>
+  </div>

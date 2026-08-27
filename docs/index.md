@@ -18,6 +18,7 @@ A tool for monitoring the performance of code cells in IPython and Jupyter noteb
 - View textual performance reports for entire sessions or selected cell ranges.
 - Explore interactive plots of collected metrics over time.
 - Export performance data and cell history for offline analysis.
+- Get [LLM-powered optimization suggestions](guides/ai-review/index.md) for a cell — and measure them before trusting them.
 
 Get started with the [Installation](getting-started/installation.md) and [Quickstart](getting-started/quickstart.md) guides. For detailed command descriptions, refer to the [Public API](api/index.md) section.
 

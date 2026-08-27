@@ -252,12 +252,12 @@ class SubprocessPerformanceMonitor:
         )
 
     def _cleanup_at_exit(self) -> None:
-        # Mark as stopped before killing so the reader thread doesn't
-        # treat the resulting EOF as an unexpected child exit and emit
-        # a warning to streams that interpreter shutdown may already
-        # have closed (manifesting as "I/O operation on closed file").
+        # Interpreter teardown: shut the collector down without stop()'s
+        # user-facing logging, whose streams may already be closed.
         self.running = False
         self._kill_process()
+        if self._reader_thread is not None:
+            self._reader_thread.join(timeout=5.0)
 
     def _kill_process(self) -> None:
         if self._process and self._process.poll() is None:
