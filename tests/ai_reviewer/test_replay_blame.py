@@ -5,6 +5,8 @@ failed, the cell under review never ran - so reporting the failure as *its*
 failure points the user, and the repair loop, at code that is very likely fine.
 These check the two are told apart.
 """
+from pathlib import Path
+
 from jumper_extension.adapters.ai_reviewer.benchmark.models import RunOutcome
 from jumper_extension.adapters.ai_reviewer.benchmark.orchestrator import _baseline_failure
 from jumper_extension.adapters.ai_reviewer.benchmark.script import (
@@ -53,6 +55,22 @@ def test_a_failure_in_the_prefix_names_the_cell_it_came_from(tmp_path):
     )
 
     assert failing_prefix_cell(path, _traceback(body, failing, "RuntimeError: no notebook")) == 3
+
+
+def test_a_variant_script_is_importable_whatever_the_tag(tmp_path):
+    """Variant tags start with a digit, and `import 1_0__body` is a syntax error."""
+    path = build_script(
+        _PREFIX,
+        "total = 1",
+        0.05,
+        ["total"],
+        "s.zip",
+        "f.json",
+        str(tmp_path / "1_0.py"),
+    )
+
+    compile(open(path).read(), path, "exec")
+    assert Path(body_path_for(path)).stem.isidentifier()
 
 
 def test_a_failure_in_the_cell_under_test_is_not_blamed_on_the_prefix(tmp_path):

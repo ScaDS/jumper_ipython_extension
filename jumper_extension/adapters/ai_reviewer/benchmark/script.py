@@ -18,8 +18,12 @@ _PREFIX_MARKER = "# --- cell {index} ---"
 _TARGET_MARKER = "# --- cell under test ---"
 _CELL_MARKER = re.compile(r"^# --- cell (\d+) ---$")
 
-# Name of the module beside an entry script that holds its replayed cells.
-_BODY_SUFFIX = "__body"
+# Prefix for the module beside an entry script that holds its replayed cells.
+# A prefix rather than a suffix because the entry script is named after the
+# benchmark tag, and those start with a digit for every variant ("1_0.py") -
+# `import 1_0__body` is a syntax error. The prefix makes the module name a
+# valid identifier whatever the tag is.
+_BODY_PREFIX = "jumper_replay_body_"
 
 _ENTRY = '''\
 #!/usr/bin/env python3
@@ -36,6 +40,10 @@ import sys
 # own, rather than indenting it under the guard, leaves any multi-line string
 # literal in the user's cells byte-for-byte intact.
 if __name__ == "__main__":
+    # No bytecode cache: a repair rewrites this tag's body in place, and Python
+    # validates a .pyc on mtime-seconds and size alone - a repair landing in the
+    # same second at the same size would be measured as its predecessor.
+    sys.dont_write_bytecode = True
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import {body_module}  # noqa: F401
 '''
@@ -246,9 +254,14 @@ def build_script(
 
 
 def body_path_for(script_path: str) -> str:
-    """The module beside *script_path* that carries its replayed cells."""
+    """The module beside *script_path* that carries its replayed cells.
+
+    The name has to survive being imported, so every character the tag may carry
+    that an identifier may not is replaced.
+    """
     path = Path(script_path)
-    return str(path.with_name(f"{path.stem}{_BODY_SUFFIX}.py"))
+    identifier = re.sub(r"\W", "_", path.stem)
+    return str(path.with_name(f"{_BODY_PREFIX}{identifier}.py"))
 
 
 def failing_prefix_cell(script_path: str, error: str) -> int | None:
