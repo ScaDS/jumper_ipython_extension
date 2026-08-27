@@ -61,7 +61,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3046,13 +3046,13 @@
 <span class="normal">16</span>
 <span class="normal">17</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_line_magics_cached</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return cached set of all registered line magic names.</span>
+<span class="w">    </span><span class="sd">"""Return cached set of all registered line magic names.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Frozen set of magic command names (without % prefix).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ip</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span>
-    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">ip</span><span class="o">.</span><span class="n">magics_manager</span><span class="o">.</span><span class="n">lsmagic</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;line&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">ip</span><span class="o">.</span><span class="n">magics_manager</span><span class="o">.</span><span class="n">lsmagic</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"line"</span><span class="p">,</span> <span class="p">[]))</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3160,7 +3160,7 @@
 <span class="normal">32</span>
 <span class="normal">33</span>
 <span class="normal">34</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_known_line_magic</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">line_magics</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a line starts with a known magic command.</span>
+<span class="w">    </span><span class="sd">"""Check if a line starts with a known magic command.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Single line of code to check.</span>
@@ -3168,9 +3168,9 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if line starts with %&lt;known_magic&gt;, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">s</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"%"</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="n">name</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">line_magics</span>
@@ -3216,18 +3216,18 @@
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_pure_line_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A pure line-magic cell = each non-empty line is either:</span>
 <span class="sd">      - starts with %&lt;known_magic&gt; (optionally with arguments),</span>
 <span class="sd">      - or is a comment (#...).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">line_magics</span> <span class="o">=</span> <span class="n">get_line_magics_cached</span><span class="p">()</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="n">raw_cell</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
         <span class="n">stripped</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">stripped</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">stripped</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stripped</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"#"</span><span class="p">):</span>
             <span class="k">continue</span>
         <span class="k">if</span> <span class="n">is_known_line_magic</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">line_magics</span><span class="p">):</span>
             <span class="k">continue</span>
@@ -3276,19 +3276,19 @@ Returns True if all non-empty, non-comment lines are local magics.</p>
 <span class="normal">74</span>
 <span class="normal">75</span>
 <span class="normal">76</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_local_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">local_magics</span><span class="p">:</span> <span class="nb">set</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Check if cell contains only local magic commands (and comments/empty lines).</span>
 <span class="sd">    Returns True if all non-empty, non-comment lines are local magics.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="n">raw_cell</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
     <span class="n">has_magic</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
         <span class="n">stripped</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">stripped</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">stripped</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stripped</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"#"</span><span class="p">):</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">stripped</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stripped</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"%"</span><span class="p">):</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">stripped</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">local_magics</span><span class="p">:</span>
                 <span class="n">has_magic</span> <span class="o">=</span> <span class="kc">True</span>

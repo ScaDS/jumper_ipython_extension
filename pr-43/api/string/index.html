@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -2894,9 +2894,9 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.core.service</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_perfmonitor_magic_adapter</span>
 
 <span class="n">adapter</span> <span class="o">=</span> <span class="n">build_perfmonitor_magic_adapter</span><span class="p">()</span>
-<span class="n">adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="s2">&quot;1.0&quot;</span><span class="p">)</span>
-<span class="n">adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="s2">&quot;--cells 2:5 --level user&quot;</span><span class="p">)</span>
-<span class="n">adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="s2">&quot;--file perf.csv --level system&quot;</span><span class="p">)</span>
+<span class="n">adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="s2">"1.0"</span><span class="p">)</span>
+<span class="n">adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="s2">"--cells 2:5 --level user"</span><span class="p">)</span>
+<span class="n">adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="s2">"--file perf.csv --level system"</span><span class="p">)</span>
 </code></pre></div>
 <p>The commands are identical to the magic syntax but passed as plain strings. This is the same interface that <code>NotebookScriptWriter</code> relies on when emitting code for <code>monitored_script.py</code>.</p>
 

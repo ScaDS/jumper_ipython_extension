@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3406,7 +3406,7 @@ monitor via :meth:<code>attach</code>.</p>
 <span class="normal">321</span>
 <span class="normal">322</span>
 <span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AIReviewer</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adapter running the LangGraph-based AI optimization-review workflow.</span>
+<span class="w">    </span><span class="sd">"""Adapter running the LangGraph-based AI optimization-review workflow.</span>
 
 <span class="sd">    Builds (and caches) the fresh-run and resume graphs, generates run</span>
 <span class="sd">    ids, and keeps track of pending reviews so a follow-up</span>
@@ -3414,12 +3414,12 @@ monitor via :meth:<code>attach</code>.</p>
 <span class="sd">    Mirrors :class:`PerformanceReporter` / :class:`PerformanceVisualizer`:</span>
 <span class="sd">    constructed with the stable ``reporter`` and bound to the live</span>
 <span class="sd">    monitor via :meth:`attach`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reporter</span><span class="p">:</span> <span class="n">PerformanceReporter</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span> <span class="o">=</span> <span class="n">reporter</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span> <span class="o">=</span> <span class="n">UnavailablePerformanceMonitor</span><span class="p">(</span>
-            <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Monitor has not been started yet.&quot;</span>
+            <span class="n">reason</span><span class="o">=</span><span class="s2">"Monitor has not been started yet."</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span> <span class="o">=</span> <span class="kc">None</span>
@@ -3427,15 +3427,15 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach started PerformanceMonitor.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Attach started PerformanceMonitor."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_review_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lazily build (and cache) the fresh-run AI review graph.</span>
+<span class="w">        </span><span class="sd">"""Lazily build (and cache) the fresh-run AI review graph.</span>
 
 <span class="sd">        Imported lazily so the optional ``[ai]`` extras (langgraph,</span>
 <span class="sd">        langchain-openai) are only required when this magic is used.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_review_graph</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.context.collector</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextCollector</span>
@@ -3452,7 +3452,7 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_review_graph</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_benchmark_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lazily build (and cache) the graph behind ``--resume --benchmark``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Lazily build (and cache) the graph behind ``--resume --benchmark``."""</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_graph</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.llm.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMClientConfig</span><span class="p">,</span> <span class="n">build_llm</span>
@@ -3467,12 +3467,12 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_benchmark_graph</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">build_orchestrator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">fix_fn</span><span class="p">,</span> <span class="n">target_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wire a benchmark for the cell at *target_index*, or None if impossible.</span>
+<span class="w">        </span><span class="sd">"""Wire a benchmark for the cell at *target_index*, or None if impossible.</span>
 
 <span class="sd">        The prefix is every cell before the target: the cell only means anything</span>
 <span class="sd">        with the state its predecessors built, and a replay that skipped them</span>
 <span class="sd">        would push the repair loop into inventing the missing data.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.checks</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_checks</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkOrchestrator</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkRunner</span>
@@ -3484,21 +3484,21 @@ monitor via :meth:<code>attach</code>.</p>
 
         <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_language</span><span class="p">(</span><span class="n">target_index</span><span class="p">))</span>
         <span class="n">defaults</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">benchmark</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;benchmark_options&quot;</span><span class="p">]</span>
-        <span class="n">checks</span> <span class="o">=</span> <span class="n">resolve_checks</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">checks</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checks&quot;</span><span class="p">))</span>
-        <span class="n">runs</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;runs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">runs</span>
-        <span class="n">fix_attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fix_attempts&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">fix_attempts</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"benchmark_options"</span><span class="p">]</span>
+        <span class="n">checks</span> <span class="o">=</span> <span class="n">resolve_checks</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">checks</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"checks"</span><span class="p">))</span>
+        <span class="n">runs</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"runs"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">runs</span>
+        <span class="n">fix_attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fix_attempts"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">fix_attempts</span>
         <span class="n">runner</span> <span class="o">=</span> <span class="n">BenchmarkRunner</span><span class="p">(</span>
             <span class="n">prefix_cells</span><span class="o">=</span><span class="n">prefix_cells</span><span class="p">,</span>
             <span class="n">interval</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;level&quot;</span><span class="p">],</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">"level"</span><span class="p">],</span>
             <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
-            <span class="n">replay_mode</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;replay_mode&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="n">replay_mode</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"replay_mode"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: benchmarking </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> suggestion(s) against cell &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_index</span><span class="si">}</span><span class="s2">; each replays </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix_cells</span><span class="p">)</span><span class="si">}</span><span class="s2"> preceding cell(s) &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">runs</span><span class="si">}</span><span class="s2"> time(s). This can take a while.&quot;</span>
+            <span class="sa">f</span><span class="s2">"[JUmPER]: benchmarking </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'suggestions'</span><span class="p">])</span><span class="si">}</span><span class="s2"> suggestion(s) against cell "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">target_index</span><span class="si">}</span><span class="s2">; each replays </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix_cells</span><span class="p">)</span><span class="si">}</span><span class="s2"> preceding cell(s) "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">runs</span><span class="si">}</span><span class="s2"> time(s). This can take a while."</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">BenchmarkOrchestrator</span><span class="p">(</span>
             <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
@@ -3512,22 +3512,22 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_cell_language</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Language recorded for the cell at *index*; Python for legacy rows.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Language recorded for the cell at *index*; Python for legacy rows."""</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.language</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_language</span>
 
         <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">printer</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="s2">&quot;language&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;python&quot;</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="n">history</span><span class="p">[</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="s2">"language"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">history</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"python"</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">history</span><span class="p">[</span><span class="n">history</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">]</span> <span class="o">==</span> <span class="n">index</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">rows</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;python&quot;</span>
-        <span class="k">return</span> <span class="n">resolve_language</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;language&quot;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="s2">"python"</span>
+        <span class="k">return</span> <span class="n">resolve_language</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"language"</span><span class="p">])</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_prefix_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Every cell executed before *target_index*, as the replay needs them.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Every cell executed before *target_index*, as the replay needs them."""</span>
         <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">printer</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: no cell history to replay for the benchmark&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: no cell history to replay for the benchmark"</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
@@ -3537,16 +3537,16 @@ monitor via :meth:<code>attach</code>.</p>
                 <span class="k">break</span>
             <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="p">{</span>
-                    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">,</span>
-                    <span class="s2">&quot;raw_cell&quot;</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">raw_cell</span><span class="p">,</span>
-                    <span class="s2">&quot;cell_magics&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">&quot;cell_magics&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]),</span>
-                    <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">&quot;language&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;python&quot;</span><span class="p">,</span>
+                    <span class="s2">"index"</span><span class="p">:</span> <span class="n">index</span><span class="p">,</span>
+                    <span class="s2">"raw_cell"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">raw_cell</span><span class="p">,</span>
+                    <span class="s2">"cell_magics"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">"cell_magics"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]),</span>
+                    <span class="s2">"language"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">"language"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"python"</span><span class="p">,</span>
                 <span class="p">}</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">cells</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_resume_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lazily build (and cache) the resume AI review graph.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Lazily build (and cache) the resume AI review graph."""</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resume_graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.agent.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_resume_graph</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.llm.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMClientConfig</span><span class="p">,</span> <span class="n">build_llm</span>
@@ -3559,13 +3559,13 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
-        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
-        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"process"</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"faster"</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
         <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the AI-powered performance review on a fresh cell selection.</span>
+<span class="w">        </span><span class="sd">"""Run the AI-powered performance review on a fresh cell selection.</span>
 
 <span class="sd">        The chosen ``strategy`` resolves to a set of overrides that steer</span>
 <span class="sd">        both which context sources are gathered and which prompt rules</span>
@@ -3573,7 +3573,7 @@ monitor via :meth:<code>attach</code>.</p>
 <span class="sd">        prompt. Collects the cell code and performance context, asks the</span>
 <span class="sd">        LLM to identify the bottleneck and propose optimizations, then</span>
 <span class="sd">        displays the numbered options together with ``--resume`` commands.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
@@ -3586,7 +3586,7 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="n">resolved</span> <span class="o">=</span> <span class="n">get_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">resolved</span><span class="o">.</span><span class="n">require_note</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">note</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[JUmPER]: strategy &#39;</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">&#39; requires a --note instruction&quot;</span>
+                <span class="sa">f</span><span class="s2">"[JUmPER]: strategy '</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">' requires a --note instruction"</span>
             <span class="p">)</span>
             <span class="k">return</span>
 
@@ -3604,14 +3604,14 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replay and time the suggestions of a review that already ran.</span>
+<span class="w">        </span><span class="sd">"""Replay and time the suggestions of a review that already ran.</span>
 
 <span class="sd">        Benchmarking costs far more than the review itself, so it is a separate</span>
 <span class="sd">        decision: look at the options first, then spend the machine time.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[JUmPER]: No pending AI review found for run_id '</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -3621,8 +3621,8 @@ monitor via :meth:<code>attach</code>.</p>
 
         <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_benchmark_graph</span><span class="p">()</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span>
             <span class="o">**</span><span class="n">state</span><span class="p">,</span>
-            <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;benchmark_options&quot;</span><span class="p">:</span> <span class="n">benchmark_options</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="s2">"benchmark"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"benchmark_options"</span><span class="p">:</span> <span class="n">benchmark_options</span> <span class="ow">or</span> <span class="p">{},</span>
         <span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
 
@@ -3631,33 +3631,33 @@ monitor via :meth:<code>attach</code>.</p>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a previously suggested optimization, optionally refined.</span>
+<span class="w">        </span><span class="sd">"""Apply a previously suggested optimization, optionally refined.</span>
 
 <span class="sd">        Loads the state stored under ``run_id`` by a prior ``review``</span>
 <span class="sd">        run, marks suggestion ``select`` as chosen and runs the resume</span>
 <span class="sd">        graph: if ``note`` is provided, the suggestion is rewritten per</span>
 <span class="sd">        that instruction first; either way the resulting code is placed</span>
 <span class="sd">        into the next cell via ``shell.set_next_input``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[JUmPER]: No pending AI review found for run_id '</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
             <span class="k">return</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">select</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;suggestions&quot;</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">select</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"suggestions"</span><span class="p">]):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Invalid suggestion index </span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2"> for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;(expected 1-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="sa">f</span><span class="s2">"[JUmPER]: Invalid suggestion index </span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2"> for run_id '</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">' "</span>
+                <span class="sa">f</span><span class="s2">"(expected 1-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'suggestions'</span><span class="p">])</span><span class="si">}</span><span class="s2">)"</span>
             <span class="p">)</span>
             <span class="k">return</span>
 
         <span class="n">resume_state</span> <span class="o">=</span> <span class="p">{</span>
             <span class="o">**</span><span class="n">state</span><span class="p">,</span>
-            <span class="s2">&quot;chosen_index&quot;</span><span class="p">:</span> <span class="n">select</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="n">note</span><span class="p">,</span>
-            <span class="s2">&quot;refined_code&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"chosen_index"</span><span class="p">:</span> <span class="n">select</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"note"</span><span class="p">:</span> <span class="n">note</span><span class="p">,</span>
+            <span class="s2">"refined_code"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_resume_graph</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">resume_state</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
@@ -3696,7 +3696,7 @@ monitor via :meth:<code>attach</code>.</p>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">89</span>
 <span class="normal">90</span>
 <span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Attach started PerformanceMonitor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Attach started PerformanceMonitor."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -3744,14 +3744,14 @@ decision: look at the options first, then spend the machine time.</p>
 <span class="normal">285</span>
 <span class="normal">286</span>
 <span class="normal">287</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replay and time the suggestions of a review that already ran.</span>
+<span class="w">    </span><span class="sd">"""Replay and time the suggestions of a review that already ran.</span>
 
 <span class="sd">    Benchmarking costs far more than the review itself, so it is a separate</span>
 <span class="sd">    decision: look at the options first, then spend the machine time.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[JUmPER]: No pending AI review found for run_id '</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
         <span class="k">return</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -3761,8 +3761,8 @@ decision: look at the options first, then spend the machine time.</p>
 
     <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_benchmark_graph</span><span class="p">()</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span>
         <span class="o">**</span><span class="n">state</span><span class="p">,</span>
-        <span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="s2">&quot;benchmark_options&quot;</span><span class="p">:</span> <span class="n">benchmark_options</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="s2">"benchmark"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"benchmark_options"</span><span class="p">:</span> <span class="n">benchmark_options</span> <span class="ow">or</span> <span class="p">{},</span>
     <span class="p">})</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
 </code></pre></div></td></tr></table></div>
@@ -3834,12 +3834,12 @@ would push the repair loop into inventing the missing data.</p>
 <span class="normal">170</span>
 <span class="normal">171</span>
 <span class="normal">172</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_orchestrator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">fix_fn</span><span class="p">,</span> <span class="n">target_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wire a benchmark for the cell at *target_index*, or None if impossible.</span>
+<span class="w">    </span><span class="sd">"""Wire a benchmark for the cell at *target_index*, or None if impossible.</span>
 
 <span class="sd">    The prefix is every cell before the target: the cell only means anything</span>
 <span class="sd">    with the state its predecessors built, and a replay that skipped them</span>
 <span class="sd">    would push the repair loop into inventing the missing data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.checks</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_checks</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkOrchestrator</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.benchmark.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkRunner</span>
@@ -3851,21 +3851,21 @@ would push the repair loop into inventing the missing data.</p>
 
     <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cell_language</span><span class="p">(</span><span class="n">target_index</span><span class="p">))</span>
     <span class="n">defaults</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">benchmark</span>
-    <span class="n">options</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;benchmark_options&quot;</span><span class="p">]</span>
-    <span class="n">checks</span> <span class="o">=</span> <span class="n">resolve_checks</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">checks</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checks&quot;</span><span class="p">))</span>
-    <span class="n">runs</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;runs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">runs</span>
-    <span class="n">fix_attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fix_attempts&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">fix_attempts</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"benchmark_options"</span><span class="p">]</span>
+    <span class="n">checks</span> <span class="o">=</span> <span class="n">resolve_checks</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">defaults</span><span class="o">.</span><span class="n">checks</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"checks"</span><span class="p">))</span>
+    <span class="n">runs</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"runs"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">runs</span>
+    <span class="n">fix_attempts</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fix_attempts"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">fix_attempts</span>
     <span class="n">runner</span> <span class="o">=</span> <span class="n">BenchmarkRunner</span><span class="p">(</span>
         <span class="n">prefix_cells</span><span class="o">=</span><span class="n">prefix_cells</span><span class="p">,</span>
         <span class="n">interval</span><span class="o">=</span><span class="n">defaults</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;level&quot;</span><span class="p">],</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">"level"</span><span class="p">],</span>
         <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
-        <span class="n">replay_mode</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;replay_mode&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">replay_mode</span><span class="o">=</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"replay_mode"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">defaults</span><span class="o">.</span><span class="n">replay</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;[JUmPER]: benchmarking </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> suggestion(s) against cell &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target_index</span><span class="si">}</span><span class="s2">; each replays </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix_cells</span><span class="p">)</span><span class="si">}</span><span class="s2"> preceding cell(s) &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">runs</span><span class="si">}</span><span class="s2"> time(s). This can take a while.&quot;</span>
+        <span class="sa">f</span><span class="s2">"[JUmPER]: benchmarking </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'suggestions'</span><span class="p">])</span><span class="si">}</span><span class="s2"> suggestion(s) against cell "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">target_index</span><span class="si">}</span><span class="s2">; each replays </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix_cells</span><span class="p">)</span><span class="si">}</span><span class="s2"> preceding cell(s) "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">runs</span><span class="si">}</span><span class="s2"> time(s). This can take a while."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">BenchmarkOrchestrator</span><span class="p">(</span>
         <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
@@ -3887,7 +3887,7 @@ would push the repair loop into inventing the missing data.</p>
 
 
 <h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.resume" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">resume</span><span class="p">(</span><span class="n">shell</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">select</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">resume</span><span class="p">(</span><span class="n">shell</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">select</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span></code>
 
 </h3>
 
@@ -3943,33 +3943,33 @@ into the next cell via <code>shell.set_next_input</code>.</p>
     <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a previously suggested optimization, optionally refined.</span>
+<span class="w">    </span><span class="sd">"""Apply a previously suggested optimization, optionally refined.</span>
 
 <span class="sd">    Loads the state stored under ``run_id`` by a prior ``review``</span>
 <span class="sd">    run, marks suggestion ``select`` as chosen and runs the resume</span>
 <span class="sd">    graph: if ``note`` is provided, the suggestion is rewritten per</span>
 <span class="sd">    that instruction first; either way the resulting code is placed</span>
 <span class="sd">    into the next cell via ``shell.set_next_input``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: No pending AI review found for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[JUmPER]: No pending AI review found for run_id '</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
         <span class="k">return</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">select</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;suggestions&quot;</span><span class="p">]):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">select</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"suggestions"</span><span class="p">]):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Invalid suggestion index </span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2"> for run_id &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;(expected 1-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="sa">f</span><span class="s2">"[JUmPER]: Invalid suggestion index </span><span class="si">{</span><span class="n">select</span><span class="si">}</span><span class="s2"> for run_id '</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">' "</span>
+            <span class="sa">f</span><span class="s2">"(expected 1-</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">'suggestions'</span><span class="p">])</span><span class="si">}</span><span class="s2">)"</span>
         <span class="p">)</span>
         <span class="k">return</span>
 
     <span class="n">resume_state</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="n">state</span><span class="p">,</span>
-        <span class="s2">&quot;chosen_index&quot;</span><span class="p">:</span> <span class="n">select</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="n">note</span><span class="p">,</span>
-        <span class="s2">&quot;refined_code&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"chosen_index"</span><span class="p">:</span> <span class="n">select</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">"note"</span><span class="p">:</span> <span class="n">note</span><span class="p">,</span>
+        <span class="s2">"refined_code"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">final_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_resume_graph</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">resume_state</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_pending_reviews</span><span class="p">[</span><span class="n">run_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_state</span>
@@ -3983,7 +3983,7 @@ into the next cell via <code>shell.set_next_input</code>.</p>
 
 
 <h3 id="jumper_extension.adapters.ai_reviewer.reviewer.AIReviewer.review" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">review</span><span class="p">(</span><span class="n">shell</span><span class="p">,</span> <span class="n">cell_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">&#39;process&#39;</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s1">&#39;faster&#39;</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">benchmark</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">review</span><span class="p">(</span><span class="n">shell</span><span class="p">,</span> <span class="n">cell_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s1">'process'</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s1">'faster'</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s1">''</span><span class="p">,</span> <span class="n">benchmark</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">benchmark_options</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h3>
 
@@ -4051,13 +4051,13 @@ displays the numbered options together with <code>--resume</code> commands.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
-    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
-    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"process"</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"faster"</span><span class="p">,</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the AI-powered performance review on a fresh cell selection.</span>
+<span class="w">    </span><span class="sd">"""Run the AI-powered performance review on a fresh cell selection.</span>
 
 <span class="sd">    The chosen ``strategy`` resolves to a set of overrides that steer</span>
 <span class="sd">    both which context sources are gathered and which prompt rules</span>
@@ -4065,7 +4065,7 @@ displays the numbered options together with <code>--resume</code> commands.</p>
 <span class="sd">    prompt. Collects the cell code and performance context, asks the</span>
 <span class="sd">    LLM to identify the bottleneck and propose optimizations, then</span>
 <span class="sd">    displays the numbered options together with ``--resume`` commands.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
@@ -4078,7 +4078,7 @@ displays the numbered options together with <code>--resume</code> commands.</p>
     <span class="n">resolved</span> <span class="o">=</span> <span class="n">get_strategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">resolved</span><span class="o">.</span><span class="n">require_note</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">note</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: strategy &#39;</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">&#39; requires a --note instruction&quot;</span>
+            <span class="sa">f</span><span class="s2">"[JUmPER]: strategy '</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">' requires a --note instruction"</span>
         <span class="p">)</span>
         <span class="k">return</span>
 
@@ -4162,16 +4162,16 @@ displays the numbered options together with <code>--resume</code> commands.</p>
 <span class="normal">64</span>
 <span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AIReviewerProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural protocol for the AI review adapter used by the service.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Structural protocol for the AI review adapter used by the service."""</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">review</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
-        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
-        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"process"</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"faster"</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
         <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
@@ -4183,7 +4183,7 @@ displays the numbered options together with <code>--resume</code> commands.</p>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -4276,9 +4276,9 @@ that the optional <code>[ai]</code> dependencies are missing.</p>
 <span class="normal">363</span>
 <span class="normal">364</span>
 <span class="normal">365</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UnavailableAIReviewer</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A stub that type-checks against AIReviewerProtocol but only logs</span>
+<span class="w">    </span><span class="sd">"""A stub that type-checks against AIReviewerProtocol but only logs</span>
 <span class="sd">    that the optional ``[ai]`` dependencies are missing.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">_AI_EXTRAS_MISSING_REASON</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span> <span class="o">=</span> <span class="n">reason</span>
 
@@ -4288,9 +4288,9 @@ that the optional <code>[ai]</code> dependencies are missing.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">cell_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
-        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;faster&quot;</span><span class="p">,</span>
-        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"process"</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"faster"</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
         <span class="n">benchmark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">benchmark_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4304,7 +4304,7 @@ that the optional <code>[ai]</code> dependencies are missing.</p>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">select</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_warn</span><span class="p">()</span>
 
@@ -4374,13 +4374,13 @@ the feature instead of raising an <code>ImportError</code>.</p>
 <span class="normal">379</span>
 <span class="normal">380</span>
 <span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_ai_reviewer</span><span class="p">(</span><span class="n">reporter</span><span class="p">:</span> <span class="n">PerformanceReporter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AIReviewerProtocol</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an AI reviewer adapter attached to *reporter*.</span>
+<span class="w">    </span><span class="sd">"""Build an AI reviewer adapter attached to *reporter*.</span>
 
 <span class="sd">    Falls back to :class:`UnavailableAIReviewer` when the optional</span>
 <span class="sd">    ``[ai]`` extras (``langgraph``, ``langchain-openai``) are not</span>
 <span class="sd">    installed, so ``%perfmonitor_ai_review`` can explain how to enable</span>
 <span class="sd">    the feature instead of raising an ``ImportError``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">langgraph</span>  <span class="c1"># noqa: F401</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">langchain_openai</span>  <span class="c1"># noqa: F401</span>

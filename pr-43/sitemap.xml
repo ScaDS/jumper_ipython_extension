@@ -2,206 +2,206 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/api/jupyter/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/api/python/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/api/string/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/getting-started/installation/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/getting-started/quickstart/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/c-custom-collector/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/configuration/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/custom-monitor/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/live-plotting/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/plot-export/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/python-custom-collector/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/script-export/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/session-transfer/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/visualizing-custom-collector-metrics/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/ai-review/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/ai-review/benchmark/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/ai-review/replay-modes/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/guides/ai-review/strategies/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/core/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/ipython/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/monitor/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/ai-reviewer/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/ai-reviewer/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/ai-reviewer/prompt-assembly/query-console/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/analyzer/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/analyzer/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/cell-history/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/cell-history/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/data/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/data/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/reporter/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/reporter/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/script-writer/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/script-writer/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/session/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/session/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/visualizer/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/internals/adapters/visualizer/architecture/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/install/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/kernel/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/api/utilities/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/getting-started/installation/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/getting-started/quickstart/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/guides/magic-commands/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
     <url>
          <loc>https://scads.github.io/jumper_jupyter_performance/wrapper-kernel/guides/wrap-kernel/</loc>
-         <lastmod>2026-08-13</lastmod>
+         <lastmod>2026-08-27</lastmod>
     </url>
 </urlset>

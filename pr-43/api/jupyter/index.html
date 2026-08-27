@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3930,7 +3930,7 @@ API used by these magics.</p>
 <span class="normal">516</span>
 <span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@magics_class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorMagics</span><span class="p">(</span><span class="n">Magics</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;IPython line magics for the JUmPER extension.</span>
+<span class="w">    </span><span class="sd">"""IPython line magics for the JUmPER extension.</span>
 
 <span class="sd">    This class defines the ``%perfmonitor_*`` family of magics and a</span>
 <span class="sd">    few helpers. Each magic forwards its work to a</span>
@@ -3946,25 +3946,25 @@ API used by these magics.</p>
 <span class="sd">        Load the extension in a notebook::</span>
 
 <span class="sd">            %load_ext jumper_extension</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">magic_adapter</span><span class="p">:</span> <span class="n">PerfmonitorMagicAdapter</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the magics wrapper.</span>
+<span class="w">        </span><span class="sd">"""Initialize the magics wrapper.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            shell: IPython shell the magics are registered on.</span>
 <span class="sd">            magic_adapter: Adapter used to execute the underlying</span>
 <span class="sd">                commands.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span> <span class="o">=</span> <span class="n">magic_adapter</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed before each cell.</span>
+<span class="w">        </span><span class="sd">"""Hook executed before each cell.</span>
 
 <span class="sd">        This inspects the raw cell source, extracts any magic commands,</span>
 <span class="sd">        and informs the underlying adapter so that monitoring and</span>
@@ -3975,7 +3975,7 @@ API used by these magics.</p>
 <span class="sd">                ``raw_cell``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">raw_cell</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">raw_cell</span>
         <span class="n">called_line_magics</span> <span class="o">=</span> <span class="n">get_called_line_magics</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
         <span class="n">should_skip_report</span> <span class="o">=</span> <span class="n">is_pure_line_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
@@ -3986,7 +3986,7 @@ API used by these magics.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">post_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed after each cell has run.</span>
+<span class="w">        </span><span class="sd">"""Hook executed after each cell has run.</span>
 
 <span class="sd">        Delegates to the magic adapter so that post-cell reporting and</span>
 <span class="sd">        bookkeeping can be performed.</span>
@@ -3995,12 +3995,12 @@ API used by these magics.</p>
 <span class="sd">            result: IPython execution result object.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">on_post_run_cell</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show hardware resources available to the current session.</span>
+<span class="w">        </span><span class="sd">"""Show hardware resources available to the current session.</span>
 
 <span class="sd">        This magic prints CPUs, memory, and GPU information for either</span>
 <span class="sd">        a live or imported monitoring session.</span>
@@ -4014,22 +4014,22 @@ API used by these magics.</p>
 <span class="sd">            Show resources for the current session::</span>
 
 <span class="sd">                %perfmonitor_resources</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_resources</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start performance monitoring.</span>
+<span class="w">        </span><span class="sd">"""Start performance monitoring.</span>
 
 <span class="sd">        Supports an optional interval (sampling rate in seconds) and a</span>
 <span class="sd">        ``--monitor`` flag to select the monitor backend.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Command line arguments. Examples:</span>
-<span class="sd">                - ``&quot;&quot;`` (default interval, default monitor)</span>
-<span class="sd">                - ``&quot;0.5&quot;`` (0.5s interval, default monitor)</span>
-<span class="sd">                - ``&quot;--monitor slurm_multinode&quot;`` (default interval, SLURM multi-node)</span>
-<span class="sd">                - ``&quot;0.5 --monitor slurm_multinode&quot;`` (0.5s interval, SLURM multi-node)</span>
+<span class="sd">                - ``""`` (default interval, default monitor)</span>
+<span class="sd">                - ``"0.5"`` (0.5s interval, default monitor)</span>
+<span class="sd">                - ``"--monitor slurm_multinode"`` (default interval, SLURM multi-node)</span>
+<span class="sd">                - ``"0.5 --monitor slurm_multinode"`` (0.5s interval, SLURM multi-node)</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
@@ -4050,12 +4050,12 @@ API used by these magics.</p>
 <span class="sd">            Start multi-node SLURM monitoring with custom interval::</span>
 
 <span class="sd">                %perfmonitor_start 0.5 --monitor slurm_multinode</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the active performance monitoring session.</span>
+<span class="w">        </span><span class="sd">"""Stop the active performance monitoring session.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -4064,12 +4064,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_stop</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_stop</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open an interactive performance plot.</span>
+<span class="w">        </span><span class="sd">"""Open an interactive performance plot.</span>
 
 <span class="sd">        This magic opens interactive widgets for exploring collected</span>
 <span class="sd">        performance data. Supports live-updating plots that continuously</span>
@@ -4097,19 +4097,19 @@ API used by these magics.</p>
 <span class="sd">            Open a live plot with specific metrics and fast updates::</span>
 
 <span class="sd">                %perfmonitor_plot --live 0.5 --metrics cpu,mem</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable automatic performance reports after each cell.</span>
+<span class="w">        </span><span class="sd">"""Enable automatic performance reports after each cell.</span>
 
 <span class="sd">        The line string is parsed for options such as monitoring level,</span>
 <span class="sd">        interval, and whether to use text or HTML output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--level process --interval 1.0&quot;``.</span>
+<span class="sd">                ``"--level process --interval 1.0"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -4121,13 +4121,13 @@ API used by these magics.</p>
 <span class="sd">            Enable text reports for user level with custom interval::</span>
 
 <span class="sd">                %perfmonitor_enable_perfreports --level user --interval 0.5 --text</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable automatic performance reports.</span>
+<span class="w">        </span><span class="sd">"""Disable automatic performance reports.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -4136,19 +4136,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_disable_perfreports</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_perfreport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show a performance report for the current session.</span>
+<span class="w">        </span><span class="sd">"""Show a performance report for the current session.</span>
 
 <span class="sd">        The line string may include cell range and monitoring level</span>
 <span class="sd">        options to restrict the report.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--cells 2:5 --level system&quot;``.</span>
+<span class="sd">                ``"--cells 2:5 --level system"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -4160,14 +4160,14 @@ API used by these magics.</p>
 <span class="sd">            Show a report for cells 2–5 at system level::</span>
 
 <span class="sd">                %perfmonitor_perfreport --cells 2:5 --level system</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_ai_review</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get LLM-powered optimization suggestions, or apply one.</span>
+<span class="w">        </span><span class="sd">"""Get LLM-powered optimization suggestions, or apply one.</span>
 
-<span class="sd">        Fresh run: analyzes the selected cell&#39;s code and performance</span>
+<span class="sd">        Fresh run: analyzes the selected cell's code and performance</span>
 <span class="sd">        data, asks the LLM to identify the bottleneck and propose</span>
 <span class="sd">        ranked optimization options, then displays them together with</span>
 <span class="sd">        a run id and ``--resume`` commands.</span>
@@ -4185,13 +4185,13 @@ API used by these magics.</p>
 
 <span class="sd">        Resume run: applies suggestion ``--select N`` from a previous</span>
 <span class="sd">        ``--resume RUN_ID`` review - optionally rewriting it first via</span>
-<span class="sd">        ``--note &quot;instruction&quot;`` - and places the resulting</span>
+<span class="sd">        ``--note "instruction"`` - and places the resulting</span>
 <span class="sd">        code into the next cell. ``--resume RUN_ID --benchmark``</span>
 <span class="sd">        measures that review instead of applying anything from it.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            line: Raw argument string, such as ``&quot;--cells 5 --level</span>
-<span class="sd">                process&quot;`` or ``&quot;--resume abc123 --select 1&quot;``.</span>
+<span class="sd">            line: Raw argument string, such as ``"--cells 5 --level</span>
+<span class="sd">                process"`` or ``"--resume abc123 --select 1"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -4222,20 +4222,20 @@ API used by these magics.</p>
 
 <span class="sd">            Apply a refined version of the second suggestion::</span>
 
-<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note &quot;use multiprocessing instead of joblib&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_ai_review</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export performance data or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, data is written to disk. Otherwise,</span>
 <span class="sd">        the resulting data frames are pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, such as</span>
-<span class="sd">                ``&quot;--file perf.csv --level process&quot;``.</span>
+<span class="sd">                ``"--file perf.csv --level process"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -4247,20 +4247,20 @@ API used by these magics.</p>
 <span class="sd">            Push a DataFrame into the notebook::</span>
 
 <span class="sd">                %perfmonitor_export_perfdata --level user</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export cell history or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, the cell history is written to disk.</span>
 <span class="sd">        Otherwise, a data frame is pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--file cells.csv&quot;``.</span>
+<span class="sd">                ``"--file cells.csv"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -4272,13 +4272,13 @@ API used by these magics.</p>
 <span class="sd">            Push the cell history DataFrame::</span>
 
 <span class="sd">                %perfmonitor_export_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load performance data from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load performance data from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -4287,13 +4287,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_perfdata --file perf.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load cell history from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load cell history from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -4302,13 +4302,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_cell_history --file cells.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the full monitoring session to a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Export the full monitoring session to a directory or zip.</span>
 
 <span class="sd">        When the target ends with ``.zip``, a temporary directory is</span>
 <span class="sd">        created and compressed into that archive.</span>
@@ -4327,12 +4327,12 @@ API used by these magics.</p>
 <span class="sd">            Export into a zip archive::</span>
 
 <span class="sd">                %export_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">export_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import a monitoring session from a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Import a monitoring session from a directory or zip.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string with the source path.</span>
@@ -4341,12 +4341,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %import_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">import_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a quick setup for interactive monitoring.</span>
+<span class="w">        </span><span class="sd">"""Run a quick setup for interactive monitoring.</span>
 
 <span class="sd">        This helper enables ``ipympl`` interactive plots (if available),</span>
 <span class="sd">        starts monitoring, and turns on automatic performance reports.</span>
@@ -4360,18 +4360,18 @@ API used by these magics.</p>
 <span class="sd">            Quickly prepare interactive monitoring in a notebook::</span>
 
 <span class="sd">                %perfmonitor_fast_setup</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Enable ipympl interactive plots</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">,</span> <span class="s1">&#39;ipympl&#39;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Enabled ipympl interactive plots&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">'matplotlib'</span><span class="p">,</span> <span class="s1">'ipympl'</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"[JUmPER]: Enabled ipympl interactive plots"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_fast_setup</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">show_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show an interactive table of executed cells.</span>
+<span class="w">        </span><span class="sd">"""Show an interactive table of executed cells.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -4380,12 +4380,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %show_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">show_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show comprehensive help for all available magics.</span>
+<span class="w">        </span><span class="sd">"""Show comprehensive help for all available magics.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -4394,19 +4394,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_help</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_help</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">start_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from subsequent cells to a Python script.</span>
+<span class="w">        </span><span class="sd">"""Start recording code from subsequent cells to a Python script.</span>
 
 <span class="sd">        If no path is provided, the script writer chooses a default</span>
 <span class="sd">        filename based on the current time.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Optional output path, for example</span>
-<span class="sd">                ``\&quot;my_script.py\&quot;``.</span>
+<span class="sd">                ``\"my_script.py\"``.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            Start recording to a generated filename::</span>
@@ -4416,19 +4416,19 @@ API used by these magics.</p>
 <span class="sd">            Record to a specific file::</span>
 
 <span class="sd">                %start_write_script my_script.py</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">start_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">end_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
+<span class="w">        </span><span class="sd">"""Stop recording and save accumulated code to a script file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %end_write_script</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">end_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -4573,17 +4573,17 @@ API used by these magics.</p>
 <span class="normal">138</span>
 <span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start performance monitoring.</span>
+<span class="w">    </span><span class="sd">"""Start performance monitoring.</span>
 
 <span class="sd">    Supports an optional interval (sampling rate in seconds) and a</span>
 <span class="sd">    ``--monitor`` flag to select the monitor backend.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Command line arguments. Examples:</span>
-<span class="sd">            - ``&quot;&quot;`` (default interval, default monitor)</span>
-<span class="sd">            - ``&quot;0.5&quot;`` (0.5s interval, default monitor)</span>
-<span class="sd">            - ``&quot;--monitor slurm_multinode&quot;`` (default interval, SLURM multi-node)</span>
-<span class="sd">            - ``&quot;0.5 --monitor slurm_multinode&quot;`` (0.5s interval, SLURM multi-node)</span>
+<span class="sd">            - ``""`` (default interval, default monitor)</span>
+<span class="sd">            - ``"0.5"`` (0.5s interval, default monitor)</span>
+<span class="sd">            - ``"--monitor slurm_multinode"`` (default interval, SLURM multi-node)</span>
+<span class="sd">            - ``"0.5 --monitor slurm_multinode"`` (0.5s interval, SLURM multi-node)</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
@@ -4604,7 +4604,7 @@ API used by these magics.</p>
 <span class="sd">        Start multi-node SLURM monitoring with custom interval::</span>
 
 <span class="sd">            %perfmonitor_start 0.5 --monitor slurm_multinode</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4679,7 +4679,7 @@ API used by these magics.</p>
 <span class="normal">152</span>
 <span class="normal">153</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the active performance monitoring session.</span>
+<span class="w">    </span><span class="sd">"""Stop the active performance monitoring session.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Unused argument string.</span>
@@ -4688,7 +4688,7 @@ API used by these magics.</p>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %perfmonitor_stop</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_stop</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4781,14 +4781,14 @@ options to restrict the report.</p>
 <span class="normal">248</span>
 <span class="normal">249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_perfreport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Show a performance report for the current session.</span>
+<span class="w">    </span><span class="sd">"""Show a performance report for the current session.</span>
 
 <span class="sd">    The line string may include cell range and monitoring level</span>
 <span class="sd">    options to restrict the report.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string, for example</span>
-<span class="sd">            ``&quot;--cells 2:5 --level system&quot;``.</span>
+<span class="sd">            ``"--cells 2:5 --level system"``.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
 
@@ -4800,7 +4800,7 @@ options to restrict the report.</p>
 <span class="sd">        Show a report for cells 2–5 at system level::</span>
 
 <span class="sd">            %perfmonitor_perfreport --cells 2:5 --level system</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4909,7 +4909,7 @@ Supports --live flag for continuous updates.</p>
 <span class="normal">185</span>
 <span class="normal">186</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open an interactive performance plot.</span>
+<span class="w">    </span><span class="sd">"""Open an interactive performance plot.</span>
 
 <span class="sd">    This magic opens interactive widgets for exploring collected</span>
 <span class="sd">    performance data. Supports live-updating plots that continuously</span>
@@ -4937,7 +4937,7 @@ Supports --live flag for continuous updates.</p>
 <span class="sd">        Open a live plot with specific metrics and fast updates::</span>
 
 <span class="sd">            %perfmonitor_plot --live 0.5 --metrics cpu,mem</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5030,14 +5030,14 @@ interval, and whether to use text or HTML output.</p>
 <span class="normal">209</span>
 <span class="normal">210</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enable automatic performance reports after each cell.</span>
+<span class="w">    </span><span class="sd">"""Enable automatic performance reports after each cell.</span>
 
 <span class="sd">    The line string is parsed for options such as monitoring level,</span>
 <span class="sd">    interval, and whether to use text or HTML output.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string, for example</span>
-<span class="sd">            ``&quot;--level process --interval 1.0&quot;``.</span>
+<span class="sd">            ``"--level process --interval 1.0"``.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
 
@@ -5049,7 +5049,7 @@ interval, and whether to use text or HTML output.</p>
 <span class="sd">        Enable text reports for user level with custom interval::</span>
 
 <span class="sd">            %perfmonitor_enable_perfreports --level user --interval 0.5 --text</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5124,7 +5124,7 @@ interval, and whether to use text or HTML output.</p>
 <span class="normal">224</span>
 <span class="normal">225</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Disable automatic performance reports.</span>
+<span class="w">    </span><span class="sd">"""Disable automatic performance reports.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Unused argument string.</span>
@@ -5133,7 +5133,7 @@ interval, and whether to use text or HTML output.</p>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %perfmonitor_disable_perfreports</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5736,7 +5736,7 @@ API used by these magics.</p>
 <span class="normal">516</span>
 <span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@magics_class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorMagics</span><span class="p">(</span><span class="n">Magics</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;IPython line magics for the JUmPER extension.</span>
+<span class="w">    </span><span class="sd">"""IPython line magics for the JUmPER extension.</span>
 
 <span class="sd">    This class defines the ``%perfmonitor_*`` family of magics and a</span>
 <span class="sd">    few helpers. Each magic forwards its work to a</span>
@@ -5752,25 +5752,25 @@ API used by these magics.</p>
 <span class="sd">        Load the extension in a notebook::</span>
 
 <span class="sd">            %load_ext jumper_extension</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">magic_adapter</span><span class="p">:</span> <span class="n">PerfmonitorMagicAdapter</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the magics wrapper.</span>
+<span class="w">        </span><span class="sd">"""Initialize the magics wrapper.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            shell: IPython shell the magics are registered on.</span>
 <span class="sd">            magic_adapter: Adapter used to execute the underlying</span>
 <span class="sd">                commands.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span> <span class="o">=</span> <span class="n">magic_adapter</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed before each cell.</span>
+<span class="w">        </span><span class="sd">"""Hook executed before each cell.</span>
 
 <span class="sd">        This inspects the raw cell source, extracts any magic commands,</span>
 <span class="sd">        and informs the underlying adapter so that monitoring and</span>
@@ -5781,7 +5781,7 @@ API used by these magics.</p>
 <span class="sd">                ``raw_cell``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">raw_cell</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">raw_cell</span>
         <span class="n">called_line_magics</span> <span class="o">=</span> <span class="n">get_called_line_magics</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
         <span class="n">should_skip_report</span> <span class="o">=</span> <span class="n">is_pure_line_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
@@ -5792,7 +5792,7 @@ API used by these magics.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">post_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed after each cell has run.</span>
+<span class="w">        </span><span class="sd">"""Hook executed after each cell has run.</span>
 
 <span class="sd">        Delegates to the magic adapter so that post-cell reporting and</span>
 <span class="sd">        bookkeeping can be performed.</span>
@@ -5801,12 +5801,12 @@ API used by these magics.</p>
 <span class="sd">            result: IPython execution result object.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">on_post_run_cell</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show hardware resources available to the current session.</span>
+<span class="w">        </span><span class="sd">"""Show hardware resources available to the current session.</span>
 
 <span class="sd">        This magic prints CPUs, memory, and GPU information for either</span>
 <span class="sd">        a live or imported monitoring session.</span>
@@ -5820,22 +5820,22 @@ API used by these magics.</p>
 <span class="sd">            Show resources for the current session::</span>
 
 <span class="sd">                %perfmonitor_resources</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_resources</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start performance monitoring.</span>
+<span class="w">        </span><span class="sd">"""Start performance monitoring.</span>
 
 <span class="sd">        Supports an optional interval (sampling rate in seconds) and a</span>
 <span class="sd">        ``--monitor`` flag to select the monitor backend.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Command line arguments. Examples:</span>
-<span class="sd">                - ``&quot;&quot;`` (default interval, default monitor)</span>
-<span class="sd">                - ``&quot;0.5&quot;`` (0.5s interval, default monitor)</span>
-<span class="sd">                - ``&quot;--monitor slurm_multinode&quot;`` (default interval, SLURM multi-node)</span>
-<span class="sd">                - ``&quot;0.5 --monitor slurm_multinode&quot;`` (0.5s interval, SLURM multi-node)</span>
+<span class="sd">                - ``""`` (default interval, default monitor)</span>
+<span class="sd">                - ``"0.5"`` (0.5s interval, default monitor)</span>
+<span class="sd">                - ``"--monitor slurm_multinode"`` (default interval, SLURM multi-node)</span>
+<span class="sd">                - ``"0.5 --monitor slurm_multinode"`` (0.5s interval, SLURM multi-node)</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
@@ -5856,12 +5856,12 @@ API used by these magics.</p>
 <span class="sd">            Start multi-node SLURM monitoring with custom interval::</span>
 
 <span class="sd">                %perfmonitor_start 0.5 --monitor slurm_multinode</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the active performance monitoring session.</span>
+<span class="w">        </span><span class="sd">"""Stop the active performance monitoring session.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -5870,12 +5870,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_stop</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_stop</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open an interactive performance plot.</span>
+<span class="w">        </span><span class="sd">"""Open an interactive performance plot.</span>
 
 <span class="sd">        This magic opens interactive widgets for exploring collected</span>
 <span class="sd">        performance data. Supports live-updating plots that continuously</span>
@@ -5903,19 +5903,19 @@ API used by these magics.</p>
 <span class="sd">            Open a live plot with specific metrics and fast updates::</span>
 
 <span class="sd">                %perfmonitor_plot --live 0.5 --metrics cpu,mem</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable automatic performance reports after each cell.</span>
+<span class="w">        </span><span class="sd">"""Enable automatic performance reports after each cell.</span>
 
 <span class="sd">        The line string is parsed for options such as monitoring level,</span>
 <span class="sd">        interval, and whether to use text or HTML output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--level process --interval 1.0&quot;``.</span>
+<span class="sd">                ``"--level process --interval 1.0"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -5927,13 +5927,13 @@ API used by these magics.</p>
 <span class="sd">            Enable text reports for user level with custom interval::</span>
 
 <span class="sd">                %perfmonitor_enable_perfreports --level user --interval 0.5 --text</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable automatic performance reports.</span>
+<span class="w">        </span><span class="sd">"""Disable automatic performance reports.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -5942,19 +5942,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_disable_perfreports</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_perfreport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show a performance report for the current session.</span>
+<span class="w">        </span><span class="sd">"""Show a performance report for the current session.</span>
 
 <span class="sd">        The line string may include cell range and monitoring level</span>
 <span class="sd">        options to restrict the report.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--cells 2:5 --level system&quot;``.</span>
+<span class="sd">                ``"--cells 2:5 --level system"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -5966,14 +5966,14 @@ API used by these magics.</p>
 <span class="sd">            Show a report for cells 2–5 at system level::</span>
 
 <span class="sd">                %perfmonitor_perfreport --cells 2:5 --level system</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_ai_review</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get LLM-powered optimization suggestions, or apply one.</span>
+<span class="w">        </span><span class="sd">"""Get LLM-powered optimization suggestions, or apply one.</span>
 
-<span class="sd">        Fresh run: analyzes the selected cell&#39;s code and performance</span>
+<span class="sd">        Fresh run: analyzes the selected cell's code and performance</span>
 <span class="sd">        data, asks the LLM to identify the bottleneck and propose</span>
 <span class="sd">        ranked optimization options, then displays them together with</span>
 <span class="sd">        a run id and ``--resume`` commands.</span>
@@ -5991,13 +5991,13 @@ API used by these magics.</p>
 
 <span class="sd">        Resume run: applies suggestion ``--select N`` from a previous</span>
 <span class="sd">        ``--resume RUN_ID`` review - optionally rewriting it first via</span>
-<span class="sd">        ``--note &quot;instruction&quot;`` - and places the resulting</span>
+<span class="sd">        ``--note "instruction"`` - and places the resulting</span>
 <span class="sd">        code into the next cell. ``--resume RUN_ID --benchmark``</span>
 <span class="sd">        measures that review instead of applying anything from it.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            line: Raw argument string, such as ``&quot;--cells 5 --level</span>
-<span class="sd">                process&quot;`` or ``&quot;--resume abc123 --select 1&quot;``.</span>
+<span class="sd">            line: Raw argument string, such as ``"--cells 5 --level</span>
+<span class="sd">                process"`` or ``"--resume abc123 --select 1"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -6028,20 +6028,20 @@ API used by these magics.</p>
 
 <span class="sd">            Apply a refined version of the second suggestion::</span>
 
-<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note &quot;use multiprocessing instead of joblib&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_ai_review</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export performance data or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, data is written to disk. Otherwise,</span>
 <span class="sd">        the resulting data frames are pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, such as</span>
-<span class="sd">                ``&quot;--file perf.csv --level process&quot;``.</span>
+<span class="sd">                ``"--file perf.csv --level process"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -6053,20 +6053,20 @@ API used by these magics.</p>
 <span class="sd">            Push a DataFrame into the notebook::</span>
 
 <span class="sd">                %perfmonitor_export_perfdata --level user</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export cell history or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, the cell history is written to disk.</span>
 <span class="sd">        Otherwise, a data frame is pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--file cells.csv&quot;``.</span>
+<span class="sd">                ``"--file cells.csv"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -6078,13 +6078,13 @@ API used by these magics.</p>
 <span class="sd">            Push the cell history DataFrame::</span>
 
 <span class="sd">                %perfmonitor_export_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load performance data from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load performance data from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -6093,13 +6093,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_perfdata --file perf.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load cell history from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load cell history from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -6108,13 +6108,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_cell_history --file cells.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the full monitoring session to a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Export the full monitoring session to a directory or zip.</span>
 
 <span class="sd">        When the target ends with ``.zip``, a temporary directory is</span>
 <span class="sd">        created and compressed into that archive.</span>
@@ -6133,12 +6133,12 @@ API used by these magics.</p>
 <span class="sd">            Export into a zip archive::</span>
 
 <span class="sd">                %export_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">export_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import a monitoring session from a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Import a monitoring session from a directory or zip.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string with the source path.</span>
@@ -6147,12 +6147,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %import_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">import_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a quick setup for interactive monitoring.</span>
+<span class="w">        </span><span class="sd">"""Run a quick setup for interactive monitoring.</span>
 
 <span class="sd">        This helper enables ``ipympl`` interactive plots (if available),</span>
 <span class="sd">        starts monitoring, and turns on automatic performance reports.</span>
@@ -6166,18 +6166,18 @@ API used by these magics.</p>
 <span class="sd">            Quickly prepare interactive monitoring in a notebook::</span>
 
 <span class="sd">                %perfmonitor_fast_setup</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Enable ipympl interactive plots</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">,</span> <span class="s1">&#39;ipympl&#39;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Enabled ipympl interactive plots&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">'matplotlib'</span><span class="p">,</span> <span class="s1">'ipympl'</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"[JUmPER]: Enabled ipympl interactive plots"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_fast_setup</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">show_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show an interactive table of executed cells.</span>
+<span class="w">        </span><span class="sd">"""Show an interactive table of executed cells.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -6186,12 +6186,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %show_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">show_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show comprehensive help for all available magics.</span>
+<span class="w">        </span><span class="sd">"""Show comprehensive help for all available magics.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -6200,19 +6200,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_help</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_help</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">start_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from subsequent cells to a Python script.</span>
+<span class="w">        </span><span class="sd">"""Start recording code from subsequent cells to a Python script.</span>
 
 <span class="sd">        If no path is provided, the script writer chooses a default</span>
 <span class="sd">        filename based on the current time.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Optional output path, for example</span>
-<span class="sd">                ``\&quot;my_script.py\&quot;``.</span>
+<span class="sd">                ``\"my_script.py\"``.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            Start recording to a generated filename::</span>
@@ -6222,19 +6222,19 @@ API used by these magics.</p>
 <span class="sd">            Record to a specific file::</span>
 
 <span class="sd">                %start_write_script my_script.py</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">start_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">end_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
+<span class="w">        </span><span class="sd">"""Stop recording and save accumulated code to a script file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %end_write_script</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">end_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -6407,9 +6407,9 @@ process"</code> or <code>"--resume abc123 --select 1"</code>.</p>
 <span class="normal">311</span>
 <span class="normal">312</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_ai_review</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get LLM-powered optimization suggestions, or apply one.</span>
+<span class="w">    </span><span class="sd">"""Get LLM-powered optimization suggestions, or apply one.</span>
 
-<span class="sd">    Fresh run: analyzes the selected cell&#39;s code and performance</span>
+<span class="sd">    Fresh run: analyzes the selected cell's code and performance</span>
 <span class="sd">    data, asks the LLM to identify the bottleneck and propose</span>
 <span class="sd">    ranked optimization options, then displays them together with</span>
 <span class="sd">    a run id and ``--resume`` commands.</span>
@@ -6427,13 +6427,13 @@ process"</code> or <code>"--resume abc123 --select 1"</code>.</p>
 
 <span class="sd">    Resume run: applies suggestion ``--select N`` from a previous</span>
 <span class="sd">    ``--resume RUN_ID`` review - optionally rewriting it first via</span>
-<span class="sd">    ``--note &quot;instruction&quot;`` - and places the resulting</span>
+<span class="sd">    ``--note "instruction"`` - and places the resulting</span>
 <span class="sd">    code into the next cell. ``--resume RUN_ID --benchmark``</span>
 <span class="sd">    measures that review instead of applying anything from it.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        line: Raw argument string, such as ``&quot;--cells 5 --level</span>
-<span class="sd">            process&quot;`` or ``&quot;--resume abc123 --select 1&quot;``.</span>
+<span class="sd">        line: Raw argument string, such as ``"--cells 5 --level</span>
+<span class="sd">            process"`` or ``"--resume abc123 --select 1"``.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
 
@@ -6464,8 +6464,8 @@ process"</code> or <code>"--resume abc123 --select 1"</code>.</p>
 
 <span class="sd">        Apply a refined version of the second suggestion::</span>
 
-<span class="sd">            %perfmonitor_ai_review --resume abc123 --select 2 --note &quot;use multiprocessing instead of joblib&quot;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">            %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_ai_review</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7067,7 +7067,7 @@ API used by these magics.</p>
 <span class="normal">516</span>
 <span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@magics_class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorMagics</span><span class="p">(</span><span class="n">Magics</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;IPython line magics for the JUmPER extension.</span>
+<span class="w">    </span><span class="sd">"""IPython line magics for the JUmPER extension.</span>
 
 <span class="sd">    This class defines the ``%perfmonitor_*`` family of magics and a</span>
 <span class="sd">    few helpers. Each magic forwards its work to a</span>
@@ -7083,25 +7083,25 @@ API used by these magics.</p>
 <span class="sd">        Load the extension in a notebook::</span>
 
 <span class="sd">            %load_ext jumper_extension</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">magic_adapter</span><span class="p">:</span> <span class="n">PerfmonitorMagicAdapter</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the magics wrapper.</span>
+<span class="w">        </span><span class="sd">"""Initialize the magics wrapper.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            shell: IPython shell the magics are registered on.</span>
 <span class="sd">            magic_adapter: Adapter used to execute the underlying</span>
 <span class="sd">                commands.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span> <span class="o">=</span> <span class="n">magic_adapter</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed before each cell.</span>
+<span class="w">        </span><span class="sd">"""Hook executed before each cell.</span>
 
 <span class="sd">        This inspects the raw cell source, extracts any magic commands,</span>
 <span class="sd">        and informs the underlying adapter so that monitoring and</span>
@@ -7112,7 +7112,7 @@ API used by these magics.</p>
 <span class="sd">                ``raw_cell``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">raw_cell</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">raw_cell</span>
         <span class="n">called_line_magics</span> <span class="o">=</span> <span class="n">get_called_line_magics</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
         <span class="n">should_skip_report</span> <span class="o">=</span> <span class="n">is_pure_line_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
@@ -7123,7 +7123,7 @@ API used by these magics.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">post_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed after each cell has run.</span>
+<span class="w">        </span><span class="sd">"""Hook executed after each cell has run.</span>
 
 <span class="sd">        Delegates to the magic adapter so that post-cell reporting and</span>
 <span class="sd">        bookkeeping can be performed.</span>
@@ -7132,12 +7132,12 @@ API used by these magics.</p>
 <span class="sd">            result: IPython execution result object.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">on_post_run_cell</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show hardware resources available to the current session.</span>
+<span class="w">        </span><span class="sd">"""Show hardware resources available to the current session.</span>
 
 <span class="sd">        This magic prints CPUs, memory, and GPU information for either</span>
 <span class="sd">        a live or imported monitoring session.</span>
@@ -7151,22 +7151,22 @@ API used by these magics.</p>
 <span class="sd">            Show resources for the current session::</span>
 
 <span class="sd">                %perfmonitor_resources</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_resources</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start performance monitoring.</span>
+<span class="w">        </span><span class="sd">"""Start performance monitoring.</span>
 
 <span class="sd">        Supports an optional interval (sampling rate in seconds) and a</span>
 <span class="sd">        ``--monitor`` flag to select the monitor backend.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Command line arguments. Examples:</span>
-<span class="sd">                - ``&quot;&quot;`` (default interval, default monitor)</span>
-<span class="sd">                - ``&quot;0.5&quot;`` (0.5s interval, default monitor)</span>
-<span class="sd">                - ``&quot;--monitor slurm_multinode&quot;`` (default interval, SLURM multi-node)</span>
-<span class="sd">                - ``&quot;0.5 --monitor slurm_multinode&quot;`` (0.5s interval, SLURM multi-node)</span>
+<span class="sd">                - ``""`` (default interval, default monitor)</span>
+<span class="sd">                - ``"0.5"`` (0.5s interval, default monitor)</span>
+<span class="sd">                - ``"--monitor slurm_multinode"`` (default interval, SLURM multi-node)</span>
+<span class="sd">                - ``"0.5 --monitor slurm_multinode"`` (0.5s interval, SLURM multi-node)</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
@@ -7187,12 +7187,12 @@ API used by these magics.</p>
 <span class="sd">            Start multi-node SLURM monitoring with custom interval::</span>
 
 <span class="sd">                %perfmonitor_start 0.5 --monitor slurm_multinode</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the active performance monitoring session.</span>
+<span class="w">        </span><span class="sd">"""Stop the active performance monitoring session.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -7201,12 +7201,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_stop</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_stop</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open an interactive performance plot.</span>
+<span class="w">        </span><span class="sd">"""Open an interactive performance plot.</span>
 
 <span class="sd">        This magic opens interactive widgets for exploring collected</span>
 <span class="sd">        performance data. Supports live-updating plots that continuously</span>
@@ -7234,19 +7234,19 @@ API used by these magics.</p>
 <span class="sd">            Open a live plot with specific metrics and fast updates::</span>
 
 <span class="sd">                %perfmonitor_plot --live 0.5 --metrics cpu,mem</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable automatic performance reports after each cell.</span>
+<span class="w">        </span><span class="sd">"""Enable automatic performance reports after each cell.</span>
 
 <span class="sd">        The line string is parsed for options such as monitoring level,</span>
 <span class="sd">        interval, and whether to use text or HTML output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--level process --interval 1.0&quot;``.</span>
+<span class="sd">                ``"--level process --interval 1.0"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -7258,13 +7258,13 @@ API used by these magics.</p>
 <span class="sd">            Enable text reports for user level with custom interval::</span>
 
 <span class="sd">                %perfmonitor_enable_perfreports --level user --interval 0.5 --text</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable automatic performance reports.</span>
+<span class="w">        </span><span class="sd">"""Disable automatic performance reports.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -7273,19 +7273,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_disable_perfreports</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_perfreport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show a performance report for the current session.</span>
+<span class="w">        </span><span class="sd">"""Show a performance report for the current session.</span>
 
 <span class="sd">        The line string may include cell range and monitoring level</span>
 <span class="sd">        options to restrict the report.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--cells 2:5 --level system&quot;``.</span>
+<span class="sd">                ``"--cells 2:5 --level system"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -7297,14 +7297,14 @@ API used by these magics.</p>
 <span class="sd">            Show a report for cells 2–5 at system level::</span>
 
 <span class="sd">                %perfmonitor_perfreport --cells 2:5 --level system</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_ai_review</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get LLM-powered optimization suggestions, or apply one.</span>
+<span class="w">        </span><span class="sd">"""Get LLM-powered optimization suggestions, or apply one.</span>
 
-<span class="sd">        Fresh run: analyzes the selected cell&#39;s code and performance</span>
+<span class="sd">        Fresh run: analyzes the selected cell's code and performance</span>
 <span class="sd">        data, asks the LLM to identify the bottleneck and propose</span>
 <span class="sd">        ranked optimization options, then displays them together with</span>
 <span class="sd">        a run id and ``--resume`` commands.</span>
@@ -7322,13 +7322,13 @@ API used by these magics.</p>
 
 <span class="sd">        Resume run: applies suggestion ``--select N`` from a previous</span>
 <span class="sd">        ``--resume RUN_ID`` review - optionally rewriting it first via</span>
-<span class="sd">        ``--note &quot;instruction&quot;`` - and places the resulting</span>
+<span class="sd">        ``--note "instruction"`` - and places the resulting</span>
 <span class="sd">        code into the next cell. ``--resume RUN_ID --benchmark``</span>
 <span class="sd">        measures that review instead of applying anything from it.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            line: Raw argument string, such as ``&quot;--cells 5 --level</span>
-<span class="sd">                process&quot;`` or ``&quot;--resume abc123 --select 1&quot;``.</span>
+<span class="sd">            line: Raw argument string, such as ``"--cells 5 --level</span>
+<span class="sd">                process"`` or ``"--resume abc123 --select 1"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -7359,20 +7359,20 @@ API used by these magics.</p>
 
 <span class="sd">            Apply a refined version of the second suggestion::</span>
 
-<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note &quot;use multiprocessing instead of joblib&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_ai_review</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export performance data or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, data is written to disk. Otherwise,</span>
 <span class="sd">        the resulting data frames are pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, such as</span>
-<span class="sd">                ``&quot;--file perf.csv --level process&quot;``.</span>
+<span class="sd">                ``"--file perf.csv --level process"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -7384,20 +7384,20 @@ API used by these magics.</p>
 <span class="sd">            Push a DataFrame into the notebook::</span>
 
 <span class="sd">                %perfmonitor_export_perfdata --level user</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export cell history or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, the cell history is written to disk.</span>
 <span class="sd">        Otherwise, a data frame is pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--file cells.csv&quot;``.</span>
+<span class="sd">                ``"--file cells.csv"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -7409,13 +7409,13 @@ API used by these magics.</p>
 <span class="sd">            Push the cell history DataFrame::</span>
 
 <span class="sd">                %perfmonitor_export_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load performance data from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load performance data from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -7424,13 +7424,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_perfdata --file perf.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load cell history from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load cell history from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -7439,13 +7439,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_cell_history --file cells.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the full monitoring session to a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Export the full monitoring session to a directory or zip.</span>
 
 <span class="sd">        When the target ends with ``.zip``, a temporary directory is</span>
 <span class="sd">        created and compressed into that archive.</span>
@@ -7464,12 +7464,12 @@ API used by these magics.</p>
 <span class="sd">            Export into a zip archive::</span>
 
 <span class="sd">                %export_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">export_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import a monitoring session from a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Import a monitoring session from a directory or zip.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string with the source path.</span>
@@ -7478,12 +7478,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %import_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">import_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a quick setup for interactive monitoring.</span>
+<span class="w">        </span><span class="sd">"""Run a quick setup for interactive monitoring.</span>
 
 <span class="sd">        This helper enables ``ipympl`` interactive plots (if available),</span>
 <span class="sd">        starts monitoring, and turns on automatic performance reports.</span>
@@ -7497,18 +7497,18 @@ API used by these magics.</p>
 <span class="sd">            Quickly prepare interactive monitoring in a notebook::</span>
 
 <span class="sd">                %perfmonitor_fast_setup</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Enable ipympl interactive plots</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">,</span> <span class="s1">&#39;ipympl&#39;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Enabled ipympl interactive plots&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">'matplotlib'</span><span class="p">,</span> <span class="s1">'ipympl'</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"[JUmPER]: Enabled ipympl interactive plots"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_fast_setup</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">show_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show an interactive table of executed cells.</span>
+<span class="w">        </span><span class="sd">"""Show an interactive table of executed cells.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -7517,12 +7517,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %show_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">show_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show comprehensive help for all available magics.</span>
+<span class="w">        </span><span class="sd">"""Show comprehensive help for all available magics.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -7531,19 +7531,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_help</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_help</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">start_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from subsequent cells to a Python script.</span>
+<span class="w">        </span><span class="sd">"""Start recording code from subsequent cells to a Python script.</span>
 
 <span class="sd">        If no path is provided, the script writer chooses a default</span>
 <span class="sd">        filename based on the current time.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Optional output path, for example</span>
-<span class="sd">                ``\&quot;my_script.py\&quot;``.</span>
+<span class="sd">                ``\"my_script.py\"``.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            Start recording to a generated filename::</span>
@@ -7553,19 +7553,19 @@ API used by these magics.</p>
 <span class="sd">            Record to a specific file::</span>
 
 <span class="sd">                %start_write_script my_script.py</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">start_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">end_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
+<span class="w">        </span><span class="sd">"""Stop recording and save accumulated code to a script file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %end_write_script</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">end_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -7669,14 +7669,14 @@ the resulting data frames are pushed into the user namespace.</p>
 <span class="normal">336</span>
 <span class="normal">337</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export performance data or push it into the notebook.</span>
+<span class="w">    </span><span class="sd">"""Export performance data or push it into the notebook.</span>
 
 <span class="sd">    If ``--file`` is provided, data is written to disk. Otherwise,</span>
 <span class="sd">    the resulting data frames are pushed into the user namespace.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string, such as</span>
-<span class="sd">            ``&quot;--file perf.csv --level process&quot;``.</span>
+<span class="sd">            ``"--file perf.csv --level process"``.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
 
@@ -7688,7 +7688,7 @@ the resulting data frames are pushed into the user namespace.</p>
 <span class="sd">        Push a DataFrame into the notebook::</span>
 
 <span class="sd">            %perfmonitor_export_perfdata --level user</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -7765,7 +7765,7 @@ the resulting data frames are pushed into the user namespace.</p>
 <span class="normal">376</span>
 <span class="normal">377</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load performance data from disk and push it to the notebook.</span>
+<span class="w">    </span><span class="sd">"""Load performance data from disk and push it to the notebook.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string containing ``--file``.</span>
@@ -7774,7 +7774,7 @@ the resulting data frames are pushed into the user namespace.</p>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %perfmonitor_load_perfdata --file perf.csv</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -7869,14 +7869,14 @@ Otherwise, a data frame is pushed into the user namespace.</p>
 <span class="normal">361</span>
 <span class="normal">362</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export cell history or push it into the notebook.</span>
+<span class="w">    </span><span class="sd">"""Export cell history or push it into the notebook.</span>
 
 <span class="sd">    If ``--file`` is provided, the cell history is written to disk.</span>
 <span class="sd">    Otherwise, a data frame is pushed into the user namespace.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string, for example</span>
-<span class="sd">            ``&quot;--file cells.csv&quot;``.</span>
+<span class="sd">            ``"--file cells.csv"``.</span>
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
 
@@ -7888,7 +7888,7 @@ Otherwise, a data frame is pushed into the user namespace.</p>
 <span class="sd">        Push the cell history DataFrame::</span>
 
 <span class="sd">            %perfmonitor_export_cell_history</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -7965,7 +7965,7 @@ Otherwise, a data frame is pushed into the user namespace.</p>
 <span class="normal">391</span>
 <span class="normal">392</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load cell history from disk and push it to the notebook.</span>
+<span class="w">    </span><span class="sd">"""Load cell history from disk and push it to the notebook.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string containing ``--file``.</span>
@@ -7974,7 +7974,7 @@ Otherwise, a data frame is pushed into the user namespace.</p>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %perfmonitor_load_cell_history --file cells.csv</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -8577,7 +8577,7 @@ API used by these magics.</p>
 <span class="normal">516</span>
 <span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@magics_class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PerfmonitorMagics</span><span class="p">(</span><span class="n">Magics</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;IPython line magics for the JUmPER extension.</span>
+<span class="w">    </span><span class="sd">"""IPython line magics for the JUmPER extension.</span>
 
 <span class="sd">    This class defines the ``%perfmonitor_*`` family of magics and a</span>
 <span class="sd">    few helpers. Each magic forwards its work to a</span>
@@ -8593,25 +8593,25 @@ API used by these magics.</p>
 <span class="sd">        Load the extension in a notebook::</span>
 
 <span class="sd">            %load_ext jumper_extension</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">shell</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">magic_adapter</span><span class="p">:</span> <span class="n">PerfmonitorMagicAdapter</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the magics wrapper.</span>
+<span class="w">        </span><span class="sd">"""Initialize the magics wrapper.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            shell: IPython shell the magics are registered on.</span>
 <span class="sd">            magic_adapter: Adapter used to execute the underlying</span>
 <span class="sd">                commands.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">shell</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span> <span class="o">=</span> <span class="n">magic_adapter</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">pre_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed before each cell.</span>
+<span class="w">        </span><span class="sd">"""Hook executed before each cell.</span>
 
 <span class="sd">        This inspects the raw cell source, extracts any magic commands,</span>
 <span class="sd">        and informs the underlying adapter so that monitoring and</span>
@@ -8622,7 +8622,7 @@ API used by these magics.</p>
 <span class="sd">                ``raw_cell``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">raw_cell</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">raw_cell</span>
         <span class="n">called_line_magics</span> <span class="o">=</span> <span class="n">get_called_line_magics</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
         <span class="n">should_skip_report</span> <span class="o">=</span> <span class="n">is_pure_line_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
@@ -8633,7 +8633,7 @@ API used by these magics.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">post_run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hook executed after each cell has run.</span>
+<span class="w">        </span><span class="sd">"""Hook executed after each cell has run.</span>
 
 <span class="sd">        Delegates to the magic adapter so that post-cell reporting and</span>
 <span class="sd">        bookkeeping can be performed.</span>
@@ -8642,12 +8642,12 @@ API used by these magics.</p>
 <span class="sd">            result: IPython execution result object.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">on_post_run_cell</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show hardware resources available to the current session.</span>
+<span class="w">        </span><span class="sd">"""Show hardware resources available to the current session.</span>
 
 <span class="sd">        This magic prints CPUs, memory, and GPU information for either</span>
 <span class="sd">        a live or imported monitoring session.</span>
@@ -8661,22 +8661,22 @@ API used by these magics.</p>
 <span class="sd">            Show resources for the current session::</span>
 
 <span class="sd">                %perfmonitor_resources</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_resources</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start performance monitoring.</span>
+<span class="w">        </span><span class="sd">"""Start performance monitoring.</span>
 
 <span class="sd">        Supports an optional interval (sampling rate in seconds) and a</span>
 <span class="sd">        ``--monitor`` flag to select the monitor backend.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Command line arguments. Examples:</span>
-<span class="sd">                - ``&quot;&quot;`` (default interval, default monitor)</span>
-<span class="sd">                - ``&quot;0.5&quot;`` (0.5s interval, default monitor)</span>
-<span class="sd">                - ``&quot;--monitor slurm_multinode&quot;`` (default interval, SLURM multi-node)</span>
-<span class="sd">                - ``&quot;0.5 --monitor slurm_multinode&quot;`` (0.5s interval, SLURM multi-node)</span>
+<span class="sd">                - ``""`` (default interval, default monitor)</span>
+<span class="sd">                - ``"0.5"`` (0.5s interval, default monitor)</span>
+<span class="sd">                - ``"--monitor slurm_multinode"`` (default interval, SLURM multi-node)</span>
+<span class="sd">                - ``"0.5 --monitor slurm_multinode"`` (0.5s interval, SLURM multi-node)</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
@@ -8697,12 +8697,12 @@ API used by these magics.</p>
 <span class="sd">            Start multi-node SLURM monitoring with custom interval::</span>
 
 <span class="sd">                %perfmonitor_start 0.5 --monitor slurm_multinode</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_start</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the active performance monitoring session.</span>
+<span class="w">        </span><span class="sd">"""Stop the active performance monitoring session.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -8711,12 +8711,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_stop</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_stop</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open an interactive performance plot.</span>
+<span class="w">        </span><span class="sd">"""Open an interactive performance plot.</span>
 
 <span class="sd">        This magic opens interactive widgets for exploring collected</span>
 <span class="sd">        performance data. Supports live-updating plots that continuously</span>
@@ -8744,19 +8744,19 @@ API used by these magics.</p>
 <span class="sd">            Open a live plot with specific metrics and fast updates::</span>
 
 <span class="sd">                %perfmonitor_plot --live 0.5 --metrics cpu,mem</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enable automatic performance reports after each cell.</span>
+<span class="w">        </span><span class="sd">"""Enable automatic performance reports after each cell.</span>
 
 <span class="sd">        The line string is parsed for options such as monitoring level,</span>
 <span class="sd">        interval, and whether to use text or HTML output.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--level process --interval 1.0&quot;``.</span>
+<span class="sd">                ``"--level process --interval 1.0"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -8768,13 +8768,13 @@ API used by these magics.</p>
 <span class="sd">            Enable text reports for user level with custom interval::</span>
 
 <span class="sd">                %perfmonitor_enable_perfreports --level user --interval 0.5 --text</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_enable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable automatic performance reports.</span>
+<span class="w">        </span><span class="sd">"""Disable automatic performance reports.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -8783,19 +8783,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_disable_perfreports</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_disable_perfreports</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_perfreport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show a performance report for the current session.</span>
+<span class="w">        </span><span class="sd">"""Show a performance report for the current session.</span>
 
 <span class="sd">        The line string may include cell range and monitoring level</span>
 <span class="sd">        options to restrict the report.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--cells 2:5 --level system&quot;``.</span>
+<span class="sd">                ``"--cells 2:5 --level system"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -8807,14 +8807,14 @@ API used by these magics.</p>
 <span class="sd">            Show a report for cells 2–5 at system level::</span>
 
 <span class="sd">                %perfmonitor_perfreport --cells 2:5 --level system</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_perfreport</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_ai_review</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get LLM-powered optimization suggestions, or apply one.</span>
+<span class="w">        </span><span class="sd">"""Get LLM-powered optimization suggestions, or apply one.</span>
 
-<span class="sd">        Fresh run: analyzes the selected cell&#39;s code and performance</span>
+<span class="sd">        Fresh run: analyzes the selected cell's code and performance</span>
 <span class="sd">        data, asks the LLM to identify the bottleneck and propose</span>
 <span class="sd">        ranked optimization options, then displays them together with</span>
 <span class="sd">        a run id and ``--resume`` commands.</span>
@@ -8832,13 +8832,13 @@ API used by these magics.</p>
 
 <span class="sd">        Resume run: applies suggestion ``--select N`` from a previous</span>
 <span class="sd">        ``--resume RUN_ID`` review - optionally rewriting it first via</span>
-<span class="sd">        ``--note &quot;instruction&quot;`` - and places the resulting</span>
+<span class="sd">        ``--note "instruction"`` - and places the resulting</span>
 <span class="sd">        code into the next cell. ``--resume RUN_ID --benchmark``</span>
 <span class="sd">        measures that review instead of applying anything from it.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            line: Raw argument string, such as ``&quot;--cells 5 --level</span>
-<span class="sd">                process&quot;`` or ``&quot;--resume abc123 --select 1&quot;``.</span>
+<span class="sd">            line: Raw argument string, such as ``"--cells 5 --level</span>
+<span class="sd">                process"`` or ``"--resume abc123 --select 1"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -8869,20 +8869,20 @@ API used by these magics.</p>
 
 <span class="sd">            Apply a refined version of the second suggestion::</span>
 
-<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note &quot;use multiprocessing instead of joblib&quot;</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">                %perfmonitor_ai_review --resume abc123 --select 2 --note "use multiprocessing instead of joblib"</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_ai_review</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export performance data or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, data is written to disk. Otherwise,</span>
 <span class="sd">        the resulting data frames are pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, such as</span>
-<span class="sd">                ``&quot;--file perf.csv --level process&quot;``.</span>
+<span class="sd">                ``"--file perf.csv --level process"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -8894,20 +8894,20 @@ API used by these magics.</p>
 <span class="sd">            Push a DataFrame into the notebook::</span>
 
 <span class="sd">                %perfmonitor_export_perfdata --level user</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_export_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history or push it into the notebook.</span>
+<span class="w">        </span><span class="sd">"""Export cell history or push it into the notebook.</span>
 
 <span class="sd">        If ``--file`` is provided, the cell history is written to disk.</span>
 <span class="sd">        Otherwise, a data frame is pushed into the user namespace.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string, for example</span>
-<span class="sd">                ``&quot;--file cells.csv&quot;``.</span>
+<span class="sd">                ``"--file cells.csv"``.</span>
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 
@@ -8919,13 +8919,13 @@ API used by these magics.</p>
 <span class="sd">            Push the cell history DataFrame::</span>
 
 <span class="sd">                %perfmonitor_export_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_export_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_perfdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load performance data from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load performance data from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -8934,13 +8934,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_perfdata --file perf.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">perfdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_perfdata</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">perfdata</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load cell history from disk and push it to the notebook.</span>
+<span class="w">        </span><span class="sd">"""Load cell history from disk and push it to the notebook.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string containing ``--file``.</span>
@@ -8949,13 +8949,13 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_load_cell_history --file cells.csv</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">cell_history_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_load_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">cell_history_data</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the full monitoring session to a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Export the full monitoring session to a directory or zip.</span>
 
 <span class="sd">        When the target ends with ``.zip``, a temporary directory is</span>
 <span class="sd">        created and compressed into that archive.</span>
@@ -8974,12 +8974,12 @@ API used by these magics.</p>
 <span class="sd">            Export into a zip archive::</span>
 
 <span class="sd">                %export_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">export_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import a monitoring session from a directory or zip.</span>
+<span class="w">        </span><span class="sd">"""Import a monitoring session from a directory or zip.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Raw argument string with the source path.</span>
@@ -8988,12 +8988,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %import_session my_session.zip</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">import_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a quick setup for interactive monitoring.</span>
+<span class="w">        </span><span class="sd">"""Run a quick setup for interactive monitoring.</span>
 
 <span class="sd">        This helper enables ``ipympl`` interactive plots (if available),</span>
 <span class="sd">        starts monitoring, and turns on automatic performance reports.</span>
@@ -9007,18 +9007,18 @@ API used by these magics.</p>
 <span class="sd">            Quickly prepare interactive monitoring in a notebook::</span>
 
 <span class="sd">                %perfmonitor_fast_setup</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Enable ipympl interactive plots</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">,</span> <span class="s1">&#39;ipympl&#39;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Enabled ipympl interactive plots&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">'matplotlib'</span><span class="p">,</span> <span class="s1">'ipympl'</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"[JUmPER]: Enabled ipympl interactive plots"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_fast_setup</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">show_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show an interactive table of executed cells.</span>
+<span class="w">        </span><span class="sd">"""Show an interactive table of executed cells.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -9027,12 +9027,12 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %show_cell_history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">show_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Show comprehensive help for all available magics.</span>
+<span class="w">        </span><span class="sd">"""Show comprehensive help for all available magics.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
@@ -9041,19 +9041,19 @@ API used by these magics.</p>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %perfmonitor_help</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_help</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">start_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start recording code from subsequent cells to a Python script.</span>
+<span class="w">        </span><span class="sd">"""Start recording code from subsequent cells to a Python script.</span>
 
 <span class="sd">        If no path is provided, the script writer chooses a default</span>
 <span class="sd">        filename based on the current time.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Optional output path, for example</span>
-<span class="sd">                ``\&quot;my_script.py\&quot;``.</span>
+<span class="sd">                ``\"my_script.py\"``.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            Start recording to a generated filename::</span>
@@ -9063,19 +9063,19 @@ API used by these magics.</p>
 <span class="sd">            Record to a specific file::</span>
 
 <span class="sd">                %start_write_script my_script.py</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">start_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="nd">@line_magic</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">end_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
+<span class="w">        </span><span class="sd">"""Stop recording and save accumulated code to a script file.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            line: Unused argument string.</span>
 
 <span class="sd">        Examples:</span>
 <span class="sd">            %end_write_script</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">end_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -9169,7 +9169,7 @@ a live or imported monitoring session.</p>
 <span class="normal">102</span>
 <span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Show hardware resources available to the current session.</span>
+<span class="w">    </span><span class="sd">"""Show hardware resources available to the current session.</span>
 
 <span class="sd">    This magic prints CPUs, memory, and GPU information for either</span>
 <span class="sd">    a live or imported monitoring session.</span>
@@ -9183,7 +9183,7 @@ a live or imported monitoring session.</p>
 <span class="sd">        Show resources for the current session::</span>
 
 <span class="sd">            %perfmonitor_resources</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_resources</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9258,7 +9258,7 @@ a live or imported monitoring session.</p>
 <span class="normal">468</span>
 <span class="normal">469</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">show_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Show an interactive table of executed cells.</span>
+<span class="w">    </span><span class="sd">"""Show an interactive table of executed cells.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Unused argument string.</span>
@@ -9267,7 +9267,7 @@ a live or imported monitoring session.</p>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %show_cell_history</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">show_cell_history</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9360,7 +9360,7 @@ path.</p>
 <span class="normal">415</span>
 <span class="normal">416</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">export_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export the full monitoring session to a directory or zip.</span>
+<span class="w">    </span><span class="sd">"""Export the full monitoring session to a directory or zip.</span>
 
 <span class="sd">    When the target ends with ``.zip``, a temporary directory is</span>
 <span class="sd">    created and compressed into that archive.</span>
@@ -9379,7 +9379,7 @@ path.</p>
 <span class="sd">        Export into a zip archive::</span>
 
 <span class="sd">            %export_session my_session.zip</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">export_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9454,7 +9454,7 @@ path.</p>
 <span class="normal">429</span>
 <span class="normal">430</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">import_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import a monitoring session from a directory or zip.</span>
+<span class="w">    </span><span class="sd">"""Import a monitoring session from a directory or zip.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Raw argument string with the source path.</span>
@@ -9463,7 +9463,7 @@ path.</p>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %import_session my_session.zip</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">import_session</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9553,7 +9553,7 @@ starts monitoring, and turns on automatic performance reports.</p>
 <span class="normal">454</span>
 <span class="normal">455</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">perfmonitor_fast_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a quick setup for interactive monitoring.</span>
+<span class="w">    </span><span class="sd">"""Run a quick setup for interactive monitoring.</span>
 
 <span class="sd">    This helper enables ``ipympl`` interactive plots (if available),</span>
 <span class="sd">    starts monitoring, and turns on automatic performance reports.</span>
@@ -9567,13 +9567,13 @@ starts monitoring, and turns on automatic performance reports.</p>
 <span class="sd">        Quickly prepare interactive monitoring in a notebook::</span>
 
 <span class="sd">            %perfmonitor_fast_setup</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Enable ipympl interactive plots</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">,</span> <span class="s1">&#39;ipympl&#39;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Enabled ipympl interactive plots&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="o">.</span><span class="n">run_line_magic</span><span class="p">(</span><span class="s1">'matplotlib'</span><span class="p">,</span> <span class="s1">'ipympl'</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"[JUmPER]: Enabled ipympl interactive plots"</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to enable ipympl interactive plots: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">perfmonitor_fast_setup</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9662,14 +9662,14 @@ filename based on the current time.</p>
 <span class="normal">504</span>
 <span class="normal">505</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">start_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start recording code from subsequent cells to a Python script.</span>
+<span class="w">    </span><span class="sd">"""Start recording code from subsequent cells to a Python script.</span>
 
 <span class="sd">    If no path is provided, the script writer chooses a default</span>
 <span class="sd">    filename based on the current time.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Optional output path, for example</span>
-<span class="sd">            ``\&quot;my_script.py\&quot;``.</span>
+<span class="sd">            ``\"my_script.py\"``.</span>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        Start recording to a generated filename::</span>
@@ -9679,7 +9679,7 @@ filename based on the current time.</p>
 <span class="sd">        Record to a specific file::</span>
 
 <span class="sd">            %start_write_script my_script.py</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">start_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9750,14 +9750,14 @@ filename based on the current time.</p>
 <span class="normal">516</span>
 <span class="normal">517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@line_magic</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">end_write_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop recording and save accumulated code to a script file.</span>
+<span class="w">    </span><span class="sd">"""Stop recording and save accumulated code to a script file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: Unused argument string.</span>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        %end_write_script</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">magic_adapter</span><span class="o">.</span><span class="n">end_write_script</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>

@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -2887,9 +2887,9 @@ DataFrame. To make it available to <code>%perfmonitor_plot --metrics</code>, add
 <span class="w">    </span><span class="nt">your_metric_key</span><span class="p">:</span><span class="w">     </span><span class="c1"># what the user types in --metrics</span>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">single_series</span>
 <span class="w">      </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">your_column</span><span class="w">    </span><span class="c1"># column name declared in default.yaml handler columns</span>
-<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Chart</span><span class="nv"> </span><span class="s">title&quot;</span>
+<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">"Chart</span><span class="nv"> </span><span class="s">title"</span>
 <span class="w">      </span><span class="nt">ylim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">             </span><span class="c1"># or [min, max]</span>
-<span class="w">      </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Legend</span><span class="nv"> </span><span class="s">label&quot;</span>
+<span class="w">      </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">"Legend</span><span class="nv"> </span><span class="s">label"</span>
 </code></pre></div>
 <p>Four built-in plot types are available:</p>
 <table>
@@ -2950,16 +2950,16 @@ one panel using <code>composite_series</code>.</p>
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">composite_series</span>
 <span class="w">      </span><span class="nt">series</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">io_read</span>
-<span class="w">          </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Disk</span><span class="nv"> </span><span class="s">Read</span><span class="nv"> </span><span class="s">(bytes/s)&quot;</span>
-<span class="w">          </span><span class="nt">color</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;steelblue&quot;</span>
+<span class="w">          </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">"Disk</span><span class="nv"> </span><span class="s">Read</span><span class="nv"> </span><span class="s">(bytes/s)"</span>
+<span class="w">          </span><span class="nt">color</span><span class="p">:</span><span class="w"> </span><span class="s">"steelblue"</span>
 <span class="w">          </span><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">net_bytes_recv</span>
-<span class="w">          </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Net</span><span class="nv"> </span><span class="s">Recv</span><span class="nv"> </span><span class="s">(bytes/s)&quot;</span>
-<span class="w">          </span><span class="nt">color</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;darkorange&quot;</span>
+<span class="w">          </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">"Net</span><span class="nv"> </span><span class="s">Recv</span><span class="nv"> </span><span class="s">(bytes/s)"</span>
+<span class="w">          </span><span class="nt">color</span><span class="p">:</span><span class="w"> </span><span class="s">"darkorange"</span>
 <span class="w">          </span><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
-<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Disk</span><span class="nv"> </span><span class="s">Read</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">Network</span><span class="nv"> </span><span class="s">Receive</span><span class="nv"> </span><span class="s">(bytes/s)&quot;</span>
+<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">"Disk</span><span class="nv"> </span><span class="s">Read</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">Network</span><span class="nv"> </span><span class="s">Receive</span><span class="nv"> </span><span class="s">(bytes/s)"</span>
 <span class="w">      </span><span class="nt">ylim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-<span class="w">      </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Disk</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">Network&quot;</span>
+<span class="w">      </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">"Disk</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">Network"</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3257,7 +3257,7 @@ programming interface (API) listing below is generated from Python source.</p>
 <span class="normal">226</span>
 <span class="normal">227</span>
 <span class="normal">228</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SessionExporter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles exporting a monitoring session to directory/ZIP.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Handles exporting a monitoring session to directory/ZIP."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">,</span> <span class="n">cell_history</span><span class="p">,</span> <span class="n">visualizer</span><span class="p">,</span> <span class="n">reporter</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
@@ -3267,10 +3267,10 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export session to a directory or, if path ends with .zip, to a zip archive.</span>
+<span class="w">        </span><span class="sd">"""Export session to a directory or, if path ends with .zip, to a zip archive.</span>
 
 <span class="sd">        Returns the path to the exported directory or created archive.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">export_dir</span><span class="p">,</span> <span class="n">zip_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_export_paths</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -3290,15 +3290,15 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="k">return</span> <span class="n">export_dir</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_determine_export_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine the export directory and optional ZIP target path.</span>
+<span class="w">        </span><span class="sd">"""Determine the export directory and optional ZIP target path.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            tuple: (export_dir, zip_target) where zip_target is None if not creating a ZIP</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">zip_target</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="k">if</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.zip&quot;</span><span class="p">):</span>
-            <span class="n">export_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;jumper-session-&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".zip"</span><span class="p">):</span>
+            <span class="n">export_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"jumper-session-"</span><span class="p">)</span>
             <span class="n">zip_target</span> <span class="o">=</span> <span class="n">path</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">export_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_session_dirname</span><span class="p">())</span>
@@ -3306,20 +3306,20 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="k">return</span> <span class="n">export_dir</span><span class="p">,</span> <span class="n">zip_target</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_export_performance_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export performance data CSVs for each monitoring level.</span>
+<span class="w">        </span><span class="sd">"""Export performance data CSVs for each monitoring level.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            export_dir: Directory to write CSV files to</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Dict mapping level names to their column schemas</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">schemas_perf</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">level_filenames</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;process&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_process.csv&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_user.csv&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_system.csv&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;slurm&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_slurm.csv&quot;</span><span class="p">,</span>
+            <span class="s2">"process"</span><span class="p">:</span> <span class="s2">"perf_process.csv"</span><span class="p">,</span>
+            <span class="s2">"user"</span><span class="p">:</span> <span class="s2">"perf_user.csv"</span><span class="p">,</span>
+            <span class="s2">"system"</span><span class="p">:</span> <span class="s2">"perf_system.csv"</span><span class="p">,</span>
+            <span class="s2">"slurm"</span><span class="p">:</span> <span class="s2">"perf_slurm.csv"</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">levels</span><span class="p">:</span>
@@ -3329,27 +3329,27 @@ programming interface (API) listing below is generated from Python source.</p>
                 <span class="n">df_out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">df_out</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
                 <span class="n">schemas_perf</span><span class="p">[</span><span class="n">level</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df_out</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-                <span class="n">fname</span> <span class="o">=</span> <span class="n">level_filenames</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;perf_</span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">)</span>
+                <span class="n">fname</span> <span class="o">=</span> <span class="n">level_filenames</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"perf_</span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2">.csv"</span><span class="p">)</span>
                 <span class="n">df_out</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="n">fname</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">schemas_perf</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_export_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Export cell history to CSV.</span>
+<span class="w">        </span><span class="sd">"""Export cell history to CSV.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            export_dir: Directory to write the cell history CSV to</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            DataFrame containing the cell history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">ch_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ch_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-            <span class="n">ch_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="s2">&quot;cell_history.csv&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">ch_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="s2">"cell_history.csv"</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ch_df</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schemas_perf</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">ch_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the manifest dictionary containing session metadata.</span>
+<span class="w">        </span><span class="sd">"""Build the manifest dictionary containing session metadata.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            schemas_perf: Performance data schemas by level</span>
@@ -3357,64 +3357,64 @@ programming interface (API) listing below is generated from Python source.</p>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Manifest dictionary</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">hardware</span> <span class="o">=</span> <span class="n">aggregate_node_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">hardware</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;app&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;JUmPER&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app_version</span><span class="p">()},</span>
-            <span class="s2">&quot;monitor&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-                <span class="s2">&quot;start_time&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;start_time&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;stop_time&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;stop_time&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;wallclock_start_time&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;wallclock_start_time&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;wallclock_stop_time&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;wallclock_stop_time&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;num_cpus&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_cpus</span><span class="p">,</span>
-                <span class="s2">&quot;num_system_cpus&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_system_cpus</span><span class="p">,</span>
-                <span class="s2">&quot;num_gpus&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">,</span>
-                <span class="s2">&quot;gpu_memory&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">gpu_memory</span><span class="p">,</span>
-                <span class="s2">&quot;gpu_name&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">gpu_name</span><span class="p">,</span>
-                <span class="s2">&quot;memory_limits&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">memory_limits</span><span class="p">,</span>
-                <span class="s2">&quot;cpu_handles&quot;</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">cpu_handles</span><span class="p">,</span>
-                <span class="s2">&quot;pid&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;pid&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;uid&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;uid&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;slurm_job&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">&quot;slurm_job&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;os&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                <span class="s2">&quot;python&quot;</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="s2">"version"</span><span class="p">:</span> <span class="s2">"1.0"</span><span class="p">,</span>
+            <span class="s2">"app"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"JUmPER"</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app_version</span><span class="p">()},</span>
+            <span class="s2">"monitor"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"interval"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"interval"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+                <span class="s2">"start_time"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"start_time"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"stop_time"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"stop_time"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"wallclock_start_time"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"wallclock_start_time"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"wallclock_stop_time"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"wallclock_stop_time"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"num_cpus"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_cpus</span><span class="p">,</span>
+                <span class="s2">"num_system_cpus"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_system_cpus</span><span class="p">,</span>
+                <span class="s2">"num_gpus"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">,</span>
+                <span class="s2">"gpu_memory"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">gpu_memory</span><span class="p">,</span>
+                <span class="s2">"gpu_name"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">gpu_name</span><span class="p">,</span>
+                <span class="s2">"memory_limits"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">memory_limits</span><span class="p">,</span>
+                <span class="s2">"cpu_handles"</span><span class="p">:</span> <span class="n">hardware</span><span class="o">.</span><span class="n">cpu_handles</span><span class="p">,</span>
+                <span class="s2">"pid"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"pid"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"uid"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"uid"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"slurm_job"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">,</span> <span class="s2">"slurm_job"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"os"</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">"python"</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
             <span class="p">},</span>
-            <span class="s2">&quot;levels&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">levels</span><span class="p">,</span>
-            <span class="s2">&quot;schemas&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;perf&quot;</span><span class="p">:</span> <span class="n">schemas_perf</span><span class="p">,</span>
-                <span class="s2">&quot;cell_history&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">ch_df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+            <span class="s2">"levels"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">levels</span><span class="p">,</span>
+            <span class="s2">"schemas"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"perf"</span><span class="p">:</span> <span class="n">schemas_perf</span><span class="p">,</span>
+                <span class="s2">"cell_history"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">ch_df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
             <span class="p">},</span>
-            <span class="s2">&quot;visualizer&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;default_metric_subsets&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span>
-                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visualizer</span><span class="p">,</span> <span class="s2">&quot;default_subsets&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;mem&quot;</span><span class="p">,</span> <span class="s2">&quot;io&quot;</span><span class="p">))</span>
-                <span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span> <span class="s2">&quot;gpu_all&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_gpus</span> <span class="k">else</span> <span class="p">[]),</span>
-                <span class="s2">&quot;figsize&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visualizer</span><span class="p">,</span> <span class="s2">&quot;figsize&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))),</span>
-                <span class="s2">&quot;io_window&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visualizer</span><span class="p">,</span> <span class="s2">&quot;_io_window&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;last_state&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">"visualizer"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"default_metric_subsets"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visualizer</span><span class="p">,</span> <span class="s2">"default_subsets"</span><span class="p">,</span> <span class="p">(</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="s2">"mem"</span><span class="p">,</span> <span class="s2">"io"</span><span class="p">))</span>
+                <span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"gpu_all"</span><span class="p">]</span> <span class="k">if</span> <span class="n">hardware</span><span class="o">.</span><span class="n">num_gpus</span> <span class="k">else</span> <span class="p">[]),</span>
+                <span class="s2">"figsize"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visualizer</span><span class="p">,</span> <span class="s2">"figsize"</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">))),</span>
+                <span class="s2">"io_window"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visualizer</span><span class="p">,</span> <span class="s2">"_io_window"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">"last_state"</span><span class="p">:</span> <span class="p">{},</span>
             <span class="p">},</span>
-            <span class="s2">&quot;reporter&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">,</span> <span class="s2">&quot;process&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;thresholds&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">printer</span><span class="o">.</span><span class="n">analyzer</span><span class="p">,</span> <span class="s2">&quot;thresholds&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="s2">"reporter"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"level"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">,</span> <span class="s2">"level"</span><span class="p">,</span> <span class="s2">"process"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">,</span> <span class="s2">"level"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"process"</span><span class="p">,</span>
+                <span class="s2">"format"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span>
+                <span class="s2">"thresholds"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">printer</span><span class="o">.</span><span class="n">analyzer</span><span class="p">,</span> <span class="s2">"thresholds"</span><span class="p">,</span> <span class="p">{}),</span>
             <span class="p">},</span>
-            <span class="s2">&quot;time_origin&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_counter&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;timezone&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">tzname</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">tzname</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">"time_origin"</span><span class="p">:</span> <span class="s2">"perf_counter"</span><span class="p">,</span>
+            <span class="s2">"timezone"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">tzname</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">tzname</span> <span class="k">else</span> <span class="s2">""</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_write_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the manifest JSON file to the export directory.</span>
+<span class="w">        </span><span class="sd">"""Write the manifest JSON file to the export directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            export_dir: Directory to write the manifest to</span>
 <span class="sd">            manifest: Manifest dictionary to serialize</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="s2">&quot;manifest.json&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="s2">"manifest.json"</span><span class="p">),</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">manifest</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_zip_archive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">export_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">zip_target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a ZIP archive from the export directory and clean up.</span>
+<span class="w">        </span><span class="sd">"""Create a ZIP archive from the export directory and clean up.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            export_dir: Directory containing exported files</span>
@@ -3422,8 +3422,8 @@ programming interface (API) listing below is generated from Python source.</p>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the created ZIP file</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">zip_target</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">zf</span><span class="p">:</span>
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">zip_target</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">zf</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">export_dir</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
                     <span class="n">ap</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -3445,25 +3445,25 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="k">return</span> <span class="n">zip_target</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_default_session_dirname</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">-%H%M%S&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;jumper-session-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y%m</span><span class="si">%d</span><span class="s2">-%H%M%S"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"jumper-session-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_app_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">here</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)))</span>
-            <span class="n">pyproject</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">here</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;pyproject.toml&quot;</span><span class="p">)</span>
+            <span class="n">pyproject</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">here</span><span class="p">,</span> <span class="s2">".."</span><span class="p">,</span> <span class="s2">"pyproject.toml"</span><span class="p">)</span>
             <span class="n">pyproject</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">pyproject</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pyproject</span><span class="p">):</span>
-                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pyproject</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pyproject</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
                         <span class="n">s</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                        <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;=&quot;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
-                            <span class="n">val</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"version"</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"="</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+                            <span class="n">val</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"="</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">'"'</span><span class="p">)</span>
                             <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
                                 <span class="k">return</span> <span class="n">val</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">pass</span>
-        <span class="k">return</span> <span class="s2">&quot;unknown&quot;</span>
+        <span class="k">return</span> <span class="s2">"unknown"</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3519,10 +3519,10 @@ programming interface (API) listing below is generated from Python source.</p>
 <span class="normal">50</span>
 <span class="normal">51</span>
 <span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Export session to a directory or, if path ends with .zip, to a zip archive.</span>
+<span class="w">    </span><span class="sd">"""Export session to a directory or, if path ends with .zip, to a zip archive.</span>
 
 <span class="sd">    Returns the path to the exported directory or created archive.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">export_dir</span><span class="p">,</span> <span class="n">zip_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_export_paths</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">export_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -3738,13 +3738,13 @@ programming interface (API) listing below is generated from Python source.</p>
 <span class="normal">386</span>
 <span class="normal">387</span>
 <span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SessionImporter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles importing a monitoring session from directory/ZIP.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Handles importing a monitoring session from directory/ZIP."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">import_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import a session into the given service. Returns True on success.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Import a session into the given service. Returns True on success."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
 
@@ -3768,43 +3768,43 @@ programming interface (API) listing below is generated from Python source.</p>
                     <span class="k">pass</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_work_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the work directory from ZIP or direct path.</span>
+<span class="w">        </span><span class="sd">"""Prepare the work directory from ZIP or direct path.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            path: Path to ZIP file or directory</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            tuple: (work_dir, cleanup_dir) where cleanup_dir indicates if temp dir should be cleaned</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.zip&quot;</span><span class="p">):</span>
-            <span class="n">work_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;jumper-session-import-&quot;</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">zf</span><span class="p">:</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".zip"</span><span class="p">):</span>
+            <span class="n">work_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"jumper-session-import-"</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">zf</span><span class="p">:</span>
                 <span class="n">zf</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">work_dir</span><span class="p">,</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">path</span><span class="p">,</span> <span class="kc">False</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the manifest JSON file from the work directory.</span>
+<span class="w">        </span><span class="sd">"""Load the manifest JSON file from the work directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            work_dir: Directory containing the manifest file</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Manifest dictionary</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="s2">&quot;manifest.json&quot;</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="sd">        """</span>
+        <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="s2">"manifest.json"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_load_cell_history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load cell history data from CSV into the service.</span>
+<span class="w">        </span><span class="sd">"""Load cell history data from CSV into the service.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            work_dir: Directory containing the cell history CSV</span>
 <span class="sd">            service: Service object to load data into</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">ch_csv</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="s2">&quot;cell_history.csv&quot;</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="n">ch_csv</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="s2">"cell_history.csv"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ch_csv</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">service</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">ch_csv</span><span class="p">)</span>
@@ -3812,19 +3812,19 @@ programming interface (API) listing below is generated from Python source.</p>
                 <span class="k">pass</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_load_performance_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load performance data CSVs from the work directory.</span>
+<span class="w">        </span><span class="sd">"""Load performance data CSVs from the work directory.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            work_dir: Directory containing performance CSV files</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Dict mapping level names to their DataFrames</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">level_files</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;process&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_process.csv&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_user.csv&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_system.csv&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;slurm&quot;</span><span class="p">:</span> <span class="s2">&quot;perf_slurm.csv&quot;</span><span class="p">,</span>
+            <span class="s2">"process"</span><span class="p">:</span> <span class="s2">"perf_process.csv"</span><span class="p">,</span>
+            <span class="s2">"user"</span><span class="p">:</span> <span class="s2">"perf_user.csv"</span><span class="p">,</span>
+            <span class="s2">"system"</span><span class="p">:</span> <span class="s2">"perf_system.csv"</span><span class="p">,</span>
+            <span class="s2">"slurm"</span><span class="p">:</span> <span class="s2">"perf_slurm.csv"</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">perf_dfs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -3839,13 +3839,13 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="k">return</span> <span class="n">perf_dfs</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_setup_offline_monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">perf_dfs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span> <span class="n">service</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create and attach an offline performance monitor to the service.</span>
+<span class="w">        </span><span class="sd">"""Create and attach an offline performance monitor to the service.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            manifest: Manifest dictionary with monitor configuration</span>
 <span class="sd">            perf_dfs: Performance data DataFrames by level</span>
 <span class="sd">            service: Service object to attach monitor to</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">offline</span> <span class="o">=</span> <span class="n">OfflinePerformanceMonitor</span><span class="p">(</span>
             <span class="n">manifest</span><span class="o">=</span><span class="n">manifest</span><span class="p">,</span>
             <span class="n">perf_dfs</span><span class="o">=</span><span class="n">perf_dfs</span><span class="p">,</span>
@@ -3855,15 +3855,15 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="n">service</span><span class="o">.</span><span class="n">visualizer</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">monitor</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_setup_reporter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rebuild and attach the performance reporter with thresholds from manifest.</span>
+<span class="w">        </span><span class="sd">"""Rebuild and attach the performance reporter with thresholds from manifest.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            manifest: Manifest dictionary with reporter configuration</span>
 <span class="sd">            service: Service object to attach reporter to</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">thresholds</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">thresholds</span> <span class="o">=</span> <span class="n">manifest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reporter&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thresholds&quot;</span><span class="p">)</span>
+            <span class="n">thresholds</span> <span class="o">=</span> <span class="n">manifest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reporter"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"thresholds"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">thresholds</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -3872,25 +3872,25 @@ programming interface (API) listing below is generated from Python source.</p>
         <span class="n">service</span><span class="o">.</span><span class="n">reporter</span> <span class="o">=</span> <span class="n">build_performance_reporter</span><span class="p">(</span>
             <span class="n">service</span><span class="o">.</span><span class="n">cell_history</span><span class="p">,</span>
             <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s2">&quot;Display not available.&quot;</span><span class="p">,</span>
+            <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s2">"Display not available."</span><span class="p">,</span>
             <span class="n">thresholds</span><span class="o">=</span><span class="n">thresholds</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">service</span><span class="o">.</span><span class="n">reporter</span><span class="o">.</span><span class="n">attach</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">monitor</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_apply_visualizer_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply visualizer settings from the manifest to the service.</span>
+<span class="w">        </span><span class="sd">"""Apply visualizer settings from the manifest to the service.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            manifest: Manifest dictionary with visualizer configuration</span>
 <span class="sd">            service: Service object with visualizer to configure</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">viz</span> <span class="o">=</span> <span class="n">manifest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;visualizer&quot;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;figsize&quot;</span><span class="p">),</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;figsize&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">service</span><span class="o">.</span><span class="n">visualizer</span><span class="o">.</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="n">viz</span><span class="p">[</span><span class="s2">&quot;figsize&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">viz</span><span class="p">[</span><span class="s2">&quot;figsize&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;io_window&quot;</span><span class="p">):</span>
+            <span class="n">viz</span> <span class="o">=</span> <span class="n">manifest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"visualizer"</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"figsize"</span><span class="p">),</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"figsize"</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">service</span><span class="o">.</span><span class="n">visualizer</span><span class="o">.</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="n">viz</span><span class="p">[</span><span class="s2">"figsize"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">viz</span><span class="p">[</span><span class="s2">"figsize"</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"io_window"</span><span class="p">):</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">service</span><span class="o">.</span><span class="n">visualizer</span><span class="o">.</span><span class="n">_io_window</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;io_window&quot;</span><span class="p">))</span>
+                    <span class="n">service</span><span class="o">.</span><span class="n">visualizer</span><span class="o">.</span><span class="n">_io_window</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">viz</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"io_window"</span><span class="p">))</span>
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                     <span class="k">pass</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -3950,7 +3950,7 @@ programming interface (API) listing below is generated from Python source.</p>
 <span class="normal">257</span>
 <span class="normal">258</span>
 <span class="normal">259</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">import_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import a session into the given service. Returns True on success.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Import a session into the given service. Returns True on success."""</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 

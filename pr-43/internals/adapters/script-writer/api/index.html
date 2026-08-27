@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3441,12 +3441,12 @@ metadata about execution time and cell numbers.</p>
 <span class="normal">469</span>
 <span class="normal">470</span>
 <span class="normal">471</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NotebookScriptWriter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Class for writing notebook content to a Python script.</span>
 
 <span class="sd">    Collects code from cells and saves it to a Python file with optional</span>
 <span class="sd">    metadata about execution time and cell numbers.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell_history</span><span class="p">:</span> <span class="n">CellHistory</span><span class="p">,</span> <span class="n">default_interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span> <span class="o">=</span> <span class="n">cell_history</span>
@@ -3458,79 +3458,79 @@ metadata about execution time and cell numbers.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">State</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_default_interval</span> <span class="o">=</span> <span class="n">default_interval</span>
         <span class="c1"># names of magics that start/stop script writing (to exclude their cells)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_control_magics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;start_write_script&quot;</span><span class="p">,</span> <span class="s2">&quot;end_write_script&quot;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_control_magics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"start_write_script"</span><span class="p">,</span> <span class="s2">"end_write_script"</span><span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">is_recording_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if cell is being recorded.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if cell is being recorded."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">start_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Start recording code from cells.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            state: Extension runtime state at the time recording started</span>
 <span class="sd">            output_path: Path to the output file (overrides value from __init__)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">state</span>
         <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># Generate default filename</span>
-            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;notebook_script_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">.py&quot;</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"notebook_script_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">.py"</span>
 
-        <span class="c1"># mark the current tail of CellHistory; everything after this point is &quot;to be written&quot;</span>
+        <span class="c1"># mark the current tail of CellHistory; everything after this point is "to be written"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
         <span class="c1"># exclude the cell that triggered the start magic itself</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">stop_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Stop recording and save accumulated code to file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Path to the created file or None on error</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Recording was not started&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: Recording was not started"</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="c1"># collect cells recorded since start, excluding start/end control magic cells</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Failed to access CellHistory: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[JUmPER]: Failed to access CellHistory: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: No cells in CellHistory&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: No cells in CellHistory"</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">selected</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">history</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_index&quot;</span><span class="p">))</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_index"</span><span class="p">))</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_control_cell</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_magics&quot;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_control_cell</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_magics"</span><span class="p">)):</span>
                 <span class="k">continue</span>
             <span class="n">selected</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="p">{</span>
-                    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
-                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">])</span>
-                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;start_time&quot;</span><span class="p">),</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+                    <span class="s2">"index"</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
+                    <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"start_time"</span><span class="p">),</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
                     <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
-                    <span class="s2">&quot;raw_cell&quot;</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raw_cell&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-                    <span class="s2">&quot;cell_magics&quot;</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_magics&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[],</span>
+                    <span class="s2">"raw_cell"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"raw_cell"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                    <span class="s2">"cell_magics"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_magics"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[],</span>
                 <span class="p">}</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">selected</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: No recorded cells to save&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: No recorded cells to save"</span><span class="p">)</span>
             <span class="c1"># reset state</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span> <span class="o">=</span> <span class="kc">None</span>
@@ -3539,13 +3539,13 @@ metadata about execution time and cell numbers.</p>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_file</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Recorded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> cells &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;to file &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                <span class="sa">f</span><span class="s2">"[JUmPER]: Recorded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> cells "</span>
+                <span class="sa">f</span><span class="s2">"to file '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">'"</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Error writing file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"[JUmPER]: Error writing file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">finally</span><span class="p">:</span>
@@ -3554,13 +3554,13 @@ metadata about execution time and cell numbers.</p>
             <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">is_control_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell_magics</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select cells with index &gt;= start and exclude cells that contain control magics&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Select cells with index &gt;= start and exclude cells that contain control magics"""</span>
         <span class="k">if</span> <span class="n">cell_magics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cell_magics</span><span class="p">:</span>
-                <span class="c1"># m may be like &quot;%perfmonitor_start ...&quot; or &quot;perfmonitor_start ...&quot;</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+                <span class="c1"># m may be like "%perfmonitor_start ..." or "perfmonitor_start ..."</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"%"</span><span class="p">)</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_control_magics</span><span class="p">:</span>
                     <span class="k">return</span> <span class="kc">True</span>
@@ -3568,78 +3568,78 @@ metadata about execution time and cell numbers.</p>
             <span class="k">pass</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_write_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recorded_cells</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Write accumulated cells to Python file.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
         <span class="n">output_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="c1"># File header</span>
-            <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span><span class="se">\</span>
 <span class="s2">                #!/usr/bin/env python3</span>
-<span class="s2">                </span><span class="se">\&quot;\&quot;\&quot;</span>
+<span class="s2">                </span><span class="se">\"\"\"</span>
 <span class="s2">                Auto-generated script from Jupyter notebook</span>
 <span class="s2">                Generated: </span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M:%S</span><span class="si">}</span>
-<span class="s2">                Recording started: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s2"> if self._start_time else &quot;&quot;</span>
+<span class="s2">                Recording started: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span><span class="si">:</span><span class="s2">%Y-%m-%d %H:%M:%S</span><span class="si">}</span><span class="s2"> if self._start_time else ""</span>
 <span class="s2">                Total cells: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">recorded_cells</span><span class="p">)</span><span class="si">}</span>
-<span class="s2">                </span><span class="se">\&quot;\&quot;\&quot;</span>
+<span class="s2">                </span><span class="se">\"\"\"</span>
 
 <span class="s2">                from jumper_extension.core.service import build_perfmonitor_magic_adapter</span>
 <span class="s2">                magic_adapter = build_perfmonitor_magic_adapter(</span>
 <span class="s2">                    plots_disabled=True,</span>
-<span class="s2">                    plots_disabled_reason=&quot;Plotting disabled in generated script.&quot;,</span>
+<span class="s2">                    plots_disabled_reason="Plotting disabled in generated script.",</span>
 <span class="s2">                    display_disabled=True,</span>
-<span class="s2">                    display_disabled_reason=&quot;Display disabled in generated script.&quot;</span>
+<span class="s2">                    display_disabled_reason="Display disabled in generated script."</span>
 <span class="s2">                )</span>
 
 <span class="s2">                </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_restore_perfmonitor</span><span class="p">()</span><span class="si">}</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">            """</span><span class="p">)</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
 
             <span class="c1"># Write code from each recorded cell</span>
             <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">recorded_cells</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;# Cell </span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">ts</span> <span class="o">=</span> <span class="n">cell</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;# Recorded at: </span><span class="si">{</span><span class="n">ts</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%H:%M:%S&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span><span class="w"> </span><span class="n">datetime</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">ts</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">raw_cell</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raw_cell&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# --- Cell print ---</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;raw_cell = </span><span class="si">{</span><span class="n">raw_cell</span><span class="si">!r}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;print(&#39;-&#39; * 40)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;print(&#39;Cell </span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;print(&#39;-&#39; * 40)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;print(raw_cell)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;print(&#39;-&#39; * 13 + &#39; Cell output &#39; + &#39;-&#39; * 14)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">cell_magics</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_magics&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
-                <span class="c1"># compute should_skip_report: True if cell contains only line magics (non-empty lines start with &#39;%&#39;)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"# Cell </span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s1">'index'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">ts</span> <span class="o">=</span> <span class="n">cell</span><span class="p">[</span><span class="s1">'timestamp'</span><span class="p">]</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"# Recorded at: </span><span class="si">{</span><span class="n">ts</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">'%H:%M:%S'</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span><span class="w"> </span><span class="n">datetime</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">ts</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">raw_cell</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"raw_cell"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"# --- Cell print ---</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"raw_cell = </span><span class="si">{</span><span class="n">raw_cell</span><span class="si">!r}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"print('-' * 40)</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"print('Cell </span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s1">'index'</span><span class="p">]</span><span class="si">}</span><span class="s2">')</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"print('-' * 40)</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"print(raw_cell)</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"print('-' * 13 + ' Cell output ' + '-' * 14)</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">cell_magics</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_magics"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                <span class="c1"># compute should_skip_report: True if cell contains only line magics (non-empty lines start with '%')</span>
                 <span class="n">is_pure_magic</span> <span class="o">=</span> <span class="n">is_pure_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-                    <span class="s2">&quot;magic_adapter.on_pre_run_cell(&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;raw_cell, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cell_magics</span><span class="si">!r}</span><span class="s2">, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">is_pure_magic</span><span class="si">!r}</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">"magic_adapter.on_pre_run_cell("</span>
+                    <span class="sa">f</span><span class="s2">"raw_cell, "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cell_magics</span><span class="si">!r}</span><span class="s2">, "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">is_pure_magic</span><span class="si">!r}</span><span class="s2">"</span>
+                    <span class="s2">")</span><span class="se">\n</span><span class="s2">"</span>
                 <span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# --- Cell content ---</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"# --- Cell content ---</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
                 <span class="n">transformed</span> <span class="o">=</span> <span class="n">transform_cell_code</span><span class="p">(</span>
                     <span class="n">raw_cell</span><span class="p">,</span>
                     <span class="n">cell_magics</span>
                 <span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">transformed</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;# --- Cell End -------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;magic_adapter.on_post_run_cell(&#39;&#39;)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">transformed</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"# --- Cell End -------</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"magic_adapter.on_post_run_cell('')</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
             <span class="n">base_name</span> <span class="o">=</span> <span class="n">output_path</span><span class="o">.</span><span class="n">stem</span>
-            <span class="n">perf_csv</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">_perfdata.csv&quot;</span>
-            <span class="n">cell_csv</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">_cell_history.csv&quot;</span>
+            <span class="n">perf_csv</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">_perfdata.csv"</span>
+            <span class="n">cell_csv</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">_cell_history.csv"</span>
             <span class="n">footer</span> <span class="o">=</span> <span class="n">dedent</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+                <span class="sa">f</span><span class="s2">"""</span><span class="se">\</span>
 <span class="s2">                # --- Export results to CSV ---</span>
 <span class="s2">                # Performance data by level (default level from settings)</span>
-<span class="s2">                magic_adapter.perfmonitor_export_perfdata(&quot;--file </span><span class="si">{</span><span class="n">perf_csv</span><span class="si">}</span><span class="s2">&quot;)</span>
+<span class="s2">                magic_adapter.perfmonitor_export_perfdata("--file </span><span class="si">{</span><span class="n">perf_csv</span><span class="si">}</span><span class="s2">")</span>
 <span class="s2">                # Cell execution history</span>
-<span class="s2">                magic_adapter.perfmonitor_export_cell_history(&quot;--file </span><span class="si">{</span><span class="n">cell_csv</span><span class="si">}</span><span class="s2">&quot;)</span>
-<span class="s2">                &quot;&quot;&quot;</span>
+<span class="s2">                magic_adapter.perfmonitor_export_cell_history("--file </span><span class="si">{</span><span class="n">cell_csv</span><span class="si">}</span><span class="s2">")</span>
+<span class="s2">                """</span>
             <span class="p">)</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">footer</span><span class="p">)</span>
 
@@ -3656,15 +3656,15 @@ metadata about execution time and cell numbers.</p>
             <span class="c1"># (if needed) and configure reports consistently with original settings.</span>
             <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
                 <span class="n">level</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span>
-                <span class="n">args</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;--level </span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2"> --interval </span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"--level </span><span class="si">{</span><span class="n">level</span><span class="si">}</span><span class="s2"> --interval </span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s2">"</span>
                 <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">text</span><span class="p">:</span>
-                    <span class="n">args</span> <span class="o">+=</span> <span class="s2">&quot; --text&quot;</span>
-                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;magic_adapter.perfmonitor_enable_perfreports(</span><span class="si">{</span><span class="n">args</span><span class="si">!r}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="n">args</span> <span class="o">+=</span> <span class="s2">" --text"</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"magic_adapter.perfmonitor_enable_perfreports(</span><span class="si">{</span><span class="n">args</span><span class="si">!r}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">"</span>
 
             <span class="c1"># Otherwise just restore monitor start with the same interval</span>
-            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;magic_adapter.perfmonitor_start(</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span><span class="si">!r}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"magic_adapter.perfmonitor_start(</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span><span class="si">!r}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">"</span>
 
-        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">""</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3711,13 +3711,13 @@ metadata about execution time and cell numbers.</p>
 <span class="normal">371</span>
 <span class="normal">372</span>
 <span class="normal">373</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_control_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell_magics</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Select cells with index &gt;= start and exclude cells that contain control magics&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Select cells with index &gt;= start and exclude cells that contain control magics"""</span>
     <span class="k">if</span> <span class="n">cell_magics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cell_magics</span><span class="p">:</span>
-            <span class="c1"># m may be like &quot;%perfmonitor_start ...&quot; or &quot;perfmonitor_start ...&quot;</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+            <span class="c1"># m may be like "%perfmonitor_start ..." or "perfmonitor_start ..."</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"%"</span><span class="p">)</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_control_magics</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">True</span>
@@ -3749,7 +3749,7 @@ metadata about execution time and cell numbers.</p>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">267</span>
 <span class="normal">268</span>
 <span class="normal">269</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_recording_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if cell is being recorded.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Check if cell is being recorded."""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -3846,22 +3846,22 @@ metadata about execution time and cell numbers.</p>
 <span class="normal">289</span>
 <span class="normal">290</span>
 <span class="normal">291</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">start_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Start recording code from cells.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        state: Extension runtime state at the time recording started</span>
 <span class="sd">        output_path: Path to the output file (overrides value from __init__)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">state</span>
     <span class="k">if</span> <span class="n">output_path</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Generate default filename</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;notebook_script_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">.py&quot;</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">"%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"notebook_script_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">.py"</span>
 
-    <span class="c1"># mark the current tail of CellHistory; everything after this point is &quot;to be written&quot;</span>
+    <span class="c1"># mark the current tail of CellHistory; everything after this point is "to be written"</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
     <span class="c1"># exclude the cell that triggered the start magic itself</span>
@@ -3977,50 +3977,50 @@ metadata about execution time and cell numbers.</p>
 <span class="normal">356</span>
 <span class="normal">357</span>
 <span class="normal">358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Stop recording and save accumulated code to file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Path to the created file or None on error</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: Recording was not started&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: Recording was not started"</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="c1"># collect cells recorded since start, excluding start/end control magic cells</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[JUmPER]: Failed to access CellHistory: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[JUmPER]: Failed to access CellHistory: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">if</span> <span class="n">history</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">history</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: No cells in CellHistory&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: No cells in CellHistory"</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">selected</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">history</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_index&quot;</span><span class="p">))</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_index"</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_control_cell</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_magics&quot;</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_control_cell</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_magics"</span><span class="p">)):</span>
             <span class="k">continue</span>
         <span class="n">selected</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
-                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">])</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;start_time&quot;</span><span class="p">),</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+                <span class="s2">"index"</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
+                <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"start_time"</span><span class="p">),</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
                 <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
-                <span class="s2">&quot;raw_cell&quot;</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raw_cell&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;cell_magics&quot;</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_magics&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[],</span>
+                <span class="s2">"raw_cell"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"raw_cell"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="s2">"cell_magics"</span><span class="p">:</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cell_magics"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[],</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">selected</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[JUmPER]: No recorded cells to save&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[JUmPER]: No recorded cells to save"</span><span class="p">)</span>
         <span class="c1"># reset state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_cell_index</span> <span class="o">=</span> <span class="kc">None</span>
@@ -4029,13 +4029,13 @@ metadata about execution time and cell numbers.</p>
     <span class="k">try</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_file</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Recorded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> cells &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;to file &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+            <span class="sa">f</span><span class="s2">"[JUmPER]: Recorded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> cells "</span>
+            <span class="sa">f</span><span class="s2">"to file '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">'"</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[JUmPER]: Error writing file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"[JUmPER]: Error writing file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">finally</span><span class="p">:</span>
@@ -4103,16 +4103,16 @@ parse, blamed on whoever wrote the cell.</p>
 <span class="normal">37</span>
 <span class="normal">38</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RenderedCell</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;One notebook cell as script source, and what did not survive the trip.</span>
+<span class="w">    </span><span class="sd">"""One notebook cell as script source, and what did not survive the trip.</span>
 
 <span class="sd">    *unsupported* is the important field: it is empty when *source* really is the</span>
 <span class="sd">    cell, and a reason when the cell cannot be a Python script at all. A caller</span>
 <span class="sd">    that ignores it gets what the benchmark used to get - a file that does not</span>
 <span class="sd">    parse, blamed on whoever wrote the cell.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">dropped</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-    <span class="n">unsupported</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">unsupported</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -4160,10 +4160,10 @@ parse, blamed on whoever wrote the cell.</p>
 <span class="normal">22</span>
 <span class="normal">23</span>
 <span class="normal">24</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_pure_magic_cell</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;True when every non-empty line of *raw_cell* is a line magic.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""True when every non-empty line of *raw_cell* is a line magic."""</span>
     <span class="n">non_empty_lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">raw_cell</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">non_empty_lines</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
-        <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">non_empty_lines</span>
+        <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"%"</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">non_empty_lines</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4261,7 +4261,7 @@ is never touched.</p>
 <span class="normal">93</span>
 <span class="normal">94</span>
 <span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">render_source</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cell_magics</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">RenderedCell</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Turn one cell into source a plain interpreter can run.</span>
+<span class="w">    </span><span class="sd">"""Turn one cell into source a plain interpreter can run.</span>
 
 <span class="sd">    Three kinds of magic reach this function and each leaves differently:</span>
 
@@ -4282,20 +4282,20 @@ is never touched.</p>
 <span class="sd">    therefore removed by :func:`_drop_unparseable_lines`, which asks the parser</span>
 <span class="sd">    instead of guessing. A ``%`` inside a string literal never breaks parsing and</span>
 <span class="sd">    is never touched.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">raw_cell</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">RenderedCell</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">RenderedCell</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 
     <span class="n">body</span><span class="p">,</span> <span class="n">dropped</span><span class="p">,</span> <span class="n">unsupported</span> <span class="o">=</span> <span class="n">_strip_cell_magic</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">unsupported</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">RenderedCell</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">dropped</span><span class="p">,</span> <span class="n">unsupported</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">RenderedCell</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">dropped</span><span class="p">,</span> <span class="n">unsupported</span><span class="p">)</span>
 
     <span class="n">replacements</span><span class="p">,</span> <span class="n">foreign</span> <span class="o">=</span> <span class="n">_adapter_calls</span><span class="p">(</span><span class="n">cell_magics</span><span class="p">)</span>
     <span class="n">out_lines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">body</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
         <span class="n">lstrip</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span>
         <span class="c1"># Only attempt replacement if line starts with a magic marker</span>
-        <span class="k">if</span> <span class="n">lstrip</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">lstrip</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"%"</span><span class="p">):</span>
             <span class="n">indent</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">lstrip</span><span class="p">)]</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">_magic_name</span><span class="p">(</span><span class="n">lstrip</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">foreign</span><span class="p">:</span>
@@ -4303,18 +4303,18 @@ is never touched.</p>
                 <span class="c1"># `pass`, not a bare comment: this line may be the only thing in</span>
                 <span class="c1"># a block, and an empty block is a fresh syntax error one line up.</span>
                 <span class="n">out_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">indent</span><span class="si">}</span><span class="s2">pass  # JUmPER dropped </span><span class="si">{</span><span class="n">lstrip</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">foreign</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">indent</span><span class="si">}</span><span class="s2">pass  # JUmPER dropped </span><span class="si">{</span><span class="n">lstrip</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">foreign</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
             <span class="n">rep</span> <span class="o">=</span> <span class="n">_lookup</span><span class="p">(</span><span class="n">lstrip</span><span class="p">,</span> <span class="n">replacements</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">rep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># keep original indentation</span>
-                <span class="n">out_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">indent</span><span class="si">}{</span><span class="n">rep</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">out_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">indent</span><span class="si">}{</span><span class="n">rep</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
                 <span class="k">continue</span>
         <span class="n">out_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
-    <span class="n">source</span><span class="p">,</span> <span class="n">swept</span> <span class="o">=</span> <span class="n">_drop_unparseable_lines</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_lines</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">RenderedCell</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dropped</span> <span class="o">+</span> <span class="n">swept</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">source</span><span class="p">,</span> <span class="n">swept</span> <span class="o">=</span> <span class="n">_drop_unparseable_lines</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_lines</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">RenderedCell</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dropped</span> <span class="o">+</span> <span class="n">swept</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4346,11 +4346,11 @@ what to do about a cell they cannot render.</p>
 <span class="normal">160</span>
 <span class="normal">161</span>
 <span class="normal">162</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform_cell_code</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cell_magics</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replace captured magic commands with magic_adapter calls.</span>
+<span class="w">    </span><span class="sd">"""Replace captured magic commands with magic_adapter calls.</span>
 
 <span class="sd">    The source of :func:`render_source`, for callers that have already decided</span>
 <span class="sd">    what to do about a cell they cannot render.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">render_source</span><span class="p">(</span><span class="n">raw_cell</span><span class="p">,</span> <span class="n">cell_magics</span><span class="p">)</span><span class="o">.</span><span class="n">source</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4438,18 +4438,18 @@ variable the replay never created.</p>
 <span class="normal">82</span>
 <span class="normal">83</span>
 <span class="normal">84</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">cell_magic_reason</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Why ``%%name arguments`` cannot be rendered, or &quot;&quot; when it can.</span>
+<span class="w">    </span><span class="sd">"""Why ``%%name arguments`` cannot be rendered, or "" when it can.</span>
 
 <span class="sd">    ``%%capture`` is the one that depends on its arguments: bare, it only</span>
 <span class="sd">    suppresses output and the body can run as it is; given a name, it binds that</span>
 <span class="sd">    name to the captured output, and a later cell reading it would fail on a</span>
 <span class="sd">    variable the replay never created.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;capture&quot;</span> <span class="ow">and</span> <span class="n">arguments</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;it binds the cell&#39;s output to </span><span class="si">{</span><span class="n">arguments</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">!r}</span><span class="s2">, which a replay cannot produce&quot;</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"capture"</span> <span class="ow">and</span> <span class="n">arguments</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"it binds the cell's output to </span><span class="si">{</span><span class="n">arguments</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">!r}</span><span class="s2">, which a replay cannot produce"</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">TRANSPARENT_CELL_MAGICS</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">CELL_MAGIC_REASONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;a replay runs a plain Python script, and nothing there reads it&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">""</span>
+    <span class="k">return</span> <span class="n">CELL_MAGIC_REASONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">"a replay runs a plain Python script, and nothing there reads it"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

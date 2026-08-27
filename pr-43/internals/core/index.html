@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3510,12 +3510,12 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">43</span>
 <span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MonitoringState</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Current state of the performance monitoring loop.</span>
+<span class="w">    </span><span class="sd">"""Current state of the performance monitoring loop.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        user_interval: User-provided interval overriding the default.</span>
 <span class="sd">        running: Whether monitoring is currently running.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">user_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">running</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -3634,13 +3634,13 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">30</span>
 <span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PerfReportsState</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Current configuration of automatic per-cell performance reports.</span>
+<span class="w">    </span><span class="sd">"""Current configuration of automatic per-cell performance reports.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        enabled: Whether per-cell reports are enabled.</span>
 <span class="sd">        level: Monitoring level used when generating reports.</span>
 <span class="sd">        text: If True, use text reports instead of HTML.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SETTINGS_DEFAULTS</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span>
@@ -3796,36 +3796,36 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">84</span>
 <span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">State</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mutable runtime state for a JUmPER session.</span>
+<span class="w">    </span><span class="sd">"""Mutable runtime state for a JUmPER session.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        perfreports: Current configuration of per-cell reports.</span>
 <span class="sd">        monitoring: Current state of the monitoring loop.</span>
 <span class="sd">        visualizer_backend: Currently selected backend used for plotting.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">perfreports</span><span class="p">:</span> <span class="n">PerfReportsState</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">PerfReportsState</span><span class="p">)</span>
     <span class="n">monitoring</span><span class="p">:</span> <span class="n">MonitoringState</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">MonitoringState</span><span class="p">)</span>
     <span class="n">visualizer_backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SETTINGS_DEFAULTS</span><span class="o">.</span><span class="n">visualizer_backend</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;State&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a deep copy of the current state.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"State"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return a deep copy of the current state.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            State: Independent copy of the current runtime state.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">SettingsConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;State&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build initial session state from configured defaults.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">SettingsConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"State"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Build initial session state from configured defaults.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            cfg: Settings defaults loaded from the application config.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            State: A new state seeded with the configured defaults.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">perfreports</span><span class="o">=</span><span class="n">PerfReportsState</span><span class="p">(</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
@@ -3945,15 +3945,15 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">83</span>
 <span class="normal">84</span>
 <span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">SettingsConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;State&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build initial session state from configured defaults.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">SettingsConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"State"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Build initial session state from configured defaults.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cfg: Settings defaults loaded from the application config.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        State: A new state seeded with the configured defaults.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
         <span class="n">perfreports</span><span class="o">=</span><span class="n">PerfReportsState</span><span class="p">(</span>
             <span class="n">level</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
@@ -4017,12 +4017,12 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">64</span>
 <span class="normal">65</span>
 <span class="normal">66</span>
-<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;State&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a deep copy of the current state.</span>
+<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"State"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return a deep copy of the current state.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        State: Independent copy of the current runtime state.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4121,7 +4121,7 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">24</span>
 <span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ArgParsers</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for command-line argument parsers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Configuration for command-line argument parsers."""</span>
     <span class="n">perfmonitor_start</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span>
     <span class="n">perfreport</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span>
     <span class="n">ai_review</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span>
@@ -4266,95 +4266,95 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">173</span>
 <span class="normal">174</span>
 <span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_ai_review_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an ArgumentParser for the perfmonitor_ai_review command.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build an ArgumentParser for the perfmonitor_ai_review command."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.ai_reviewer.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">strategy_ids</span>
 
     <span class="n">ai_context</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">context</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--cells&quot;</span><span class="p">,</span>
+        <span class="s2">"--cells"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cell index or range to analyze (e.g., 5, 2:8, :5)&quot;</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Cell index or range to analyze (e.g., 5, 2:8, :5)"</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--strategy&quot;</span><span class="p">,</span>
+        <span class="s2">"--strategy"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="n">ai_context</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
         <span class="n">choices</span><span class="o">=</span><span class="n">strategy_ids</span><span class="p">(),</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Review strategy steering context sources and prompt rules&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Review strategy steering context sources and prompt rules"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--level&quot;</span><span class="p">,</span>
+        <span class="s2">"--level"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
         <span class="n">choices</span><span class="o">=</span><span class="n">get_available_levels</span><span class="p">(),</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Performance level&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Performance level"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--benchmark&quot;</span><span class="p">,</span>
-        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="s2">"--benchmark"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Run every suggestion, repair what fails and report a measured verdict. &quot;</span>
-            <span class="s2">&quot;Replays the whole session per run - expect it to be slow&quot;</span>
+            <span class="s2">"Run every suggestion, repair what fails and report a measured verdict. "</span>
+            <span class="s2">"Replays the whole session per run - expect it to be slow"</span>
         <span class="p">),</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--benchmark-runs&quot;</span><span class="p">,</span>
+        <span class="s2">"--benchmark-runs"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Timed replays per suggestion; the first is dropped as warm-up&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"N"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Timed replays per suggestion; the first is dropped as warm-up"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--fix-attempts&quot;</span><span class="p">,</span>
+        <span class="s2">"--fix-attempts"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Repair rounds before a failing suggestion is reported as failed&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"N"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Repair rounds before a failing suggestion is reported as failed"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--replay-mode&quot;</span><span class="p">,</span>
+        <span class="s2">"--replay-mode"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;full&quot;</span><span class="p">,</span> <span class="s2">&quot;fork&quot;</span><span class="p">,</span> <span class="s2">&quot;dill&quot;</span><span class="p">),</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"full"</span><span class="p">,</span> <span class="s2">"fork"</span><span class="p">,</span> <span class="s2">"dill"</span><span class="p">),</span>
         <span class="n">help</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;How the state a timed cell needs is rebuilt between measurements. &quot;</span>
-            <span class="s2">&quot;&#39;full&#39; re-runs every preceding cell each time; the others rebuild it &quot;</span>
-            <span class="s2">&quot;once and reuse it. A mode that cannot serve this cell falls back to full&quot;</span>
+            <span class="s2">"How the state a timed cell needs is rebuilt between measurements. "</span>
+            <span class="s2">"'full' re-runs every preceding cell each time; the others rebuild it "</span>
+            <span class="s2">"once and reuse it. A mode that cannot serve this cell falls back to full"</span>
         <span class="p">),</span>
     <span class="p">)</span>
-    <span class="n">_CHECK_NAMES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;validate_syntax&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">)</span>
+    <span class="n">_CHECK_NAMES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"validate_syntax"</span><span class="p">,</span> <span class="s2">"run"</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--check&quot;</span><span class="p">,</span>
-        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;append&quot;</span><span class="p">,</span>
+        <span class="s2">"--check"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"append"</span><span class="p">,</span>
         <span class="n">choices</span><span class="o">=</span><span class="n">_CHECK_NAMES</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;STEP&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"STEP"</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Run only these benchmark steps (repeatable); the rest are turned off. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Steps: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_CHECK_NAMES</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="s2">"Run only these benchmark steps (repeatable); the rest are turned off. "</span>
+            <span class="sa">f</span><span class="s2">"Steps: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_CHECK_NAMES</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">),</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--skip-check&quot;</span><span class="p">,</span>
-        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;append&quot;</span><span class="p">,</span>
+        <span class="s2">"--skip-check"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"append"</span><span class="p">,</span>
         <span class="n">choices</span><span class="o">=</span><span class="n">_CHECK_NAMES</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;STEP&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Turn off a benchmark step (repeatable); overrides config and --check&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"STEP"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Turn off a benchmark step (repeatable); overrides config and --check"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--resume&quot;</span><span class="p">,</span>
+        <span class="s2">"--resume"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;RUN_ID&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Resume a previous review and apply one of its suggestions&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"RUN_ID"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Resume a previous review and apply one of its suggestions"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--select&quot;</span><span class="p">,</span>
+        <span class="s2">"--select"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;1-based index of the suggestion to apply (required with --resume)&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"N"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"1-based index of the suggestion to apply (required with --resume)"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--note&quot;</span><span class="p">,</span>
+        <span class="s2">"--note"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Free-text instruction; steers the suggestions, or rewrites the chosen one on --resume&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Free-text instruction; steers the suggestions, or rewrites the chosen one on --resume"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span>
 </code></pre></div></td></tr></table></div>
@@ -4402,19 +4402,19 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">278</span>
 <span class="normal">279</span>
 <span class="normal">280</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_export_session_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build parser for exporting a full session package.</span>
+<span class="w">    </span><span class="sd">"""Build parser for exporting a full session package.</span>
 
 <span class="sd">    Usage examples in magics:</span>
 <span class="sd">      %export_session                        # uses default directory name</span>
 <span class="sd">      %export_session my_dir                 # export into directory</span>
 <span class="sd">      %export_session my_session.zip         # export and zip (auto-detected by .zip extension)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;path&quot;</span><span class="p">,</span>
-        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+        <span class="s2">"path"</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">"?"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Target directory or .zip path (defaults to jumper-session-&lt;timestamp&gt;)&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Target directory or .zip path (defaults to jumper-session-&lt;timestamp&gt;)"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span>
 </code></pre></div></td></tr></table></div>
@@ -4448,12 +4448,12 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">288</span>
 <span class="normal">289</span>
 <span class="normal">290</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_import_session_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build parser for importing a full session package from directory or zip.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build parser for importing a full session package from directory or zip."""</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;path&quot;</span><span class="p">,</span>
+        <span class="s2">"path"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to exported session directory or .zip archive&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Path to exported session directory or .zip archive"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span>
 </code></pre></div></td></tr></table></div>
@@ -4509,34 +4509,34 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">56</span>
 <span class="normal">57</span>
 <span class="normal">58</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_start_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an ArgumentParser for the perfmonitor_start command.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build an ArgumentParser for the perfmonitor_start command."""</span>
     <span class="n">default_interval</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">monitoring</span><span class="o">.</span><span class="n">default_interval</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;interval&quot;</span><span class="p">,</span>
-        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+        <span class="s2">"interval"</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">"?"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Sampling interval in seconds (default: </span><span class="si">{</span><span class="n">default_interval</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Sampling interval in seconds (default: </span><span class="si">{</span><span class="n">default_interval</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--monitor&quot;</span><span class="p">,</span>
+        <span class="s2">"--monitor"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="s2">&quot;native_c&quot;</span><span class="p">,</span> <span class="s2">&quot;subprocess_python&quot;</span><span class="p">,</span> <span class="s2">&quot;thread&quot;</span><span class="p">,</span> <span class="s2">&quot;slurm_multinode&quot;</span><span class="p">],</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Monitor backend to use (default: subprocess-based Python collector, &quot;</span>
-             <span class="s2">&quot;&#39;native_c&#39; for native C collector, &quot;</span>
-             <span class="s2">&quot;&#39;subprocess_python&#39; for explicit Python subprocess collector, &quot;</span>
-             <span class="s2">&quot;&#39;thread&#39; for in-process threaded monitor)&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">"default"</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">"default"</span><span class="p">,</span> <span class="s2">"native_c"</span><span class="p">,</span> <span class="s2">"subprocess_python"</span><span class="p">,</span> <span class="s2">"thread"</span><span class="p">,</span> <span class="s2">"slurm_multinode"</span><span class="p">],</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Monitor backend to use (default: subprocess-based Python collector, "</span>
+             <span class="s2">"'native_c' for native C collector, "</span>
+             <span class="s2">"'subprocess_python' for explicit Python subprocess collector, "</span>
+             <span class="s2">"'thread' for in-process threaded monitor)"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--check-sanity&quot;</span><span class="p">,</span>
-        <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;check_sanity&quot;</span><span class="p">,</span>
-        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Run a short sanity check of the selected monitor before &quot;</span>
-             <span class="s2">&quot;starting real monitoring. Tailored for thread, &quot;</span>
-             <span class="s2">&quot;subprocess_python and native_c monitors; other monitors &quot;</span>
-             <span class="s2">&quot;are expected to fail this check.&quot;</span><span class="p">,</span>
+        <span class="s2">"--check-sanity"</span><span class="p">,</span>
+        <span class="n">dest</span><span class="o">=</span><span class="s2">"check_sanity"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Run a short sanity check of the selected monitor before "</span>
+             <span class="s2">"starting real monitoring. Tailored for thread, "</span>
+             <span class="s2">"subprocess_python and native_c monitors; other monitors "</span>
+             <span class="s2">"are expected to fail this check."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span>
 </code></pre></div></td></tr></table></div>
@@ -4583,25 +4583,25 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfreport_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build an ArgumentParser instance for JUmPER commands.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build an ArgumentParser instance for JUmPER commands."""</span>
     <span class="n">perfreports</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">perfreports</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">add_help</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--cells&quot;</span><span class="p">,</span>
+        <span class="s2">"--cells"</span><span class="p">,</span>
         <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cell index or range (e.g., 5, 2:8, :5)&quot;</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Cell index or range (e.g., 5, 2:8, :5)"</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--level&quot;</span><span class="p">,</span>
+        <span class="s2">"--level"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
         <span class="n">choices</span><span class="o">=</span><span class="n">get_available_levels</span><span class="p">(),</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Performance level&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Performance level"</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--text&quot;</span><span class="p">,</span>
-        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="s2">"--text"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="n">perfreports</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Show report in text format&quot;</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"Show report in text format"</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span>
 </code></pre></div></td></tr></table></div>
@@ -4715,7 +4715,7 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">308</span>
 <span class="normal">309</span>
 <span class="normal">310</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_arguments</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse common command line arguments for JUmPER commands.</span>
+<span class="w">    </span><span class="sd">"""Parse common command line arguments for JUmPER commands.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        line: The command line string to parse</span>
@@ -4723,7 +4723,7 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Parsed arguments or None if parsing failed</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">args</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
@@ -4853,22 +4853,22 @@ values live in <code>jumper_extension.config</code> (see <code>SettingsConfig</c
 <span class="normal">338</span>
 <span class="normal">339</span>
 <span class="normal">340</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_cell_range</span><span class="p">(</span><span class="n">cell_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cell_history_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a cell range string into start and end indices.</span>
+<span class="w">    </span><span class="sd">"""Parse a cell range string into start and end indices.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        cell_str: String representing cell range (e.g., &quot;1:3&quot;, &quot;5&quot;, &quot;:10&quot;)</span>
+<span class="sd">        cell_str: String representing cell range (e.g., "1:3", "5", ":10")</span>
 <span class="sd">        cell_history_length: Length of cell history</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Tuple of (start_idx, end_idx) or None if invalid</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">cell_str</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">max_idx</span> <span class="o">=</span> <span class="n">cell_history_length</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">cell_str</span><span class="p">:</span>
-            <span class="n">start_str</span><span class="p">,</span> <span class="n">end_str</span> <span class="o">=</span> <span class="n">cell_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">":"</span> <span class="ow">in</span> <span class="n">cell_str</span><span class="p">:</span>
+            <span class="n">start_str</span><span class="p">,</span> <span class="n">end_str</span> <span class="o">=</span> <span class="n">cell_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
             <span class="n">start_idx</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">start_str</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">start_str</span><span class="p">)</span>
             <span class="n">end_idx</span> <span class="o">=</span> <span class="n">max_idx</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">end_str</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">end_str</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -4974,7 +4974,7 @@ those messages.</p>
 <span class="normal">30</span>
 <span class="normal">31</span>
 <span class="normal">32</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtensionErrorCode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error codes emitted by the extension.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Error codes emitted by the extension."""</span>
 
     <span class="n">PYNVML_NOT_AVAILABLE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
     <span class="n">NVIDIA_DRIVERS_NOT_AVAILABLE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
@@ -5061,7 +5061,7 @@ those messages.</p>
 <span class="normal">50</span>
 <span class="normal">51</span>
 <span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExtensionInfoCode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Informational codes emitted by the extension.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Informational codes emitted by the extension."""</span>
 
     <span class="n">IMPRECISE_INTERVAL</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
     <span class="n">MISSED_MEASUREMENTS</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
@@ -5153,14 +5153,14 @@ those messages.</p>
 <span class="normal">170</span>
 <span class="normal">171</span>
 <span class="normal">172</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_jumper_process_error_hint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a hint pointing to the error log file.</span>
+<span class="w">    </span><span class="sd">"""Return a hint pointing to the error log file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: Human-readable hint with the path to the error log file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">jumper_process_error_hint</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Hint: full error info saved to log file: &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">LOGGING</span><span class="p">[</span><span class="s1">&#39;handlers&#39;</span><span class="p">][</span><span class="s1">&#39;error_file&#39;</span><span class="p">][</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="s2">"</span><span class="se">\n</span><span class="s2">Hint: full error info saved to log file: "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">LOGGING</span><span class="p">[</span><span class="s1">'handlers'</span><span class="p">][</span><span class="s1">'error_file'</span><span class="p">][</span><span class="s1">'filename'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">jumper_process_error_hint</span>
 </code></pre></div></td></tr></table></div>
@@ -5210,7 +5210,7 @@ those messages.</p>
 
 
 <h2 id="jumper_extension.core.service.build_perfmonitor_service" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">build_perfmonitor_service</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Display not available.&#39;</span><span class="p">,</span> <span class="n">visualizer_backend</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">build_perfmonitor_service</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">'Plotting not available.'</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">'Display not available.'</span><span class="p">,</span> <span class="n">visualizer_backend</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -5419,12 +5419,12 @@ is used.</p>
 <span class="normal">1467</span>
 <span class="normal">1468</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_service</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
+        <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Plotting not available."</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Display not available.&quot;</span><span class="p">,</span>
+        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Display not available."</span><span class="p">,</span>
         <span class="n">visualizer_backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PerfmonitorService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a new :class:`PerfmonitorService` instance.</span>
+<span class="w">    </span><span class="sd">"""Build a new :class:`PerfmonitorService` instance.</span>
 
 <span class="sd">    This factory configures the default monitor, visualizer, reporter,</span>
 <span class="sd">    cell history, and script writer for use in Python code.</span>
@@ -5436,8 +5436,8 @@ is used.</p>
 <span class="sd">        display_disabled: If ``True``, disable rich display for reports.</span>
 <span class="sd">        display_disabled_reason: Human-readable reason shown when rich</span>
 <span class="sd">            display is disabled.</span>
-<span class="sd">        visualizer_backend: Visualizer backend to use (``&quot;matplotlib&quot;`` or</span>
-<span class="sd">            ``&quot;plotly&quot;``). If not given, ``AppConfig.settings.visualizer_backend``</span>
+<span class="sd">        visualizer_backend: Visualizer backend to use (``"matplotlib"`` or</span>
+<span class="sd">            ``"plotly"``). If not given, ``AppConfig.settings.visualizer_backend``</span>
 <span class="sd">            is used.</span>
 
 <span class="sd">    Returns:</span>
@@ -5446,7 +5446,7 @@ is used.</p>
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; from jumper_extension.core.service import build_perfmonitor_service</span>
 <span class="sd">        &gt;&gt;&gt; service = build_perfmonitor_service()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
     <span class="n">state</span><span class="o">.</span><span class="n">visualizer_backend</span> <span class="o">=</span> <span class="p">(</span>
@@ -5493,7 +5493,7 @@ is used.</p>
 
 
 <h2 id="jumper_extension.core.service.build_perfmonitor_magic_adapter" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">build_perfmonitor_magic_adapter</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Display not available.&#39;</span><span class="p">,</span> <span class="n">visualizer_backend</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">build_perfmonitor_magic_adapter</span><span class="p">(</span><span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">'Plotting not available.'</span><span class="p">,</span> <span class="n">display_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">display_disabled_reason</span><span class="o">=</span><span class="s1">'Display not available.'</span><span class="p">,</span> <span class="n">visualizer_backend</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
 </h2>
 
@@ -5698,12 +5698,12 @@ is used.</p>
 <span class="normal">1528</span>
 <span class="normal">1529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_perfmonitor_magic_adapter</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
+        <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Plotting not available."</span><span class="p">,</span>
         <span class="n">display_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Display not available.&quot;</span><span class="p">,</span>
+        <span class="n">display_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Display not available."</span><span class="p">,</span>
         <span class="n">visualizer_backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PerfmonitorMagicAdapter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a new :class:`PerfmonitorMagicAdapter` instance.</span>
+<span class="w">    </span><span class="sd">"""Build a new :class:`PerfmonitorMagicAdapter` instance.</span>
 
 <span class="sd">    This factory constructs a :class:`PerfmonitorService` and wraps it</span>
 <span class="sd">    with a string-based adapter suitable for IPython magics or other</span>
@@ -5716,8 +5716,8 @@ is used.</p>
 <span class="sd">        display_disabled: If ``True``, disable rich display for reports.</span>
 <span class="sd">        display_disabled_reason: Human-readable reason shown when rich</span>
 <span class="sd">            display is disabled.</span>
-<span class="sd">        visualizer_backend: Visualizer backend to use (``&quot;matplotlib&quot;`` or</span>
-<span class="sd">            ``&quot;plotly&quot;``). If not given, ``AppConfig.settings.visualizer_backend``</span>
+<span class="sd">        visualizer_backend: Visualizer backend to use (``"matplotlib"`` or</span>
+<span class="sd">            ``"plotly"``). If not given, ``AppConfig.settings.visualizer_backend``</span>
 <span class="sd">            is used.</span>
 
 <span class="sd">    Returns:</span>
@@ -5728,7 +5728,7 @@ is used.</p>
 <span class="sd">        ...     build_perfmonitor_magic_adapter,</span>
 <span class="sd">        ... )</span>
 <span class="sd">        &gt;&gt;&gt; adapter = build_perfmonitor_magic_adapter()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span> <span class="o">=</span> <span class="n">build_perfmonitor_service</span><span class="p">(</span>
         <span class="n">plots_disabled</span><span class="o">=</span><span class="n">plots_disabled</span><span class="p">,</span>
         <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="n">plots_disabled_reason</span><span class="p">,</span>

@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3154,23 +3154,23 @@ from Python source.</p>
 <span class="normal">182</span>
 <span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CellHistory</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># NOTE: this list doubles as the &quot;required columns&quot; schema for loading</span>
+        <span class="c1"># NOTE: this list doubles as the "required columns" schema for loading</span>
         <span class="c1"># exported history, so keep optional row-only fields (cell_magics,</span>
         <span class="c1"># language) OUT of it - adding them would reject older CSV/JSON exports</span>
         <span class="c1"># that predate the field. They still ride along in every live row.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_columns</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;cell_index&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;raw_cell&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;start_time&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;end_time&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;duration&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;wallclock_start_time&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;wallclock_end_time&quot;</span><span class="p">,</span>
+            <span class="s2">"cell_index"</span><span class="p">,</span>
+            <span class="s2">"raw_cell"</span><span class="p">,</span>
+            <span class="s2">"start_time"</span><span class="p">,</span>
+            <span class="s2">"end_time"</span><span class="p">,</span>
+            <span class="s2">"duration"</span><span class="p">,</span>
+            <span class="s2">"wallclock_start_time"</span><span class="p">,</span>
+            <span class="s2">"wallclock_end_time"</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_readers</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;json&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">,</span>
-            <span class="s2">&quot;csv&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">,</span>
+            <span class="s2">"json"</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">,</span>
+            <span class="s2">"csv"</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -3178,32 +3178,32 @@ from Python source.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">raw_cell</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">cell_magics</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;python&quot;</span><span class="p">,</span>
+        <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"python"</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;cell_index&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span>
-            <span class="s2">&quot;cell_magics&quot;</span><span class="p">:</span> <span class="n">cell_magics</span><span class="p">,</span>
-            <span class="s2">&quot;raw_cell&quot;</span><span class="p">:</span> <span class="n">raw_cell</span><span class="p">,</span>
-            <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="n">language</span><span class="p">,</span>
-            <span class="s2">&quot;start_time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">(),</span>
-            <span class="s2">&quot;end_time&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;wallclock_start_time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-            <span class="s2">&quot;wallclock_end_time&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"cell_index"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span>
+            <span class="s2">"cell_magics"</span><span class="p">:</span> <span class="n">cell_magics</span><span class="p">,</span>
+            <span class="s2">"raw_cell"</span><span class="p">:</span> <span class="n">raw_cell</span><span class="p">,</span>
+            <span class="s2">"language"</span><span class="p">:</span> <span class="n">language</span><span class="p">,</span>
+            <span class="s2">"start_time"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">(),</span>
+            <span class="s2">"end_time"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"duration"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"wallclock_start_time"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="s2">"wallclock_end_time"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">end_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">&quot;end_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">&quot;end_time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">"end_time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">"end_time"</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">]</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">&quot;wallclock_end_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">[</span><span class="s2">"wallclock_end_time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
             <span class="n">new_row</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span><span class="p">])</span>
             <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">PerformanceWarning</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">PerformanceWarning</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">new_row</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">current_cell</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -3215,12 +3215,12 @@ from Python source.</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">print</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
             <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Cell #</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s1">&#39;cell_index&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> - Duration: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span>
+                <span class="sa">f</span><span class="s2">"Cell #</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s1">'cell_index'</span><span class="p">])</span><span class="si">}</span><span class="s2"> - Duration: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s1">'duration'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s"</span>
             <span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">&quot;raw_cell&quot;</span><span class="p">])</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"-"</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">"raw_cell"</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">show_itable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
@@ -3231,36 +3231,36 @@ from Python source.</p>
 
         <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="n">duration</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;end_time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">]</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"end_time"</span><span class="p">]</span> <span class="o">-</span> <span class="n">row</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">]</span>
             <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="p">{</span>
-                    <span class="s2">&quot;Cell index&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;Duration (s)&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;Start Time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span>
-                        <span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">])</span>
+                    <span class="s2">"Cell index"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">],</span>
+                    <span class="s2">"Duration (s)"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">"Start Time"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span>
+                        <span class="s2">"%H:%M:%S"</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
                     <span class="p">),</span>
-                    <span class="s2">&quot;End Time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span>
-                        <span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;end_time&quot;</span><span class="p">])</span>
+                    <span class="s2">"End Time"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span>
+                        <span class="s2">"%H:%M:%S"</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"end_time"</span><span class="p">])</span>
                     <span class="p">),</span>
-                    <span class="s2">&quot;Code&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;raw_cell&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;br&gt;&quot;</span><span class="p">),</span>
+                    <span class="s2">"Code"</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"raw_cell"</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"&lt;br&gt;"</span><span class="p">),</span>
                 <span class="p">}</span>
             <span class="p">)</span>
 
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="c1"># To avoid warnings about a non-documented &#39;escape&#39; option in a notebook</span>
+        <span class="c1"># To avoid warnings about a non-documented 'escape' option in a notebook</span>
         <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">SyntaxWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">&quot;itables</span><span class="se">\\</span><span class="s2">.typing&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">SyntaxWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">"itables</span><span class="se">\\</span><span class="s2">.typing"</span><span class="p">)</span>
             <span class="n">show</span><span class="p">(</span>
                 <span class="n">df</span><span class="p">,</span>
-                <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;topStart&quot;</span><span class="p">:</span> <span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="s2">&quot;topEnd&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+                <span class="n">layout</span><span class="o">=</span><span class="p">{</span><span class="s2">"topStart"</span><span class="p">:</span> <span class="s2">"search"</span><span class="p">,</span> <span class="s2">"topEnd"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
                 <span class="n">columnDefs</span><span class="o">=</span><span class="p">[</span>
-                    <span class="p">{</span><span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="s2">&quot;className&quot;</span><span class="p">:</span> <span class="s2">&quot;dt-left&quot;</span><span class="p">}</span>
-                <span class="p">],</span>  <span class="c1"># 4 - &quot;Code&quot; index</span>
+                    <span class="p">{</span><span class="s2">"targets"</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="s2">"className"</span><span class="p">:</span> <span class="s2">"dt-left"</span><span class="p">}</span>
+                <span class="p">],</span>  <span class="c1"># 4 - "Code" index</span>
                 <span class="n">escape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;cell_history.json&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"cell_history.json"</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_CELL_HISTORY</span><span class="p">]</span>
@@ -3269,17 +3269,17 @@ from Python source.</p>
 
         <span class="c1"># Determine format from filename extension</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="nb">format</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
 
         <span class="c1"># Default to csv if no extension provided</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">format</span><span class="p">:</span>
-            <span class="nb">format</span> <span class="o">=</span> <span class="s2">&quot;csv&quot;</span>
-            <span class="n">filename</span> <span class="o">+=</span> <span class="s2">&quot;.csv&quot;</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="s2">"csv"</span>
+            <span class="n">filename</span> <span class="o">+=</span> <span class="s2">".csv"</span>
 
-        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;json&quot;</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">&quot;records&quot;</span><span class="p">),</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">"json"</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">"records"</span><span class="p">),</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">"csv"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -3287,7 +3287,7 @@ from Python source.</p>
                     <span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">UNSUPPORTED_FORMAT</span>
                 <span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                     <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span>
-                    <span class="n">supported_formats</span><span class="o">=</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="s2">&quot;csv&quot;</span><span class="p">]),</span>
+                    <span class="n">supported_formats</span><span class="o">=</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">"json"</span><span class="p">,</span> <span class="s2">"csv"</span><span class="p">]),</span>
                 <span class="p">)</span>
             <span class="p">)</span>
             <span class="k">return</span>
@@ -3299,16 +3299,16 @@ from Python source.</p>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load cell history from CSV or JSON file.</span>
+<span class="w">        </span><span class="sd">"""Load cell history from CSV or JSON file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            DataFrame if successful, None otherwise</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">load_dataframe_from_file</span><span class="p">(</span>
             <span class="n">filename</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">file_readers</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">,</span>
-            <span class="n">entity_name</span><span class="o">=</span><span class="s2">&quot;cell history&quot;</span><span class="p">,</span>
+            <span class="n">entity_name</span><span class="o">=</span><span class="s2">"cell history"</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -3380,16 +3380,16 @@ from Python source.</p>
 <span class="normal">178</span>
 <span class="normal">179</span>
 <span class="normal">180</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load cell history from CSV or JSON file.</span>
+<span class="w">    </span><span class="sd">"""Load cell history from CSV or JSON file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        DataFrame if successful, None otherwise</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">load_dataframe_from_file</span><span class="p">(</span>
         <span class="n">filename</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file_readers</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">,</span>
-        <span class="n">entity_name</span><span class="o">=</span><span class="s2">&quot;cell history&quot;</span><span class="p">,</span>
+        <span class="n">entity_name</span><span class="o">=</span><span class="s2">"cell history"</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>

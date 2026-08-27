@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3060,9 +3060,9 @@ collectors run, which LLM the AI reviewer talks to — comes from this config.</
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.config.loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
-<span class="n">config</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span>   <span class="c1"># &quot;process&quot;</span>
-<span class="n">config</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">default_subsets</span>         <span class="c1"># [&quot;cpu&quot;, &quot;mem&quot;, &quot;io&quot;]</span>
-<span class="n">config</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">model</span>                  <span class="c1"># &quot;MiniMaxAI/MiniMax-M3-MXFP8&quot;</span>
+<span class="n">config</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">perfreports</span><span class="o">.</span><span class="n">level</span>   <span class="c1"># "process"</span>
+<span class="n">config</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">default_subsets</span>         <span class="c1"># ["cpu", "mem", "io"]</span>
+<span class="n">config</span><span class="o">.</span><span class="n">ai</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">model</span>                  <span class="c1"># "MiniMaxAI/MiniMax-M3-MXFP8"</span>
 </code></pre></div>
 <h2 id="how-its-put-together">How it's put together</h2>
 <p><code>jumper_extension/config/config.yaml</code> lists which option file to load for each

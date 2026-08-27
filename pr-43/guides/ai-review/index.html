@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3016,7 +3016,7 @@ with <a href="benchmark/"><code>--benchmark</code></a>, measure before you trust
 <ol>
 <li>
 <p><strong>Install the optional extras</strong></p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;jumper-extension[ai]&#39;</span><span class="w">      </span><span class="c1"># source checkout: pip install -e &#39;.[ai]&#39;</span>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'jumper-extension[ai]'</span><span class="w">      </span><span class="c1"># source checkout: pip install -e '.[ai]'</span>
 </code></pre></div>
 </li>
 <li>
@@ -3114,7 +3114,7 @@ suggestion still rewrites <strong>exactly one</strong> cell.</p>
 </table>
 <h2 id="applying-a-suggestion">Applying a suggestion</h2>
 <div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">resume</span> <span class="mf">7e5</span><span class="n">a8568</span> <span class="o">--</span><span class="n">select</span> <span class="mi">2</span>
-<span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">resume</span> <span class="mf">7e5</span><span class="n">a8568</span> <span class="o">--</span><span class="n">select</span> <span class="mi">2</span> <span class="o">--</span><span class="n">note</span> <span class="s2">&quot;use multiprocessing instead of joblib&quot;</span>
+<span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">resume</span> <span class="mf">7e5</span><span class="n">a8568</span> <span class="o">--</span><span class="n">select</span> <span class="mi">2</span> <span class="o">--</span><span class="n">note</span> <span class="s2">"use multiprocessing instead of joblib"</span>
 </code></pre></div>
 <p><code>--select N</code> takes the 1-based option number. With <code>--note</code> the option is
 rewritten to your instruction first, then placed into the next cell.</p>

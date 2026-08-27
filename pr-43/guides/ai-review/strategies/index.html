@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3101,7 +3101,7 @@
 <p>A review is steered with two arguments: <code>--strategy</code> picks a prepared angle,
 <code>--note</code> says anything the prepared ones do not cover.</p>
 <div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">strategy</span> <span class="n">parallelization</span>
-<span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">strategy</span> <span class="n">custom</span> <span class="o">--</span><span class="n">note</span> <span class="s2">&quot;keep it single-threaded, we run under SLURM&quot;</span>
+<span class="o">%</span><span class="n">perfmonitor_ai_review</span> <span class="o">--</span><span class="n">strategy</span> <span class="n">custom</span> <span class="o">--</span><span class="n">note</span> <span class="s2">"keep it single-threaded, we run under SLURM"</span>
 </code></pre></div>
 <h2 id="what-a-strategy-changes">What a strategy changes</h2>
 <p>Each strategy pulls two levers at once:</p>
@@ -3194,7 +3194,7 @@ most expensive strategy by a wide margin — use it on one cell, not a range.</p
 ├── prompts/
 │   ├── __init__.py         PromptLibrary: loads specs, inlines fragments, renders
 │   ├── analyze/
-│   │   ├── template.md     fixed prose + Jinja loops over the spec&#39;s item lists
+│   │   ├── template.md     fixed prose + Jinja loops over the spec's item lists
 │   │   └── spec.yaml       the items themselves: {id, enabled, text | fragment}
 │   ├── suggest/            same pair of files, one per prompt
 │   ├── refine/
@@ -3373,7 +3373,7 @@ sees it.</p>
 python<span class="w"> </span>-m<span class="w"> </span>jumper_extension.adapters.ai_reviewer.prompts<span class="w"> </span>--strategy<span class="w"> </span>r_clean
 
 <span class="c1"># the full System + Human messages each node would send, on a synthetic state</span>
-python<span class="w"> </span>-m<span class="w"> </span>jumper_extension.adapters.ai_reviewer.agent.preview<span class="w"> </span>--strategy<span class="w"> </span>deep<span class="w"> </span>--note<span class="w"> </span><span class="s2">&quot;no new dependencies&quot;</span>
+python<span class="w"> </span>-m<span class="w"> </span>jumper_extension.adapters.ai_reviewer.agent.preview<span class="w"> </span>--strategy<span class="w"> </span>deep<span class="w"> </span>--note<span class="w"> </span><span class="s2">"no new dependencies"</span>
 </code></pre></div>
 <p>The preview uses the same message builders as the real nodes, so what it prints
 cannot drift from what the LLM receives.</p>

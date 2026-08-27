@@ -63,7 +63,7 @@
     
     
   <meta name="panzoom-theme" content="material">
-<meta name="panzoom-data" content='{"selectors": [".mermaid", ".panzoom-diagram", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<meta name="panzoom-data" content='{"selectors": [".d2", ".panzoom-diagram", ".mermaid"], "initial_zoom_level": 1.0}'> </head>
   
   
     <body dir="ltr">
@@ -3931,22 +3931,22 @@ programming interface (API) listings below are generated from Python source.</p>
 <span class="normal">810</span>
 <span class="normal">811</span>
 <span class="normal">812</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PerformanceVisualizer</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualizes performance metrics collected by PerformanceMonitor.</span>
+<span class="w">    </span><span class="sd">"""Visualizes performance metrics collected by PerformanceMonitor.</span>
 
-<span class="sd">    Supports multiple levels: &#39;user&#39;, &#39;process&#39; (default), &#39;system&#39;, and</span>
-<span class="sd">    &#39;slurm&#39; (if available)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    Supports multiple levels: 'user', 'process' (default), 'system', and</span>
+<span class="sd">    'slurm' (if available)</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell_history</span><span class="p">:</span> <span class="n">CellHistory</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">UnavailablePerformanceMonitor</span><span class="p">(</span>
-            <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Monitor has not been started yet.&quot;</span>
+            <span class="n">reason</span><span class="o">=</span><span class="s2">"Monitor has not been started yet."</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span> <span class="o">=</span> <span class="n">cell_history</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_duration</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_io_window</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">subsets</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;mem&quot;</span><span class="p">,</span> <span class="s2">&quot;io&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="s2">"mem"</span><span class="p">,</span> <span class="s2">"io"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># cached NodeInfo aggregate, populated in attach()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span>
@@ -3954,7 +3954,7 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">,</span>
         <span class="n">plots_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PlotsConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach started PerformanceMonitor.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Attach started PerformanceMonitor."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="o">=</span> <span class="n">aggregate_node_info</span><span class="p">(</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">hardware</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">interval</span>
@@ -3970,7 +3970,7 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_patch_hardware_dependent_ylims</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_patch_hardware_dependent_ylims</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fill in ylim fields that depend on hardware (gpu_memory).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Fill in ylim fields that depend on hardware (gpu_memory)."""</span>
         <span class="n">hw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span>
         <span class="n">gpu_mem_ylim</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">hw</span><span class="o">.</span><span class="n">gpu_memory</span><span class="p">))</span> <span class="k">if</span> <span class="n">hw</span><span class="o">.</span><span class="n">gpu_memory</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">subset_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -3978,10 +3978,10 @@ programming interface (API) listings below are generated from Python source.</p>
                 <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">ylim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
                     <span class="n">cfg</span><span class="p">,</span> <span class="p">(</span><span class="n">MultiSeriesConfig</span><span class="p">,</span> <span class="n">SummarySeriesConfig</span><span class="p">)</span>
                 <span class="p">):</span>
-                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;prefix&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;gpu_mem&quot;</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">"prefix"</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"gpu_mem"</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">"prefix"</span><span class="p">,</span> <span class="s2">""</span><span class="p">):</span>
                         <span class="n">cfg</span><span class="o">.</span><span class="n">ylim</span> <span class="o">=</span> <span class="n">gpu_mem_ylim</span>
-                    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;columns&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
-                        <span class="s2">&quot;gpu_mem&quot;</span> <span class="ow">in</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;columns&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">"columns"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+                        <span class="s2">"gpu_mem"</span> <span class="ow">in</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">"columns"</span><span class="p">,</span> <span class="p">[])</span>
                     <span class="p">):</span>
                         <span class="n">cfg</span><span class="o">.</span><span class="n">ylim</span> <span class="o">=</span> <span class="n">gpu_mem_ylim</span>
 
@@ -3989,7 +3989,7 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map user-specified metrics or subsets to visualizer subset keys.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Map user-specified metrics or subsets to visualizer subset keys."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">metrics</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span>
 
@@ -4022,7 +4022,7 @@ programming interface (API) listings below are generated from Python source.</p>
                         <span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">INVALID_METRIC_SUBSET</span>
                     <span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                         <span class="n">subset</span><span class="o">=</span><span class="n">metric_key</span><span class="p">,</span>
-                        <span class="n">supported_subsets</span><span class="o">=</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                        <span class="n">supported_subsets</span><span class="o">=</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
 
@@ -4031,7 +4031,7 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="k">return</span> <span class="n">deduped</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_compress_time_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">perfdata</span><span class="p">,</span> <span class="n">cell_range</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compress time axis by removing idle periods between cells&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Compress time axis by removing idle periods between cells"""</span>
         <span class="k">if</span> <span class="n">perfdata</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">perfdata</span><span class="p">,</span> <span class="p">[]</span>
 
@@ -4044,25 +4044,25 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cell_data</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="n">cell_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">perfdata</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span>
-                <span class="n">perfdata</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;end_time&quot;</span><span class="p">]</span>
+            <span class="n">cell_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">perfdata</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span>
+                <span class="n">perfdata</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"end_time"</span><span class="p">]</span>
             <span class="p">)</span>
             <span class="n">cell_perfdata</span> <span class="o">=</span> <span class="n">perfdata</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cell_mask</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cell_perfdata</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
                 <span class="n">original_start</span><span class="p">,</span> <span class="n">cell_duration</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">],</span>
-                    <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;end_time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">],</span>
+                    <span class="n">cell</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">],</span>
+                    <span class="n">cell</span><span class="p">[</span><span class="s2">"end_time"</span><span class="p">]</span> <span class="o">-</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">],</span>
                 <span class="p">)</span>
-                <span class="n">compressed_perfdata</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cell_mask</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">+</span> <span class="p">(</span>
-                    <span class="n">cell_perfdata</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">original_start</span>
+                <span class="n">compressed_perfdata</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cell_mask</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="s2">"time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">+</span> <span class="p">(</span>
+                    <span class="n">cell_perfdata</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">original_start</span>
                 <span class="p">)</span>
                 <span class="n">cell_boundaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="p">{</span>
-                        <span class="s2">&quot;cell_index&quot;</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">],</span>
-                        <span class="s2">&quot;start_time&quot;</span><span class="p">:</span> <span class="n">current_time</span><span class="p">,</span>
-                        <span class="s2">&quot;end_time&quot;</span><span class="p">:</span> <span class="n">current_time</span> <span class="o">+</span> <span class="n">cell_duration</span><span class="p">,</span>
-                        <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">cell_duration</span><span class="p">,</span>
+                        <span class="s2">"cell_index"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">],</span>
+                        <span class="s2">"start_time"</span><span class="p">:</span> <span class="n">current_time</span><span class="p">,</span>
+                        <span class="s2">"end_time"</span><span class="p">:</span> <span class="n">current_time</span> <span class="o">+</span> <span class="n">cell_duration</span><span class="p">,</span>
+                        <span class="s2">"duration"</span><span class="p">:</span> <span class="n">cell_duration</span><span class="p">,</span>
                     <span class="p">}</span>
                 <span class="p">)</span>
                 <span class="n">current_time</span> <span class="o">+=</span> <span class="n">cell_duration</span>
@@ -4076,7 +4076,7 @@ programming interface (API) listings below are generated from Python source.</p>
             <span class="k">if</span> <span class="n">subset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">metric_key</span><span class="p">,</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="p">[</span><span class="n">subset</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_key</span><span class="p">)</span>
-                    <span class="n">label</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="n">metric_key</span><span class="p">)</span> <span class="ow">or</span> <span class="n">metric_key</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">,</span> <span class="n">metric_key</span><span class="p">)</span> <span class="ow">or</span> <span class="n">metric_key</span>
                     <span class="n">labeled_options</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">metric_key</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -4084,7 +4084,7 @@ programming interface (API) listings below are generated from Python source.</p>
                         <span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">INVALID_METRIC_SUBSET</span>
                     <span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                         <span class="n">subset</span><span class="o">=</span><span class="n">subset</span><span class="p">,</span>
-                        <span class="n">supported_subsets</span><span class="o">=</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                        <span class="n">supported_subsets</span><span class="o">=</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">labeled_options</span>
@@ -4107,7 +4107,7 @@ programming interface (API) listings below are generated from Python source.</p>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">processed_data</span> <span class="o">=</span> <span class="n">perfdata</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">processed_data</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
+            <span class="n">processed_data</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
         <span class="k">return</span> <span class="n">processed_data</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_processed_data_for_interactive</span><span class="p">(</span>
@@ -4118,8 +4118,8 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span> <span class="o">=</span> <span class="n">current_cell_range</span>
         <span class="n">cells_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">cells_all</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">start_idx</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span>
-                <span class="n">cells_all</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">end_idx</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">cells_all</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">start_idx</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span>
+                <span class="n">cells_all</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">end_idx</span>
             <span class="p">)</span>
             <span class="n">filtered_cells</span> <span class="o">=</span> <span class="n">cells_all</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -4146,7 +4146,7 @@ programming interface (API) listings below are generated from Python source.</p>
                     <span class="n">processed_perfdata</span><span class="p">[</span><span class="n">level_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">processed_data</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">processed_data</span> <span class="o">=</span> <span class="n">perfdata</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                    <span class="n">processed_data</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
+                    <span class="n">processed_data</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
                     <span class="n">processed_perfdata</span><span class="p">[</span><span class="n">level_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">processed_data</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">processed_perfdata</span><span class="p">[</span><span class="n">level_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">perfdata</span>
@@ -4198,7 +4198,7 @@ programming interface (API) listings below are generated from Python source.</p>
 
         <span class="n">metrics</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_metric_options</span><span class="p">(</span><span class="n">metric_subsets</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">metrics</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No valid metrics found to plot&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"No valid metrics found to plot"</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_render_direct_plot</span><span class="p">(</span>
@@ -4226,13 +4226,13 @@ programming interface (API) listings below are generated from Python source.</p>
             <span class="n">metric_subsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
                 <span class="n">gpu_extra</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span> <span class="s2">&quot;gpu_all&quot;</span><span class="p">)</span>
+                    <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"gpu_all"</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metric_subsets</span>
                 <span class="p">)</span>
                 <span class="n">metric_subsets</span> <span class="o">=</span> <span class="n">metric_subsets</span> <span class="o">+</span> <span class="n">gpu_extra</span>
 
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot performance metrics with interactive widgets for</span>
-<span class="sd">        configuration.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Plot performance metrics with interactive widgets for</span>
+<span class="sd">        configuration."""</span>
         <span class="n">valid_cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -4242,18 +4242,18 @@ programming interface (API) listings below are generated from Python source.</p>
 
         <span class="c1"># Default to all cells if no range specified</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">min_cell_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
-            <span class="n">max_cell_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+            <span class="n">min_cell_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+            <span class="n">max_cell_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">min_cell_idx</span><span class="p">,</span> <span class="n">max_cell_idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="k">if</span> <span class="n">cell_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">cell_start_index</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">cell_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">valid_cells</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cell_idx</span><span class="p">][</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_duration</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">valid_cells</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cell_idx</span><span class="p">][</span><span class="s2">"duration"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_duration</span><span class="p">:</span>
                     <span class="n">cell_start_index</span> <span class="o">=</span> <span class="n">cell_idx</span>
                     <span class="k">break</span>
-            <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cell_start_index</span><span class="p">][</span><span class="s2">&quot;cell_index&quot;</span><span class="p">])</span>
-            <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">cell_start_index</span><span class="p">][</span><span class="s2">"cell_index"</span><span class="p">])</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">valid_cells</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="n">end</span><span class="p">:</span>
                 <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">end</span><span class="p">,</span> <span class="n">start</span>
             <span class="n">cell_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
@@ -4266,9 +4266,9 @@ programming interface (API) listings below are generated from Python source.</p>
                                      <span class="n">level</span><span class="p">,</span> <span class="n">save_jpeg</span><span class="p">,</span> <span class="n">pickle_file</span><span class="p">)</span>
 
         <span class="c1"># Create interactive widgets</span>
-        <span class="n">style</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;description_width&quot;</span><span class="p">:</span> <span class="s2">&quot;initial&quot;</span><span class="p">}</span>
+        <span class="n">style</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"description_width"</span><span class="p">:</span> <span class="s2">"initial"</span><span class="p">}</span>
         <span class="n">show_idle_checkbox</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Checkbox</span><span class="p">(</span>
-            <span class="n">value</span><span class="o">=</span><span class="n">show_idle</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Show idle periods&quot;</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">show_idle</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Show idle periods"</span>
         <span class="p">)</span>
         <span class="c1"># Sanitize slider value within bounds and ordered</span>
         <span class="k">try</span><span class="p">:</span>
@@ -4285,27 +4285,27 @@ programming interface (API) listings below are generated from Python source.</p>
             <span class="nb">min</span><span class="o">=</span><span class="n">min_cell_idx</span><span class="p">,</span>
             <span class="nb">max</span><span class="o">=</span><span class="n">max_cell_idx</span><span class="p">,</span>
             <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Cell range:&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Cell range:"</span><span class="p">,</span>
             <span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logo_widget</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HTML</span><span class="p">(</span>
-            <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;&lt;img src=&quot;</span>
-            <span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">logo_image</span><span class="si">}</span><span class="s1">&quot;&#39;</span>
-            <span class="sa">f</span><span class="s1">&#39;alt=&quot;JUmPER Logo&quot; style=&quot;height: auto; width: 100px;&quot;&gt;&#39;</span>
+            <span class="n">value</span><span class="o">=</span><span class="sa">f</span><span class="s2">"&lt;img src="</span>
+            <span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">logo_image</span><span class="si">}</span><span class="s1">"'</span>
+            <span class="sa">f</span><span class="s1">'alt="JUmPER Logo" style="height: auto; width: 100px;"&gt;'</span>
         <span class="p">)</span>
 
         <span class="n">box_layout</span> <span class="o">=</span> <span class="n">Layout</span><span class="p">(</span>
-            <span class="n">display</span><span class="o">=</span><span class="s2">&quot;flex&quot;</span><span class="p">,</span>
-            <span class="n">flex_flow</span><span class="o">=</span><span class="s2">&quot;row wrap&quot;</span><span class="p">,</span>
-            <span class="n">align_items</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
-            <span class="n">justify_content</span><span class="o">=</span><span class="s2">&quot;space-between&quot;</span><span class="p">,</span>
-            <span class="n">width</span><span class="o">=</span><span class="s2">&quot;100%&quot;</span><span class="p">,</span>
+            <span class="n">display</span><span class="o">=</span><span class="s2">"flex"</span><span class="p">,</span>
+            <span class="n">flex_flow</span><span class="o">=</span><span class="s2">"row wrap"</span><span class="p">,</span>
+            <span class="n">align_items</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
+            <span class="n">justify_content</span><span class="o">=</span><span class="s2">"space-between"</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="s2">"100%"</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">config_widgets</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">HBox</span><span class="p">(</span>
             <span class="p">[</span>
-                <span class="n">widgets</span><span class="o">.</span><span class="n">HTML</span><span class="p">(</span><span class="s2">&quot;&lt;b&gt;Plot Configuration:&lt;/b&gt;&quot;</span><span class="p">),</span>
+                <span class="n">widgets</span><span class="o">.</span><span class="n">HTML</span><span class="p">(</span><span class="s2">"&lt;b&gt;Plot Configuration:&lt;/b&gt;"</span><span class="p">),</span>
                 <span class="n">show_idle_checkbox</span><span class="p">,</span>
                 <span class="n">cell_range_slider</span><span class="p">,</span>
                 <span class="n">logo_widget</span><span class="p">,</span>
@@ -4341,7 +4341,7 @@ programming interface (API) listings below are generated from Python source.</p>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">metrics</span><span class="p">:</span>
                 <span class="k">with</span> <span class="n">plot_output</span><span class="p">:</span>
                     <span class="n">plot_output</span><span class="o">.</span><span class="n">clear_output</span><span class="p">()</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No valid metrics found to plot&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"No valid metrics found to plot"</span><span class="p">)</span>
                     <span class="n">plot_wrapper</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="k">return</span>
 
@@ -4364,7 +4364,7 @@ programming interface (API) listings below are generated from Python source.</p>
                     <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">widget</span> <span class="ow">in</span> <span class="p">[</span><span class="n">show_idle_checkbox</span><span class="p">,</span> <span class="n">cell_range_slider</span><span class="p">]:</span>
-            <span class="n">widget</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="k">lambda</span> <span class="n">change</span><span class="p">:</span> <span class="n">update_plots</span><span class="p">(),</span> <span class="n">names</span><span class="o">=</span><span class="s2">&quot;value&quot;</span><span class="p">)</span>
+            <span class="n">widget</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="k">lambda</span> <span class="n">change</span><span class="p">:</span> <span class="n">update_plots</span><span class="p">(),</span> <span class="n">names</span><span class="o">=</span><span class="s2">"value"</span><span class="p">)</span>
 
         <span class="n">display</span><span class="p">(</span><span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="n">config_widgets</span><span class="p">,</span> <span class="n">plot_output</span><span class="p">]))</span>
         <span class="n">update_plots</span><span class="p">()</span>
@@ -4372,12 +4372,12 @@ programming interface (API) listings below are generated from Python source.</p>
     <span class="c1"># ---- Live plotting helpers ------------------------------------------ #</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_live_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">window_seconds</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a Plotly Figure for a single metric panel in live mode.</span>
+<span class="w">        </span><span class="sd">"""Build a Plotly Figure for a single metric panel in live mode.</span>
 
 <span class="sd">        Returns a ``go.Figure`` with traces, cell boundaries, and layout</span>
 <span class="sd">        configured for the current sliding window.  Returns *None* when</span>
 <span class="sd">        there is no data to show yet.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">)</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
         <span class="n">t_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">now</span> <span class="o">-</span> <span class="n">window_seconds</span><span class="p">)</span>
@@ -4400,8 +4400,8 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="n">has_data</span> <span class="o">=</span> <span class="n">df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span>
         <span class="k">if</span> <span class="n">has_data</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">t_start</span><span class="p">]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">t_start</span><span class="p">]</span>
             <span class="n">has_data</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">render_fn</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_io_window</span><span class="p">)</span> <span class="k">if</span> <span class="n">has_data</span> <span class="k">else</span> <span class="kc">None</span>
@@ -4409,14 +4409,14 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">series</span><span class="p">:</span>
                 <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span>
-                    <span class="n">x</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">],</span>
+                    <span class="n">x</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">"time"</span><span class="p">],</span>
                     <span class="n">y</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
                     <span class="n">name</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
-                    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;lines&quot;</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="s2">"lines"</span><span class="p">,</span>
                     <span class="n">opacity</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">opacity</span><span class="p">,</span>
                     <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
                         <span class="n">color</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
-                        <span class="n">dash</span><span class="o">=</span><span class="n">_LINESTYLE_PLOTLY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">linestyle</span><span class="p">,</span> <span class="s2">&quot;solid&quot;</span><span class="p">),</span>
+                        <span class="n">dash</span><span class="o">=</span><span class="n">_LINESTYLE_PLOTLY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">linestyle</span><span class="p">,</span> <span class="s2">"solid"</span><span class="p">),</span>
                         <span class="n">width</span><span class="o">=</span><span class="n">item</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
                     <span class="p">),</span>
                 <span class="p">))</span>
@@ -4427,7 +4427,7 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="c1"># Compute y-range</span>
         <span class="k">if</span> <span class="n">ylim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">clean</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">y_values</span>
-                     <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">v</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)]</span>
+                     <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">v</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)]</span>
             <span class="k">if</span> <span class="n">clean</span><span class="p">:</span>
                 <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">clean</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span>
                 <span class="n">pad</span> <span class="o">=</span> <span class="p">(</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.05</span> <span class="ow">or</span> <span class="mf">1.0</span>
@@ -4445,70 +4445,70 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="k">if</span> <span class="n">cells</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">cells</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cells</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="n">c_start</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">])</span>
+                    <span class="n">c_start</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
                                <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
-                    <span class="n">dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">])</span>
-                    <span class="n">cidx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">])</span>
+                    <span class="n">dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">])</span>
+                    <span class="n">cidx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">])</span>
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                     <span class="k">continue</span>
                 <span class="k">if</span> <span class="n">c_start</span> <span class="o">+</span> <span class="n">dur</span> <span class="o">&lt;</span> <span class="n">t_start</span><span class="p">:</span>
                     <span class="k">continue</span>
                 <span class="n">color</span> <span class="o">=</span> <span class="n">jumper_colors</span><span class="p">[</span><span class="n">cidx</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">jumper_colors</span><span class="p">)]</span>
                 <span class="n">shapes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
-                    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;rect&quot;</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">c_start</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">c_start</span> <span class="o">+</span> <span class="n">dur</span><span class="p">,</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="s2">"rect"</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">c_start</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">c_start</span> <span class="o">+</span> <span class="n">dur</span><span class="p">,</span>
                     <span class="n">y0</span><span class="o">=</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">y_max</span><span class="p">,</span>
                     <span class="n">fillcolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
-                    <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">dash</span><span class="o">=</span><span class="s2">&quot;dash&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                    <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;below&quot;</span><span class="p">,</span>
+                    <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">dash</span><span class="o">=</span><span class="s2">"dash"</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                    <span class="n">layer</span><span class="o">=</span><span class="s2">"below"</span><span class="p">,</span>
                 <span class="p">))</span>
                 <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
                     <span class="n">x</span><span class="o">=</span><span class="n">c_start</span> <span class="o">+</span> <span class="n">dur</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_max</span> <span class="o">-</span> <span class="n">height</span> <span class="o">*</span> <span class="mf">0.1</span><span class="p">,</span>
-                    <span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="n">cidx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">showarrow</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="n">cidx</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">showarrow</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
-                    <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;rgba(255,255,255,0.8)&quot;</span><span class="p">,</span>
+                    <span class="n">bgcolor</span><span class="o">=</span><span class="s2">"rgba(255,255,255,0.8)"</span><span class="p">,</span>
                 <span class="p">))</span>
 
         <span class="c1"># Show the currently executing cell as a live boundary</span>
         <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell_history</span><span class="o">.</span><span class="n">current_cell</span>
         <span class="k">if</span> <span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">c_start</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">current</span><span class="p">[</span><span class="s2">&quot;start_time&quot;</span><span class="p">])</span>
+                <span class="n">c_start</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">current</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
                            <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
-                <span class="n">cidx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">current</span><span class="p">[</span><span class="s2">&quot;cell_index&quot;</span><span class="p">])</span>
+                <span class="n">cidx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">current</span><span class="p">[</span><span class="s2">"cell_index"</span><span class="p">])</span>
                 <span class="n">c_end</span> <span class="o">=</span> <span class="n">now</span>  <span class="c1"># extends to current time</span>
                 <span class="k">if</span> <span class="n">c_end</span> <span class="o">&gt;</span> <span class="n">t_start</span><span class="p">:</span>
                     <span class="n">color</span> <span class="o">=</span> <span class="n">jumper_colors</span><span class="p">[</span><span class="n">cidx</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">jumper_colors</span><span class="p">)]</span>
                     <span class="n">shapes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
-                        <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;rect&quot;</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">c_start</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">c_end</span><span class="p">,</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="s2">"rect"</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">c_start</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">c_end</span><span class="p">,</span>
                         <span class="n">y0</span><span class="o">=</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">y_max</span><span class="p">,</span>
                         <span class="n">fillcolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
-                        <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">dash</span><span class="o">=</span><span class="s2">&quot;dot&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                        <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;below&quot;</span><span class="p">,</span>
+                        <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">dash</span><span class="o">=</span><span class="s2">"dot"</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                        <span class="n">layer</span><span class="o">=</span><span class="s2">"below"</span><span class="p">,</span>
                     <span class="p">))</span>
                     <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
                         <span class="n">x</span><span class="o">=</span><span class="n">c_start</span> <span class="o">+</span> <span class="p">(</span><span class="n">c_end</span> <span class="o">-</span> <span class="n">c_start</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
                         <span class="n">y</span><span class="o">=</span><span class="n">y_max</span> <span class="o">-</span> <span class="n">height</span> <span class="o">*</span> <span class="mf">0.1</span><span class="p">,</span>
-                        <span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="n">cidx</span><span class="si">}</span><span class="s2"> ▶&quot;</span><span class="p">,</span>
+                        <span class="n">text</span><span class="o">=</span><span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="n">cidx</span><span class="si">}</span><span class="s2"> ▶"</span><span class="p">,</span>
                         <span class="n">showarrow</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                        <span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">),</span>
-                        <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;rgba(255,255,255,0.8)&quot;</span><span class="p">,</span>
+                        <span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"green"</span><span class="p">),</span>
+                        <span class="n">bgcolor</span><span class="o">=</span><span class="s2">"rgba(255,255,255,0.8)"</span><span class="p">,</span>
                     <span class="p">))</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">pass</span>
 
         <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
-            <span class="n">template</span><span class="o">=</span><span class="s2">&quot;plotly_white&quot;</span><span class="p">,</span>
-            <span class="n">title</span><span class="o">=</span><span class="n">title</span> <span class="ow">or</span> <span class="s2">&quot;Waiting for data…&quot;</span><span class="p">,</span>
-            <span class="n">xaxis</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Time (seconds)&quot;</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">[</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span><span class="p">]),</span>
+            <span class="n">template</span><span class="o">=</span><span class="s2">"plotly_white"</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span> <span class="ow">or</span> <span class="s2">"Waiting for data…"</span><span class="p">,</span>
+            <span class="n">xaxis</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Time (seconds)"</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">[</span><span class="n">t_start</span><span class="p">,</span> <span class="n">t_end</span><span class="p">]),</span>
             <span class="n">yaxis</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ylim</span><span class="p">)),</span>
             <span class="n">shapes</span><span class="o">=</span><span class="n">shapes</span><span class="p">,</span>
             <span class="n">annotations</span><span class="o">=</span><span class="n">annotations</span><span class="p">,</span>
             <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">40</span><span class="p">),</span>
             <span class="n">height</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">220</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">figsize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">105</span><span class="p">)),</span>
             <span class="n">legend</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
-                <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="n">yanchor</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
-                <span class="n">xanchor</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-                <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;rgba(255,255,255,0.8)&quot;</span><span class="p">,</span>
+                <span class="n">orientation</span><span class="o">=</span><span class="s2">"h"</span><span class="p">,</span> <span class="n">yanchor</span><span class="o">=</span><span class="s2">"top"</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
+                <span class="n">xanchor</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                <span class="n">bgcolor</span><span class="o">=</span><span class="s2">"rgba(255,255,255,0.8)"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">fig</span>
@@ -4522,7 +4522,7 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="n">update_interval</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
         <span class="n">window_seconds</span><span class="o">=</span><span class="mf">120.0</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot performance metrics with a sliding-window live view.</span>
+<span class="w">        </span><span class="sd">"""Plot performance metrics with a sliding-window live view.</span>
 
 <span class="sd">        Displays fixed panels that auto-update via a background thread</span>
 <span class="sd">        using ``IPython.display.update_display``.  No ipywidgets, no</span>
@@ -4532,11 +4532,11 @@ programming interface (API) listings below are generated from Python source.</p>
 <span class="sd">            metric_subsets: Tuple of metric subset names to plot.</span>
 <span class="sd">            cell_range: Ignored for live plotting.</span>
 <span class="sd">            show_idle: Ignored for live plotting (always True).</span>
-<span class="sd">            level: Monitoring level (``&quot;process&quot;``, ``&quot;user&quot;``,</span>
-<span class="sd">                ``&quot;system&quot;``, or ``&quot;slurm&quot;``). Defaults to ``&quot;process&quot;``.</span>
+<span class="sd">            level: Monitoring level (``"process"``, ``"user"``,</span>
+<span class="sd">                ``"system"``, or ``"slurm"``). Defaults to ``"process"``.</span>
 <span class="sd">            update_interval: Seconds between refreshes (default 2.0).</span>
 <span class="sd">            window_seconds: Width of the visible time window (default 120).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
@@ -4557,7 +4557,7 @@ programming interface (API) listings below are generated from Python source.</p>
                 <span class="n">metric_subsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
                     <span class="n">gpu_extra</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                        <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span> <span class="s2">&quot;gpu_all&quot;</span><span class="p">)</span>
+                        <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"gpu_all"</span><span class="p">)</span>
                         <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metric_subsets</span>
                     <span class="p">)</span>
                     <span class="n">metric_subsets</span> <span class="o">=</span> <span class="n">metric_subsets</span> <span class="o">+</span> <span class="n">gpu_extra</span>
@@ -4577,27 +4577,27 @@ programming interface (API) listings below are generated from Python source.</p>
                 <span class="k">for</span> <span class="n">subset_cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                     <span class="n">all_keys</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">subset_cfg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;No matching metrics found. Available metric keys: &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_keys</span><span class="p">)))</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"No matching metrics found. Available metric keys: "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_keys</span><span class="p">)))</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
                 <span class="k">return</span>
             <span class="n">default_metrics</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">metrics_list</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># No --metrics flag: always CPU + Memory; add GPU if available</span>
-            <span class="n">default_metrics</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cpu_summary&quot;</span><span class="p">,</span> <span class="s2">&quot;memory&quot;</span><span class="p">]</span>
+            <span class="n">default_metrics</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cpu_summary"</span><span class="p">,</span> <span class="s2">"memory"</span><span class="p">]</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
-                <span class="n">default_metrics</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;gpu_util_summary&quot;</span><span class="p">,</span> <span class="s2">&quot;gpu_mem_summary&quot;</span><span class="p">]</span>
+                <span class="n">default_metrics</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"gpu_util_summary"</span><span class="p">,</span> <span class="s2">"gpu_mem_summary"</span><span class="p">]</span>
             <span class="c1"># Resolve subsets needed for these metrics</span>
-            <span class="n">needed_subsets</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;mem&quot;</span><span class="p">]</span>
+            <span class="n">needed_subsets</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="s2">"mem"</span><span class="p">]</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
-                <span class="n">needed_subsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;gpu&quot;</span><span class="p">)</span>
+                <span class="n">needed_subsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"gpu"</span><span class="p">)</span>
             <span class="n">metric_subsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_metric_subsets</span><span class="p">(</span><span class="n">needed_subsets</span><span class="p">)</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">labeled_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_metric_options</span><span class="p">(</span><span class="n">metric_subsets</span><span class="p">)</span>
 
         <span class="c1"># Map metric keys → human-readable labels</span>
         <span class="n">label_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">val</span><span class="p">:</span> <span class="n">lbl</span> <span class="k">for</span> <span class="n">lbl</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">labeled_options</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">level</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="s2">"process"</span>
         <span class="n">session_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())[:</span><span class="mi">8</span><span class="p">]</span>
         <span class="n">stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
         <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span>
@@ -4605,50 +4605,50 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="c1"># -- Display header (static) --------------------------------------- #</span>
         <span class="n">template_dir</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
-            <span class="o">/</span> <span class="s2">&quot;templates&quot;</span> <span class="o">/</span> <span class="s2">&quot;visualizer&quot;</span> <span class="o">/</span> <span class="s2">&quot;plotly&quot;</span>
+            <span class="o">/</span> <span class="s2">"templates"</span> <span class="o">/</span> <span class="s2">"visualizer"</span> <span class="o">/</span> <span class="s2">"plotly"</span>
         <span class="p">)</span>
         <span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span>
             <span class="n">loader</span><span class="o">=</span><span class="n">FileSystemLoader</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">template_dir</span><span class="p">)),</span>
             <span class="n">autoescape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">header_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">&quot;live_header&quot;</span> <span class="o">/</span> <span class="s2">&quot;live_header.css&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
-        <span class="n">header_html</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;live_header/live_header.html&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+        <span class="n">header_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">"live_header"</span> <span class="o">/</span> <span class="s2">"live_header.css"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+        <span class="n">header_html</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">"live_header/live_header.html"</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
             <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-            <span class="n">window_seconds</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">window_seconds</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="n">update_interval</span><span class="o">=</span><span class="n">update_interval</span><span class="p">,</span>
             <span class="n">logo_src</span><span class="o">=</span><span class="n">logo_image</span><span class="p">,</span>
-            <span class="n">panel_labels</span><span class="o">=</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">label_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">),</span>
+            <span class="n">panel_labels</span><span class="o">=</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">label_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">),</span>
             <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;style&gt;</span><span class="si">{</span><span class="n">header_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">header_html</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+        <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;style&gt;</span><span class="si">{</span><span class="n">header_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">header_html</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
 
         <span class="c1"># -- Fixed panel IDs — stable for the entire live session ---------- #</span>
-        <span class="n">panel_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;jumper-live-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">}</span>
-        <span class="n">grid_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;jumper-live-grid-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">update_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;jumper-live-update-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">grid_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">&quot;live_grid&quot;</span> <span class="o">/</span> <span class="s2">&quot;live_grid.css&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">panel_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"jumper-live-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">}</span>
+        <span class="n">grid_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"jumper-live-grid-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">update_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"jumper-live-update-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">grid_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">"live_grid"</span> <span class="o">/</span> <span class="s2">"live_grid.css"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
 
         <span class="c1"># Skeleton grid displayed once — the Plotly divs stay in DOM for the</span>
         <span class="c1"># whole session so Plotly.react() updates them in-place each tick.</span>
         <span class="n">init_html</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;&lt;style&gt;</span><span class="si">{</span><span class="n">grid_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="o">+</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;live_grid/live_grid.html&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"&lt;style&gt;</span><span class="si">{</span><span class="n">grid_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="o">+</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">"live_grid/live_grid.html"</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
                 <span class="n">ncols</span><span class="o">=</span><span class="n">ncols</span><span class="p">,</span>
                 <span class="n">panels</span><span class="o">=</span><span class="p">[(</span><span class="n">panel_ids</span><span class="p">[</span><span class="n">m</span><span class="p">],</span> <span class="n">label_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">],</span>
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="n">init_html</span><span class="p">),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">grid_id</span><span class="p">)</span>
         <span class="c1"># Initialise the script-update slot before the first update=True call.</span>
-        <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">update_id</span><span class="p">)</span>
+        <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s2">""</span><span class="p">),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">update_id</span><span class="p">)</span>
 
         <span class="c1"># -- Background thread --------------------------------------------- #</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">_render_update</span><span class="p">():</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Build Plotly.react() script tags for each panel via template.</span>
+<span class="w">            </span><span class="sd">"""Build Plotly.react() script tags for each panel via template.</span>
 
 <span class="sd">            Plotly.react() updates the existing chart in-place; if the div has</span>
 <span class="sd">            no chart yet (first call) it initialises one like newPlot(), so no</span>
 <span class="sd">            separate first-render path is needed.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
+<span class="sd">            """</span>
             <span class="n">updates</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
@@ -4658,13 +4658,13 @@ programming interface (API) listings below are generated from Python source.</p>
                     <span class="n">fig_dict</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
                     <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span>
                         <span class="n">panel_ids</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
-                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]),</span>
-                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">&quot;layout&quot;</span><span class="p">]),</span>
-                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;responsive&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;displayModeBar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]),</span>
+                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">"layout"</span><span class="p">]),</span>
+                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"responsive"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"displayModeBar"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
                     <span class="p">))</span>
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Live plot update error for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;live_update/live_update.html&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">updates</span><span class="o">=</span><span class="n">updates</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Live plot update error for </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">"live_update/live_update.html"</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">updates</span><span class="o">=</span><span class="n">updates</span><span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_live_loop</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
@@ -4672,7 +4672,7 @@ programming interface (API) listings below are generated from Python source.</p>
                     <span class="k">try</span><span class="p">:</span>
                         <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="n">_render_update</span><span class="p">()),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">update_id</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Live plot grid update error&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Live plot grid update error"</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
                         <span class="k">break</span>
                     <span class="n">stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">update_interval</span><span class="p">)</span>
@@ -4686,9 +4686,9 @@ programming interface (API) listings below are generated from Python source.</p>
         <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Live plotting started (update every </span><span class="si">{</span><span class="n">update_interval</span><span class="si">}</span><span class="s2">s, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;window </span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s). &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Interrupt kernel or stop monitor to end.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Live plotting started (update every </span><span class="si">{</span><span class="n">update_interval</span><span class="si">}</span><span class="s2">s, "</span>
+            <span class="sa">f</span><span class="s2">"window </span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s). "</span>
+            <span class="sa">f</span><span class="s2">"Interrupt kernel or stop monitor to end."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -4745,7 +4745,7 @@ programming interface (API) listings below are generated from Python source.</p>
     <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">,</span>
     <span class="n">plots_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PlotsConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Attach started PerformanceMonitor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Attach started PerformanceMonitor."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="o">=</span> <span class="n">aggregate_node_info</span><span class="p">(</span><span class="n">monitor</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">hardware</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">min_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">interval</span>
@@ -5075,7 +5075,7 @@ JavaScript communication, no extra dependencies.</p>
     <span class="n">update_interval</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
     <span class="n">window_seconds</span><span class="o">=</span><span class="mf">120.0</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot performance metrics with a sliding-window live view.</span>
+<span class="w">    </span><span class="sd">"""Plot performance metrics with a sliding-window live view.</span>
 
 <span class="sd">    Displays fixed panels that auto-update via a background thread</span>
 <span class="sd">    using ``IPython.display.update_display``.  No ipywidgets, no</span>
@@ -5085,11 +5085,11 @@ JavaScript communication, no extra dependencies.</p>
 <span class="sd">        metric_subsets: Tuple of metric subset names to plot.</span>
 <span class="sd">        cell_range: Ignored for live plotting.</span>
 <span class="sd">        show_idle: Ignored for live plotting (always True).</span>
-<span class="sd">        level: Monitoring level (``&quot;process&quot;``, ``&quot;user&quot;``,</span>
-<span class="sd">            ``&quot;system&quot;``, or ``&quot;slurm&quot;``). Defaults to ``&quot;process&quot;``.</span>
+<span class="sd">        level: Monitoring level (``"process"``, ``"user"``,</span>
+<span class="sd">            ``"system"``, or ``"slurm"``). Defaults to ``"process"``.</span>
 <span class="sd">        update_interval: Seconds between refreshes (default 2.0).</span>
 <span class="sd">        window_seconds: Width of the visible time window (default 120).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="n">EXTENSION_ERROR_MESSAGES</span><span class="p">[</span><span class="n">ExtensionErrorCode</span><span class="o">.</span><span class="n">NO_ACTIVE_MONITOR</span><span class="p">]</span>
@@ -5110,7 +5110,7 @@ JavaScript communication, no extra dependencies.</p>
             <span class="n">metric_subsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_subsets</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
                 <span class="n">gpu_extra</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;gpu&quot;</span><span class="p">,</span> <span class="s2">&quot;gpu_all&quot;</span><span class="p">)</span>
+                    <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"gpu_all"</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metric_subsets</span>
                 <span class="p">)</span>
                 <span class="n">metric_subsets</span> <span class="o">=</span> <span class="n">metric_subsets</span> <span class="o">+</span> <span class="n">gpu_extra</span>
@@ -5130,27 +5130,27 @@ JavaScript communication, no extra dependencies.</p>
             <span class="k">for</span> <span class="n">subset_cfg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                 <span class="n">all_keys</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">subset_cfg</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;No matching metrics found. Available metric keys: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_keys</span><span class="p">)))</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"No matching metrics found. Available metric keys: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_keys</span><span class="p">)))</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="k">return</span>
         <span class="n">default_metrics</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">metrics_list</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># No --metrics flag: always CPU + Memory; add GPU if available</span>
-        <span class="n">default_metrics</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cpu_summary&quot;</span><span class="p">,</span> <span class="s2">&quot;memory&quot;</span><span class="p">]</span>
+        <span class="n">default_metrics</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cpu_summary"</span><span class="p">,</span> <span class="s2">"memory"</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
-            <span class="n">default_metrics</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;gpu_util_summary&quot;</span><span class="p">,</span> <span class="s2">&quot;gpu_mem_summary&quot;</span><span class="p">]</span>
+            <span class="n">default_metrics</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"gpu_util_summary"</span><span class="p">,</span> <span class="s2">"gpu_mem_summary"</span><span class="p">]</span>
         <span class="c1"># Resolve subsets needed for these metrics</span>
-        <span class="n">needed_subsets</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;mem&quot;</span><span class="p">]</span>
+        <span class="n">needed_subsets</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="s2">"mem"</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hardware</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">:</span>
-            <span class="n">needed_subsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;gpu&quot;</span><span class="p">)</span>
+            <span class="n">needed_subsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"gpu"</span><span class="p">)</span>
         <span class="n">metric_subsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_metric_subsets</span><span class="p">(</span><span class="n">needed_subsets</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">labeled_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_metric_options</span><span class="p">(</span><span class="n">metric_subsets</span><span class="p">)</span>
 
     <span class="c1"># Map metric keys → human-readable labels</span>
     <span class="n">label_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">val</span><span class="p">:</span> <span class="n">lbl</span> <span class="k">for</span> <span class="n">lbl</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">labeled_options</span><span class="p">}</span>
     <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">level</span> <span class="o">=</span> <span class="s2">&quot;process&quot;</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="s2">"process"</span>
     <span class="n">session_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())[:</span><span class="mi">8</span><span class="p">]</span>
     <span class="n">stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
     <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span>
@@ -5158,50 +5158,50 @@ JavaScript communication, no extra dependencies.</p>
     <span class="c1"># -- Display header (static) --------------------------------------- #</span>
     <span class="n">template_dir</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
-        <span class="o">/</span> <span class="s2">&quot;templates&quot;</span> <span class="o">/</span> <span class="s2">&quot;visualizer&quot;</span> <span class="o">/</span> <span class="s2">&quot;plotly&quot;</span>
+        <span class="o">/</span> <span class="s2">"templates"</span> <span class="o">/</span> <span class="s2">"visualizer"</span> <span class="o">/</span> <span class="s2">"plotly"</span>
     <span class="p">)</span>
     <span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span>
         <span class="n">loader</span><span class="o">=</span><span class="n">FileSystemLoader</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">template_dir</span><span class="p">)),</span>
         <span class="n">autoescape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">header_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">&quot;live_header&quot;</span> <span class="o">/</span> <span class="s2">&quot;live_header.css&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
-    <span class="n">header_html</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;live_header/live_header.html&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+    <span class="n">header_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">"live_header"</span> <span class="o">/</span> <span class="s2">"live_header.css"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+    <span class="n">header_html</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">"live_header/live_header.html"</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-        <span class="n">window_seconds</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">window_seconds</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">update_interval</span><span class="o">=</span><span class="n">update_interval</span><span class="p">,</span>
         <span class="n">logo_src</span><span class="o">=</span><span class="n">logo_image</span><span class="p">,</span>
-        <span class="n">panel_labels</span><span class="o">=</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">label_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">),</span>
+        <span class="n">panel_labels</span><span class="o">=</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">label_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">),</span>
         <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;style&gt;</span><span class="si">{</span><span class="n">header_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">header_html</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;style&gt;</span><span class="si">{</span><span class="n">header_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">header_html</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
 
     <span class="c1"># -- Fixed panel IDs — stable for the entire live session ---------- #</span>
-    <span class="n">panel_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;jumper-live-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">}</span>
-    <span class="n">grid_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;jumper-live-grid-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="n">update_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;jumper-live-update-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="n">grid_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">&quot;live_grid&quot;</span> <span class="o">/</span> <span class="s2">&quot;live_grid.css&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="n">panel_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"jumper-live-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">}</span>
+    <span class="n">grid_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"jumper-live-grid-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">update_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"jumper-live-update-</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">grid_css</span> <span class="o">=</span> <span class="p">(</span><span class="n">template_dir</span> <span class="o">/</span> <span class="s2">"live_grid"</span> <span class="o">/</span> <span class="s2">"live_grid.css"</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
 
     <span class="c1"># Skeleton grid displayed once — the Plotly divs stay in DOM for the</span>
     <span class="c1"># whole session so Plotly.react() updates them in-place each tick.</span>
     <span class="n">init_html</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;&lt;style&gt;</span><span class="si">{</span><span class="n">grid_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="o">+</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;live_grid/live_grid.html&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"&lt;style&gt;</span><span class="si">{</span><span class="n">grid_css</span><span class="si">}</span><span class="s2">&lt;/style&gt;</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="o">+</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">"live_grid/live_grid.html"</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span>
             <span class="n">ncols</span><span class="o">=</span><span class="n">ncols</span><span class="p">,</span>
             <span class="n">panels</span><span class="o">=</span><span class="p">[(</span><span class="n">panel_ids</span><span class="p">[</span><span class="n">m</span><span class="p">],</span> <span class="n">label_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">],</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="n">init_html</span><span class="p">),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">grid_id</span><span class="p">)</span>
     <span class="c1"># Initialise the script-update slot before the first update=True call.</span>
-    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">update_id</span><span class="p">)</span>
+    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s2">""</span><span class="p">),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">update_id</span><span class="p">)</span>
 
     <span class="c1"># -- Background thread --------------------------------------------- #</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_render_update</span><span class="p">():</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build Plotly.react() script tags for each panel via template.</span>
+<span class="w">        </span><span class="sd">"""Build Plotly.react() script tags for each panel via template.</span>
 
 <span class="sd">        Plotly.react() updates the existing chart in-place; if the div has</span>
 <span class="sd">        no chart yet (first call) it initialises one like newPlot(), so no</span>
 <span class="sd">        separate first-render path is needed.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">updates</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">default_metrics</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -5211,13 +5211,13 @@ JavaScript communication, no extra dependencies.</p>
                 <span class="n">fig_dict</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
                 <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span>
                     <span class="n">panel_ids</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
-                    <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]),</span>
-                    <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">&quot;layout&quot;</span><span class="p">]),</span>
-                    <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;responsive&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;displayModeBar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+                    <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]),</span>
+                    <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fig_dict</span><span class="p">[</span><span class="s2">"layout"</span><span class="p">]),</span>
+                    <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"responsive"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"displayModeBar"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
                 <span class="p">))</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Live plot update error for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">&quot;live_update/live_update.html&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">updates</span><span class="o">=</span><span class="n">updates</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Live plot update error for </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s2">"live_update/live_update.html"</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">updates</span><span class="o">=</span><span class="n">updates</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_live_loop</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
@@ -5225,7 +5225,7 @@ JavaScript communication, no extra dependencies.</p>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="n">_render_update</span><span class="p">()),</span> <span class="n">display_id</span><span class="o">=</span><span class="n">update_id</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Live plot grid update error&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Live plot grid update error"</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
                     <span class="k">break</span>
                 <span class="n">stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">update_interval</span><span class="p">)</span>
@@ -5239,9 +5239,9 @@ JavaScript communication, no extra dependencies.</p>
     <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Live plotting started (update every </span><span class="si">{</span><span class="n">update_interval</span><span class="si">}</span><span class="s2">s, &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;window </span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s). &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Interrupt kernel or stop monitor to end.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Live plotting started (update every </span><span class="si">{</span><span class="n">update_interval</span><span class="si">}</span><span class="s2">s, "</span>
+        <span class="sa">f</span><span class="s2">"window </span><span class="si">{</span><span class="n">window_seconds</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">s). "</span>
+        <span class="sa">f</span><span class="s2">"Interrupt kernel or stop monitor to end."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5305,11 +5305,11 @@ only logs that visualization is unavailable.</p>
 <span class="normal">833</span>
 <span class="normal">834</span>
 <span class="normal">835</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UnavailableVisualizer</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A stub that type-checks against VisualizerProtocol but</span>
 <span class="sd">    only logs that visualization is unavailable.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">):</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Plotting not available."</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reason</span> <span class="o">=</span> <span class="n">reason</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
@@ -5391,7 +5391,7 @@ only logs that visualization is unavailable.</p>
 <span class="normal">49</span>
 <span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VisualizerProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural protocol for visualizers used by the service.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Structural protocol for visualizers used by the service."""</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">monitor</span><span class="p">:</span> <span class="n">MonitorProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5431,7 +5431,7 @@ only logs that visualization is unavailable.</p>
 
 
 <h2 id="jumper_extension.adapters.visualizer.visualizer.build_performance_visualizer" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">build_performance_visualizer</span><span class="p">(</span><span class="n">cell_history</span><span class="p">,</span> <span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">&#39;Plotting not available.&#39;</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;matplotlib&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">build_performance_visualizer</span><span class="p">(</span><span class="n">cell_history</span><span class="p">,</span> <span class="n">plots_disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plots_disabled_reason</span><span class="o">=</span><span class="s1">'Plotting not available.'</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s1">'matplotlib'</span><span class="p">)</span></code>
 
 </h2>
 
@@ -5475,27 +5475,27 @@ only logs that visualization is unavailable.</p>
 <span class="normal">865</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_performance_visualizer</span><span class="p">(</span>
     <span class="n">cell_history</span><span class="p">:</span> <span class="n">CellHistory</span><span class="p">,</span>
     <span class="n">plots_disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Plotting not available.&quot;</span><span class="p">,</span>
-    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">plots_disabled_reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Plotting not available."</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"matplotlib"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VisualizerProtocol</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Build visualizer object with selected backend.</span>
 
 <span class="sd">    Supported backends:</span>
 <span class="sd">    - matplotlib (default)</span>
 <span class="sd">    - plotly</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">plots_disabled</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">UnavailableVisualizer</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="n">plots_disabled_reason</span><span class="p">)</span>
 
-    <span class="n">backend_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">backend</span> <span class="ow">or</span> <span class="s2">&quot;matplotlib&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">backend_name</span> <span class="o">==</span> <span class="s2">&quot;plotly&quot;</span><span class="p">:</span>
+    <span class="n">backend_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">backend</span> <span class="ow">or</span> <span class="s2">"matplotlib"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">backend_name</span> <span class="o">==</span> <span class="s2">"plotly"</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.visualizer.backends.plotly</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlotlyPerformanceVisualizer</span>
         <span class="k">return</span> <span class="n">PlotlyPerformanceVisualizer</span><span class="p">(</span><span class="n">cell_history</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">backend_name</span> <span class="o">!=</span> <span class="s2">&quot;matplotlib&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">backend_name</span> <span class="o">!=</span> <span class="s2">"matplotlib"</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Unknown visualizer backend &#39;</span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
-            <span class="s2">&quot;Falling back to matplotlib.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Unknown visualizer backend '</span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2">'. "</span>
+            <span class="s2">"Falling back to matplotlib."</span>
         <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">jumper_extension.adapters.visualizer.backends.matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">MatplotlibPerformanceVisualizer</span>
     <span class="k">return</span> <span class="n">MatplotlibPerformanceVisualizer</span><span class="p">(</span><span class="n">cell_history</span><span class="p">)</span>
@@ -5593,13 +5593,13 @@ def render_my_type(df, config, level, hardware, io_window):
 <span class="normal">54</span>
 <span class="normal">55</span>
 <span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="n">plot_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a renderer function for a given plot type.</span>
+<span class="w">    </span><span class="sd">"""Register a renderer function for a given plot type.</span>
 
 <span class="sd">    Usage::</span>
 
 <span class="sd">        from jumper_extension.adapters.visualizer.render import register, PlotResult, SeriesItem</span>
 
-<span class="sd">        @register(&quot;my_type&quot;)</span>
+<span class="sd">        @register("my_type")</span>
 <span class="sd">        def render_my_type(df, config, level, hardware, io_window):</span>
 <span class="sd">            series = df[config.column]</span>
 <span class="sd">            return PlotResult(</span>
@@ -5607,7 +5607,7 @@ def render_my_type(df, config, level, hardware, io_window):
 <span class="sd">                title=config.title,</span>
 <span class="sd">                ylim=config.ylim,</span>
 <span class="sd">            )</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
         <span class="n">RENDERERS</span><span class="p">[</span><span class="n">plot_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span>
         <span class="k">return</span> <span class="n">fn</span>
